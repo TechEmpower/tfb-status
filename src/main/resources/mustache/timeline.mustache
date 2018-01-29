@@ -1,0 +1,58 @@
+{{<layout}}
+
+{{!
+--------------------------------------------------------------------------------
+The HTML of the timeline page.
+--------------------------------------------------------------------------------
+}}
+
+{{$styles}}
+<link rel="stylesheet" href="/assets/css/timeline.css">
+{{/styles}}
+
+{{$scripts}}
+<script defer src="/assets/js/lib/plotly.js"></script>
+<script defer src="/assets/js/timeline.js"></script>
+{{/scripts}}
+
+{{$body}}
+
+<div class="screen">
+
+  <ul class="nav">
+  <li>
+    <select class="frameworkSelector">
+      {{#frameworkOptions}}
+      <option{{#isSelected}} selected{{/isSelected}}>{{framework}}
+      {{/frameworkOptions}}
+    </select>
+  {{#testTypeOptions}}
+  <li>
+    {{#isSelected}}
+    <span class="selected">{{testType}}</span>
+    {{/isSelected}}
+    {{^isSelected}}
+    {{#isPresent}}
+    <a class="present" href="{{testType}}">{{testType}}</a>
+    {{/isPresent}}
+    {{^isPresent}}
+    <span class="absent">{{testType}}</span>
+    {{/isPresent}}
+    {{/isSelected}}
+  {{/testTypeOptions}}
+  </ul>
+
+  <div class="chart"></div>
+
+</div>
+
+<pre class="data">
+time,rps
+{{#dataPoints}}
+{{time}},{{rps}}
+{{/dataPoints}}
+</pre>
+
+{{/body}}
+
+{{/layout}}

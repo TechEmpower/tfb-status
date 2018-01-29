@@ -1,0 +1,18 @@
+/*
+--------------------------------------------------------------------------------
+Styles for the about page.
+--------------------------------------------------------------------------------
+*/
+
+.gitPropertiesTable {
+  border-collapse: collapse;
+  border: 1px solid #ccc;
+}
+
+.gitPropertiesTable tr:nth-child(2n) {
+  background-color: #eee;
+}
+
+.gitPropertiesTable td {
+  padding: 5px 10px;
+}

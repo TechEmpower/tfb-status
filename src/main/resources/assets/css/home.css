@@ -1,0 +1,27 @@
+/*
+--------------------------------------------------------------------------------
+Styles for the home page.
+--------------------------------------------------------------------------------
+*/
+
+.resultsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.resultsTable td {
+  padding: .5em 1em;
+  vertical-align: top;
+}
+
+.resultsTable td:nth-child(1),
+.resultsTable td:nth-child(2) {
+  white-space: nowrap;
+}
+
+.resultsTable tr:nth-child(2n) td {
+  background-color: #eee;
+}
+
+.resultsTable .failures {
+}

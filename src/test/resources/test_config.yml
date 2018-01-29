@@ -1,0 +1,25 @@
+http:
+  host: "localhost"
+  port: 8443
+  keyStore:
+    path: src/test/resources/localhost.jks
+    password: password
+
+email:
+  host: localhost
+  port: 8025
+  from: tfb+testing@techempower.com
+  to: tfb+testing@techempower.com
+
+assets:
+  mode: CLASS_PATH
+  root: test_assets
+
+mustache:
+  mode: CLASS_PATH
+  root: mustache
+
+fileStore:
+  resultsDirectory: src/test/resources/test_results
+  accountsDirectory: src/test/resources/test_accounts
+  attributesDirectory: src/test/resources/test_attributes

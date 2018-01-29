@@ -1,0 +1,49 @@
+{{<layout}}
+
+{{!
+--------------------------------------------------------------------------------
+The HTML of the test metadata and attributes page.
+--------------------------------------------------------------------------------
+}}
+
+{{$styles}}
+<link rel="stylesheet" href="/assets/css/home.css">
+{{/styles}}
+
+{{$scripts}}
+<script type="text/javascript" src="/assets/js/attributes.js"></script>
+{{/scripts}}
+
+{{$body}}
+
+<h1>TFB attributes for {{fileName}} </h1>
+
+<p>You are viewing the generated attributes list and minified test metadata for
+this run.  If you'd like to save this as your tfb_lookup.json, hit save.  Note
+that any local changes will be saved, and the request will fail if either text
+area doesn't contain valid JSON.
+
+<h2>Attribute Definition</h2>
+<textarea name="attributes"
+          id="lookup-attributes"
+          rows="20"
+          cols="100">{{attributes}}</textarea>
+
+<h2>Minified Test Metadata</h2>
+<textarea name="tests"
+          id="lookup-tests"
+          rows="20"
+          cols="100">{{tests}}</textarea>
+
+<form id="attributes-form" method="post" action="/saveAttributes">
+  <input id="hidden-input" type="hidden" name="lookupjson"/>
+</form>
+
+<div>
+  <button id="submitLookup">Save as tfb lookup</button>
+  <ul id="errors"></ul>
+</div>
+
+{{/body}}
+
+{{/layout}}

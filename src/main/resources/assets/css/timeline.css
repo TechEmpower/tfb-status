@@ -1,0 +1,57 @@
+/*
+--------------------------------------------------------------------------------
+Styles for the timeline page.
+--------------------------------------------------------------------------------
+*/
+
+body {
+  margin: 0;
+}
+
+.data {
+  display: none;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.nav {
+  flex-grow: 0;
+  list-style: none outside;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+}
+
+.nav li {
+  margin: 10px 20px;
+}
+
+.nav .present {
+
+}
+
+.nav .absent {
+  color: lightgray;
+}
+
+.nav .selected {
+  font-weight: bold;
+}
+
+.chart {
+  width: 100vw;
+  flex-grow: 1;
+  display: flex;
+}
+
+@media (max-width : 900px) { /* width of the full nav bar */
+  .nav li:first-child {
+    width: 100%;
+  }
+}

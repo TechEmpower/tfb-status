@@ -1,0 +1,25 @@
+#http:
+#  host: "::"
+#  port: 80
+#  keyStore:
+#    path: src/test/resources/localhost.jks
+#    password: password
+
+#assets:
+#  mode: FILE_SYSTEM
+#  root: src/main/resources/assets
+
+#mustache:
+#  mode: FILE_SYSTEM
+#  root: src/main/resources/mustache
+
+#fileStore:
+#  resultsDirectory: results
+#  accountsDirectory: accounts
+#  attributesDirectory: attributes
+
+email:
+  host: mail.techempower.com
+  port: 25
+  from: mhixson@techempower.com
+  to: mhixson@techempower.com

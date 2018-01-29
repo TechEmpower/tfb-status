@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset comparisonMethod="maven"
+         xmlns="http://mojo.codehaus.org/versions-maven-plugin/rule/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://mojo.codehaus.org/versions-maven-plugin/rule/2.0.0 http://www.mojohaus.org/versions-maven-plugin/xsd/rule-2.0.0.xsd">
+
+  <!-- When one runs "mvn versions display-dependency-updates", it is normal for
+       the plugin to say, paraphrasing:
+
+         One of your dependencies is out of date because you're using version
+         1.0.0 even though version 2.0.0-alpha1 is available!
+
+       Since we don't (in general) want to use any alpha (or beta, or
+       pre-release, or release candidate) versions, we don't want to be alerted
+       about those versions.  Those alerts are useless noise, and worse: they
+       override alerts about versions that we *do* want to use.  In the 1.0.0
+       versus 2.0.0-alpha1 example, if 1.0.1 was released, the plugin wouldn't
+       tell us because it would be too busy telling us about 2.0.0-alpha1.
+
+       It's possible to configure the plugin to ignore certain versions by way
+       of pattern matching.  That's what we're doing here in this file.
+
+       These rules are written by us and are not infallible.  They'll need to be
+       maintained especially as we add new dependencies.
+
+       As a measure of success, the "mvn versions display-dependency-updates"
+       command should *always* show *only* versions that we want to upgrade to
+       *immediately*.  If that is ever not the case, then we should modify these
+       rules to ignore those versions.
+
+       Note that this file has no effect unless the versions-maven-plugin is
+       actually configured to use it.  That is accomplished by configuring the
+       plugin's "rulesUri" property to point at this file.
+
+       For more information about version rules files in general, see:
+       http://www.mojohaus.org/versions-maven-plugin/version-rules.html
+  -->
+
+  <rules>
+
+    <rule groupId="io.undertow" artifactId="undertow-core">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\.Alpha[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
+    <rule groupId="com.fasterxml.jackson.*">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\.pr[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
+    <rule groupId="com.google.guava" artifactId="guava">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+-android</ignoreVersion>
+        <ignoreVersion type="regex">.+-rc[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
+    <rule groupId="org.slf4j" artifactId="slf4j-api">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\-alpha[\d]+</ignoreVersion>
+        <ignoreVersion type="regex">.+\-beta[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
+    <rule groupId="com.sun.mail" artifactId="javax.mail">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\-rc[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
+    <rule groupId="org.glassfish.hk2">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\-b[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
+    <rule groupId="org.junit.jupiter">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\-M[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
+    <rule groupId="ch.qos.logback" artifactId="logback-classic">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\-alpha[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
+  </rules>
+
+</ruleset>

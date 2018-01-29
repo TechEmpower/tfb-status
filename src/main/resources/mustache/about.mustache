@@ -1,0 +1,29 @@
+{{<layout}}
+
+{{!
+--------------------------------------------------------------------------------
+The HTML of the about page.
+--------------------------------------------------------------------------------
+}}
+
+{{$styles}}
+<link rel="stylesheet" href="/assets/css/about.css">
+{{/styles}}
+
+{{$body}}
+
+<p>Uptime: {{uptime}}
+
+{{^gitProperties.isEmpty}}
+<table class="gitPropertiesTable">
+{{#gitProperties}}
+  <tr>
+  <td><code>{{name}}</code>
+  <td><pre>{{value}}</pre>
+{{/gitProperties}}
+</table>
+{{/gitProperties.isEmpty}}
+
+{{/body}}
+
+{{/layout}}

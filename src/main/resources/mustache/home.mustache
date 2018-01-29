@@ -1,0 +1,40 @@
+{{<layout}}
+
+{{!
+--------------------------------------------------------------------------------
+The HTML of the home page.
+--------------------------------------------------------------------------------
+}}
+
+{{$styles}}
+<link rel="stylesheet" href="/assets/css/home.css">
+{{/styles}}
+
+{{$scripts}}
+<script defer src="/assets/js/lib/EventSource.js"></script>
+<script defer src="/assets/js/home.js"></script>
+{{/scripts}}
+
+{{$body}}
+<h1>TechEmpower Framework Benchmarks<br>Results Dashboard</h1>
+
+<table class="resultsTable">
+  <tbody>
+  {{#results}}
+  {{> home-result.mustache}}
+  {{/results}}
+  </tbody>
+</table>
+
+{{#hasNext}}
+<p><a href="/?skip={{next}}&limit={{limit}}">Older results</a>
+{{/hasNext}}
+
+<p><a href="/about">Deployment info</a>
+
+<p>Dates and times are displayed in the
+<code>America/Los_Angeles</code>
+time zone
+{{/body}}
+
+{{/layout}}

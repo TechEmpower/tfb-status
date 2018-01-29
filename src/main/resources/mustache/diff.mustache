@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en-US">
+{{#summary}}
+<ul>
+<li>{{totalAdded}} tests were added
+<li>{{totalRemoved}} tests were removed
+<li>{{totalBothRounds}} tests were in both rounds
+<li>Of those {{totalBothRounds}} tests, {{totalSame}} performed about as well
+    as before (within {{rpsChangeThreshold}} of the previous RPS)
+<li>... and {{totalBetter}} tests performed significantly better
+<li>... and {{totalWorse}} tests performed significantly worse
+</ul>
+{{/summary}}
+<table>
+  <tr>
+  <th>Change
+  <th>Framework
+  <th>Test Type
+  <th>Old RPS
+  <th>New RPS
+  <th>Change in RPS
+  {{#lines}}
+  <tr>
+  <td>{{addedOrRemoved}}
+  <td>{{framework}}
+  <td>{{testType}}
+  <td>{{oldRps}}
+  <td>{{newRps}}
+  <td>{{rpsChange}}
+  {{/lines}}
+</table>
