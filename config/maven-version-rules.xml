@@ -41,6 +41,7 @@
     <rule groupId="io.undertow" artifactId="undertow-core">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\.Alpha[\d]+</ignoreVersion>
+        <ignoreVersion type="regex">.+\.Beta[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
