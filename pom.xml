@@ -32,7 +32,7 @@
     <forbiddenapis.version>2.3</forbiddenapis.version>
     <git-commit-id-plugin.version>2.2.4</git-commit-id-plugin.version>
     <greenmail.version>1.5.6</greenmail.version>
-    <guava.version>23.6-jre</guava.version>
+    <guava.version>24.0-jre</guava.version>
     <hk2.version>2.5.0-b60</hk2.version>
     <jackson.version>2.9.4</jackson.version>
     <javamail.version>1.6.0</javamail.version>
