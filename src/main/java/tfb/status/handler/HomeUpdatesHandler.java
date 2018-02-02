@@ -3,6 +3,7 @@ package tfb.status.handler;
 import static io.undertow.util.Methods.GET;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
@@ -13,6 +14,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,9 +36,10 @@ public final class HomeUpdatesHandler implements HttpHandler {
   private final HomeResultsReader homeResultsReader;
   private final ServerSentEventHandler eventHandler;
   private final HttpHandler delegate;
-  private final ScheduledThreadPoolExecutor pingScheduler;
-  private final ScheduledFuture<?> pingTask;
   private final Logger logger = LoggerFactory.getLogger(getClass());
+
+  @GuardedBy("this") @Nullable private ScheduledThreadPoolExecutor pingScheduler;
+  @GuardedBy("this") @Nullable private ScheduledFuture<?> pingTask;
 
   @Inject
   public HomeUpdatesHandler(MustacheRenderer mustacheRenderer,
@@ -58,6 +62,13 @@ public final class HomeUpdatesHandler implements HttpHandler {
     handler = new DisableCacheHandler(handler);
 
     delegate = handler;
+  }
+
+  /**
+   * Initializes resources used by this handler.
+   */
+  @PostConstruct
+  public synchronized void start() {
 
     //
     // The connections to this endpoint are often idle for long periods of time,
@@ -81,9 +92,18 @@ public final class HomeUpdatesHandler implements HttpHandler {
    * Cleans up resources used by this handler.
    */
   @PreDestroy
-  public void stop() {
-    pingTask.cancel(false);
-    pingScheduler.shutdownNow();
+  public synchronized void stop() {
+    ScheduledFuture<?> task = this.pingTask;
+    if (task != null) {
+      task.cancel(false);
+      this.pingTask = null;
+    }
+
+    ScheduledThreadPoolExecutor scheduler = this.pingScheduler;
+    if (scheduler != null) {
+      scheduler.shutdownNow();
+      this.pingScheduler = null;
+    }
   }
 
   @Override
