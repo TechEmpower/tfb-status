@@ -28,6 +28,7 @@ public final class RootHandler implements HttpHandler {
                      ExportResultsHandler export,
                      UnzipResultsHandler unzip,
                      TimelinePageHandler timeline,
+                     DetailPageHandler detail,
                      AboutPageHandler about,
                      AssetsHandler assets,
                      AttributesPageHandler attributes,
@@ -41,6 +42,7 @@ public final class RootHandler implements HttpHandler {
     Objects.requireNonNull(export);
     Objects.requireNonNull(unzip);
     Objects.requireNonNull(timeline);
+    Objects.requireNonNull(detail);
     Objects.requireNonNull(about);
     Objects.requireNonNull(assets);
     Objects.requireNonNull(attributes);
@@ -55,6 +57,7 @@ public final class RootHandler implements HttpHandler {
                          .addPrefixPath("/export", export)
                          .addPrefixPath("/unzip", unzip)
                          .addPrefixPath("/timeline", timeline)
+                         .addPrefixPath("/results", detail)
                          .addPrefixPath("/about", about)
                          .addPrefixPath("/assets", assets)
                          .addPrefixPath("/saveAttributes", saveAttributes)

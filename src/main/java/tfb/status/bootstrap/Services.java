@@ -19,6 +19,7 @@ import tfb.status.config.MustacheConfig;
 import tfb.status.handler.AboutPageHandler;
 import tfb.status.handler.AssetsHandler;
 import tfb.status.handler.AttributesPageHandler;
+import tfb.status.handler.DetailPageHandler;
 import tfb.status.handler.DownloadResultsHandler;
 import tfb.status.handler.ExportResultsHandler;
 import tfb.status.handler.HomePageHandler;
@@ -85,6 +86,7 @@ public final class Services {
         bindAsContract(ExportResultsHandler.class).in(Singleton.class);
         bindAsContract(UnzipResultsHandler.class).in(Singleton.class);
         bindAsContract(TimelinePageHandler.class).in(Singleton.class);
+        bindAsContract(DetailPageHandler.class).in(Singleton.class);
         bindAsContract(AboutPageHandler.class).in(Singleton.class);
         bindAsContract(AssetsHandler.class).in(Singleton.class);
         bindAsContract(AttributesPageHandler.class).in(Singleton.class);

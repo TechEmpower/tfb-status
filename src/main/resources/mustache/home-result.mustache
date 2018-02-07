@@ -2,33 +2,24 @@
 <td>
   {{#json}}
     {{json.environmentDescription}}<br>
-    {{#uuid}}run {{uuid}}<br>{{/uuid}}
-    {{#json.startTime}}started {{json.startTime}}<br>{{/json.startTime}}
-    {{#json.lastUpdated}}last updated {{json.lastUpdated}}<br>{{/json.lastUpdated}}
-    {{#json.completionTime}}completed {{json.completionTime}}<br>{{/json.completionTime}}
-    {{#json.elapsedDuration}}elapsed time {{json.elapsedDuration}}<br>{{/json.elapsedDuration}}
-    {{#json.estimatedRemainingDuration}}estimated remaining time {{json.estimatedRemainingDuration}}{{/json.estimatedRemainingDuration}}
   {{/json}}
+  {{#uuid}}run id: <b>{{uuid}}</b><br>{{/uuid}}
+  {{#json}}<a href="/raw/{{json.fileName}}">results.json</a><br>{{/json}}
+  {{#zip}}<a href="/raw/{{zip.fileName}}">results.zip</a><br>{{/zip}}
+  {{#uuid}}<a href="/results/{{uuid}}">more about this run</a><br>{{/uuid}}
 <td>
   {{#json}}
     {{json.completedFrameworks}}/{{json.totalFrameworks}} frameworks tested<br>
     {{json.frameworksWithCleanSetup}} frameworks started and stopped cleanly<br>
     {{json.frameworksWithSetupProblems}} frameworks had problems starting or stopping<br>
     {{json.successfulTests}} tests passed<br>
-    {{json.failedTests}} tests failed
+    {{json.failedTests}} tests failed<br>
   {{/json}}
 <td>
-  {{#json}}<a href="/raw/{{json.fileName}}">results.json</a><br>{{/json}}
-  {{#zip}}<a href="/raw/{{zip.fileName}}">results.zip</a><br>{{/zip}}
-  {{#zip}}<a href="/unzip/{{zip.fileName}}/test_metadata.json">test_metadata.json</a><br>{{/zip}}
-  {{#zip}}<a href="/attributes/{{zip.fileName}}">attributes.json</a> (requires login)<br>{{/zip}}
-  {{#zip}}{{#json}}<a href="/export/{{json.fileName}}">minified results.json</a><br>{{/json}}{{/zip}}
-  {{#zip}}
-    {{^zip.failures.isEmpty}}
-      <p class="failures">Logs for frameworks with test failures:<br>
-      {{#zip.failures}}
-      <a title="[{{framework}}]{{#failedTestTypes.isEmpty}} had problems starting or stopping{{/failedTestTypes.isEmpty}}{{^failedTestTypes.isEmpty}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}"
-         href="/unzip/{{logFileName}}">{{framework}}</a>
-      {{/zip.failures}}
-    {{/zip.failures.isEmpty}}
-  {{/zip}}
+  {{#json}}
+    {{#json.startTime}}started {{json.startTime}}<br>{{/json.startTime}}
+    {{#json.lastUpdated}}last updated {{json.lastUpdated}}<br>{{/json.lastUpdated}}
+    {{#json.completionTime}}completed {{json.completionTime}}<br>{{/json.completionTime}}
+    {{#json.elapsedDuration}}elapsed time {{json.elapsedDuration}}<br>{{/json.elapsedDuration}}
+    {{#json.estimatedRemainingDuration}}estimated remaining time {{json.estimatedRemainingDuration}}<br>{{/json.estimatedRemainingDuration}}
+  {{/json}}
