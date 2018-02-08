@@ -159,7 +159,8 @@ public final class HomeUpdatesHandler implements HttpHandler {
     // This is conservatively written to catch RuntimeException because this
     // code is meant to run periodically in a ScheduledThreadPoolExecutor.  If
     // this code were to throw an uncaught exception, the executor would not
-    // schedule any more executions of this code.  We'd rather that
+    // schedule any more executions of this code.  We'd rather that it record
+    // the failure (which we hope is temporary) and try again next time.
     //
     try {
       for (ServerSentEventConnection connection : eventHandler.getConnections()) {
