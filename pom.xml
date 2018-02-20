@@ -43,7 +43,7 @@
     <jaxrs.version>2.1</jaxrs.version>
     <jersey.version>2.26</jersey.version>
     <jsr305.version>3.0.2</jsr305.version>
-    <junit-jupiter.version>5.0.3</junit-jupiter.version>
+    <junit-jupiter.version>5.1.0</junit-jupiter.version>
     <junit-platform.version>1.0.1</junit-platform.version>
     <logback.version>1.2.3</logback.version>
     <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
@@ -57,8 +57,8 @@
     <maven-shade-plugin.version>3.1.0</maven-shade-plugin.version>
     <maven-site-plugin.version>3.6</maven-site-plugin.version>
     <!-- We're using Surefire 2.19.1 instead of 2.20(.1) because 2.20(.1) is
-         incompatible with JUnit 5.0.  Hopefully either Surefire 2.21 or JUnit
-         5.1 (both not yet released) fix that issue. -->
+         incompatible with JUnit 5.  Hopefully Surefire 2.21 (not yet released)
+         fixes that issue. -->
     <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
     <mustache.version>0.9.5</mustache.version>
     <nullaway.version>0.3.3</nullaway.version>
