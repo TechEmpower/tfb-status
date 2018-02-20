@@ -475,35 +475,39 @@ public final class UploadResultsHandler implements HttpHandler {
 
     @Nullable
     private Path findPreviousZipFile(Path newZipFile) {
-      // TODO: Is there a better way to find the previous zip file?
-      Path previousZipFile = null;
-      FileTime previousTime = null;
-      Path directory = newZipFile.getParent();
-      if (directory == null)
-        return null;
+      // FIXME: Figure out how to make this code work as expected when there
+      //        are results from multiple environments and when we might be
+      //        repeating runs of old code.
+      return null;
 
-      try (DirectoryStream<Path> allZipFiles =
-               Files.newDirectoryStream(directory, "*.zip")) {
-
-        for (Path file : allZipFiles) {
-          if (file.equals(newZipFile))
-            continue;
-
-          FileTime time = Files.getLastModifiedTime(file);
-          if (previousZipFile == null || time.compareTo(previousTime) > 0) {
-            previousZipFile = file;
-            previousTime = time;
-          }
-        }
-
-      } catch (IOException e) {
-        logger.warn(
-            "Error finding predecessor of new zip file {}",
-            newZipFile, e);
-        return null;
-      }
-
-      return previousZipFile;
+//      Path previousZipFile = null;
+//      FileTime previousTime = null;
+//      Path directory = newZipFile.getParent();
+//      if (directory == null)
+//        return null;
+//
+//      try (DirectoryStream<Path> allZipFiles =
+//               Files.newDirectoryStream(directory, "*.zip")) {
+//
+//        for (Path file : allZipFiles) {
+//          if (file.equals(newZipFile))
+//            continue;
+//
+//          FileTime time = Files.getLastModifiedTime(file);
+//          if (previousZipFile == null || time.compareTo(previousTime) > 0) {
+//            previousZipFile = file;
+//            previousTime = time;
+//          }
+//        }
+//
+//      } catch (IOException e) {
+//        logger.warn(
+//            "Error finding predecessor of new zip file {}",
+//            newZipFile, e);
+//        return null;
+//      }
+//
+//      return previousZipFile;
     }
 
     @Nullable
