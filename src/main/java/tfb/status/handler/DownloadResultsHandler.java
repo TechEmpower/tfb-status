@@ -1,7 +1,10 @@
 package tfb.status.handler;
 
+import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
+
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import java.nio.file.Paths;
@@ -18,10 +21,14 @@ public final class DownloadResultsHandler implements HttpHandler {
 
   @Inject
   public DownloadResultsHandler(FileStoreConfig fileStoreConfig) {
-    delegate =
+    HttpHandler handler =
         new ResourceHandler(
             new PathResourceManager(
                 Paths.get(fileStoreConfig.resultsDirectory)));
+
+    handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+
+    delegate = handler;
   }
 
   @Override

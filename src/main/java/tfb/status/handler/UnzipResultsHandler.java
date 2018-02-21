@@ -1,6 +1,7 @@
 package tfb.status.handler;
 
 import static com.google.common.io.MoreFiles.getFileExtension;
+import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
@@ -10,6 +11,7 @@ import com.google.common.net.MediaType;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
+import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.util.MimeMappings;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -38,6 +40,7 @@ public final class UnzipResultsHandler implements HttpHandler {
     handler = new DefaultToUtf8Handler(handler);
     handler = new MethodHandler().addMethod(GET, handler);
     handler = new DisableCacheHandler(handler);
+    handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");
 
     delegate = handler;
   }
