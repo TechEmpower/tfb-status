@@ -14,7 +14,10 @@ The HTML of the results detail page.
   {{json.environmentDescription}}<br>
 {{/json}}
 
-{{#uuid}}run id: <b>{{uuid}}</b><br>{{/uuid}}
+{{#uuid}}
+run id: <b>{{uuid}}</b><br>
+<a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}</a><br>
+{{/uuid}}
 
 {{#json}}
   <p>
