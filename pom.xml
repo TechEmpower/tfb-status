@@ -26,7 +26,7 @@
 
     <apiguardian.version>1.0.0</apiguardian.version>
     <bcrypt.version>0.4</bcrypt.version>
-    <caffeine.version>2.6.1</caffeine.version>
+    <caffeine.version>2.6.2</caffeine.version>
     <crawler-commons.version>0.9</crawler-commons.version>
     <error-prone.version>2.2.0</error-prone.version>
     <forbiddenapis.version>2.3</forbiddenapis.version>
