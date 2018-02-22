@@ -70,7 +70,7 @@
   </properties>
 
   <!-- We include <prerequisites> for the sake of the versions plugin, which
-       provides the very useful commands:
+       provides these very useful commands:
 
          mvn versions:display-property-updates
          mvn versions:display-dependency-updates
@@ -449,23 +449,29 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUnusedDeclaredDependencies>
+
             <!-- Without the logback-classic dependency, we wouldn't have any
                  implementation of the slf4j API, and so all of our log
                  statements throughout the application would do nothing. -->
             <ignoredUnusedDeclaredDependency>ch.qos.logback:logback-classic</ignoredUnusedDeclaredDependency>
+
             <!-- Without the hk2-locator dependency, we wouldn't be able to
                  create instances of the ServiceLocator class at runtime, and so
                  our application would fail almost immediately upon startup. -->
             <ignoredUnusedDeclaredDependency>org.glassfish.hk2:hk2-locator</ignoredUnusedDeclaredDependency>
+
             <!-- Without the junit-jupiter-engine dependency, our tests wouldn't
                  run at all. -->
             <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter-engine</ignoredUnusedDeclaredDependency>
+
             <!-- Without the apiguardian-api dependency, we would get warnings
                  about missing class files when compiling our tests. -->
             <ignoredUnusedDeclaredDependency>org.apiguardian:apiguardian-api</ignoredUnusedDeclaredDependency>
+
             <!-- Without the jersey-hk2 dependency, the Jersey client would fail
                  to initialize, and so most of our tests would fail. -->
             <ignoredUnusedDeclaredDependency>org.glassfish.jersey.inject:jersey-hk2</ignoredUnusedDeclaredDependency>
+
             <!-- Without the jaxb-api dependency, we would get a huge number of
                  warnings with stack traces when running tests, which would
                  obscure more useful test output (Jersey refers to classes from
@@ -473,6 +479,7 @@
                  a Maven dependency, and those classes are no longer in the JDK
                  as of Java 9). -->
             <ignoredUnusedDeclaredDependency>javax.xml.bind:jaxb-api</ignoredUnusedDeclaredDependency>
+
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
@@ -555,8 +562,10 @@
 
       <!-- Detects if we use certain discouraged APIs and fails the build if so.
            We started using this plugin because it catches implicit use of the
-           default locale, as in methods like String.format(String, Object[]),
-           which we meant to avoid but were failing to do so. -->
+           default locale, which may be inconsistent across environments.  The
+           behavior of String.format(String, Object[]) depends on the default
+           locale, for example.  We meant to avoid APIs like this but were using
+           them accidentally. -->
       <plugin>
         <groupId>de.thetaphi</groupId>
         <artifactId>forbiddenapis</artifactId>
