@@ -20,10 +20,8 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -31,6 +29,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -421,7 +420,6 @@ public final class UploadResultsHandler implements HttpHandler {
 
       byte[] testMetadataBytes = findTestMetadataBytes(newZipFile);
       boolean isTestMetadataPresent = testMetadataBytes != null;
-      String newCommitId = findCommitId(newZipFile);
       Path previousZipFile = findPreviousZipFile(newZipFile);
 
       ParsedResults previousResults =
@@ -429,15 +427,24 @@ public final class UploadResultsHandler implements HttpHandler {
               ? null
               : findResults(previousZipFile);
 
-      String previousCommitId =
-          (previousZipFile == null)
-              ? null
-              : findCommitId(previousZipFile);
+      if (previousResults != null
+          && !areResultsComparable(results, previousResults))
+        previousResults = null;
 
       String diff =
           (previousResults == null)
               ? null
               : diffGenerator.diff(previousResults, results);
+
+      String newCommitId =
+          (results.git == null)
+              ? null
+              : results.git.commitId;
+
+      String previousCommitId =
+          (previousResults == null || previousResults.git == null)
+              ? null
+              : previousResults.git.commitId;
 
       String subject = "Run complete: " + results.name;
 
@@ -474,55 +481,48 @@ public final class UploadResultsHandler implements HttpHandler {
 
     @Nullable
     private Path findPreviousZipFile(Path newZipFile) {
-      // FIXME: Figure out how to make this code work as expected when there
-      //        are results from multiple environments and when we might be
-      //        repeating runs of old code.
-      return null;
+      Path previousZipFile = null;
+      FileTime previousTime = null;
+      Path directory = newZipFile.getParent();
+      if (directory == null)
+        return null;
 
-//      Path previousZipFile = null;
-//      FileTime previousTime = null;
-//      Path directory = newZipFile.getParent();
-//      if (directory == null)
-//        return null;
-//
-//      try (DirectoryStream<Path> allZipFiles =
-//               Files.newDirectoryStream(directory, "*.zip")) {
-//
-//        for (Path file : allZipFiles) {
-//          if (file.equals(newZipFile))
-//            continue;
-//
-//          FileTime time = Files.getLastModifiedTime(file);
-//          if (previousZipFile == null || time.compareTo(previousTime) > 0) {
-//            previousZipFile = file;
-//            previousTime = time;
-//          }
-//        }
-//
-//      } catch (IOException e) {
-//        logger.warn(
-//            "Error finding predecessor of new zip file {}",
-//            newZipFile, e);
-//        return null;
-//      }
-//
-//      return previousZipFile;
+      try (DirectoryStream<Path> allZipFiles =
+               Files.newDirectoryStream(directory, "*.zip")) {
+
+        for (Path file : allZipFiles) {
+          if (file.equals(newZipFile))
+            continue;
+
+          FileTime time = Files.getLastModifiedTime(file);
+          if (previousZipFile == null || time.compareTo(previousTime) > 0) {
+            previousZipFile = file;
+            previousTime = time;
+          }
+        }
+
+      } catch (IOException e) {
+        logger.warn(
+            "Error finding predecessor of new zip file {}",
+            newZipFile, e);
+        return null;
+      }
+
+      return previousZipFile;
     }
 
-    @Nullable
-    private String findCommitId(Path zipFile) {
-      return tryReadZipEntry(
-          /* zipFile= */ zipFile,
-          /* entryPath= */ "commit_id.txt",
-          /* entryReader= */
-          in -> {
-            String firstLine;
-            try (BufferedReader reader =
-                     new BufferedReader(new InputStreamReader(in, UTF_8))) {
-              firstLine = reader.readLine();
-            }
-            return (firstLine == null) ? "" : firstLine;
-          });
+    private boolean areResultsComparable(ParsedResults a, ParsedResults b) {
+      Objects.requireNonNull(a);
+      Objects.requireNonNull(b);
+      return a.environmentDescription != null
+          && b.environmentDescription != null
+          && a.environmentDescription.equals(b.environmentDescription)
+          && a.git != null
+          && b.git != null
+          && a.git.branchName != null
+          && b.git.branchName != null
+          && a.git.branchName.equals(b.git.branchName)
+          && a.git.repositoryUrl.equals(b.git.repositoryUrl);
     }
 
     @Nullable

@@ -112,6 +112,16 @@ public final class ParsedResults {
    */
   public final ImmutableList<Integer> concurrencyLevels;
 
+  /**
+   * Information about the state of the local git repository for this run, or
+   * {@code null} if the state of the git repository is unknown.
+   *
+   * <p>This field was added in February 2018 and was not present in results
+   * gathered prior to that date.
+   */
+  @Nullable
+  public final GitInfo git;
+
   @JsonCreator
   public ParsedResults(
 
@@ -157,7 +167,10 @@ public final class ParsedResults {
       ImmutableList<Integer> queryIntervals,
 
       @JsonProperty(value = "concurrencyLevels", required = true)
-      ImmutableList<Integer> concurrencyLevels) {
+      ImmutableList<Integer> concurrencyLevels,
+
+      @JsonProperty(value = "git", required = false)
+      GitInfo git) {
 
     this.uuid = uuid;
     this.name = name;
@@ -172,6 +185,7 @@ public final class ParsedResults {
     this.rawData = Objects.requireNonNull(rawData);
     this.queryIntervals = Objects.requireNonNull(queryIntervals);
     this.concurrencyLevels = Objects.requireNonNull(concurrencyLevels);
+    this.git = git;
   }
 
   @Immutable
@@ -305,6 +319,31 @@ public final class ParsedResults {
     }
   }
 
+  @Immutable
+  public static final class GitInfo {
+    public final String commitId;
+    public final String repositoryUrl;
+    @Nullable public final String branchName;
+
+    @JsonCreator
+    public GitInfo(
+
+        @JsonProperty(value = "commitId", required = true)
+        String commitId,
+
+        @JsonProperty(value = "repositoryUrl", required = true)
+        String repositoryUrl,
+
+        @Nullable
+        @JsonProperty(value = "branchName", required = false)
+        String branchName) {
+
+      this.commitId = Objects.requireNonNull(commitId);
+      this.repositoryUrl = Objects.requireNonNull(repositoryUrl);
+      this.branchName = branchName;
+    }
+  }
+
   /**
    * A view of the results.json for consumption by the TFB website, which
    * contains only the subset of fields that the TFB website needs.
@@ -372,5 +411,4 @@ public final class ParsedResults {
       this.uuid = uuid;
     }
   }
-
 }
