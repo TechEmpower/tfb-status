@@ -1,12 +1,12 @@
 package tfb.status.handler;
 
-import static com.google.common.io.MoreFiles.getFileExtension;
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 
 import com.google.common.base.Joiner;
+import com.google.common.io.MoreFiles;
 import com.google.common.net.MediaType;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -87,7 +87,7 @@ public final class UnzipResultsHandler implements HttpHandler {
       Path zipFile = resultsDirectory.resolve(relativeToResultsDir.getName(0));
 
       if (!Files.isRegularFile(zipFile)
-          || !getFileExtension(zipFile).equals("zip")) {
+          || !MoreFiles.getFileExtension(zipFile).equals("zip")) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }
@@ -124,7 +124,7 @@ public final class UnzipResultsHandler implements HttpHandler {
      */
     @Nullable
     private static MediaType guessMediaType(Path file) {
-      String extension = getFileExtension(file);
+      String extension = MoreFiles.getFileExtension(file);
 
       String mediaTypeString =
           MimeMappings.DEFAULT_MIME_MAPPINGS.get(extension);

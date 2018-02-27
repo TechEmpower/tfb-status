@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static tfb.status.util.MoreAssertions.assertInstanceOf;
 import static tfb.status.util.MoreAssertions.assertMediaType;
-import static tfb.status.util.MoreStrings.linesOf;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import tfb.status.bootstrap.TestServices;
+import tfb.status.util.MoreStrings;
 
 /**
  * Tests for {@link EmailSender}.
@@ -69,7 +69,7 @@ public final class EmailSenderTest {
 
     assertIterableEquals(
         List.of("textContent"),
-        linesOf(content));
+        MoreStrings.linesOf(content));
   }
 
   /**
@@ -118,7 +118,7 @@ public final class EmailSenderTest {
 
     assertIterableEquals(
         List.of("textContent"),
-        linesOf(firstContent));
+        MoreStrings.linesOf(firstContent));
 
     BodyPart secondPart = multipart.getBodyPart(1);
 

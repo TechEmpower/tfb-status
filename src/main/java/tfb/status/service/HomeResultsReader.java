@@ -1,6 +1,5 @@
 package tfb.status.service;
 
-import static com.google.common.io.MoreFiles.getFileExtension;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 import static java.util.Comparator.reverseOrder;
@@ -12,6 +11,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.Immutable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -118,7 +118,7 @@ public final class HomeResultsReader {
                Files.newDirectoryStream(directory, "results*.{json,zip}")) {
 
         for (Path file : resultsFiles) {
-          switch (getFileExtension(file)) {
+          switch (MoreFiles.getFileExtension(file)) {
             case "json": json.add(file); break;
             case "zip":  zip.add(file);  break;
 
@@ -128,7 +128,7 @@ public final class HomeResultsReader {
                       + "but we found a file \""
                       + file
                       + "\" with extension \""
-                      + getFileExtension(file)
+                      + MoreFiles.getFileExtension(file)
                       + "\"");
           }
         }

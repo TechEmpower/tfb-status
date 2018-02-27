@@ -7,7 +7,6 @@ import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static tfb.status.util.MoreAssertions.assertMediaType;
-import static tfb.status.util.MoreStrings.linesOf;
 
 import java.util.List;
 import javax.ws.rs.core.Response;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import tfb.status.bootstrap.TestServices;
+import tfb.status.util.MoreStrings;
 
 /**
  * Tests for {@link AssetsHandler}.
@@ -51,7 +51,7 @@ public final class AssetsHandlerTest {
 
       assertIterableEquals(
           List.of("Hello, World!"),
-          linesOf(response.readEntity(String.class)));
+          MoreStrings.linesOf(response.readEntity(String.class)));
     }
   }
 

@@ -1,6 +1,5 @@
 package tfb.status.handler;
 
-import static com.google.common.io.MoreFiles.getFileExtension;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
@@ -8,6 +7,7 @@ import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.MoreFiles;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
@@ -87,7 +87,7 @@ public final class ExportResultsHandler implements HttpHandler {
       }
 
       ParsedResults results;
-      switch (getFileExtension(requestedFile)) {
+      switch (MoreFiles.getFileExtension(requestedFile)) {
         case "json":
           try {
             results = objectMapper.readValue(requestedFile.toFile(),

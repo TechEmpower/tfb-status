@@ -2,7 +2,6 @@ package tfb.status.handler;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.common.io.MoreFiles.getFileExtension;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
@@ -19,6 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Table;
+import com.google.common.io.MoreFiles;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
@@ -126,7 +126,7 @@ public final class AttributesPageHandler implements HttpHandler {
       }
 
       if (!Files.isRegularFile(requestedFile)
-          || !getFileExtension(requestedFile).equals("zip")) {
+          || !MoreFiles.getFileExtension(requestedFile).equals("zip")) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }
