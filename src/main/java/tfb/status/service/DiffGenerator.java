@@ -1,8 +1,6 @@
 package tfb.status.service;
 
 import static java.util.Comparator.comparing;
-import static tfb.status.service.ParsedResultsUtils.TEST_TYPES;
-import static tfb.status.service.ParsedResultsUtils.getRps;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
@@ -73,9 +71,9 @@ public final class DiffGenerator {
 
     List<DiffLine> lines = new ArrayList<>();
     for (String framework : distinctFrameworks) {
-      for (String testType : TEST_TYPES) {
-        double oldRps = getRps(oldResults, testType, framework);
-        double newRps = getRps(newResults, testType, framework);
+      for (String testType : ParsedResults.TEST_TYPES) {
+        double oldRps = oldResults.rps(testType, framework);
+        double newRps = newResults.rps(testType, framework);
         if (oldRps != 0d || newRps != 0d) {
           lines.add(
               new DiffLine(

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -186,6 +187,77 @@ public final class ParsedResults {
     this.queryIntervals = Objects.requireNonNull(queryIntervals);
     this.concurrencyLevels = Objects.requireNonNull(concurrencyLevels);
     this.git = git;
+  }
+
+  /**
+   * Returns the total number of requests achieved by a framework in a test.
+   */
+  public long requests(String testType, String framework) {
+    Objects.requireNonNull(testType);
+    Objects.requireNonNull(framework);
+
+    ImmutableList<SingleWrkExecution> executions =
+        executionsForTestType(testType).get(framework);
+
+    switch (testType) {
+      //
+      // For these test types, we vary the concurrency (simultaneous requests
+      // from the client) and then use the highest total requests from any
+      // concurrency level.
+      //
+      case "json":
+      case "plaintext":
+      case "db":
+      case "fortune":
+        return executions.stream()
+                         .mapToLong(execution -> execution.totalRequests)
+                         .max()
+                         .orElse(0);
+
+      //
+      // For these test types, we vary the number of database queries per
+      // request and then use the total requests of the wrk execution for the
+      // highest number of queries, which is the last execution in the list.
+      //
+      case "query":
+      case "update":
+      case "cached_query":
+        if (executions.isEmpty())
+          return 0;
+        else
+          return executions.get(executions.size() - 1).totalRequests;
+
+      default:
+        return 0;
+    }
+  }
+
+  /**
+   * Returns the requests per second achieved by a framework in a test.
+   */
+  public double rps(String testType, String framework) {
+    Objects.requireNonNull(testType);
+    Objects.requireNonNull(framework);
+    long requests = requests(testType, framework);
+    return ((double) requests) / duration;
+  }
+
+  /**
+   * Extracts the raw results data for the given test type, grouping by
+   * framework (the keys of the returned multimap are framework names).
+   */
+  private ImmutableListMultimap<String, SingleWrkExecution>
+  executionsForTestType(String testType) {
+    switch (testType) {
+      case "json":         return rawData.json;
+      case "plaintext":    return rawData.plaintext;
+      case "db":           return rawData.db;
+      case "query":        return rawData.query;
+      case "update":       return rawData.update;
+      case "fortune":      return rawData.fortune;
+      case "cached_query": return rawData.cachedQuery;
+      default:             return ImmutableListMultimap.of();
+    }
   }
 
   @Immutable
@@ -411,4 +483,16 @@ public final class ParsedResults {
       this.uuid = uuid;
     }
   }
+
+  /**
+   * The set of all known test types.
+   */
+  public static final ImmutableSet<String> TEST_TYPES =
+      ImmutableSet.of("json",
+                      "plaintext",
+                      "db",
+                      "query",
+                      "update",
+                      "fortune",
+                      "cached_query");
 }

@@ -8,8 +8,6 @@ import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
-import static tfb.status.service.ParsedResultsUtils.TEST_TYPES;
-import static tfb.status.service.ParsedResultsUtils.getRps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -97,13 +95,13 @@ public final class TimelinePageHandler implements HttpHandler {
       String selectedFramework = matcher.group("framework");
       String selectedTestType = matcher.group("testType");
 
-      if (!TEST_TYPES.contains(selectedTestType)) {
+      if (!ParsedResults.TEST_TYPES.contains(selectedTestType)) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }
 
       Set<String> allFrameworks = new HashSet<>();
-      Set<String> absentTestTypes = new HashSet<>(TEST_TYPES);
+      Set<String> absentTestTypes = new HashSet<>(ParsedResults.TEST_TYPES);
       List<DataPointView> dataPoints = new ArrayList<>();
 
       for (Path zipFile : listFiles(resultsDirectory, "*.zip")) {
@@ -138,14 +136,12 @@ public final class TimelinePageHandler implements HttpHandler {
         allFrameworks.addAll(results.frameworks);
 
         absentTestTypes.removeIf(
-            testType -> getRps(/* results= */ results,
-                               /* testType= */ testType,
-                               /* framework= */ selectedFramework)
+            testType -> results.rps(/* testType= */ testType,
+                                    /* framework= */ selectedFramework)
                         != 0);
 
-        double rps = getRps(/* results= */ results,
-                            /* testType= */ selectedTestType,
-                            /* framework= */ selectedFramework);
+        double rps = results.rps(/* testType= */ selectedTestType,
+                                 /* framework= */ selectedFramework);
 
         if (rps != 0) {
           dataPoints.add(
@@ -163,13 +159,15 @@ public final class TimelinePageHandler implements HttpHandler {
       dataPoints.sort(comparing(dataPoint -> dataPoint.time));
 
       ImmutableList<TestTypeOptionView> testTypeOptions =
-          TEST_TYPES.stream()
-                    .sorted()
-                    .map(testType -> new TestTypeOptionView(
-                         /* testType= */ testType,
-                         /* isPresent= */ !absentTestTypes.contains(testType),
-                         /* isSelected= */ testType.equals(selectedTestType)))
-                    .collect(toImmutableList());
+          ParsedResults
+              .TEST_TYPES
+              .stream()
+              .sorted()
+              .map(testType -> new TestTypeOptionView(
+                  /* testType= */ testType,
+                  /* isPresent= */ !absentTestTypes.contains(testType),
+                  /* isSelected= */ testType.equals(selectedTestType)))
+              .collect(toImmutableList());
 
       ImmutableList<FrameworkOptionView> frameworkOptions =
           allFrameworks.stream()
