@@ -41,7 +41,7 @@ public final class HttpServer {
       Path keyStoreFile = Paths.get(config.keyStore.path);
 
       SSLContext sslContext =
-          KeyStores.configuredSslContext(
+          KeyStores.readKeyStoreAsSslContext(
               /* keyStoreBytes= */ MoreFiles.asByteSource(keyStoreFile),
               /* password= */ config.keyStore.password.toCharArray());
 

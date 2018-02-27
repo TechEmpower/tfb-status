@@ -18,17 +18,41 @@ public final class KeyStores {
   }
 
   /**
-   * Returns an {@link SSLContext} instance for a Java KeyStore (JKS) file.
+   * Produces a {@link KeyStore} instance from a Java KeyStore (JKS) file.
+   *
+   * @param keyStoreBytes the bytes of the key store
+   * @param password the password for the key store
+   * @return a key store
+   * @throws InvalidKeyStoreException if the key store cannot be loaded
+   */
+  public static KeyStore readKeyStore(ByteSource keyStoreBytes,
+                                      char[] password) {
+
+    Objects.requireNonNull(keyStoreBytes);
+    Objects.requireNonNull(password);
+
+    KeyStore keyStore = newDefaultKeyStore();
+    try (InputStream in = keyStoreBytes.openStream()) {
+      keyStore.load(in, password);
+    } catch (IOException | GeneralSecurityException e) {
+      throw new InvalidKeyStoreException(e);
+    }
+
+    return keyStore;
+  }
+
+  /**
+   * Produces an {@link SSLContext} instance from a Java KeyStore (JKS) file.
    *
    * @param keyStoreBytes the bytes of the key store
    * @param password the password for the key store
    * @return an SSL context
    * @throws InvalidKeyStoreException if the key store cannot be loaded
    */
-  public static SSLContext configuredSslContext(ByteSource keyStoreBytes,
-                                                char[] password) {
+  public static SSLContext readKeyStoreAsSslContext(ByteSource keyStoreBytes,
+                                                    char[] password) {
 
-    KeyStore keyStore = configuredKeyStore(keyStoreBytes, password);
+    KeyStore keyStore = readKeyStore(keyStoreBytes, password);
 
     KeyManagerFactory keyManagerFactory = newDefaultKeyManagerFactory();
     try {
@@ -48,29 +72,6 @@ public final class KeyStores {
     }
 
     return sslContext;
-  }
-
-  /**
-   * Returns a {@link KeyStore} instance for a Java KeyStore (JKS) file.
-   *
-   * @param keyStoreBytes the bytes of the key store
-   * @param password the password for the key store
-   * @return a key store
-   * @throws InvalidKeyStoreException if the key store cannot be loaded
-   */
-  public static KeyStore configuredKeyStore(ByteSource keyStoreBytes,
-                                            char[] password) {
-    Objects.requireNonNull(keyStoreBytes);
-    Objects.requireNonNull(password);
-
-    KeyStore keyStore = newDefaultKeyStore();
-    try (InputStream in = keyStoreBytes.openStream()) {
-      keyStore.load(in, password);
-    } catch (IOException | GeneralSecurityException e) {
-      throw new InvalidKeyStoreException(e);
-    }
-
-    return keyStore;
   }
 
   /**

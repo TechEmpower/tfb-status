@@ -16,28 +16,28 @@ import org.junit.jupiter.api.Test;
  */
 public final class KeyStoresTest {
   /**
-   * Tests that {@link KeyStores#configuredSslContext(ByteSource, char[])} is
-   * able to open a valid key store file.
+   * Tests that {@link KeyStores#readKeyStore(ByteSource, char[])} is able to
+   * open a valid key store file.
    */
   @Test
-  public void testConfiguredSslContext() {
+  public void testReadKeyStore() throws GeneralSecurityException {
     URL url = Resources.getResource("localhost.jks");
     ByteSource bytes = Resources.asByteSource(url);
     char[] password = "password".toCharArray();
-    SSLContext sslContext = KeyStores.configuredSslContext(bytes, password);
-    assertEquals("TLS", sslContext.getProtocol());
+    KeyStore keyStore = KeyStores.readKeyStore(bytes, password);
+    assertNotNull(keyStore.getKey("localhost", password));
   }
 
   /**
-   * Tests that {@link KeyStores#configuredKeyStore(ByteSource, char[])} is able
-   * to open a valid key store file.
+   * Tests that {@link KeyStores#readKeyStoreAsSslContext(ByteSource, char[])}
+   * is able to open a valid key store file.
    */
   @Test
-  public void testConfiguredKeyStore() throws GeneralSecurityException {
+  public void testReadKeyStoreAsSslContext() {
     URL url = Resources.getResource("localhost.jks");
     ByteSource bytes = Resources.asByteSource(url);
     char[] password = "password".toCharArray();
-    KeyStore keyStore = KeyStores.configuredKeyStore(bytes, password);
-    assertNotNull(keyStore.getKey("localhost", password));
+    SSLContext sslContext = KeyStores.readKeyStoreAsSslContext(bytes, password);
+    assertEquals("TLS", sslContext.getProtocol());
   }
 }

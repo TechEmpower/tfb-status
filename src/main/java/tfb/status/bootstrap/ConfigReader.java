@@ -32,7 +32,7 @@ public final class ConfigReader {
    * @throws InvalidConfigFileException if there is a problem reading the
    *         configuration file
    */
-  public static ApplicationConfig readFilePath(String filePath) {
+  public static ApplicationConfig readFile(String filePath) {
     Objects.requireNonNull(filePath);
     Path file;
     try {

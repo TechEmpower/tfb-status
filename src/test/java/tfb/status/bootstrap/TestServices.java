@@ -11,6 +11,7 @@ import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Clock;
 import java.util.Base64;
@@ -197,11 +198,14 @@ public final class TestServices {
 
     builder.register(SseFeature.class);
 
-    if (config.keyStore != null)
+    if (config.keyStore != null) {
+      Path keyStoreFile = Paths.get(config.keyStore.path);
+
       builder.trustStore(
-          KeyStores.configuredKeyStore(
-              MoreFiles.asByteSource(Paths.get(config.keyStore.path)),
-              config.keyStore.password.toCharArray()));
+          KeyStores.readKeyStore(
+              /* keyStoreBytes= */ MoreFiles.asByteSource(keyStoreFile),
+              /* password= */ config.keyStore.password.toCharArray()));
+    }
 
     return builder.build();
   }
