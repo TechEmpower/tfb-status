@@ -47,7 +47,7 @@ import tfb.status.view.HomePageView.ResultsJsonView;
 import tfb.status.view.HomePageView.ResultsView;
 import tfb.status.view.HomePageView.ResultsZipView;
 import tfb.status.view.HomePageView.ResultsZipView.Failure;
-import tfb.status.view.ParsedResults;
+import tfb.status.view.Results;
 
 /**
  * Loads previously-uploaded results for display on the home page.
@@ -216,9 +216,9 @@ public final class HomeResultsReader {
     Objects.requireNonNull(jsonFile);
     Objects.requireNonNull(directory);
 
-    ParsedResults results;
+    Results results;
     try {
-      results = objectMapper.readValue(jsonFile.toFile(), ParsedResults.class);
+      results = objectMapper.readValue(jsonFile.toFile(), Results.class);
     } catch (IOException e) {
       logger.warn("Exception reading json file {}", jsonFile, e);
       return null;
@@ -432,13 +432,13 @@ public final class HomeResultsReader {
     // Fortunately, in practice the results.json file is one of the first
     // entries, so iteration finds it quickly.
     //
-    ParsedResults results;
+    Results results;
     try {
       results =
           ZipFiles.readZipEntry(
               /* zipFile= */ zipFile,
               /* entryPath= */ "results.json",
-              /* entryReader= */ in -> objectMapper.readValue(in, ParsedResults.class));
+              /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
     } catch (IOException e) {
       logger.warn("Exception reading zip file {}", zipFile, e);
       return null;
@@ -616,9 +616,9 @@ public final class HomeResultsReader {
 
   /**
    * {@code true} if the message looks like a timestamp in the {@link
-   * ParsedResults#completed} map.
+   * Results#completed} map.
    *
-   * @param message a value from the {@link ParsedResults#completed} map
+   * @param message a value from the {@link Results#completed} map
    * @return {@code true} if the value is a timestamp, indicating that the
    *         framework started and stopped correctly, or {@code false} if the
    *         message is an error message, indicating that the framework did not

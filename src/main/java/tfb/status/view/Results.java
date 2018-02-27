@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
  * A representation of the results.json file from a TFB run.
  */
 @Immutable
-public final class ParsedResults {
+public final class Results {
   /**
    * The universally unique id for this set of results, or {@code null} if that
    * information is unavailable.
@@ -124,7 +124,7 @@ public final class ParsedResults {
   public final GitInfo git;
 
   @JsonCreator
-  public ParsedResults(
+  public Results(
 
       @Nullable
       @JsonProperty(value = "uuid", required = false)
@@ -468,12 +468,12 @@ public final class ParsedResults {
 
   /**
    * A slimmed-down view of a results.json file that only includes its
-   * (optional) {@link ParsedResults#uuid} field.
+   * (optional) {@link Results#uuid} field.
    */
   @Immutable
   public static final class UuidOnly {
     /**
-     * @see ParsedResults#uuid
+     * @see Results#uuid
      */
     @Nullable
     public final String uuid;

@@ -34,7 +34,7 @@ import tfb.status.config.FileStoreConfig;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
-import tfb.status.view.ParsedResults;
+import tfb.status.view.Results;
 import tfb.status.view.TimelinePageView;
 import tfb.status.view.TimelinePageView.DataPointView;
 import tfb.status.view.TimelinePageView.FrameworkOptionView;
@@ -95,23 +95,23 @@ public final class TimelinePageHandler implements HttpHandler {
       String selectedFramework = matcher.group("framework");
       String selectedTestType = matcher.group("testType");
 
-      if (!ParsedResults.TEST_TYPES.contains(selectedTestType)) {
+      if (!Results.TEST_TYPES.contains(selectedTestType)) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }
 
       Set<String> allFrameworks = new HashSet<>();
-      Set<String> absentTestTypes = new HashSet<>(ParsedResults.TEST_TYPES);
+      Set<String> absentTestTypes = new HashSet<>(Results.TEST_TYPES);
       List<DataPointView> dataPoints = new ArrayList<>();
 
       for (Path zipFile : listFiles(resultsDirectory, "*.zip")) {
-        ParsedResults results;
+        Results results;
         try {
           results =
               ZipFiles.readZipEntry(
                   /* zipFile= */ zipFile,
                   /* entryPath= */ "results.json",
-                  /* entryReader= */ in -> objectMapper.readValue(in, ParsedResults.class));
+                  /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
         } catch (IOException e) {
           logger.warn(
               "Ignoring results.zip file {} whose results.json file "
@@ -159,7 +159,7 @@ public final class TimelinePageHandler implements HttpHandler {
       dataPoints.sort(comparing(dataPoint -> dataPoint.time));
 
       ImmutableList<TestTypeOptionView> testTypeOptions =
-          ParsedResults
+          Results
               .TEST_TYPES
               .stream()
               .sorted()

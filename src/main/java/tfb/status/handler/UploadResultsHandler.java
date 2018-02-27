@@ -51,8 +51,8 @@ import tfb.status.service.EmailSender;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
-import tfb.status.view.ParsedResults;
-import tfb.status.view.ParsedResults.UuidOnly;
+import tfb.status.view.Results;
+import tfb.status.view.Results.UuidOnly;
 
 /**
  * Handles requests to upload a file containing results from a TFB run.  The
@@ -199,8 +199,8 @@ public final class UploadResultsHandler implements HttpHandler {
     }
 
     /**
-     * Returns the {@linkplain ParsedResults#uuid uuid} of the given file or
-     * {@code null} if the uuid cannot be determined.
+     * Returns the {@linkplain Results#uuid uuid} of the given file or {@code
+     * null} if the uuid cannot be determined.
      */
     @Nullable
     abstract String tryReadUuid(Path file);
@@ -255,7 +255,7 @@ public final class UploadResultsHandler implements HttpHandler {
     boolean isValidNewFile(Path newJsonFile) {
       Objects.requireNonNull(newJsonFile);
       try {
-        objectMapper.readValue(newJsonFile.toFile(), ParsedResults.class);
+        objectMapper.readValue(newJsonFile.toFile(), Results.class);
         return true;
       } catch (IOException e) {
         logger.warn("Exception validating json file {}", newJsonFile, e);
@@ -317,13 +317,13 @@ public final class UploadResultsHandler implements HttpHandler {
     @Override
     boolean isValidNewFile(Path newZipFile) {
       Objects.requireNonNull(newZipFile);
-      ParsedResults results;
+      Results results;
       try {
         results =
             ZipFiles.readZipEntry(
                 /* zipFile= */ newZipFile,
                 /* entryPath= */ "results.json",
-                /* entryReader= */ in -> objectMapper.readValue(in, ParsedResults.class));
+                /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
       } catch (IOException e) {
         logger.warn("Exception validating zip file {}", newZipFile, e);
         return false;
@@ -390,9 +390,9 @@ public final class UploadResultsHandler implements HttpHandler {
     private void definitelySendEmail(Path newZipFile,
                                      byte[] rawResultsBytes) {
 
-      ParsedResults results;
+      Results results;
       try {
-        results = objectMapper.readValue(rawResultsBytes, ParsedResults.class);
+        results = objectMapper.readValue(rawResultsBytes, Results.class);
       } catch (IOException e) {
         logger.warn(
             "Ignoring new zip file {} because of a JSON parse error",
@@ -404,7 +404,7 @@ public final class UploadResultsHandler implements HttpHandler {
       try {
         minifiedResultsBytes =
             objectMapper.writeValueAsBytes(
-                new ParsedResults.TfbWebsiteView(
+                new Results.TfbWebsiteView(
                     /* name= */ results.name,
                     /* completionTime= */ results.completionTime,
                     /* duration= */ results.duration,
@@ -422,7 +422,7 @@ public final class UploadResultsHandler implements HttpHandler {
       boolean isTestMetadataPresent = testMetadataBytes != null;
       Path previousZipFile = findPreviousZipFile(newZipFile);
 
-      ParsedResults previousResults =
+      Results previousResults =
           (previousZipFile == null)
               ? null
               : findResults(previousZipFile);
@@ -511,7 +511,7 @@ public final class UploadResultsHandler implements HttpHandler {
       return previousZipFile;
     }
 
-    private boolean areResultsComparable(ParsedResults a, ParsedResults b) {
+    private boolean areResultsComparable(Results a, Results b) {
       Objects.requireNonNull(a);
       Objects.requireNonNull(b);
       return a.environmentDescription != null
@@ -542,11 +542,11 @@ public final class UploadResultsHandler implements HttpHandler {
     }
 
     @Nullable
-    private ParsedResults findResults(Path zipFile) {
+    private Results findResults(Path zipFile) {
       return tryReadZipEntry(
           /* zipFile= */ zipFile,
           /* entryPath= */ "results.json",
-          /* entryReader= */ in -> objectMapper.readValue(in, ParsedResults.class));
+          /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
     }
 
     @Nullable
@@ -572,7 +572,7 @@ public final class UploadResultsHandler implements HttpHandler {
       return value;
     }
 
-    private String prepareEmailBody(ParsedResults results,
+    private String prepareEmailBody(Results results,
                                     boolean isTestMetadataPresent,
                                     @Nullable String previousCommitId,
                                     @Nullable String newCommitId) {

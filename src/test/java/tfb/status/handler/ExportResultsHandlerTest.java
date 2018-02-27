@@ -10,7 +10,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import tfb.status.bootstrap.TestServices;
-import tfb.status.view.ParsedResults;
+import tfb.status.view.Results;
 
 /**
  * Tests for {@link ExportResultsHandler}.
@@ -45,9 +45,9 @@ public final class ExportResultsHandlerTest {
 
       byte[] responseBytes = response.readEntity(byte[].class);
 
-      ParsedResults.TfbWebsiteView minifiedResults =
+      Results.TfbWebsiteView minifiedResults =
           objectMapper.readValue(responseBytes,
-                                 ParsedResults.TfbWebsiteView.class);
+                                 Results.TfbWebsiteView.class);
 
       assertEquals(
           "Continuous Benchmarking Run 2017-12-26 06:48:23",
@@ -70,9 +70,9 @@ public final class ExportResultsHandlerTest {
 
       byte[] responseBytes = response.readEntity(byte[].class);
 
-      ParsedResults.TfbWebsiteView minifiedResults =
+      Results.TfbWebsiteView minifiedResults =
           objectMapper.readValue(responseBytes,
-                                 ParsedResults.TfbWebsiteView.class);
+                                 Results.TfbWebsiteView.class);
 
       assertEquals(
           "Continuous Benchmarking Run 2017-12-26 06:48:23",

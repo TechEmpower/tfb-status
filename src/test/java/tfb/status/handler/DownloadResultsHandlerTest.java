@@ -14,7 +14,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import tfb.status.bootstrap.TestServices;
-import tfb.status.view.ParsedResults;
+import tfb.status.view.Results;
 
 /**
  * Tests for {@link DownloadResultsHandler}.
@@ -49,8 +49,7 @@ public final class DownloadResultsHandlerTest {
 
       byte[] responseBytes = response.readEntity(byte[].class);
 
-      ParsedResults results = objectMapper.readValue(responseBytes,
-                                                     ParsedResults.class);
+      Results results = objectMapper.readValue(responseBytes, Results.class);
 
       assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);
     }
@@ -71,7 +70,7 @@ public final class DownloadResultsHandlerTest {
 
       byte[] responseBytes = response.readEntity(byte[].class);
 
-      ParsedResults results;
+      Results results;
       try (ZipInputStream zip =
                new ZipInputStream(new ByteArrayInputStream(responseBytes))) {
 
@@ -81,7 +80,7 @@ public final class DownloadResultsHandlerTest {
 
         assertNotNull(entry, "results.json entry not found");
 
-        results = objectMapper.readValue(zip, ParsedResults.class);
+        results = objectMapper.readValue(zip, Results.class);
       }
 
       assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);

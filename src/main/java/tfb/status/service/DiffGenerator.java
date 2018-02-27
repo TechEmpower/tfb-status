@@ -16,7 +16,7 @@ import javax.inject.Singleton;
 import tfb.status.view.DiffView;
 import tfb.status.view.DiffView.DiffLineView;
 import tfb.status.view.DiffView.DiffSummaryView;
-import tfb.status.view.ParsedResults;
+import tfb.status.view.Results;
 
 /**
  * Generates diffs between pairs of benchmark results.
@@ -38,7 +38,7 @@ public final class DiffGenerator {
    * @param newResults the new benchmark results
    * @return an HTML document string
    */
-  public String diff(ParsedResults oldResults, ParsedResults newResults) {
+  public String diff(Results oldResults, Results newResults) {
     return render(lines(oldResults, newResults));
   }
 
@@ -60,8 +60,8 @@ public final class DiffGenerator {
   /**
    * Generates a logical diff between the two sets of results.
    */
-  private ImmutableList<DiffLine> lines(ParsedResults oldResults,
-                                        ParsedResults newResults) {
+  private ImmutableList<DiffLine> lines(Results oldResults,
+                                        Results newResults) {
     Objects.requireNonNull(oldResults);
     Objects.requireNonNull(newResults);
 
@@ -71,7 +71,7 @@ public final class DiffGenerator {
 
     List<DiffLine> lines = new ArrayList<>();
     for (String framework : distinctFrameworks) {
-      for (String testType : ParsedResults.TEST_TYPES) {
+      for (String testType : Results.TEST_TYPES) {
         double oldRps = oldResults.rps(testType, framework);
         double newRps = newResults.rps(testType, framework);
         if (oldRps != 0d || newRps != 0d) {

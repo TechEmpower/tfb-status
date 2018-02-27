@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
-import tfb.status.view.ParsedResults;
+import tfb.status.view.Results;
 
 /**
  * Handles requests to export results.json files in the format used by the TFB
@@ -86,12 +86,11 @@ public final class ExportResultsHandler implements HttpHandler {
         return;
       }
 
-      ParsedResults results;
+      Results results;
       switch (MoreFiles.getFileExtension(requestedFile)) {
         case "json":
           try {
-            results = objectMapper.readValue(requestedFile.toFile(),
-                                             ParsedResults.class);
+            results = objectMapper.readValue(requestedFile.toFile(), Results.class);
           } catch (IOException e) {
             logger.warn("Exception reading json file {}", requestedFile, e);
             exchange.setStatusCode(BAD_REQUEST);
@@ -105,7 +104,7 @@ public final class ExportResultsHandler implements HttpHandler {
                 ZipFiles.readZipEntry(
                     /* zipFile= */ requestedFile,
                     /* entryPath= */ "results.json",
-                    /* entryReader= */ in -> objectMapper.readValue(in, ParsedResults.class));
+                    /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
           } catch (IOException e) {
             logger.warn("Error reading zip file {}", requestedFile, e);
             exchange.setStatusCode(BAD_REQUEST);
@@ -126,7 +125,7 @@ public final class ExportResultsHandler implements HttpHandler {
 
       String json =
           objectMapper.writeValueAsString(
-              new ParsedResults.TfbWebsiteView(
+              new Results.TfbWebsiteView(
                   /* name= */ results.name,
                   /* completionTime= */ results.completionTime,
                   /* duration= */ results.duration,
