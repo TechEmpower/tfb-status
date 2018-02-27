@@ -33,7 +33,8 @@ public final class InvalidConfigFileException extends RuntimeException {
    * @param cause the cause of this exception
    */
   public InvalidConfigFileException(String message, Throwable cause) {
-    super(Objects.requireNonNull(message), Objects.requireNonNull(cause));
+    super(Objects.requireNonNull(message),
+          Objects.requireNonNull(cause));
   }
 
   private static final long serialVersionUID = 0;
