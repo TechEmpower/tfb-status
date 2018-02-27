@@ -216,17 +216,17 @@ public final class HomeResultsReader {
     Objects.requireNonNull(jsonFile);
     Objects.requireNonNull(directory);
 
-    ParsedResults parsed;
+    ParsedResults results;
     try {
-      parsed = objectMapper.readValue(jsonFile.toFile(), ParsedResults.class);
+      results = objectMapper.readValue(jsonFile.toFile(), ParsedResults.class);
     } catch (IOException e) {
       logger.warn("Exception reading json file {}", jsonFile, e);
       return null;
     }
 
-    String uuid = parsed.uuid;
-    String name = parsed.name;
-    String environmentDescription = parsed.environmentDescription;
+    String uuid = results.uuid;
+    String name = results.name;
+    String environmentDescription = results.environmentDescription;
 
     // The "completed" map in the results includes frameworks that won't show up
     // in the "succeeded" or "failed" maps because they had an error before they
@@ -236,7 +236,7 @@ public final class HomeResultsReader {
     int frameworksWithCleanSetup = 0;
     int frameworksWithSetupProblems = 0;
 
-    for (Map.Entry<String, String> entry : parsed.completed.entrySet()) {
+    for (Map.Entry<String, String> entry : results.completed.entrySet()) {
       String framework = entry.getKey();
       String message = entry.getValue();
       if (isCompletedTimestamp(message))
@@ -248,19 +248,19 @@ public final class HomeResultsReader {
     int completedFrameworks =
         frameworksWithCleanSetup + frameworksWithSetupProblems;
 
-    int totalFrameworks = parsed.frameworks.size();
-    int successfulTests = parsed.succeeded.values().size();
-    int failedTests = parsed.failed.values().size();
+    int totalFrameworks = results.frameworks.size();
+    int successfulTests = results.succeeded.values().size();
+    int failedTests = results.failed.values().size();
 
     LocalDateTime startTime =
-        (parsed.startTime == null)
+        (results.startTime == null)
             ? null
-            : epochMillisToDateTime(parsed.startTime, clock.getZone());
+            : epochMillisToDateTime(results.startTime, clock.getZone());
 
     LocalDateTime completionTime =
-        (parsed.completionTime == null)
+        (results.completionTime == null)
             ? null
-            : epochMillisToDateTime(parsed.completionTime, clock.getZone());
+            : epochMillisToDateTime(results.completionTime, clock.getZone());
 
     Duration elapsedDuration;
     Duration estimatedRemainingDuration;
@@ -432,9 +432,9 @@ public final class HomeResultsReader {
     // Fortunately, in practice the results.json file is one of the first
     // entries, so iteration finds it quickly.
     //
-    ParsedResults parsed;
+    ParsedResults results;
     try {
-      parsed =
+      results =
           ZipFiles.readZipEntry(
               /* zipFile= */ zipFile,
               /* entryPath= */ "results.json",
@@ -448,16 +448,16 @@ public final class HomeResultsReader {
     // If the zip doesn't contain a results.json at all, then we have nothing
     // useful to say to users about it, and we want to pretend it doesn't exist.
     //
-    if (parsed == null)
+    if (results == null)
       return null;
 
-    String uuid = parsed.uuid;
+    String uuid = results.uuid;
     Path relativePath = directory.relativize(zipFile);
     String fileName = Joiner.on('/').join(relativePath);
 
     List<Failure> failures = new ArrayList<>();
 
-    parsed.failed.inverse().asMap().forEach(
+    results.failed.inverse().asMap().forEach(
         (framework, failedTestTypes) ->
             failures.add(
                 new ResultsZipView.Failure(
@@ -465,9 +465,9 @@ public final class HomeResultsReader {
                     /* failedTestTypes= */ ImmutableList.sortedCopyOf(failedTestTypes),
                     /* logFileName= */ fileName + "/" + framework + "/out.txt")));
 
-    parsed.completed.forEach(
+    results.completed.forEach(
         (framework, message) -> {
-          if (!parsed.failed.inverse().containsKey(framework)
+          if (!results.failed.inverse().containsKey(framework)
               && !isCompletedTimestamp(message)) {
             failures.add(
                 new ResultsZipView.Failure(
