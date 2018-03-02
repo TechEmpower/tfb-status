@@ -11,6 +11,6 @@ body {
   line-height: 1.5;
 }
 
-.failures > ul:nth-child(2) {
+.failures > ul {
   columns: 20em auto;
 }
