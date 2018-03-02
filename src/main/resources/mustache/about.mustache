@@ -12,7 +12,8 @@ The HTML of the about page.
 
 {{$body}}
 
-<p>Uptime: {{uptime}}
+<p>For an explanation of what this website is, see the
+<a href="https://github.com/TechEmpower/tfb-status">tfb-status project on GitHub</a>.
 
 {{^gitProperties.isEmpty}}
 <p>Here is the state of the local git repository at the time this deployment of
@@ -30,6 +31,8 @@ tfb-status was built:
 <a href="https://github.com/ktoso/maven-git-commit-id-plugin">maven git commit id plugin</a>.
 
 {{/gitProperties.isEmpty}}
+
+<p>Uptime: {{uptime}}
 
 {{/body}}
 
