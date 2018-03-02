@@ -15,8 +15,8 @@ The HTML of the results detail page.
 {{/json}}
 
 {{#uuid}}
-Run ID: {{uuid}}<br>
-<a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
+  Run ID: <code>{{uuid}}</code><br>
+  <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
 {{/uuid}}
 
 {{#json}}
@@ -46,10 +46,13 @@ Run ID: {{uuid}}<br>
 {{#zip}}
   {{^zip.failures.isEmpty}}
     <p class="failures">Logs for frameworks with test failures:<br>
+    <ul>
     {{#zip.failures}}
+      <li>
         <a title="[{{framework}}]{{#failedTestTypes.isEmpty}} had problems starting or stopping{{/failedTestTypes.isEmpty}}{{^failedTestTypes.isEmpty}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}"
            href="/unzip/{{logFileName}}">{{framework}}</a>
     {{/zip.failures}}
+    </ul>
   {{/zip.failures.isEmpty}}
 {{/zip}}
 
