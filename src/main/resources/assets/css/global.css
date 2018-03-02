@@ -10,3 +10,7 @@ body {
   font-size: 14px;
   line-height: 1.5;
 }
+
+.failures > ul:nth-child(2) {
+  columns: 20em auto;
+}
