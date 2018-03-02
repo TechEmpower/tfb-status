@@ -3,10 +3,11 @@
   {{#json}}
     {{json.environmentDescription}}<br>
   {{/json}}
-  {{#uuid}}run id: <b>{{uuid}}</b><br>{{/uuid}}
-  {{#json}}<a href="/raw/{{json.fileName}}">results.json</a><br>{{/json}}
-  {{#zip}}<a href="/raw/{{zip.fileName}}">results.zip</a><br>{{/zip}}
-  {{#uuid}}<a href="/results/{{uuid}}">more about this run</a><br>{{/uuid}}
+  {{#uuid}}
+    Run ID: {{uuid}}<br>
+    <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
+    <a href="/results/{{uuid}}">See more information about this run</a><br>
+  {{/uuid}}
 <td>
   {{#json}}
     {{json.completedFrameworks}}/{{json.totalFrameworks}} frameworks tested<br>
