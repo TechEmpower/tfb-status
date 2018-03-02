@@ -34,16 +34,32 @@ public final class HomePageView {
    */
   @Immutable
   public static final class ResultsView {
-    @Nullable public final String uuid;
     @Nullable public final ResultsJsonView json;
     @Nullable public final ResultsZipView zip;
+    @Nullable public final String uuid;
+    @Nullable public final ResultsGitView git;
 
-    public ResultsView(@Nullable String uuid,
-                       @Nullable ResultsJsonView json,
+    public ResultsView(@Nullable ResultsJsonView json,
                        @Nullable ResultsZipView zip) {
-      this.uuid = uuid;
+
       this.json = json;
       this.zip = zip;
+
+      if (json != null && json.uuid != null) {
+        this.uuid = json.uuid;
+      } else if (zip != null && zip.uuid != null) {
+        this.uuid = zip.uuid;
+      } else {
+        this.uuid = null;
+      }
+
+      if (json != null && json.git != null) {
+        this.git = json.git;
+      } else if (zip != null && zip.git != null) {
+        this.git = zip.git;
+      } else {
+        this.git = null;
+      }
     }
   }
 
@@ -53,6 +69,7 @@ public final class HomePageView {
   @Immutable
   public static final class ResultsJsonView {
     @Nullable public final String uuid;
+    @Nullable public final ResultsGitView git;
     public final String fileName;
     @Nullable public final String name;
     @Nullable public final String environmentDescription;
@@ -69,6 +86,7 @@ public final class HomePageView {
     @Nullable public final String lastUpdated;
 
     public ResultsJsonView(@Nullable String uuid,
+                           @Nullable ResultsGitView git,
                            String fileName,
                            @Nullable String name,
                            @Nullable String environmentDescription,
@@ -84,6 +102,7 @@ public final class HomePageView {
                            @Nullable String elapsedDuration,
                            @Nullable String estimatedRemainingDuration) {
       this.uuid = uuid;
+      this.git = git;
       this.fileName = Objects.requireNonNull(fileName);
       this.name = name;
       this.environmentDescription = environmentDescription;
@@ -107,13 +126,16 @@ public final class HomePageView {
   @Immutable
   public static final class ResultsZipView {
     @Nullable public final String uuid;
+    @Nullable public final ResultsGitView git;
     public final String fileName;
     public final ImmutableList<Failure> failures;
 
     public ResultsZipView(@Nullable String uuid,
+                          @Nullable ResultsGitView git,
                           String fileName,
                           ImmutableList<Failure> failures) {
       this.uuid = uuid;
+      this.git = git;
       this.fileName = Objects.requireNonNull(fileName);
       this.failures = Objects.requireNonNull(failures);
     }
@@ -134,6 +156,24 @@ public final class HomePageView {
         this.failedTestTypes = Objects.requireNonNull(failedTestTypes);
         this.logFileName = Objects.requireNonNull(logFileName);
       }
+    }
+  }
+
+  /**
+   * A view of the state of the TFB git repository where this run was executed.
+   */
+  @Immutable
+  public static final class ResultsGitView {
+    public final String commitId;
+    @Nullable public final String repositoryUrl;
+    @Nullable public final String branchName;
+
+    public ResultsGitView(String commitId,
+                          @Nullable String repositoryUrl,
+                          @Nullable String branchName) {
+      this.commitId = Objects.requireNonNull(commitId);
+      this.repositoryUrl = repositoryUrl;
+      this.branchName = branchName;
     }
   }
 }

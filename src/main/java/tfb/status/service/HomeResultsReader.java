@@ -1,5 +1,6 @@
 package tfb.status.service;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 import static java.util.Comparator.reverseOrder;
@@ -13,7 +14,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.Immutable;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -43,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.util.ZipFiles;
+import tfb.status.view.HomePageView.ResultsGitView;
 import tfb.status.view.HomePageView.ResultsJsonView;
 import tfb.status.view.HomePageView.ResultsView;
 import tfb.status.view.HomePageView.ResultsZipView;
@@ -337,8 +341,19 @@ public final class HomeResultsReader {
     Path relativePath = directory.relativize(jsonFile);
     String fileName = Joiner.on('/').join(relativePath);
 
+    ResultsGitView git;
+    if (results.git == null) {
+      git = null;
+    } else {
+      git = new ResultsGitView(
+          /* commitId= */ results.git.commitId,
+          /* repositoryUrl= */ results.git.repositoryUrl,
+          /* branchName= */ results.git.branchName);
+    }
+
     return new ResultsJsonView(
         /* uuid= */ uuid,
+        /* git= */ git,
         /* fileName= */ fileName,
         /* name= */ name,
         /* environmentDescription= */ environmentDescription,
@@ -480,8 +495,47 @@ public final class HomeResultsReader {
     failures.sort(comparing(failure -> failure.framework,
                             String.CASE_INSENSITIVE_ORDER));
 
+    ResultsGitView git;
+    if (results.git == null) {
+
+      // We used to collect the git commit id as a separate "commit_id.txt" file.
+      String gitCommitId;
+      try {
+        gitCommitId =
+            ZipFiles.readZipEntry(
+                /* zipFile= */ zipFile,
+                /* entryPath= */ "commit_id.txt",
+                /* entryReader= */
+                in -> {
+                  try (BufferedReader reader =
+                           new BufferedReader(new InputStreamReader(in, UTF_8))) {
+                    return reader.readLine();
+                  }
+                });
+      } catch (IOException e) {
+        logger.warn("Exception reading git commit id from zip file {}", zipFile, e);
+        gitCommitId = null;
+      }
+
+      if (gitCommitId == null) {
+        git = null;
+      } else {
+        git = new ResultsGitView(
+            /* commitId= */ gitCommitId,
+            /* repositoryUrl= */ null,
+            /* branchName= */ null);
+      }
+
+    } else {
+      git = new ResultsGitView(
+          /* commitId= */ results.git.commitId,
+          /* repositoryUrl= */ results.git.repositoryUrl,
+          /* branchName= */ results.git.branchName);
+    }
+
     return new ResultsZipView(
         /* uuid= */ uuid,
+        /* git= */ git,
         /* fileName= */ fileName,
         /* failures= */ ImmutableList.copyOf(failures));
   }
@@ -559,20 +613,18 @@ public final class HomeResultsReader {
     for (String uuid : uuids) {
       ResultsJsonView json = jsonFiles.byUuid.get(uuid);
       ResultsZipView zip = zipFiles.byUuid.get(uuid);
-      results.add(new ResultsView(uuid, json, zip));
+      results.add(new ResultsView(json, zip));
     }
 
     for (ResultsJsonView json : jsonFiles.noUuid)
       results.add(
           new ResultsView(
-              /* uuid= */ null,
               /* json= */ json,
               /* zip= */ null));
 
     for (ResultsZipView zip : zipFiles.noUuid)
       results.add(
           new ResultsView(
-              /* uuid= */ null,
               /* json= */ null,
               /* zip= */ zip));
 

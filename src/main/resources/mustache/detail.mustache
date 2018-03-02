@@ -19,6 +19,23 @@ The HTML of the results detail page.
   <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
 {{/uuid}}
 
+{{#git}}
+  <dl>
+    <dt>TFB git commit ID</dt>
+    <dd><code>{{commitId}}</code></dd>
+    <dt>TFB git repository URL</dt>
+    <dd>{{#repositoryUrl}}<code>{{repositoryUrl}}</code>{{/repositoryUrl}}
+        {{^repositoryUrl}}(unknown, probably <code>https://github.com/TechEmpower/FrameworkBenchmarks.git</code>){{/repositoryUrl}}</dd>
+    <dt>TFB git branch name</dt>
+    <dd>{{#branchName}}<code>{{branchName}}</code>{{/branchName}}
+        {{^branchName}}(unknown, probably <code>master</code>){{/branchName}}</dd>
+  </dl>
+{{/git}}
+{{^git}}
+  <p>We don't know what version of TFB was used for this run.
+     That probably means it's an old version.
+{{/git}}
+
 {{#json}}
   <p>
   {{json.completedFrameworks}}/{{json.totalFrameworks}} frameworks tested<br>
