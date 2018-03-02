@@ -9,9 +9,6 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// Do not import io.undertow.UndertowLogger, at least not for use in javadoc
-// only.  Having that import causes many compile-time warnings.
-
 // TODO: Figure out how to disable Undertow's default exception logging.
 
 /**
