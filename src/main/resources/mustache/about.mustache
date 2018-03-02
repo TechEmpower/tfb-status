@@ -15,6 +15,9 @@ The HTML of the about page.
 <p>Uptime: {{uptime}}
 
 {{^gitProperties.isEmpty}}
+<p>Here is the state of the local git repository at the time this deployment of
+tfb-status was built:
+
 <table class="gitPropertiesTable">
 {{#gitProperties}}
   <tr>
@@ -22,6 +25,10 @@ The HTML of the about page.
   <td><pre>{{value}}</pre>
 {{/gitProperties}}
 </table>
+
+<p>This information was collected with the
+<a href="https://github.com/ktoso/maven-git-commit-id-plugin">maven git commit id plugin</a>.
+
 {{/gitProperties.isEmpty}}
 
 {{/body}}
