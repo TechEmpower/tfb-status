@@ -6,6 +6,10 @@ The HTML of the results detail page.
 --------------------------------------------------------------------------------
 }}
 
+{{$styles}}
+<link rel="stylesheet" href="/assets/css/detail.css">
+{{/styles}}
+
 {{$body}}
 {{#result}}
 
@@ -62,8 +66,8 @@ The HTML of the results detail page.
 {{#zip}}{{#json}}<a href="/export/{{json.fileName}}">minified results.json</a><br>{{/json}}{{/zip}}
 {{#zip}}
   {{^zip.failures.isEmpty}}
-    <p class="failures">Logs for frameworks with test failures:<br>
-    <ul>
+    <p>Logs for frameworks with test failures:<br>
+    <ul class="failures">
     {{#zip.failures}}
       <li>
         <a title="[{{framework}}]{{#failedTestTypes.isEmpty}} had problems starting or stopping{{/failedTestTypes.isEmpty}}{{^failedTestTypes.isEmpty}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}"
