@@ -72,9 +72,11 @@ public final class Services {
         bind(config).to(ApplicationConfig.class);
         bind(config.assets).to(AssetsConfig.class);
         bind(config.mustache).to(MustacheConfig.class);
-        bind(config.email).to(EmailConfig.class);
         bind(config.fileStore).to(FileStoreConfig.class);
         bind(config.http).to(HttpServerConfig.class);
+
+        if (config.email != null)
+          bind(config.email).to(EmailConfig.class);
 
         bindAsContract(HttpServer.class).in(Singleton.class);
         bindAsContract(RootHandler.class).in(Singleton.class);

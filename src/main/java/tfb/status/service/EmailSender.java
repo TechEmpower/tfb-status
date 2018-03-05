@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Properties;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.Message;
@@ -21,6 +22,9 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
+import org.jvnet.hk2.annotations.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tfb.status.config.EmailConfig;
 
 /**
@@ -28,17 +32,19 @@ import tfb.status.config.EmailConfig;
  */
 @Singleton
 public final class EmailSender {
-  private final EmailConfig config;
+  @Nullable private final EmailConfig config;
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   /**
    * Constructs a new email sender that uses the provided settings for all the
    * emails it sends.
    *
-   * @param config the configuration for emails
+   * @param config the configuration for emails, or {@code null} if outbound
+   *        emails should be quietly discarded
    */
   @Inject
-  public EmailSender(EmailConfig config) {
-    this.config = Objects.requireNonNull(config);
+  public EmailSender(@Optional @Nullable EmailConfig config) {
+    this.config = config;
   }
 
   /**
@@ -57,6 +63,13 @@ public final class EmailSender {
     Objects.requireNonNull(subject);
     Objects.requireNonNull(textContent);
     Objects.requireNonNull(attachments);
+
+    if (config == null) {
+      logger.info(
+          "Email is not enabled, discarding email with subject \"{}\"",
+          subject);
+      return;
+    }
 
     InternetAddress from = new InternetAddress(config.from);
     InternetAddress to = new InternetAddress(config.to);

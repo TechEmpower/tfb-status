@@ -1,3 +1,6 @@
+# This is required if the rest of the config is empty.
+{}
+
 #http:
 #  host: "::"
 #  port: 80
@@ -18,8 +21,8 @@
 #  accountsDirectory: accounts
 #  attributesDirectory: attributes
 
-email:
-  host: mail.techempower.com
-  port: 25
-  from: mhixson@techempower.com
-  to: mhixson@techempower.com
+#email:
+#  host: mail.techempower.com
+#  port: 25
+#  from: mhixson@techempower.com
+#  to: mhixson@techempower.com

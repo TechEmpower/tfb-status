@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 import java.time.Clock;
 import java.util.Base64;
 import java.util.Objects;
+import javax.annotation.Nullable;
 import javax.mail.internet.MimeMessage;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -34,7 +35,7 @@ public final class TestServices {
   private final MutableTicker ticker;
   private final ServiceLocator serviceLocator;
   private final Client httpClient;
-  private final GreenMail mailServer;
+  @Nullable private final GreenMail mailServer;
 
   public TestServices() {
     this.config = newApplicationConfig();
@@ -43,8 +44,12 @@ public final class TestServices {
     this.serviceLocator = Services.newServiceLocator(config, clock, ticker);
     this.httpClient = newHttpClient(config.http);
 
-    mailServer = newMailServer(config.email);
-    mailServer.start();
+    if (config.email == null)
+      mailServer = null;
+    else {
+      mailServer = newMailServer(config.email);
+      mailServer.start();
+    }
 
     HttpServer httpServer = serviceLocator.getService(HttpServer.class);
     httpServer.start();
@@ -60,7 +65,9 @@ public final class TestServices {
       try {
         serviceLocator.shutdown();
       } finally {
-        mailServer.stop();
+        if (mailServer != null) {
+          mailServer.stop();
+        }
       }
     }
   }
@@ -105,6 +112,10 @@ public final class TestServices {
    * @throws IllegalStateException if there is not exactly one email message
    */
   public synchronized MimeMessage onlyEmailMessage() {
+    if (mailServer == null) {
+      throw new IllegalStateException(
+          "Email was disabled in the application config");
+    }
     MimeMessage[] messages = mailServer.getReceivedMessages();
     try {
       mailServer.purgeEmailFromAllMailboxes();

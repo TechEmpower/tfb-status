@@ -87,19 +87,21 @@ public final class ConfigReader {
         config.http.host,
         config.http.port);
 
-    verifyHostAndPort(
-        "email.host",
-        "email.port",
-        config.email.host,
-        config.email.port);
+    if (config.email != null) {
+      verifyHostAndPort(
+          "email.host",
+          "email.port",
+          config.email.host,
+          config.email.port);
 
-    verifyEmailAddress(
-        "email.from",
-        config.email.from);
+      verifyEmailAddress(
+          "email.from",
+          config.email.from);
 
-    verifyEmailAddress(
-        "email.to",
-        config.email.to);
+      verifyEmailAddress(
+          "email.to",
+          config.email.to);
+    }
 
     return config;
   }

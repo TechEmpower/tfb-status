@@ -12,14 +12,16 @@ import javax.annotation.Nullable;
  */
 @Immutable
 public final class ApplicationConfig {
-  // optional
   public final HttpServerConfig http;
   public final AssetsConfig assets;
   public final MustacheConfig mustache;
   public final FileStoreConfig fileStore;
 
-  // required
-  public final EmailConfig email; // TODO: Make this optional?
+  /**
+   * The configuration for outbound emails, or {@code null} if outbound emails
+   * are disabled.
+   */
+  @Nullable public final EmailConfig email;
 
   @JsonCreator
   public ApplicationConfig(
@@ -40,7 +42,8 @@ public final class ApplicationConfig {
       @JsonProperty(value = "fileStore", required = false)
       FileStoreConfig fileStore,
 
-      @JsonProperty(value = "email", required = true)
+      @Nullable
+      @JsonProperty(value = "email", required = false)
       EmailConfig email) {
 
     this.http =
@@ -63,6 +66,6 @@ public final class ApplicationConfig {
             fileStore,
             () -> new FileStoreConfig(null, null, null));
 
-    this.email = Objects.requireNonNull(email);
+    this.email = email;
   }
 }
