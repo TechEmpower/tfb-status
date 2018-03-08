@@ -56,9 +56,11 @@
     <maven-resources-plugin.version>3.0.2</maven-resources-plugin.version>
     <maven-shade-plugin.version>3.1.0</maven-shade-plugin.version>
     <maven-site-plugin.version>3.6</maven-site-plugin.version>
-    <!-- We're using Surefire 2.19.1 instead of 2.20(.1) because 2.20(.1) is
-         incompatible with JUnit 5.  Hopefully Surefire 2.21 (not yet released)
-         fixes that issue. -->
+    <!-- We're using Surefire 2.19.1 instead of 2.20(.1) or 2.21.0 because the
+         more recent versions are incompatible with JUnit 5.
+
+         Supposedly this is fixed in the next release of JUnit.  See:
+         https://github.com/junit-team/junit5/issues/809-->
     <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
     <mustache.version>0.9.5</mustache.version>
     <nullaway.version>0.3.5</nullaway.version>
