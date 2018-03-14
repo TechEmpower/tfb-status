@@ -33,7 +33,7 @@
     <git-commit-id-plugin.version>2.2.4</git-commit-id-plugin.version>
     <greenmail.version>1.5.7</greenmail.version>
     <guava.version>24.0-jre</guava.version>
-    <hk2.version>2.5.0-b60</hk2.version>
+    <hk2.version>2.5.0-b61</hk2.version>
     <jackson.version>2.9.4</jackson.version>
     <javamail.version>1.6.1</javamail.version>
     <javax-activation.version>1.1.1</javax-activation.version>
