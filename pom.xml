@@ -25,6 +25,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <apiguardian.version>1.0.0</apiguardian.version>
+    <asm.version>6.1</asm.version>
     <bcrypt.version>0.4</bcrypt.version>
     <caffeine.version>2.6.2</caffeine.version>
     <crawler-commons.version>0.9</crawler-commons.version>
@@ -60,7 +61,7 @@
          more recent versions are incompatible with JUnit 5.
 
          Supposedly this is fixed in the next release of JUnit.  See:
-         https://github.com/junit-team/junit5/issues/809-->
+         https://github.com/junit-team/junit5/issues/809 -->
     <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
     <mustache.version>0.9.5</mustache.version>
     <nullaway.version>0.3.5</nullaway.version>
@@ -315,7 +316,7 @@
             <dependency>
               <groupId>org.ow2.asm</groupId>
               <artifactId>asm</artifactId>
-              <version>6.1</version>
+              <version>${asm.version}</version>
             </dependency>
           </dependencies>
         </plugin>
