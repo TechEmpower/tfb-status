@@ -1,11 +1,15 @@
 package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Comparator.comparing;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.MoreFiles;
 import com.google.common.net.MediaType;
 import io.undertow.server.HttpHandler;
@@ -13,17 +17,28 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.util.MimeMappings;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.config.FileStoreConfig;
+import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.DefaultToUtf8Handler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
+import tfb.status.view.DirectoryListingView;
+import tfb.status.view.DirectoryListingView.FileView;
 
 /**
  * Handles requests to extract files from within results.zip files.
@@ -33,9 +48,10 @@ public final class UnzipResultsHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public UnzipResultsHandler(FileStoreConfig fileStoreConfig) {
+  public UnzipResultsHandler(FileStoreConfig fileStoreConfig,
+                             MustacheRenderer mustacheRenderer) {
 
-    HttpHandler handler = new CoreHandler(fileStoreConfig);
+    HttpHandler handler = new CoreHandler(fileStoreConfig, mustacheRenderer);
 
     handler = new DefaultToUtf8Handler(handler);
     handler = new MethodHandler().addMethod(GET, handler);
@@ -51,14 +67,22 @@ public final class UnzipResultsHandler implements HttpHandler {
   }
 
   private static final class CoreHandler implements HttpHandler {
-    private final Path resultsDirectory;
+    final Path resultsDirectory;
+    final MustacheRenderer mustacheRenderer;
 
-    CoreHandler(FileStoreConfig fileStoreConfig) {
+    CoreHandler(FileStoreConfig fileStoreConfig,
+                MustacheRenderer mustacheRenderer) {
       this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
+      this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
+
+      if (exchange.getRelativePath().isEmpty()) {
+        exchange.setStatusCode(NOT_FOUND);
+        return;
+      }
 
       String relativePath = exchange.getRelativePath()
                                     .substring(1); // omit leading slash
@@ -77,14 +101,9 @@ public final class UnzipResultsHandler implements HttpHandler {
         return;
       }
 
-      Path relativeToResultsDir = resultsDirectory.relativize(requestedFile);
+      Path zipFileAndEntry = resultsDirectory.relativize(requestedFile);
 
-      if (relativeToResultsDir.getNameCount() < 2) {
-        exchange.setStatusCode(NOT_FOUND);
-        return;
-      }
-
-      Path zipFile = resultsDirectory.resolve(relativeToResultsDir.getName(0));
+      Path zipFile = resultsDirectory.resolve(zipFileAndEntry.getName(0));
 
       if (!Files.isRegularFile(zipFile)
           || !MoreFiles.getFileExtension(zipFile).equals("zip")) {
@@ -92,30 +111,66 @@ public final class UnzipResultsHandler implements HttpHandler {
         return;
       }
 
-      Path entrySubPath =
-          relativeToResultsDir.subpath(1, relativeToResultsDir.getNameCount());
+      String entrySubPath =
+          (zipFileAndEntry.getNameCount() == 1)
+              ? ""
+              : Joiner.on('/').join(zipFileAndEntry.subpath(1, zipFileAndEntry.getNameCount()));
 
-      // TODO: This is showing a deficiency in the ZipFiles.readZipEntry API.
-      String nonNullIfEntryExists =
-          ZipFiles.readZipEntry(
-              /* zipFile= */ zipFile,
-              /* entryPath= */ Joiner.on('/').join(entrySubPath),
-              /* entryReader= */
-              in -> {
-                MediaType mediaType = guessMediaType(entrySubPath);
+      ZipFiles.readZipEntry(
+          zipFile,
+          entrySubPath,
+          new ZipFiles.ZipEntryHandler() {
 
-                if (mediaType != null)
-                  exchange.getResponseHeaders().put(CONTENT_TYPE,
-                                                    mediaType.toString());
+            @Override
+            public void handleFile(Path file) throws IOException {
+              MediaType mediaType = guessMediaType(file);
 
+              if (mediaType != null)
+                exchange.getResponseHeaders().put(CONTENT_TYPE,
+                                                  mediaType.toString());
+
+              try (InputStream in = Files.newInputStream(file)) {
                 in.transferTo(exchange.getOutputStream());
+              }
+            }
 
-                return ""; // could use any non-null value here
-              });
+            @Override
+            public void handleDirectory(DirectoryStream<Path> files) throws IOException {
+              List<FileView> fileViews = new ArrayList<>();
 
-      if (nonNullIfEntryExists == null) {
-        exchange.setStatusCode(NOT_FOUND);
-      }
+              for (Path file : files) {
+                BasicFileAttributes attributes =
+                    Files.readAttributes(file, BasicFileAttributes.class);
+
+                fileViews.add(
+                    new FileView(
+                        /* fileName= */ file.getFileName().toString(),
+                        /* size= */ attributes.isRegularFile()
+                                            ? fileSizeToString(attributes.size(), /* si= */ true)
+                                            : null,
+                        /* isDirectory= */ attributes.isDirectory()));
+              }
+
+              fileViews.sort(comparing((FileView child) -> !child.isDirectory)
+                                 .thenComparing(child -> child.fileName,
+                                                String.CASE_INSENSITIVE_ORDER));
+
+              DirectoryListingView directoryView =
+                  new DirectoryListingView(
+                      /* zipFileName= */ zipFile.getFileName().toString(),
+                      /* directory= */ entrySubPath,
+                      /* files= */ ImmutableList.copyOf(fileViews));
+
+              String html = mustacheRenderer.render("directory-listing.mustache", directoryView);
+              exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
+              exchange.getResponseSender().send(html, UTF_8);
+            }
+
+            @Override
+            public void handleNotFound() {
+              exchange.setStatusCode(NOT_FOUND);
+            }
+          });
     }
 
     /**
@@ -123,7 +178,7 @@ public final class UnzipResultsHandler implements HttpHandler {
      * is not a good guess.
      */
     @Nullable
-    private static MediaType guessMediaType(Path file) {
+    static MediaType guessMediaType(Path file) {
       String extension = MoreFiles.getFileExtension(file);
 
       String mediaTypeString =
@@ -133,6 +188,15 @@ public final class UnzipResultsHandler implements HttpHandler {
         return null;
 
       return MediaType.parse(mediaTypeString);
+    }
+
+    // https://stackoverflow.com/a/3758880/359008
+    static String fileSizeToString(long bytes, boolean si) {
+      int unit = si ? 1000 : 1024;
+      if (bytes < unit) return bytes + " B";
+      int exp = (int) (Math.log(bytes) / Math.log(unit));
+      String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp-1) + (si ? "" : "i");
+      return String.format(Locale.ROOT, "%.1f %sB", bytes / Math.pow(unit, exp), pre);
     }
   }
 }

@@ -2,6 +2,7 @@ package tfb.status.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
@@ -129,5 +130,81 @@ public final class ZipFiles {
      * @throws IOException if an I/O error occurs while reading the entry
      */
     T read(InputStream in) throws IOException;
+  }
+
+  // TODO: document this
+  public static void readZipEntry(Path zipFile,
+                                  String entryPath,
+                                  ZipEntryHandler entryHandler)
+      throws IOException {
+
+    Objects.requireNonNull(zipFile, "zipFile");
+    Objects.requireNonNull(entryPath, "entryPath");
+    Objects.requireNonNull(entryHandler, "entryHandler");
+
+    FileSystem zipFileSystem;
+    try {
+      zipFileSystem = FileSystems.newFileSystem(zipFile, null);
+    } catch (ProviderNotFoundException | FileSystemNotFoundException e) {
+      throw new IOException(e);
+    }
+
+    try (zipFileSystem) {
+
+      Path validatedEntryPath;
+      try {
+        validatedEntryPath = zipFileSystem.getPath(entryPath);
+      } catch (InvalidPathException e) {
+        throw new IOException(e);
+      }
+
+      if (validatedEntryPath.isAbsolute()) {
+        if (Files.isRegularFile(validatedEntryPath)) {
+          entryHandler.handleFile(validatedEntryPath);
+          return;
+        } else if (Files.isDirectory(validatedEntryPath)) {
+          try (DirectoryStream<Path> files = Files.newDirectoryStream(validatedEntryPath)) {
+            entryHandler.handleDirectory(files);
+          }
+          return;
+        } else {
+          entryHandler.handleNotFound();
+          return;
+        }
+      }
+
+      for (Path root : zipFileSystem.getRootDirectories()) {
+        Path matchingEntry;
+        try (Stream<Path> entries = Files.walk(root)) {
+          matchingEntry =
+              entries.filter(Files::isDirectory)
+                     .map(directory -> directory.resolve(validatedEntryPath))
+                     .filter(Files::exists)
+                     .findAny()
+                     .orElse(null);
+        }
+
+        if (matchingEntry != null) {
+          if (Files.isRegularFile(matchingEntry)) {
+            entryHandler.handleFile(matchingEntry);
+            return;
+          } else if (Files.isDirectory(matchingEntry)) {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(matchingEntry)) {
+              entryHandler.handleDirectory(files);
+            }
+            return;
+          }
+        }
+      }
+
+      entryHandler.handleNotFound();
+    }
+  }
+
+  // TODO: document this
+  public interface ZipEntryHandler {
+    void handleFile(Path file) throws IOException;
+    void handleDirectory(DirectoryStream<Path> files) throws IOException;
+    void handleNotFound() throws IOException;
   }
 }

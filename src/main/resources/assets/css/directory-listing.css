@@ -1,0 +1,29 @@
+/*
+--------------------------------------------------------------------------------
+Styles for the directory listing page.
+--------------------------------------------------------------------------------
+*/
+
+.file {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  max-width: 40em;
+  padding: 4px 8px;
+}
+
+.file:nth-child(2n + 1) {
+  background-color: #eee;
+}
+
+.fileName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileSize {
+  margin-left: 4px;
+  white-space: nowrap;
+}

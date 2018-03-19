@@ -1,0 +1,30 @@
+{{<layout}}
+
+{{!
+--------------------------------------------------------------------------------
+The HTML of the directory listing page.
+--------------------------------------------------------------------------------
+}}
+
+{{$styles}}
+<link rel="stylesheet" href="/assets/css/directory-listing.css">
+{{/styles}}
+
+{{$body}}
+
+<h1>{{zipFileName}}/{{directory}}/</h1>
+
+{{#files}}
+<div class="file">
+  <a class="fileName"
+     href="/unzip/{{zipFileName}}/{{directory}}/{{fileName}}">{{fileName}}{{#isDirectory}}/{{/isDirectory}}</a>
+  <div class="fileSize">
+    {{#size}}{{size}}{{/size}}
+    {{^size}}-{{/size}}
+  </div>
+</div>
+{{/files}}
+
+{{/body}}
+
+{{/layout}}
