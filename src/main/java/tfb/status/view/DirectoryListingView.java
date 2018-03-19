@@ -7,30 +7,34 @@ import javax.annotation.Nullable;
 
 @Immutable
 public final class DirectoryListingView {
-  public final String zipFileName;
-  public final String directory;
-  public final ImmutableList<FileView> files;
+  public final ImmutableList<FileView> parents;
+  public final ImmutableList<FileView> children;
 
-  public DirectoryListingView(String zipFileName,
-                              String directory,
-                              ImmutableList<FileView> files) {
-    this.zipFileName = Objects.requireNonNull(zipFileName);
-    this.directory = Objects.requireNonNull(directory);
-    this.files = Objects.requireNonNull(files);
+  public DirectoryListingView(ImmutableList<FileView> parents,
+                              ImmutableList<FileView> children) {
+    this.parents = Objects.requireNonNull(parents);
+    this.children = Objects.requireNonNull(children);
   }
+
 
   @Immutable
   public static final class FileView {
     public final String fileName;
+    public final String fullPath;
     @Nullable public final String size;
     public final boolean isDirectory;
+    public final boolean isSelected;
 
     public FileView(String fileName,
+                    String fullPath,
                     @Nullable String size,
-                    boolean isDirectory) {
+                    boolean isDirectory,
+                    boolean isSelected) {
       this.fileName = Objects.requireNonNull(fileName);
+      this.fullPath = Objects.requireNonNull(fullPath);
       this.size = size;
       this.isDirectory = isDirectory;
+      this.isSelected = isSelected;
     }
   }
 }

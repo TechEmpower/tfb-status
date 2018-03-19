@@ -136,30 +136,44 @@ public final class UnzipResultsHandler implements HttpHandler {
 
             @Override
             public void handleDirectory(DirectoryStream<Path> files) throws IOException {
-              List<FileView> fileViews = new ArrayList<>();
+
+              List<FileView> parents = new ArrayList<>();
+              for (int i = 1; i <= zipFileAndEntry.getNameCount(); i++) {
+                Path parent = zipFileAndEntry.subpath(0, i);
+                parents.add(
+                    new FileView(
+                        /* fileName= */ parent.getFileName().toString(),
+                        /* fullPath= */ Joiner.on('/').join(parent),
+                        /* size= */ null,
+                        /* isDirectory= */ true,
+                        /* isSelected= */ i == zipFileAndEntry.getNameCount()));
+              }
+
+              List<FileView> children = new ArrayList<>();
 
               for (Path file : files) {
                 BasicFileAttributes attributes =
                     Files.readAttributes(file, BasicFileAttributes.class);
 
-                fileViews.add(
+                children.add(
                     new FileView(
                         /* fileName= */ file.getFileName().toString(),
+                        /* fullPath= */ zipFile.getFileName().toString() + "/" + Joiner.on('/').join(file),
                         /* size= */ attributes.isRegularFile()
                                             ? fileSizeToString(attributes.size(), /* si= */ true)
                                             : null,
-                        /* isDirectory= */ attributes.isDirectory()));
+                        /* isDirectory= */ attributes.isDirectory(),
+                        /* isSelected= */ false));
               }
 
-              fileViews.sort(comparing((FileView child) -> !child.isDirectory)
-                                 .thenComparing(child -> child.fileName,
+              children.sort(comparing((FileView file) -> !file.isDirectory)
+                                 .thenComparing(file -> file.fileName,
                                                 String.CASE_INSENSITIVE_ORDER));
 
               DirectoryListingView directoryView =
                   new DirectoryListingView(
-                      /* zipFileName= */ zipFile.getFileName().toString(),
-                      /* directory= */ entrySubPath,
-                      /* files= */ ImmutableList.copyOf(fileViews));
+                      /* parents= */ ImmutableList.copyOf(parents),
+                      /* children= */ ImmutableList.copyOf(children));
 
               String html = mustacheRenderer.render("directory-listing.mustache", directoryView);
               exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());

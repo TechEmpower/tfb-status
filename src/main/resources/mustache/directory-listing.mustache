@@ -12,18 +12,18 @@ The HTML of the directory listing page.
 
 {{$body}}
 
-<h1>{{zipFileName}}/{{directory}}/</h1>
+<h4>{{#parents}}{{#isSelected}}{{fileName}}{{/isSelected}}{{^isSelected}}<a href="/unzip/{{fullPath}}">{{fileName}}</a>{{/isSelected}}/{{/parents}}</h4>
 
-{{#files}}
+{{#children}}
 <div class="file">
   <a class="fileName"
-     href="/unzip/{{zipFileName}}/{{directory}}/{{fileName}}">{{fileName}}{{#isDirectory}}/{{/isDirectory}}</a>
+     href="/unzip/{{fullPath}}">{{fileName}}{{#isDirectory}}/{{/isDirectory}}</a>
   <div class="fileSize">
     {{#size}}{{size}}{{/size}}
     {{^size}}-{{/size}}
   </div>
 </div>
-{{/files}}
+{{/children}}
 
 {{/body}}
 

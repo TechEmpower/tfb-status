@@ -10,11 +10,6 @@ Styles for the directory listing page.
   flex-wrap: nowrap;
   justify-content: space-between;
   max-width: 40em;
-  padding: 4px 8px;
-}
-
-.file:nth-child(2n + 1) {
-  background-color: #eee;
 }
 
 .fileName {
