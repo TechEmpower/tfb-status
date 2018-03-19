@@ -73,13 +73,8 @@
   </properties>
 
   <!-- We include <prerequisites> for the sake of the versions plugin, which
-       provides these very useful commands:
-
-         mvn versions:display-property-updates
-         mvn versions:display-dependency-updates
-         mvn versions:display-plugin-updates
-
-       That plugin breaks if we remove <prerequisites>.
+       provides the very useful "mvn versions:display-dependency-updates"
+       command.  That plugin breaks if we remove <prerequisites>.
 
        Maven warns us that we should remove <prerequisites> and use the enforcer
        plugin instead.  We do also use the enforcer plugin, but we must keep
