@@ -60,18 +60,19 @@ The HTML of the results detail page.
 
 <p>
 {{#json}}<a href="/raw/{{json.fileName}}">results.json</a><br>{{/json}}
-{{#zip}}<a href="/raw/{{zip.fileName}}">results.zip</a><br>{{/zip}}
+{{#zip}}<a href="/raw/{{zip.fileName}}">results.zip</a> (<a href="/unzip/{{zip.fileName}}">browse</a>)<br>{{/zip}}
 {{#zip}}<a href="/unzip/{{zip.fileName}}/test_metadata.json">test_metadata.json</a><br>{{/zip}}
 {{#zip}}<a href="/attributes/{{zip.fileName}}">attributes.json</a> (requires login)<br>{{/zip}}
 {{#zip}}{{#json}}<a href="/export/{{json.fileName}}">minified results.json</a><br>{{/json}}{{/zip}}
 {{#zip}}
   {{^zip.failures.isEmpty}}
-    <p>Logs for frameworks with test failures:<br>
+    <p>Frameworks with test failures:<br>
     <ul class="failures">
     {{#zip.failures}}
       <li>
-        <a title="[{{framework}}]{{#failedTestTypes.isEmpty}} had problems starting or stopping{{/failedTestTypes.isEmpty}}{{^failedTestTypes.isEmpty}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}"
-           href="/unzip/{{logFileName}}">{{framework}}</a>
+        [{{framework}}]
+        {{#failedTestTypes.isEmpty}} had problems starting or stopping{{/failedTestTypes.isEmpty}}
+        {{^failedTestTypes.isEmpty}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}
     {{/zip.failures}}
     </ul>
   {{/zip.failures.isEmpty}}

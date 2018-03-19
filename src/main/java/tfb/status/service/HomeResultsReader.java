@@ -477,8 +477,7 @@ public final class HomeResultsReader {
             failures.add(
                 new ResultsZipView.Failure(
                     /* framework= */ framework,
-                    /* failedTestTypes= */ ImmutableList.sortedCopyOf(failedTestTypes),
-                    /* logFileName= */ fileName + "/" + framework + "/out.txt")));
+                    /* failedTestTypes= */ ImmutableList.sortedCopyOf(failedTestTypes))));
 
     results.completed.forEach(
         (framework, message) -> {
@@ -487,8 +486,7 @@ public final class HomeResultsReader {
             failures.add(
                 new ResultsZipView.Failure(
                     /* framework= */ framework,
-                    /* failedTestTypes= */ ImmutableList.of(),
-                    /* logFileName= */ fileName + "/" + framework + "/out.txt"));
+                    /* failedTestTypes= */ ImmutableList.of()));
           }
         });
 
