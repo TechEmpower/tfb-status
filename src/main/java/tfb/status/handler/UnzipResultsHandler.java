@@ -4,6 +4,7 @@ import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
+import static io.undertow.util.StatusCodes.INTERNAL_SERVER_ERROR;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
@@ -17,7 +18,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.util.MimeMappings;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -32,6 +32,8 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.DefaultToUtf8Handler;
@@ -67,8 +69,9 @@ public final class UnzipResultsHandler implements HttpHandler {
   }
 
   private static final class CoreHandler implements HttpHandler {
-    final Path resultsDirectory;
-    final MustacheRenderer mustacheRenderer;
+    private final Path resultsDirectory;
+    private final MustacheRenderer mustacheRenderer;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     CoreHandler(FileStoreConfig fileStoreConfig,
                 MustacheRenderer mustacheRenderer) {
@@ -116,27 +119,25 @@ public final class UnzipResultsHandler implements HttpHandler {
               ? ""
               : Joiner.on('/').join(zipFileAndEntry.subpath(1, zipFileAndEntry.getNameCount()));
 
-      ZipFiles.readZipEntry(
-          zipFile,
-          entrySubPath,
-          new ZipFiles.ZipEntryHandler() {
+      ZipFiles.findZipEntry(
+          /* zipFile= */ zipFile,
+          /* entryPath= */ entrySubPath,
+          /* ifPresent= */
+          zipEntry -> {
 
-            @Override
-            public void handleFile(Path file) throws IOException {
-              MediaType mediaType = guessMediaType(file);
+            if (Files.isRegularFile(zipEntry)) {
+              MediaType mediaType = guessMediaType(zipEntry);
 
               if (mediaType != null)
                 exchange.getResponseHeaders().put(CONTENT_TYPE,
                                                   mediaType.toString());
 
-              try (InputStream in = Files.newInputStream(file)) {
+              try (InputStream in = Files.newInputStream(zipEntry)) {
                 in.transferTo(exchange.getOutputStream());
               }
             }
 
-            @Override
-            public void handleDirectory(DirectoryStream<Path> files) throws IOException {
-
+            else if (Files.isDirectory(zipEntry)) {
               List<FileView> parents = new ArrayList<>();
               for (int i = 1; i <= zipFileAndEntry.getNameCount(); i++) {
                 Path parent = zipFileAndEntry.subpath(0, i);
@@ -151,19 +152,21 @@ public final class UnzipResultsHandler implements HttpHandler {
 
               List<FileView> children = new ArrayList<>();
 
-              for (Path file : files) {
-                BasicFileAttributes attributes =
-                    Files.readAttributes(file, BasicFileAttributes.class);
+              try (DirectoryStream<Path> files = Files.newDirectoryStream(zipEntry)) {
+                for (Path file : files) {
+                  BasicFileAttributes attributes =
+                      Files.readAttributes(file, BasicFileAttributes.class);
 
-                children.add(
-                    new FileView(
-                        /* fileName= */ file.getFileName().toString(),
-                        /* fullPath= */ zipFile.getFileName().toString() + "/" + Joiner.on('/').join(file),
-                        /* size= */ attributes.isRegularFile()
-                                            ? fileSizeToString(attributes.size(), /* si= */ true)
-                                            : null,
-                        /* isDirectory= */ attributes.isDirectory(),
-                        /* isSelected= */ false));
+                  children.add(
+                      new FileView(
+                          /* fileName= */ file.getFileName().toString(),
+                          /* fullPath= */ zipFile.getFileName().toString() + "/" + Joiner.on('/').join(file),
+                          /* size= */ attributes.isRegularFile()
+                                              ? fileSizeToString(attributes.size(), /* si= */ true)
+                                              : null,
+                          /* isDirectory= */ attributes.isDirectory(),
+                          /* isSelected= */ false));
+                }
               }
 
               children.sort(comparing((FileView file) -> !file.isDirectory)
@@ -180,11 +183,18 @@ public final class UnzipResultsHandler implements HttpHandler {
               exchange.getResponseSender().send(html, UTF_8);
             }
 
-            @Override
-            public void handleNotFound() {
-              exchange.setStatusCode(NOT_FOUND);
+            else {
+              logger.warn(
+                  "Cannot unzip a zip entry that is neither a file nor a "
+                      + "directory, zip file = {}, zip entry = {}",
+                  zipFile,
+                  zipEntry);
+
+              exchange.setStatusCode(INTERNAL_SERVER_ERROR);
             }
-          });
+
+          },
+          /* ifAbsent= */ () -> exchange.setStatusCode(NOT_FOUND));
     }
 
     /**

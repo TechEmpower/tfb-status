@@ -2,7 +2,6 @@ package tfb.status.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
@@ -11,6 +10,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -56,56 +56,25 @@ public final class ZipFiles {
     Objects.requireNonNull(entryPath, "entryPath");
     Objects.requireNonNull(entryReader, "entryReader");
 
-    FileSystem zipFileSystem;
-    try {
-      zipFileSystem = FileSystems.newFileSystem(zipFile, null);
-    } catch (ProviderNotFoundException | FileSystemNotFoundException e) {
-      throw new IOException(e);
-    }
+    AtomicReference<T> resultHolder = new AtomicReference<>();
 
-    try (zipFileSystem) {
+    findZipEntry(
+        /* zipFile= */ zipFile,
+        /* entryPath= */ entryPath,
+        /* ifPresent= */
+        zipEntry -> {
+          if (Files.isRegularFile(zipEntry)) {
+            T result;
+            try (InputStream in = Files.newInputStream(zipEntry)) {
+              result = entryReader.read(in);
+            }
+            Objects.requireNonNull(result, "result");
+            resultHolder.set(result);
+          }
+        },
+        /* ifAbsent= */ () -> {});
 
-      Path validatedEntryPath;
-      try {
-        validatedEntryPath = zipFileSystem.getPath(entryPath);
-      } catch (InvalidPathException e) {
-        throw new IOException(e);
-      }
-
-      if (validatedEntryPath.isAbsolute()) {
-        if (Files.isRegularFile(validatedEntryPath))
-          return read(entryReader, validatedEntryPath);
-        else
-          return null;
-      }
-
-      for (Path root : zipFileSystem.getRootDirectories()) {
-        Path matchingEntry;
-        try (Stream<Path> entries = Files.walk(root)) {
-          matchingEntry =
-              entries.filter(Files::isDirectory)
-                     .map(directory -> directory.resolve(validatedEntryPath))
-                     .filter(Files::isRegularFile)
-                     .findAny()
-                     .orElse(null);
-        }
-
-        if (matchingEntry != null)
-          return read(entryReader, matchingEntry);
-      }
-
-      return null;
-
-    }
-  }
-
-  private static <T> T read(ZipEntryReader<T> entryReader, Path entry) throws IOException {
-    T result;
-    try (InputStream in = Files.newInputStream(entry)) {
-      result = entryReader.read(in);
-    }
-    Objects.requireNonNull(result, "result");
-    return result;
+    return resultHolder.get();
   }
 
   /**
@@ -132,15 +101,38 @@ public final class ZipFiles {
     T read(InputStream in) throws IOException;
   }
 
-  // TODO: document this
-  public static void readZipEntry(Path zipFile,
+  /**
+   * Opens the provided zip file, then finds the entry whose path {@linkplain
+   * Path#endsWith(String) ends with} the provided entry path.  If the entry is
+   * found, this method invokes the provided {@code ifPresent} action.
+   * Otherwise, this method invokes the provided {@code ifAbsent} action.
+   *
+   * <p>If the zip file contains multiple matching entries, then this method
+   * will choose one of those entries.  The way it makes this choice is
+   * unspecified, possibly non-deterministic, and subject to change.
+   *
+   * <p>If the entry is found but the entry handler throws an exception when
+   * invoked, that exception is propagated as-is to the caller of this method.
+   *
+   * <p>The time complexity of this method is {@code O(n)} with respect to the
+   * total number of entries in the zip file.
+   *
+   * @param zipFile the zip file to be searched
+   * @param entryPath the path of the entry to be read
+   * @param ifPresent the action to be invoked if the entry is found
+   * @param ifAbsent the action to be invoked if the entry is not found
+   * @throws IOException if an I/O error occurs
+   */
+  public static void findZipEntry(Path zipFile,
                                   String entryPath,
-                                  ZipEntryHandler entryHandler)
+                                  ZipEntryConsumer ifPresent,
+                                  Runnable ifAbsent)
       throws IOException {
 
     Objects.requireNonNull(zipFile, "zipFile");
     Objects.requireNonNull(entryPath, "entryPath");
-    Objects.requireNonNull(entryHandler, "entryHandler");
+    Objects.requireNonNull(ifPresent, "ifPresent");
+    Objects.requireNonNull(ifAbsent, "ifAbsent");
 
     FileSystem zipFileSystem;
     try {
@@ -159,18 +151,12 @@ public final class ZipFiles {
       }
 
       if (validatedEntryPath.isAbsolute()) {
-        if (Files.isRegularFile(validatedEntryPath)) {
-          entryHandler.handleFile(validatedEntryPath);
-          return;
-        } else if (Files.isDirectory(validatedEntryPath)) {
-          try (DirectoryStream<Path> files = Files.newDirectoryStream(validatedEntryPath)) {
-            entryHandler.handleDirectory(files);
-          }
-          return;
-        } else {
-          entryHandler.handleNotFound();
-          return;
-        }
+        if (Files.exists(validatedEntryPath))
+          ifPresent.accept(validatedEntryPath);
+        else
+          ifAbsent.run();
+
+        return;
       }
 
       for (Path root : zipFileSystem.getRootDirectories()) {
@@ -185,26 +171,34 @@ public final class ZipFiles {
         }
 
         if (matchingEntry != null) {
-          if (Files.isRegularFile(matchingEntry)) {
-            entryHandler.handleFile(matchingEntry);
-            return;
-          } else if (Files.isDirectory(matchingEntry)) {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(matchingEntry)) {
-              entryHandler.handleDirectory(files);
-            }
-            return;
-          }
+          ifPresent.accept(matchingEntry);
+          return;
         }
       }
 
-      entryHandler.handleNotFound();
+      ifAbsent.run();
     }
   }
 
-  // TODO: document this
-  public interface ZipEntryHandler {
-    void handleFile(Path file) throws IOException;
-    void handleDirectory(DirectoryStream<Path> files) throws IOException;
-    void handleNotFound() throws IOException;
+  /**
+   * An action performed on a zip entry, where the zip entry is represented as a
+   * {@link Path}.
+   *
+   * <p>The action should process the {@link Path} immediately and not save a
+   * reference to it for later use, as the {@linkplain Path#getFileSystem() file
+   * system} will be closed once this action returns.
+   *
+   * <p>This interface should only be used by callers of {@link
+   * #findZipEntry(Path, String, ZipEntryConsumer, Runnable)}.
+   */
+  @FunctionalInterface
+  public interface ZipEntryConsumer {
+    /**
+     * Performs some action on a zip entry.
+     *
+     * @param zipEntry the zip entry
+     * @throws IOException if an I/O error occurs while performing the action
+     */
+    void accept(Path zipEntry) throws IOException;
   }
 }
