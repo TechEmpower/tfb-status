@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
@@ -109,10 +108,10 @@ public final class MinifiedTestDefinition {
       int identity,
 
       @JsonProperty(value = "v", required = true)
-      List<Integer> v) {
+      ImmutableList<Integer> v) {
 
     this.identity = identity;
-    this.v = ImmutableList.copyOf(v);
+    this.v = Objects.requireNonNull(v);
     this.approach = Objects.requireNonNull(approach);
     this.classification = Objects.requireNonNull(classification);
     this.database = Objects.requireNonNull(database);

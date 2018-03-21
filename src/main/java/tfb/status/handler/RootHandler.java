@@ -63,7 +63,6 @@ public final class RootHandler implements HttpHandler {
                          .addPrefixPath("/saveAttributes", saveAttributes)
                          .addPrefixPath("/attributes", attributes);
 
-
     handler = newAccessLoggingHandler(handler);
     handler = new ExceptionLoggingHandler(handler);
     handler = new BlockingHandler(handler);

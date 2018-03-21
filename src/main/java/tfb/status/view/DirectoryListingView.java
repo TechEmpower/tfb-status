@@ -16,7 +16,6 @@ public final class DirectoryListingView {
     this.children = Objects.requireNonNull(children);
   }
 
-
   @Immutable
   public static final class FileView {
     public final String fileName;
