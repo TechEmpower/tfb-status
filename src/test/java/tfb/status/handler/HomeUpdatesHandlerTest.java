@@ -71,6 +71,7 @@ public final class HomeUpdatesHandlerTest {
         // If we made it this far, we don't need the timeout anymore.
         timeout.cancel(false);
 
+        // FIXME: This assertion fails sometimes.  Why?
         assertNotNull(
             event,
             "The server should send an event before the timeout");
