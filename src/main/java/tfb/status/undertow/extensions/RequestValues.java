@@ -4,6 +4,7 @@ import com.google.common.collect.Iterables;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 /**
  * Utility methods for reading request values from an {@link HttpServerExchange}
@@ -12,6 +13,28 @@ import java.util.Objects;
 public final class RequestValues {
   private RequestValues() {
     throw new AssertionError("This class cannot be instantiated");
+  }
+
+  /**
+   * Reads a query string parameter.
+   *
+   * @param exchange the HTTP request/response
+   * @param parameterName the name of the query parameter
+   * @return either the value of the query parameter or {@code null} if the
+   *         request contains zero values or multiple values for the parameter
+   */
+  @Nullable
+  public static String queryParameter(HttpServerExchange exchange,
+                                      String parameterName) {
+    Objects.requireNonNull(exchange);
+    Objects.requireNonNull(parameterName);
+
+    Deque<String> values = exchange.getQueryParameters().get(parameterName);
+
+    if (values == null || values.size() != 1)
+      return null;
+
+    return Iterables.getOnlyElement(values);
   }
 
   /**

@@ -20,7 +20,9 @@ The HTML of the results detail page.
 
 {{#uuid}}
   Run ID: <code>{{uuid}}</code><br>
-  <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
+  {{#zip}}
+    <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
+  {{/zip}}
 {{/uuid}}
 
 {{#git}}
@@ -61,8 +63,7 @@ The HTML of the results detail page.
 <p>
 {{#json}}<a href="/raw/{{json.fileName}}">results.json</a><br>{{/json}}
 {{#zip}}<a href="/raw/{{zip.fileName}}">results.zip</a> (<a href="/unzip/{{zip.fileName}}">browse</a>)<br>{{/zip}}
-{{#zip}}<a href="/unzip/{{zip.fileName}}/test_metadata.json">test_metadata.json</a><br>{{/zip}}
-{{#zip}}<a href="/attributes/{{zip.fileName}}">attributes.json</a> (requires login)<br>{{/zip}}
+{{#zip}}<a href="/attributes?zipFile={{zip.fileName}}">tfb-lookup.js update helper</a><br>{{/zip}}
 {{#zip}}{{#json}}<a href="/export/{{json.fileName}}">minified results.json</a><br>{{/json}}{{/zip}}
 {{#zip}}
   {{^zip.failures.isEmpty}}

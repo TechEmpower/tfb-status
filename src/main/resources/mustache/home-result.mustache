@@ -5,7 +5,9 @@
   {{/json}}
   {{#uuid}}
     Run ID: <code>{{uuid}}</code><br>
-    <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
+    {{#zip}}
+      <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
+    {{/zip}}
     <a href="/results/{{uuid}}">See more information about this run</a><br>
   {{/uuid}}
 <td>

@@ -2,13 +2,16 @@ package tfb.status.handler;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static com.google.common.net.MediaType.HTML_UTF_8;
+import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.SERVICE_UNAVAILABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static tfb.status.undertow.extensions.RequestValues.queryParameter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +25,7 @@ import com.google.common.io.MoreFiles;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
+import io.undertow.server.handlers.SetHeaderHandler;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -45,6 +49,7 @@ import tfb.status.util.ZipFiles;
 import tfb.status.view.Attribute;
 import tfb.status.view.AttributeInfo;
 import tfb.status.view.AttributeLookup;
+import tfb.status.view.AttributesJsonView;
 import tfb.status.view.AttributesPageView;
 import tfb.status.view.MinifiedTestDefinition;
 import tfb.status.view.TestDefinition;
@@ -69,7 +74,7 @@ public final class AttributesPageHandler implements HttpHandler {
 
     handler = new MethodHandler().addMethod(GET, handler);
     handler = new DisableCacheHandler(handler);
-    handler = authenticator.newRequiredAuthHandler(handler);
+    handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");
 
     delegate = handler;
   }
@@ -105,15 +110,17 @@ public final class AttributesPageHandler implements HttpHandler {
         return;
       }
 
-      // TODO: It might make more sense to use a query parameter here to
-      //       determine which zip file we're looking at.
+      String zipFileName = queryParameter(exchange, "zipFile");
+      if (zipFileName == null) {
+        exchange.setStatusCode(BAD_REQUEST);
+        return;
+      }
 
-      String relativePath = exchange.getRelativePath()
-                                    .substring(1); // omit leading slash
+      boolean jsonFormat = "json".equals(queryParameter(exchange, "format"));
 
       Path requestedFile;
       try {
-        requestedFile = resultsDirectory.resolve(relativePath);
+        requestedFile = resultsDirectory.resolve(zipFileName);
       } catch (InvalidPathException ignored) {
         exchange.setStatusCode(NOT_FOUND);
         return;
@@ -168,25 +175,40 @@ public final class AttributesPageHandler implements HttpHandler {
       ImmutableMap<String, MinifiedTestDefinition> updatedTestMetadata =
           minifyTestMetadata(updatedAttributes, newTests, oldTestMetadata);
 
-      String attributes;
-      String tests;
-      try {
-        attributes = objectMapper.writeValueAsString(updatedAttributes);
-        tests = objectMapper.writeValueAsString(updatedTestMetadata);
-      } catch (IOException e) {
-        logger.warn("Error thrown while mapping attributes to string", e);
-        exchange.setStatusCode(BAD_REQUEST);
-        return;
+      if (jsonFormat) {
+
+        AttributesJsonView jsonView =
+            new AttributesJsonView(
+                /* attributes= */ updatedAttributes,
+                /* tests= */ updatedTestMetadata);
+
+        String json = objectMapper.writeValueAsString(jsonView);
+        exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
+        exchange.getResponseSender().send(json, UTF_8);
+
+      } else {
+
+        String attributes;
+        String tests;
+        try {
+          attributes = objectMapper.writeValueAsString(updatedAttributes);
+          tests = objectMapper.writeValueAsString(updatedTestMetadata);
+        } catch (IOException e) {
+          logger.warn("Error thrown while mapping attributes to string", e);
+          exchange.setStatusCode(BAD_REQUEST);
+          return;
+        }
+
+        AttributesPageView pageView =
+            new AttributesPageView(/* attributes= */ attributes,
+                /* tests= */ tests,
+                /* fileName= */ requestedFile.getFileName().toString());
+
+        String html = mustacheRenderer.render("attributes.mustache", pageView);
+        exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
+        exchange.getResponseSender().send(html, UTF_8);
+
       }
-
-      AttributesPageView pageView =
-          new AttributesPageView(/* attributes= */ attributes,
-                                 /* tests= */ tests,
-                                 /* fileName= */ requestedFile.getFileName().toString());
-
-      String html = mustacheRenderer.render("attributes.mustache", pageView);
-      exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
-      exchange.getResponseSender().send(html, UTF_8);
     }
 
     /**

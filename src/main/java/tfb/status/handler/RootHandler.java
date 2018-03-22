@@ -47,8 +47,8 @@ public final class RootHandler implements HttpHandler {
                          .addPrefixPath("/results", lazyInit(detail))
                          .addPrefixPath("/about", lazyInit(about))
                          .addPrefixPath("/assets", lazyInit(assets))
-                         .addPrefixPath("/saveAttributes", lazyInit(saveAttributes))
-                         .addPrefixPath("/attributes", lazyInit(attributes));
+                         .addExactPath("/saveAttributes", lazyInit(saveAttributes))
+                         .addExactPath("/attributes", lazyInit(attributes));
 
     handler = newAccessLoggingHandler(handler);
     handler = new ExceptionLoggingHandler(handler);
