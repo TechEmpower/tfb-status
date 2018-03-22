@@ -36,19 +36,19 @@ public final class RootHandler implements HttpHandler {
                      Provider<SaveAttributesHandler> saveAttributes) {
 
     HttpHandler handler =
-        new PathHandler().addExactPath("/", lazyInit(home))
-                         .addExactPath("/updates", lazyInit(updates))
-                         .addExactPath("/upload", lazyInit(upload))
-                         .addExactPath("/robots.txt", lazyInit(robots))
-                         .addPrefixPath("/raw", lazyInit(download))
-                         .addPrefixPath("/export", lazyInit(export))
-                         .addPrefixPath("/unzip", lazyInit(unzip))
-                         .addPrefixPath("/timeline", lazyInit(timeline))
-                         .addPrefixPath("/results", lazyInit(detail))
-                         .addPrefixPath("/about", lazyInit(about))
-                         .addPrefixPath("/assets", lazyInit(assets))
-                         .addExactPath("/saveAttributes", lazyInit(saveAttributes))
-                         .addExactPath("/attributes", lazyInit(attributes));
+        new PathHandler().addExactPath("/", lazyHandler(home))
+                         .addExactPath("/updates", lazyHandler(updates))
+                         .addExactPath("/upload", lazyHandler(upload))
+                         .addExactPath("/robots.txt", lazyHandler(robots))
+                         .addPrefixPath("/raw", lazyHandler(download))
+                         .addPrefixPath("/export", lazyHandler(export))
+                         .addPrefixPath("/unzip", lazyHandler(unzip))
+                         .addPrefixPath("/timeline", lazyHandler(timeline))
+                         .addPrefixPath("/results", lazyHandler(detail))
+                         .addPrefixPath("/about", lazyHandler(about))
+                         .addPrefixPath("/assets", lazyHandler(assets))
+                         .addExactPath("/saveAttributes", lazyHandler(saveAttributes))
+                         .addExactPath("/attributes", lazyHandler(attributes));
 
     handler = newAccessLoggingHandler(handler);
     handler = new ExceptionLoggingHandler(handler);
@@ -62,7 +62,10 @@ public final class RootHandler implements HttpHandler {
     delegate.handleRequest(exchange);
   }
 
-  private static HttpHandler lazyInit(Provider<? extends HttpHandler> provider) {
+  /**
+   * Delays initialization of the provided handler until a request is received.
+   */
+  private static HttpHandler lazyHandler(Provider<? extends HttpHandler> provider) {
     Objects.requireNonNull(provider);
     return exchange -> provider.get().handleRequest(exchange);
   }
