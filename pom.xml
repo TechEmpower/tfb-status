@@ -25,7 +25,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <apiguardian.version>1.0.0</apiguardian.version>
-    <asm.version>6.1</asm.version>
+    <asm.version>6.1.1</asm.version>
     <bcrypt.version>0.4</bcrypt.version>
     <caffeine.version>2.6.2</caffeine.version>
     <crawler-commons.version>0.9</crawler-commons.version>
