@@ -12,7 +12,7 @@ The HTML of the directory listing page.
 
 {{$body}}
 
-<h4>{{#parents}}{{#isSelected}}{{fileName}}{{/isSelected}}{{^isSelected}}<a href="/unzip/{{fullPath}}">{{fileName}}</a>{{/isSelected}}/{{/parents}}</h4>
+<h4>{{#breadcrumbs}}{{#isSelected}}{{fileName}}{{/isSelected}}{{^isSelected}}<a href="/unzip/{{fullPath}}">{{fileName}}</a>{{/isSelected}}/{{/breadcrumbs}}</h4>
 
 {{#children}}
 <div class="file">

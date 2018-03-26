@@ -138,13 +138,13 @@ public final class UnzipResultsHandler implements HttpHandler {
             }
 
             else if (Files.isDirectory(zipEntry)) {
-              List<FileView> parents = new ArrayList<>();
+              List<FileView> breadcrumbs = new ArrayList<>();
               for (int i = 1; i <= zipFileAndEntry.getNameCount(); i++) {
-                Path parent = zipFileAndEntry.subpath(0, i);
-                parents.add(
+                Path directory = zipFileAndEntry.subpath(0, i);
+                breadcrumbs.add(
                     new FileView(
-                        /* fileName= */ parent.getFileName().toString(),
-                        /* fullPath= */ Joiner.on('/').join(parent),
+                        /* fileName= */ directory.getFileName().toString(),
+                        /* fullPath= */ Joiner.on('/').join(directory),
                         /* size= */ null,
                         /* isDirectory= */ true,
                         /* isSelected= */ i == zipFileAndEntry.getNameCount()));
@@ -175,7 +175,7 @@ public final class UnzipResultsHandler implements HttpHandler {
 
               DirectoryListingView directoryView =
                   new DirectoryListingView(
-                      /* parents= */ ImmutableList.copyOf(parents),
+                      /* breadcrumbs= */ ImmutableList.copyOf(breadcrumbs),
                       /* children= */ ImmutableList.copyOf(children));
 
               String html = mustacheRenderer.render("directory-listing.mustache", directoryView);
