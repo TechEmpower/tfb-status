@@ -10,8 +10,8 @@
   <version>1.0-SNAPSHOT</version>
 
   <properties>
-    <maven.compiler.source>9</maven.compiler.source>
-    <maven.compiler.target>9</maven.compiler.target>
+    <maven.compiler.source>10</maven.compiler.source>
+    <maven.compiler.target>10</maven.compiler.target>
 
     <!-- This is the oldest version of Maven that we've tested this application
          with.  If you have an older version of Maven and you don't want to
@@ -30,7 +30,6 @@
     <caffeine.version>2.6.2</caffeine.version>
     <crawler-commons.version>0.9</crawler-commons.version>
     <error-prone.version>2.2.0</error-prone.version>
-    <forbiddenapis.version>2.4.1</forbiddenapis.version>
     <git-commit-id-plugin.version>2.2.4</git-commit-id-plugin.version>
     <greenmail.version>1.5.7</greenmail.version>
     <guava.version>24.1-jre</guava.version>
@@ -64,8 +63,6 @@
          https://github.com/junit-team/junit5/issues/809 -->
     <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
     <mustache.version>0.9.5</mustache.version>
-    <nullaway.version>0.4.1</nullaway.version>
-    <plexus-compiler-javac-errorprone.version>2.8.3</plexus-compiler-javac-errorprone.version>
     <slf4j.version>1.7.25</slf4j.version>
     <threeten-extra.version>1.3.2</threeten-extra.version>
     <undertow.version>2.0.3.Final</undertow.version>
@@ -378,28 +375,11 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler-plugin.version}</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.codehaus.plexus</groupId>
-              <artifactId>plexus-compiler-javac-errorprone</artifactId>
-              <version>${plexus-compiler-javac-errorprone.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>com.google.errorprone</groupId>
-              <artifactId>error_prone_core</artifactId>
-              <version>${error-prone.version}</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
           <version>${maven-shade-plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>de.thetaphi</groupId>
-          <artifactId>forbiddenapis</artifactId>
-          <version>${forbiddenapis.version}</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -510,92 +490,19 @@
       </plugin>
 
       <!-- We enable the standard warnings from javac that are (for some strange
-           reason) disabled by default.  We also add in Error Prone for more
-           static analysis.  Error Prone may emit compilation errors (as opposed
-           to warnings) depending on the severity of the problems it finds. -->
+           reason) disabled by default. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <encoding>UTF-8</encoding>
-          <compilerId>javac-with-errorprone</compilerId>
           <forceJavacCompilerUse>true</forceJavacCompilerUse>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
-          <annotationProcessorPaths>
-            <path>
-              <groupId>com.uber.nullaway</groupId>
-              <artifactId>nullaway</artifactId>
-              <version>${nullaway.version}</version>
-            </path>
-          </annotationProcessorPaths>
           <compilerArgs>
             <arg>-Xlint:all</arg>
-
-            <!-- Sometimes it's interesting to see what Error Prone's
-                 experimental checks tell us.  The experimental checks are
-                 disabled by default because they're often broken (they throw an
-                 exception when scanning our code) or wrong (they give bad
-                 advice).  Every once in a while, though, they say something
-                 useful.
-
-                 Uncomment this <arg> to enable the experimental checks. -->
-            <!--
-            <arg>-XepAllDisabledChecksAsWarnings</arg>
-            -->
-
-            <!-- We disagree that adding a "@Var" annotation to every
-                 non-constant variable would make our code more readable.  (We
-                 also disagree that adding a "final" modifier to every constant
-                 variable would make our code more readable.) -->
-            <arg>-Xep:Var:OFF</arg>
-
-            <!-- We don't think that every method that can be static should be
-                 static.  For example, if a method *sounds* like something an
-                 instance would do, then it should probably be non-static even
-                 if it doesn't refer to instance-level state. -->
-            <arg>-Xep:MethodCanBeStatic:OFF</arg>
-
-            <!-- Enable NullAway, which is a plugin for Error Prone that offers
-                 additional checks against nullness contracts. -->
-            <arg>-Xep:NullAway:ERROR</arg>
-            <arg>-XepOpt:NullAway:AnnotatedPackages=tfb.status</arg>
-
           </compilerArgs>
         </configuration>
-      </plugin>
-
-      <!-- Detects if we use certain discouraged APIs and fails the build if so.
-           We started using this plugin because it catches implicit use of the
-           default locale, which may be inconsistent across environments.  The
-           behavior of String.format(String, Object[]) depends on the default
-           locale, for example.  We meant to avoid APIs like this but were using
-           them accidentally. -->
-      <plugin>
-        <groupId>de.thetaphi</groupId>
-        <artifactId>forbiddenapis</artifactId>
-        <version>${forbiddenapis.version}</version>
-        <configuration>
-          <failOnUnsupportedJava>true</failOnUnsupportedJava>
-          <bundledSignatures>
-            <bundledSignature>jdk-unsafe</bundledSignature>
-            <bundledSignature>jdk-deprecated</bundledSignature>
-            <bundledSignature>jdk-non-portable</bundledSignature>
-          </bundledSignatures>
-        </configuration>
-        <executions>
-          <execution>
-            <!-- This plugin analyzes compiled bytecode, so we want it to
-                 execute after all of our code (include test sources) has been
-                 compiled and before we allow any of our code to be packaged
-                 into a jar file. -->
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>check</goal>
-              <goal>testCheck</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <!-- We package the application into a fat jar file containing both our
