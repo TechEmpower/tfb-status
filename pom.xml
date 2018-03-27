@@ -453,6 +453,13 @@
                  about missing class files when compiling our tests. -->
             <ignoredUnusedDeclaredDependency>org.apiguardian:apiguardian-api</ignoredUnusedDeclaredDependency>
 
+            <!-- Without the jersey-client dependency, we wouldn't have any
+                 concrete implementation of the javax.ws.rs.client.Client
+                 interface.  We use that interface to test all of our HTTP
+                 handlers, and if no concrete implementation was available at
+                 runtime, those tests would fail. -->
+            <ignoredUnusedDeclaredDependency>org.glassfish.jersey.core:jersey-client</ignoredUnusedDeclaredDependency>
+
             <!-- Without the jersey-hk2 dependency, the Jersey client would fail
                  to initialize, and so most of our tests would fail. -->
             <ignoredUnusedDeclaredDependency>org.glassfish.jersey.inject:jersey-hk2</ignoredUnusedDeclaredDependency>
