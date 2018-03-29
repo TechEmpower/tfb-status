@@ -4,6 +4,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static tfb.status.util.MoreAssertions.assertContains;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 import static tfb.status.util.MoreAssertions.assertStartsWith;
 
@@ -46,9 +47,15 @@ public final class HomePageHandlerTest {
           HTML_UTF_8,
           response.getHeaderString(CONTENT_TYPE));
 
+      String body = response.readEntity(String.class);
+
       assertStartsWith(
           "<!DOCTYPE html>",
-          response.readEntity(String.class));
+          body);
+
+      assertContains(
+          "This is the test announcement!",
+          body);
     }
   }
 }

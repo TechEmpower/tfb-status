@@ -4,6 +4,12 @@ Styles for the home page.
 --------------------------------------------------------------------------------
 */
 
+.announcement {
+  background-color: #ffe97d;
+  padding: 1em;
+  white-space: pre-wrap;
+}
+
 .resultsTable {
   width: 100%;
   border-collapse: collapse;

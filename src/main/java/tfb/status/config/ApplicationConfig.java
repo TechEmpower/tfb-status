@@ -64,7 +64,7 @@ public final class ApplicationConfig {
     this.fileStore =
         Objects.requireNonNullElseGet(
             fileStore,
-            () -> new FileStoreConfig(null, null, null));
+            () -> new FileStoreConfig(null, null, null, null));
 
     this.email = email;
   }

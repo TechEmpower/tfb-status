@@ -26,6 +26,11 @@ public final class FileStoreConfig {
    */
   public final String attributesDirectory;
 
+  /**
+   * The text file containing an announcement to be displayed on the home page.
+   */
+  public final String announcementFile;
+
   @JsonCreator
   public FileStoreConfig(
 
@@ -39,7 +44,11 @@ public final class FileStoreConfig {
 
       @Nullable
       @JsonProperty(value = "attributesDirectory", required = false)
-      String attributesDirectory) {
+      String attributesDirectory,
+
+      @Nullable
+      @JsonProperty(value = "announcementFile", required = false)
+      String announcementFile) {
 
     this.resultsDirectory =
         Objects.requireNonNullElse(
@@ -55,9 +64,15 @@ public final class FileStoreConfig {
         Objects.requireNonNullElse(
             attributesDirectory,
             DEFAULT_ATTRIBUTE_LOOKUP_DIRECTORY);
+
+    this.announcementFile =
+        Objects.requireNonNullElse(
+            announcementFile,
+            DEFAULT_ANNOUNCEMENT_FILE);
   }
 
   private static final String DEFAULT_RESULTS_DIRECTORY = "results";
   private static final String DEFAULT_ACCOUNTS_DIRECTORY = "accounts";
   private static final String DEFAULT_ATTRIBUTE_LOOKUP_DIRECTORY = "attributes";
+  private static final String DEFAULT_ANNOUNCEMENT_FILE = "announcement.txt";
 }

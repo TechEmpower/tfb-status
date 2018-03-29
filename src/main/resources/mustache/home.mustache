@@ -16,6 +16,10 @@ The HTML of the home page.
 {{/scripts}}
 
 {{$body}}
+{{#announcement}}
+<div class="announcement">{{.}}</div>
+{{/announcement}}
+
 <h1>TechEmpower Framework Benchmarks<br>Results Dashboard</h1>
 
 <table class="resultsTable">

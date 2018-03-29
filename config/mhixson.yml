@@ -20,6 +20,7 @@
 #  resultsDirectory: results
 #  accountsDirectory: accounts
 #  attributesDirectory: attributes
+#  announcementFile: announcement.txt
 
 #email:
 #  host: mail.techempower.com

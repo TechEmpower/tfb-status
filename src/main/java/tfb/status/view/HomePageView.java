@@ -15,17 +15,20 @@ public final class HomePageView {
   public final int limit;
   public final int next;
   public final boolean hasNext;
+  @Nullable public final String announcement;
 
   public HomePageView(ImmutableList<ResultsView> results,
                       int skip,
                       int limit,
                       int next,
-                      boolean hasNext) {
+                      boolean hasNext,
+                      @Nullable String announcement) {
     this.results = Objects.requireNonNull(results);
     this.skip = skip;
     this.limit = limit;
     this.next = next;
     this.hasNext = hasNext;
+    this.announcement = announcement;
   }
 
   /**
