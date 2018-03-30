@@ -78,7 +78,7 @@ public final class EmailSenderTest {
    */
   @Test
   public void testSendEmailWithAttachments() throws MessagingException, IOException {
-    Point point = new Point(1, 2);
+    var point = new Point(1, 2);
 
     byte[] pointBytes = objectMapper.writeValueAsBytes(point);
 

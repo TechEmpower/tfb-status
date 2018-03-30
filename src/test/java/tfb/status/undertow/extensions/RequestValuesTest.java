@@ -23,7 +23,7 @@ public final class RequestValuesTest {
    */
   @Test
   public void testQueryParameterAsInt_happyPath() {
-    HttpServerExchange exchange = new HttpServerExchange(null);
+    var exchange = new HttpServerExchange(null);
     exchange.addQueryParam(PARAMETER_NAME, String.valueOf(EXPECTED_VALUE));
     assertEquals(
         EXPECTED_VALUE,
@@ -39,7 +39,7 @@ public final class RequestValuesTest {
    */
   @Test
   public void testQueryParameterAsInt_defaultWhenNoValue() {
-    HttpServerExchange exchange = new HttpServerExchange(null);
+    var exchange = new HttpServerExchange(null);
     assertEquals(
         VALUE_IF_ABSENT,
         RequestValues.queryParameterAsInt(
@@ -58,7 +58,7 @@ public final class RequestValuesTest {
    */
   @Test
   public void testQueryParameterAsInt_defaultWhenEmptyValueCollection() {
-    HttpServerExchange exchange = new HttpServerExchange(null);
+    var exchange = new HttpServerExchange(null);
     exchange.getQueryParameters().put(PARAMETER_NAME, new ArrayDeque<>());
     assertEquals(
         VALUE_IF_ABSENT,
@@ -74,7 +74,7 @@ public final class RequestValuesTest {
    */
   @Test
   public void testQueryParameterAsInt_defaultWhenTwoValues() {
-    HttpServerExchange exchange = new HttpServerExchange(null);
+    var exchange = new HttpServerExchange(null);
     exchange.addQueryParam(PARAMETER_NAME, String.valueOf(EXPECTED_VALUE));
     exchange.addQueryParam(PARAMETER_NAME, String.valueOf(EXPECTED_VALUE));
     assertEquals(
@@ -91,7 +91,7 @@ public final class RequestValuesTest {
    */
   @Test
   public void testQueryParameterAsInt_defaultWhenUnparseableValue() {
-    HttpServerExchange exchange = new HttpServerExchange(null);
+    var exchange = new HttpServerExchange(null);
     exchange.addQueryParam(PARAMETER_NAME, UNPARSEABLE_VALUE);
     assertEquals(
         VALUE_IF_MALFORMED,

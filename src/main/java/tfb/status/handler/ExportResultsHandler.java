@@ -123,17 +123,17 @@ public final class ExportResultsHandler implements HttpHandler {
           return;
       }
 
-      String json =
-          objectMapper.writeValueAsString(
-              new Results.TfbWebsiteView(
-                  /* name= */ results.name,
-                  /* completionTime= */ results.completionTime,
-                  /* duration= */ results.duration,
-                  /* queryIntervals= */ results.queryIntervals,
-                  /* concurrencyLevels= */ results.concurrencyLevels,
-                  /* rawData= */ results.rawData,
-                  /* failed= */ results.failed));
+      var exportedView =
+          new Results.TfbWebsiteView(
+              /* name= */ results.name,
+              /* completionTime= */ results.completionTime,
+              /* duration= */ results.duration,
+              /* queryIntervals= */ results.queryIntervals,
+              /* concurrencyLevels= */ results.concurrencyLevels,
+              /* rawData= */ results.rawData,
+              /* failed= */ results.failed);
 
+      String json = objectMapper.writeValueAsString(exportedView);
       exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
       exchange.getResponseSender().send(json);
     }

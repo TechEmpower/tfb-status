@@ -78,7 +78,7 @@ public final class DetailPageHandler implements HttpHandler {
         return;
       }
 
-      DetailPageView detailPageView = new DetailPageView(result);
+      var detailPageView = new DetailPageView(result);
 
       if (isJson) {
         String json = objectMapper.writeValueAsString(detailPageView);

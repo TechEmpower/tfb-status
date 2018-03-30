@@ -71,9 +71,8 @@ public final class DownloadResultsHandlerTest {
       byte[] responseBytes = response.readEntity(byte[].class);
 
       Results results;
-      try (ZipInputStream zip =
-               new ZipInputStream(new ByteArrayInputStream(responseBytes))) {
 
+      try (var zip = new ZipInputStream(new ByteArrayInputStream(responseBytes))) {
         ZipEntry entry;
         do entry = zip.getNextEntry();
         while (entry != null && !entry.getName().endsWith("/results.json"));

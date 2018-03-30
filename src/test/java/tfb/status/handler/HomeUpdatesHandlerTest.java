@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.util.MoreAssertions.assertContains;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.ws.rs.client.WebTarget;
 import org.glassfish.jersey.media.sse.EventSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,12 +35,12 @@ public final class HomeUpdatesHandlerTest {
    */
   @Test
   public void testGet() {
-    EventSource eventSource =
-        EventSource.target(services.httpClient()
-                                   .target(services.localUri("/updates")))
-                   .build();
+    WebTarget target = services.httpClient()
+                               .target(services.localUri("/updates"));
 
-    AtomicBoolean receivedEvent = new AtomicBoolean(false);
+    var eventSource = new EventSource(target, /* open= */ false);
+
+    var receivedEvent = new AtomicBoolean(false);
 
     eventSource.register(
         event -> {

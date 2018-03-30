@@ -7,10 +7,8 @@ import com.google.errorprone.annotations.Immutable;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.view.DiffView;
@@ -65,11 +63,11 @@ public final class DiffGenerator {
     Objects.requireNonNull(oldResults);
     Objects.requireNonNull(newResults);
 
-    Set<String> distinctFrameworks = new HashSet<>();
+    var distinctFrameworks = new HashSet<String>();
     distinctFrameworks.addAll(oldResults.frameworks);
     distinctFrameworks.addAll(newResults.frameworks);
 
-    List<DiffLine> lines = new ArrayList<>();
+    var lines = new ArrayList<DiffLine>();
     for (String framework : distinctFrameworks) {
       for (String testType : Results.TEST_TYPES) {
         double oldRps = oldResults.rps(testType, framework);
@@ -125,7 +123,7 @@ public final class DiffGenerator {
     NumberFormat percentFormat = NumberFormat.getPercentInstance(Locale.ROOT);
     NumberFormat integerFormat = NumberFormat.getIntegerInstance(Locale.ROOT);
 
-    DiffSummaryView summaryView =
+    var summaryView =
         new DiffSummaryView(
             /* totalAdded= */ integerFormat.format(totalAdded),
             /* totalRemoved= */ integerFormat.format(totalRemoved),
@@ -135,7 +133,7 @@ public final class DiffGenerator {
             /* totalWorse= */ integerFormat.format(totalWorse),
             /* rpsChangeThreshold= */ percentFormat.format(RPS_CHANGE_THRESHOLD));
 
-    ImmutableList.Builder<DiffLineView> lineViews = new ImmutableList.Builder<>();
+    var lineViews = new ImmutableList.Builder<DiffLineView>();
 
     for (DiffLine line : lines) {
       String addedOrRemovedText;
@@ -164,7 +162,7 @@ public final class DiffGenerator {
               /* rpsChange= */ rpsChangeText));
     }
 
-    DiffView outerView =
+    var outerView =
         new DiffView(
             /* summary= */ summaryView,
             /* lines= */ lineViews.build());

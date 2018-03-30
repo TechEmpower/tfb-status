@@ -177,12 +177,12 @@ public final class AttributesPageHandler implements HttpHandler {
 
       if (jsonFormat) {
 
-        AttributesJsonView jsonView =
+        var attributesJsonView =
             new AttributesJsonView(
                 /* attributes= */ updatedAttributes,
                 /* tests= */ updatedTestMetadata);
 
-        String json = objectMapper.writeValueAsString(jsonView);
+        String json = objectMapper.writeValueAsString(attributesJsonView);
         exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
         exchange.getResponseSender().send(json, UTF_8);
 
@@ -199,12 +199,13 @@ public final class AttributesPageHandler implements HttpHandler {
           return;
         }
 
-        AttributesPageView pageView =
-            new AttributesPageView(/* attributes= */ attributes,
+        var attributesPageView =
+            new AttributesPageView(
+                /* attributes= */ attributes,
                 /* tests= */ tests,
                 /* fileName= */ requestedFile.getFileName().toString());
 
-        String html = mustacheRenderer.render("attributes.mustache", pageView);
+        String html = mustacheRenderer.render("attributes.mustache", attributesPageView);
         exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
         exchange.getResponseSender().send(html, UTF_8);
 
@@ -226,7 +227,7 @@ public final class AttributesPageHandler implements HttpHandler {
     updateAttributes(Map<Attribute, AttributeInfo> previousAttributes,
                      List<TestDefinition> testDefinitions) {
 
-      ImmutableMap.Builder<Attribute, AttributeInfo> updatedAttributes = new ImmutableMap.Builder<>();
+      var updatedAttributes = new ImmutableMap.Builder<Attribute, AttributeInfo>();
 
       ImmutableList<Map<Attribute, String>> attributeMaps =
           testDefinitions.stream()
@@ -312,7 +313,7 @@ public final class AttributesPageHandler implements HttpHandler {
                                                .max()
                                                .orElse(0);
 
-      Map<Integer, TestDefinition> testMetadata = new HashMap<>();
+      var testMetadata = new HashMap<Integer, TestDefinition>();
 
       for (TestDefinition newTest : newTestDefinitions) {
         Integer identity =
@@ -333,7 +334,7 @@ public final class AttributesPageHandler implements HttpHandler {
         testMetadata.put(identity, newTest);
       }
 
-      Map<Attribute, List<String>> attributeToValuesLower = new EnumMap<>(Attribute.class);
+      var attributeToValuesLower = new EnumMap<Attribute, List<String>>(Attribute.class);
 
       updatedAttributes.forEach(
           (attribute, info) ->
@@ -343,7 +344,7 @@ public final class AttributesPageHandler implements HttpHandler {
                            .map(Ascii::toLowerCase)
                            .collect(toImmutableList())));
 
-      ImmutableMap.Builder<String, MinifiedTestDefinition> result = new ImmutableMap.Builder<>();
+      var result = new ImmutableMap.Builder<String, MinifiedTestDefinition>();
 
       testMetadata.forEach((identity, definition) -> {
 
@@ -364,7 +365,7 @@ public final class AttributesPageHandler implements HttpHandler {
                           .orElse(null);
         }
 
-        Map<Attribute, String> indexes = new EnumMap<>(Attribute.class);
+        var indexes = new EnumMap<Attribute, String>(Attribute.class);
 
         testDefinitionToMap(definition).forEach((attribute, value) -> {
           if (attribute == Attribute.NAME) {
@@ -455,9 +456,9 @@ public final class AttributesPageHandler implements HttpHandler {
     private ImmutableMap<Integer, TestDefinition>
     mapToComplete(AttributeLookup attributeLookup) {
 
-      ValuesByAttributeAndIndex values = new ValuesByAttributeAndIndex(attributeLookup);
+      var values = new ValuesByAttributeAndIndex(attributeLookup);
 
-      ImmutableMap.Builder<Integer, TestDefinition> result = new ImmutableMap.Builder<>();
+      var result = new ImmutableMap.Builder<Integer, TestDefinition>();
 
       attributeLookup.minifiedTests.forEach((identity, minifiedTest) -> {
 

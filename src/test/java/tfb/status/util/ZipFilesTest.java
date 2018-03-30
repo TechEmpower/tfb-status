@@ -42,17 +42,21 @@ public final class ZipFilesTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
     zipFile = Files.createTempFile("ZipFilesTest", ".zip");
-    try (ZipOutputStream out =
-             new ZipOutputStream(
-                 new BufferedOutputStream(Files.newOutputStream(zipFile)))) {
-      ZipEntry entry = new ZipEntry(PRESENT_ENTRY_PATH);
+
+    try (var out = new ZipOutputStream(
+                       new BufferedOutputStream(
+                           Files.newOutputStream(zipFile)))) {
+
+      var entry = new ZipEntry(PRESENT_ENTRY_PATH);
       out.putNextEntry(entry);
       out.write(PRESENT_ENTRY_BYTES);
       out.closeEntry();
-      ZipEntry dir = new ZipEntry(DIR_ENTRY_PATH);
+
+      var dir = new ZipEntry(DIR_ENTRY_PATH);
       out.putNextEntry(dir);
       out.closeEntry();
     }
+
     textFile = Files.createTempFile("ZipFilesTest", ".txt");
     Files.write(textFile, List.of("This is not a zip file"));
     dir = Files.createTempDirectory("ZipFilesTest");

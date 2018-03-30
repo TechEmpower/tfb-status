@@ -177,9 +177,10 @@ public final class UploadResultsHandler implements HttpHandler {
 
       for (Path existingFile : existingFiles) {
         String existingUuid = tryReadUuid(existingFile);
-        if (incomingUuid.equals(existingUuid))
+        if (incomingUuid.equals(existingUuid)) {
           // TODO: Also check if the file was updated more recently than ours?
           return existingFile;
+        }
       }
 
       return newResultsFile();
@@ -584,7 +585,7 @@ public final class UploadResultsHandler implements HttpHandler {
                                     @Nullable String newCommitId) {
 
       // TODO: Consider using a template engine.
-      StringBuilder sb = new StringBuilder();
+      var sb = new StringBuilder();
       sb.append("Hello,\n");
       sb.append("\n");
       sb.append("A TFB run has completed in this environment:\n");
@@ -644,7 +645,7 @@ public final class UploadResultsHandler implements HttpHandler {
         @Nullable byte[] testMetadataBytes,
         @Nullable String diff) {
 
-      ImmutableList.Builder<DataSource> attachments = new ImmutableList.Builder<>();
+      var attachments = new ImmutableList.Builder<DataSource>();
 
       attachments.add(
           emailSender.createAttachment(

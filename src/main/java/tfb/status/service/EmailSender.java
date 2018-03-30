@@ -70,17 +70,17 @@ public final class EmailSender {
       return;
     }
 
-    InternetAddress from = new InternetAddress(config.from);
-    InternetAddress to = new InternetAddress(config.to);
+    var from = new InternetAddress(config.from);
+    var to = new InternetAddress(config.to);
 
-    Properties environment = new Properties();
+    var environment = new Properties();
     environment.setProperty("mail.smtp.host", config.host);
     environment.setProperty("mail.smtp.port", String.valueOf(config.port));
     environment.setProperty("mail.smtp.starttls.enable", "true");
 
     Session session = Session.getInstance(environment);
 
-    MimeMessage message = new MimeMessage(session);
+    var message = new MimeMessage(session);
     message.setFrom(from);
     message.setRecipient(Message.RecipientType.TO, to);
     message.setSubject(subject);
@@ -88,12 +88,12 @@ public final class EmailSender {
     if (attachments.isEmpty()) {
       message.setText(textContent, "utf-8");
     } else {
-      MimeMultipart multipart = new MimeMultipart();
-      MimeBodyPart textBodyPart = new MimeBodyPart();
+      var multipart = new MimeMultipart();
+      var textBodyPart = new MimeBodyPart();
       textBodyPart.setText(textContent, "utf-8");
       multipart.addBodyPart(textBodyPart);
       for (DataSource attachment : attachments) {
-        MimeBodyPart fileBodyPart = new MimeBodyPart();
+        var fileBodyPart = new MimeBodyPart();
         fileBodyPart.setFileName(attachment.getName());
         fileBodyPart.setDataHandler(new DataHandler(attachment));
         multipart.addBodyPart(fileBodyPart);

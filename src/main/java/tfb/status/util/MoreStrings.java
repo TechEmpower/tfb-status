@@ -22,7 +22,7 @@ public final class MoreStrings {
    */
   public static ImmutableList<String> linesOf(String string) {
     Objects.requireNonNull(string);
-    try (BufferedReader reader = new BufferedReader(new StringReader(string))) {
+    try (var reader = new BufferedReader(new StringReader(string))) {
       return reader.lines().collect(toImmutableList());
     } catch (IOException impossible) {
       throw new AssertionError("The string is in memory", impossible);

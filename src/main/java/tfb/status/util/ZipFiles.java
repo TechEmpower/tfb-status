@@ -56,7 +56,7 @@ public final class ZipFiles {
     Objects.requireNonNull(entryPath, "entryPath");
     Objects.requireNonNull(entryReader, "entryReader");
 
-    AtomicReference<T> resultHolder = new AtomicReference<>();
+    var resultHolder = new AtomicReference<T>();
 
     findZipEntry(
         /* zipFile= */ zipFile,

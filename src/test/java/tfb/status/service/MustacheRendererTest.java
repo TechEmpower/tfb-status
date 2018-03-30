@@ -20,13 +20,15 @@ public final class MustacheRendererTest {
    */
   @Test
   public void testClassPathMode() {
-    MustacheConfig config =
-        new MustacheConfig(/* mode= */ CLASS_PATH,
-                           /* root= */ "test_mustache");
+    var config =
+        new MustacheConfig(
+            /* mode= */ CLASS_PATH,
+            /* root= */ "test_mustache");
 
-    MustacheRenderer mustacheRenderer = new MustacheRenderer(config);
+    var mustacheRenderer = new MustacheRenderer(config);
 
-    HelloView view = new HelloView("hello");
+    var view = new HelloView("hello");
+
     String html = mustacheRenderer.render("hello.mustache", view);
 
     assertIterableEquals(
@@ -40,13 +42,15 @@ public final class MustacheRendererTest {
    */
   @Test
   public void testFileSystemMode() {
-    MustacheConfig config =
-        new MustacheConfig(/* mode= */ FILE_SYSTEM,
-                           /* root= */ "src/test/resources/test_mustache");
+    var config =
+        new MustacheConfig(
+            /* mode= */ FILE_SYSTEM,
+            /* root= */ "src/test/resources/test_mustache");
 
-    MustacheRenderer mustacheRenderer = new MustacheRenderer(config);
+    var mustacheRenderer = new MustacheRenderer(config);
 
-    HelloView view = new HelloView("hello");
+    var view = new HelloView("hello");
+
     String html = mustacheRenderer.render("hello.mustache", view);
 
     assertIterableEquals(

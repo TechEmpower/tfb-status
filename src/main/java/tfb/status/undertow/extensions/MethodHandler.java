@@ -13,7 +13,6 @@ import io.undertow.util.HttpString;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -92,7 +91,7 @@ public final class MethodHandler implements HttpHandler {
    * which HTTP methods are supported by this handler.
    */
   private void setAllowHeader(HttpServerExchange exchange) {
-    Set<HttpString> methods = new HashSet<>(handlers.keySet());
+    var methods = new HashSet<HttpString>(handlers.keySet());
     methods.add(OPTIONS);
 
     if (methods.contains(GET))

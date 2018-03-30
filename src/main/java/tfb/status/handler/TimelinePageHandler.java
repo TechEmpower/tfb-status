@@ -19,9 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -82,7 +80,6 @@ public final class TimelinePageHandler implements HttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-
       String relativePath = exchange.getRelativePath();
       Matcher matcher = REQUEST_PATH_PATTERN.matcher(relativePath);
 
@@ -99,9 +96,9 @@ public final class TimelinePageHandler implements HttpHandler {
         return;
       }
 
-      Set<String> allFrameworks = new HashSet<>();
-      Set<String> absentTestTypes = new HashSet<>(Results.TEST_TYPES);
-      List<DataPointView> dataPoints = new ArrayList<>();
+      var allFrameworks = new HashSet<String>();
+      var absentTestTypes = new HashSet<String>(Results.TEST_TYPES);
+      var dataPoints = new ArrayList<DataPointView>();
 
       for (Path zipFile : OtherFiles.listFiles(resultsDirectory, "*.zip")) {
         Results results;
@@ -176,7 +173,7 @@ public final class TimelinePageHandler implements HttpHandler {
                            /* isSelected= */ framework.equals(selectedFramework)))
                        .collect(toImmutableList());
 
-      TimelinePageView timelinePageView =
+      var timelinePageView =
           new TimelinePageView(
               /* framework= */ selectedFramework,
               /* testType= */ selectedTestType,

@@ -32,7 +32,6 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -81,7 +80,7 @@ public final class HomeResultsReader {
     JsonFilesByUuid jsonFiles = jsonFilesByUuid();
     ZipFilesByUuid zipFiles = zipFilesByUuid();
 
-    List<ResultsView> results = new ArrayList<>();
+    var results = new ArrayList<ResultsView>();
 
     Set<String> uuids = Sets.union(jsonFiles.byUuid.keySet(),
                                    zipFiles.byUuid.keySet());
@@ -138,8 +137,8 @@ public final class HomeResultsReader {
       throw new UncheckedIOException(e);
     }
 
-    Map<String, ResultsJsonView> byUuid = new HashMap<>();
-    List<ResultsJsonView> noUuid = new ArrayList<>();
+    var byUuid = new HashMap<String, ResultsJsonView>();
+    var noUuid = new ArrayList<ResultsJsonView>();
 
     for (Path jsonFile : rawFiles) {
       ResultsJsonView view = viewJsonFileMaybeFromCache(jsonFile);
@@ -171,7 +170,7 @@ public final class HomeResultsReader {
   @Nullable
   private ResultsJsonView viewJsonFileMaybeFromCache(Path jsonFile) {
     Objects.requireNonNull(jsonFile);
-    ViewCacheKey key = new ViewCacheKey(jsonFile);
+    var key = new ViewCacheKey(jsonFile);
     return jsonViewCache.get(key);
   }
 
@@ -359,8 +358,8 @@ public final class HomeResultsReader {
       throw new UncheckedIOException(e);
     }
 
-    Map<String, ResultsZipView> byUuid = new HashMap<>();
-    List<ResultsZipView> noUuid = new ArrayList<>();
+    var byUuid = new HashMap<String, ResultsZipView>();
+    var noUuid = new ArrayList<ResultsZipView>();
 
     for (Path zipFile : rawFiles) {
       ResultsZipView view = viewZipFileMaybeFromCache(zipFile);
@@ -392,7 +391,7 @@ public final class HomeResultsReader {
   @Nullable
   private ResultsZipView viewZipFileMaybeFromCache(Path zipFile) {
     Objects.requireNonNull(zipFile);
-    ViewCacheKey key = new ViewCacheKey(zipFile);
+    var key = new ViewCacheKey(zipFile);
     return zipViewCache.get(key);
   }
 
@@ -436,7 +435,7 @@ public final class HomeResultsReader {
     Path relativePath = resultsDirectory.relativize(zipFile);
     String fileName = Joiner.on('/').join(relativePath);
 
-    List<Failure> failures = new ArrayList<>();
+    var failures = new ArrayList<Failure>();
 
     results.failed.inverse().asMap().forEach(
         (framework, failedTestTypes) ->

@@ -7,7 +7,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
-import io.undertow.server.handlers.resource.ResourceManager;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.inject.Inject;
@@ -42,14 +41,13 @@ public final class AssetsHandler implements HttpHandler {
     switch (config.mode) {
       case CLASS_PATH: {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        ResourceManager resourceManager =
-            new ClassPathResourceManager(classLoader, config.root);
+        var resourceManager = new ClassPathResourceManager(classLoader, config.root);
         return new ResourceHandler(resourceManager);
       }
       case FILE_SYSTEM: {
         Path assetsRoot = Paths.get(config.root);
-        ResourceManager resourceManager = new PathResourceManager(assetsRoot);
-        ResourceHandler resourceHandler = new ResourceHandler(resourceManager);
+        var resourceManager = new PathResourceManager(assetsRoot);
+        var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setCacheTime(0);
         return resourceHandler;
       }

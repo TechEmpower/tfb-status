@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -138,7 +137,7 @@ public final class UnzipResultsHandler implements HttpHandler {
             }
 
             else if (Files.isDirectory(zipEntry)) {
-              List<FileView> breadcrumbs = new ArrayList<>();
+              var breadcrumbs = new ArrayList<FileView>();
               for (int i = 1; i <= zipFileAndEntry.getNameCount(); i++) {
                 Path directory = zipFileAndEntry.subpath(0, i);
                 breadcrumbs.add(
@@ -150,7 +149,7 @@ public final class UnzipResultsHandler implements HttpHandler {
                         /* isSelected= */ i == zipFileAndEntry.getNameCount()));
               }
 
-              List<FileView> children = new ArrayList<>();
+              var children = new ArrayList<FileView>();
 
               try (DirectoryStream<Path> files = Files.newDirectoryStream(zipEntry)) {
                 for (Path file : files) {
@@ -173,7 +172,7 @@ public final class UnzipResultsHandler implements HttpHandler {
                                  .thenComparing(file -> file.fileName,
                                                 String.CASE_INSENSITIVE_ORDER));
 
-              UnzippedDirectoryView unzippedDirectoryView =
+              var unzippedDirectoryView =
                   new UnzippedDirectoryView(
                       /* breadcrumbs= */ ImmutableList.copyOf(breadcrumbs),
                       /* children= */ ImmutableList.copyOf(children));

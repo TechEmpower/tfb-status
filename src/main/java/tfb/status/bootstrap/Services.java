@@ -7,7 +7,6 @@ import java.time.Clock;
 import java.util.Objects;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.ServiceLocator;
-import org.glassfish.hk2.utilities.Binder;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import tfb.status.config.ApplicationConfig;
@@ -65,7 +64,7 @@ public final class Services {
     Objects.requireNonNull(clock);
     Objects.requireNonNull(ticker);
 
-    Binder binder = new AbstractBinder() {
+    var binder = new AbstractBinder() {
 
       @Override
       public void configure() {

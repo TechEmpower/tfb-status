@@ -18,7 +18,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
@@ -68,22 +67,24 @@ public final class AboutPageHandler implements HttpHandler {
       Duration uptime = Duration.between(startTime, now);
 
       ImmutableMap<String, String> gitProperties;
+
       try (InputStream in = Thread.currentThread()
                                   .getContextClassLoader()
                                   .getResourceAsStream("git.properties")) {
+
         if (in == null)
           gitProperties = ImmutableMap.of();
 
         else {
-          try (InputStreamReader reader = new InputStreamReader(in, UTF_8)) {
-            Properties properties = new Properties();
-            properties.load(reader);
-            gitProperties = Maps.fromProperties(properties);
+          try (var reader = new InputStreamReader(in, UTF_8)) {
+            var props = new Properties();
+            props.load(reader);
+            gitProperties = Maps.fromProperties(props);
           }
         }
       }
 
-      AboutPageView aboutPageView =
+      var aboutPageView =
           new AboutPageView(
               /* uptime= */ formatDuration(uptime),
               /* gitProperties= */
@@ -111,7 +112,7 @@ public final class AboutPageHandler implements HttpHandler {
       int seconds = duration.toSecondsPart();
 
       NumberFormat integerFormat = NumberFormat.getIntegerInstance(Locale.ROOT);
-      List<String> parts = new ArrayList<>();
+      var parts = new ArrayList<String>();
 
       if (days > 0)    parts.add(integerFormat.format(days) + "d");
       if (hours > 0)   parts.add(integerFormat.format(hours) + "h");

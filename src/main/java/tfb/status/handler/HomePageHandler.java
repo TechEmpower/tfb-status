@@ -97,7 +97,7 @@ public final class HomePageHandler implements HttpHandler {
         }
       }
 
-      HomePageView homePageView =
+      var homePageView =
           new HomePageView(
               /* results= */ resultsOnThisPage,
               /* skip= */ skip,
