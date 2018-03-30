@@ -201,7 +201,7 @@ public final class TestServices {
   private static ApplicationConfig newApplicationConfig() {
     URL url = Resources.getResource("test_config.yml");
     ByteSource bytes = Resources.asByteSource(url);
-    return ConfigReader.readBytes(bytes);
+    return ConfigReader.readYamlBytes(bytes);
   }
 
   private static Client newHttpClient(HttpServerConfig config) {

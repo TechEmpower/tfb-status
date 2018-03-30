@@ -25,50 +25,54 @@ public final class ConfigReader {
   }
 
   /**
-   * Reads the application configuration from a file.
+   * Reads the application configuration from a YAML file.
    *
-   * @param filePath the path to the YAML configuration file for the application
+   * @param yamlFilePath the path to the YAML configuration file for the
+   *        application
    * @return the configuration object for the application
    * @throws InvalidConfigFileException if there is a problem reading the
    *         configuration file
    */
-  public static ApplicationConfig readFile(String filePath) {
-    Objects.requireNonNull(filePath);
-    Path file;
+  public static ApplicationConfig readYamlFile(String yamlFilePath) {
+    Objects.requireNonNull(yamlFilePath);
+
+    Path yamlFile;
     try {
-      file = Paths.get(filePath);
+      yamlFile = Paths.get(yamlFilePath);
     } catch (InvalidPathException e) {
       throw new InvalidConfigFileException(
-          "The path for the configuration file " + filePath + " is invalid",
+          "The path for the configuration file " + yamlFilePath + " is invalid",
           e);
     }
 
-    if (!Files.isRegularFile(file))
+    if (!Files.isRegularFile(yamlFile))
       throw new InvalidConfigFileException(
-          "Configuration file " + filePath + " is not a file");
+          "Configuration file " + yamlFilePath + " is not a file");
 
-    return readBytes(MoreFiles.asByteSource(file));
+    return readYamlBytes(MoreFiles.asByteSource(yamlFile));
   }
 
   /**
-   * Reads the application configuration from bytes.
+   * Reads the application configuration from the raw bytes of a YAML file.
    *
-   * @param bytes the raw bytes of the YAML configuration file for the
+   * @param yamlBytes the raw bytes of the YAML configuration file for the
    *        application
    * @return the configuration object for the application
    * @throws InvalidConfigFileException if there is a problem reading the
    *         configuration file bytes
    */
-  public static ApplicationConfig readBytes(ByteSource bytes) {
-    Objects.requireNonNull(bytes);
+  public static ApplicationConfig readYamlBytes(ByteSource yamlBytes) {
+    Objects.requireNonNull(yamlBytes);
+
     ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
     ApplicationConfig config;
-    try (InputStream in = bytes.openStream()) {
+    try (InputStream in = yamlBytes.openStream()) {
       config = objectMapper.readValue(in, ApplicationConfig.class);
     } catch (IOException e) {
       throw new InvalidConfigFileException(
           "Couldn't deserialize configuration file "
-              + bytes // might have a useful toString(), might not
+              + yamlBytes // might have a useful toString(), might not
               + " into an object",
           e);
     }
