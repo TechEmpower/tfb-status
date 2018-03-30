@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -168,9 +169,14 @@ public final class UnzipResultsHandler implements HttpHandler {
                 }
               }
 
-              children.sort(comparing((FileView file) -> !file.isDirectory)
-                                 .thenComparing(file -> file.fileName,
-                                                String.CASE_INSENSITIVE_ORDER));
+              Comparator<FileView> directoriesFirst =
+                  comparing(file -> !file.isDirectory);
+
+              Comparator<FileView> byFileName =
+                  comparing(file -> file.fileName,
+                            String.CASE_INSENSITIVE_ORDER);
+
+              children.sort(directoriesFirst.thenComparing(byFileName));
 
               var unzippedDirectoryView =
                   new UnzippedDirectoryView(
