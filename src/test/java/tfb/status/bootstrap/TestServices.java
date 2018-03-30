@@ -112,10 +112,10 @@ public final class TestServices {
    * @throws IllegalStateException if there is not exactly one email message
    */
   public synchronized MimeMessage onlyEmailMessage() {
-    if (mailServer == null) {
+    if (mailServer == null)
       throw new IllegalStateException(
           "Email was disabled in the application config");
-    }
+
     MimeMessage[] messages = mailServer.getReceivedMessages();
     try {
       mailServer.purgeEmailFromAllMailboxes();

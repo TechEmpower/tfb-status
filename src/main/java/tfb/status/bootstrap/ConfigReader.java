@@ -116,6 +116,7 @@ public final class ConfigReader {
                                       String directoryPath) {
     Objects.requireNonNull(propertyName);
     Objects.requireNonNull(directoryPath);
+
     Path directory;
     try {
       directory = Paths.get(directoryPath);
@@ -124,6 +125,7 @@ public final class ConfigReader {
           propertyName + ": invalid path " + directoryPath,
           e);
     }
+
     if (Files.exists(directory)) {
       if (Files.isDirectory(directory)) {
         return;
@@ -135,6 +137,7 @@ public final class ConfigReader {
                 + " exists but is not a directory");
       }
     }
+
     // TODO: Create the directory right away?  That's a more effective test.
     for (Path parent = directory.getParent();
          parent != null;

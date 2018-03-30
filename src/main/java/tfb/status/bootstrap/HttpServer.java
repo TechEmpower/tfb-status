@@ -31,6 +31,7 @@ public final class HttpServer {
   public HttpServer(HttpServerConfig config, RootHandler rootHandler) {
     Objects.requireNonNull(config);
     Objects.requireNonNull(rootHandler);
+
     Undertow.Builder builder = Undertow.builder();
     builder.setHandler(rootHandler);
 
