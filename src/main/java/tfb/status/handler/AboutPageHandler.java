@@ -17,6 +17,8 @@ import java.text.NumberFormat;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
@@ -103,36 +105,20 @@ public final class AboutPageHandler implements HttpHandler {
     private static String formatDuration(Duration duration) {
       Objects.requireNonNull(duration);
 
-      class DurationStringBuilder {
-        final StringBuilder out = new StringBuilder();
+      long days = duration.toDaysPart();
+      int hours = duration.toHoursPart();
+      int minutes = duration.toMinutesPart();
+      int seconds = duration.toSecondsPart();
 
-        final NumberFormat integerFormat =
-            NumberFormat.getIntegerInstance(Locale.ROOT);
+      NumberFormat integerFormat = NumberFormat.getIntegerInstance(Locale.ROOT);
+      List<String> parts = new ArrayList<>();
 
-        DurationStringBuilder add(long value, String unit) {
-          if (value > 0) {
-            if (out.length() > 0)
-              out.append(" ");
+      if (days > 0)    parts.add(integerFormat.format(days) + "d");
+      if (hours > 0)   parts.add(integerFormat.format(hours) + "h");
+      if (minutes > 0) parts.add(integerFormat.format(minutes) + "m");
+      if (seconds > 0) parts.add(integerFormat.format(seconds) + "s");
 
-            out.append(integerFormat.format(value))
-               .append(unit);
-          }
-
-          return this;
-        }
-
-        @Override
-        public String toString() {
-          return (out.length() == 0) ? "0s" : out.toString();
-        }
-      }
-
-      return new DurationStringBuilder()
-          .add(duration.toDaysPart(), "d")
-          .add(duration.toHoursPart(), "h")
-          .add(duration.toMinutesPart(), "m")
-          .add(duration.toSecondsPart(), "s")
-          .toString();
+      return parts.isEmpty() ? "0s" : String.join(" ", parts);
     }
   }
 }
