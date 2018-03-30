@@ -142,7 +142,6 @@ public final class ZipFiles {
     }
 
     try (zipFileSystem) {
-
       Path validatedEntryPath;
       try {
         validatedEntryPath = zipFileSystem.getPath(entryPath);
@@ -151,33 +150,31 @@ public final class ZipFiles {
       }
 
       if (validatedEntryPath.isAbsolute()) {
-        if (Files.exists(validatedEntryPath))
+        if (Files.exists(validatedEntryPath)) {
           ifPresent.accept(validatedEntryPath);
-        else
-          ifAbsent.run();
-
-        return;
-      }
-
-      for (Path root : zipFileSystem.getRootDirectories()) {
-        Path matchingEntry;
-        try (Stream<Path> entries = Files.walk(root)) {
-          matchingEntry =
-              entries.filter(Files::isDirectory)
-                     .map(directory -> directory.resolve(validatedEntryPath))
-                     .filter(Files::exists)
-                     .findAny()
-                     .orElse(null);
-        }
-
-        if (matchingEntry != null) {
-          ifPresent.accept(matchingEntry);
           return;
         }
-      }
+      } else {
+        for (Path root : zipFileSystem.getRootDirectories()) {
+          Path matchingEntry;
+          try (Stream<Path> entries = Files.walk(root)) {
+            matchingEntry =
+                entries.filter(Files::isDirectory)
+                       .map(directory -> directory.resolve(validatedEntryPath))
+                       .filter(Files::exists)
+                       .findAny()
+                       .orElse(null);
+          }
 
-      ifAbsent.run();
+          if (matchingEntry != null) {
+            ifPresent.accept(matchingEntry);
+            return;
+          }
+        }
+      }
     }
+
+    ifAbsent.run();
   }
 
   /**
