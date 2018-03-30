@@ -226,7 +226,7 @@ public final class AttributesPageHandler implements HttpHandler {
     updateAttributes(Map<Attribute, AttributeInfo> previousAttributes,
                      List<TestDefinition> testDefinitions) {
 
-      ImmutableMap.Builder<Attribute, AttributeInfo> updatedAttributes = ImmutableMap.builder();
+      ImmutableMap.Builder<Attribute, AttributeInfo> updatedAttributes = new ImmutableMap.Builder<>();
 
       ImmutableList<Map<Attribute, String>> attributeMaps =
           testDefinitions.stream()
@@ -343,7 +343,7 @@ public final class AttributesPageHandler implements HttpHandler {
                            .map(Ascii::toLowerCase)
                            .collect(toImmutableList())));
 
-      ImmutableMap.Builder<String, MinifiedTestDefinition> result = ImmutableMap.builder();
+      ImmutableMap.Builder<String, MinifiedTestDefinition> result = new ImmutableMap.Builder<>();
 
       testMetadata.forEach((identity, definition) -> {
 
@@ -457,7 +457,7 @@ public final class AttributesPageHandler implements HttpHandler {
 
       ValuesByAttributeAndIndex values = new ValuesByAttributeAndIndex(attributeLookup);
 
-      ImmutableMap.Builder<Integer, TestDefinition> result = ImmutableMap.builder();
+      ImmutableMap.Builder<Integer, TestDefinition> result = new ImmutableMap.Builder<>();
 
       attributeLookup.minifiedTests.forEach((identity, minifiedTest) -> {
 

@@ -135,10 +135,9 @@ public final class DiffGenerator {
             /* totalWorse= */ integerFormat.format(totalWorse),
             /* rpsChangeThreshold= */ percentFormat.format(RPS_CHANGE_THRESHOLD));
 
-    ImmutableList.Builder<DiffLineView> lineViews = ImmutableList.builder();
+    ImmutableList.Builder<DiffLineView> lineViews = new ImmutableList.Builder<>();
 
     for (DiffLine line : lines) {
-
       String addedOrRemovedText;
       if (line.oldRps == 0d)
         addedOrRemovedText = "ADDED";

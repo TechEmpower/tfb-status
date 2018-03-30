@@ -644,7 +644,7 @@ public final class UploadResultsHandler implements HttpHandler {
         @Nullable byte[] testMetadataBytes,
         @Nullable String diff) {
 
-      ImmutableList.Builder<DataSource> attachments = ImmutableList.builder();
+      ImmutableList.Builder<DataSource> attachments = new ImmutableList.Builder<>();
 
       attachments.add(
           emailSender.createAttachment(
