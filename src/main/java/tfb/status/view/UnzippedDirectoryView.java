@@ -9,7 +9,7 @@ import javax.annotation.Nullable;
  * A view of one directory within a zip file.
  */
 @Immutable
-public final class DirectoryListingView {
+public final class UnzippedDirectoryView {
   /**
    * The current directory and all its parents up to the root of this zip file.
    * The first item in this list is the root and the last is the current
@@ -24,8 +24,8 @@ public final class DirectoryListingView {
    */
   public final ImmutableList<FileView> children;
 
-  public DirectoryListingView(ImmutableList<FileView> breadcrumbs,
-                              ImmutableList<FileView> children) {
+  public UnzippedDirectoryView(ImmutableList<FileView> breadcrumbs,
+                               ImmutableList<FileView> children) {
     this.breadcrumbs = Objects.requireNonNull(breadcrumbs);
     this.children = Objects.requireNonNull(children);
   }

@@ -39,8 +39,8 @@ import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.DefaultToUtf8Handler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
-import tfb.status.view.DirectoryListingView;
-import tfb.status.view.DirectoryListingView.FileView;
+import tfb.status.view.UnzippedDirectoryView;
+import tfb.status.view.UnzippedDirectoryView.FileView;
 
 /**
  * Handles requests to extract files from within results.zip files.
@@ -173,12 +173,12 @@ public final class UnzipResultsHandler implements HttpHandler {
                                  .thenComparing(file -> file.fileName,
                                                 String.CASE_INSENSITIVE_ORDER));
 
-              DirectoryListingView directoryView =
-                  new DirectoryListingView(
+              UnzippedDirectoryView unzippedDirectoryView =
+                  new UnzippedDirectoryView(
                       /* breadcrumbs= */ ImmutableList.copyOf(breadcrumbs),
                       /* children= */ ImmutableList.copyOf(children));
 
-              String html = mustacheRenderer.render("directory-listing.mustache", directoryView);
+              String html = mustacheRenderer.render("unzipped-directory.mustache", unzippedDirectoryView);
               exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
               exchange.getResponseSender().send(html, UTF_8);
             }
