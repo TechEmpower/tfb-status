@@ -103,7 +103,10 @@ public final class SaveAttributesHandler implements HttpHandler {
       }
 
       MoreFiles.createParentDirectories(attributesLookupFile);
-      Files.move(tempFile, attributesLookupFile, REPLACE_EXISTING);
+      Files.move(
+          /* source= */ tempFile,
+          /* target= */ attributesLookupFile,
+          /* options= */ REPLACE_EXISTING);
 
       exchange.getResponseHeaders().put(Headers.LOCATION, "/");
       exchange.setStatusCode(SEE_OTHER);
