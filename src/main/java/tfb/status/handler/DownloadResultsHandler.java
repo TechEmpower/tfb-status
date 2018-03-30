@@ -7,6 +7,8 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.server.handlers.resource.ResourceManager;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -21,11 +23,10 @@ public final class DownloadResultsHandler implements HttpHandler {
 
   @Inject
   public DownloadResultsHandler(FileStoreConfig fileStoreConfig) {
-    HttpHandler handler =
-        new ResourceHandler(
-            new PathResourceManager(
-                Paths.get(fileStoreConfig.resultsDirectory)));
+    Path resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
+    ResourceManager resourceManager = new PathResourceManager(resultsDirectory);
 
+    HttpHandler handler = new ResourceHandler(resourceManager);
     handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");
 
     delegate = handler;

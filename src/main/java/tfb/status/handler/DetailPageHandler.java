@@ -78,14 +78,14 @@ public final class DetailPageHandler implements HttpHandler {
         return;
       }
 
-      DetailPageView view = new DetailPageView(result);
+      DetailPageView detailPageView = new DetailPageView(result);
 
       if (isJson) {
-        String json = objectMapper.writeValueAsString(view);
+        String json = objectMapper.writeValueAsString(detailPageView);
         exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
         exchange.getResponseSender().send(json);
       } else {
-        String html = mustacheRenderer.render("detail.mustache", view);
+        String html = mustacheRenderer.render("detail.mustache", detailPageView);
         exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
         exchange.getResponseSender().send(html);
       }

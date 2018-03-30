@@ -15,7 +15,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
@@ -89,7 +88,7 @@ public final class EmailSender {
     if (attachments.isEmpty()) {
       message.setText(textContent, "utf-8");
     } else {
-      Multipart multipart = new MimeMultipart();
+      MimeMultipart multipart = new MimeMultipart();
       MimeBodyPart textBodyPart = new MimeBodyPart();
       textBodyPart.setText(textContent, "utf-8");
       multipart.addBodyPart(textBodyPart);
