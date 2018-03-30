@@ -15,8 +15,6 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -33,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.MethodHandler;
+import tfb.status.util.OtherFiles;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 import tfb.status.view.TimelinePageView;
@@ -104,7 +103,7 @@ public final class TimelinePageHandler implements HttpHandler {
       Set<String> absentTestTypes = new HashSet<>(Results.TEST_TYPES);
       List<DataPointView> dataPoints = new ArrayList<>();
 
-      for (Path zipFile : listFiles(resultsDirectory, "*.zip")) {
+      for (Path zipFile : OtherFiles.listFiles(resultsDirectory, "*.zip")) {
         Results results;
         try {
           results =
@@ -188,22 +187,6 @@ public final class TimelinePageHandler implements HttpHandler {
       String html = mustacheRenderer.render("timeline.mustache", timelinePageView);
       exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
       exchange.getResponseSender().send(html, UTF_8);
-    }
-
-    private static ImmutableList<Path> listFiles(Path directory, String glob)
-        throws IOException {
-
-      Objects.requireNonNull(directory);
-      Objects.requireNonNull(glob);
-
-      if (!Files.isDirectory(directory))
-        return ImmutableList.of();
-
-      try (DirectoryStream<Path> files =
-               Files.newDirectoryStream(directory, glob)) {
-
-        return ImmutableList.copyOf(files);
-      }
     }
 
     // Matches "/gemini-mysql/fortune", for example.

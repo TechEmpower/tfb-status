@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,6 +49,7 @@ import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
+import tfb.status.util.OtherFiles;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 import tfb.status.view.Results.UuidOnly;
@@ -163,25 +163,23 @@ public final class UploadResultsHandler implements HttpHandler {
     }
 
     private Path destinationForIncomingFile(Path incomingFile) {
-      if (!Files.isDirectory(resultsDirectory))
-        return newResultsFile();
-
       String incomingUuid = tryReadUuid(incomingFile);
       if (incomingUuid == null)
         return newResultsFile();
 
-      try (DirectoryStream<Path> candidateFiles =
-               Files.newDirectoryStream(resultsDirectory, "*." + fileExtension)) {
-
-        for (Path existingFile : candidateFiles) {
-          String existingUuid = tryReadUuid(existingFile);
-          if (incomingUuid.equals(existingUuid))
-            // TODO: Also check if the file was updated more recently than ours?
-            return existingFile;
-        }
-
+      ImmutableList<Path> existingFiles;
+      try {
+        existingFiles = OtherFiles.listFiles(resultsDirectory,
+                                             "*." + fileExtension);
       } catch (IOException e) {
         throw new UncheckedIOException(e);
+      }
+
+      for (Path existingFile : existingFiles) {
+        String existingUuid = tryReadUuid(existingFile);
+        if (incomingUuid.equals(existingUuid))
+          // TODO: Also check if the file was updated more recently than ours?
+          return existingFile;
       }
 
       return newResultsFile();
@@ -487,25 +485,33 @@ public final class UploadResultsHandler implements HttpHandler {
       if (directory == null)
         return null;
 
-      try (DirectoryStream<Path> allZipFiles =
-               Files.newDirectoryStream(directory, "*.zip")) {
-
-        for (Path file : allZipFiles) {
-          if (file.equals(newZipFile))
-            continue;
-
-          FileTime time = Files.getLastModifiedTime(file);
-          if (previousZipFile == null || time.compareTo(previousTime) > 0) {
-            previousZipFile = file;
-            previousTime = time;
-          }
-        }
-
+      ImmutableList<Path> allZipFiles;
+      try {
+        allZipFiles = OtherFiles.listFiles(directory, "*.zip");
       } catch (IOException e) {
         logger.warn(
             "Error finding predecessor of new zip file {}",
             newZipFile, e);
         return null;
+      }
+
+      for (Path file : allZipFiles) {
+        if (file.equals(newZipFile))
+          continue;
+
+        FileTime time;
+        try {
+          time = Files.getLastModifiedTime(file);
+        } catch (IOException e) {
+          logger.warn(
+              "Error finding predecessor of new zip file {}",
+              newZipFile, e);
+          return null;
+        }
+        if (previousZipFile == null || time.compareTo(previousTime) > 0) {
+          previousZipFile = file;
+          previousTime = time;
+        }
       }
 
       return previousZipFile;

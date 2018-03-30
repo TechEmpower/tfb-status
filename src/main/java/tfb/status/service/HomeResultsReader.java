@@ -12,13 +12,11 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.Immutable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,6 +43,7 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.FileStoreConfig;
+import tfb.status.util.OtherFiles;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.HomePageView.ResultsGitView;
 import tfb.status.view.HomePageView.ResultsJsonView;
@@ -78,11 +77,34 @@ public final class HomeResultsReader {
    *
    * @return a view of the results
    */
-  public ImmutableList<ResultsView> results()  {
-    RawFiles raw = rawFiles(resultsDirectory);
-    JsonFilesByUuid jsonFiles = jsonFilesByUuid(raw.json, resultsDirectory);
-    ZipFilesByUuid zipFiles = zipFilesByUuid(raw.zip, resultsDirectory);
-    return combine(jsonFiles, zipFiles);
+  public ImmutableList<ResultsView> results() {
+    JsonFilesByUuid jsonFiles = jsonFilesByUuid();
+    ZipFilesByUuid zipFiles = zipFilesByUuid();
+
+    List<ResultsView> results = new ArrayList<>();
+
+    Set<String> uuids = Sets.union(jsonFiles.byUuid.keySet(),
+                                   zipFiles.byUuid.keySet());
+
+    for (String uuid : uuids) {
+      ResultsJsonView json = jsonFiles.byUuid.get(uuid);
+      ResultsZipView zip = zipFiles.byUuid.get(uuid);
+      results.add(new ResultsView(json, zip));
+    }
+
+    for (ResultsJsonView json : jsonFiles.noUuid)
+      results.add(
+          new ResultsView(
+              /* json= */ json,
+              /* zip= */ null));
+
+    for (ResultsZipView zip : zipFiles.noUuid)
+      results.add(
+          new ResultsView(
+              /* json= */ null,
+              /* zip= */ zip));
+
+    return ImmutableList.sortedCopyOf(RESULTS_COMPARATOR, results);
   }
 
   /**
@@ -104,79 +126,23 @@ public final class HomeResultsReader {
   }
 
   /**
-   * Returns the list of the results.json and results.zip files from the given
-   * directory.  The search is non-recursive.  If the given path does not
-   * represent a directory, then the returned list is empty.
-   *
-   * @param directory the directory to be read
-   * @return the list of results files
-   */
-  private RawFiles rawFiles(Path directory) {
-    Objects.requireNonNull(directory);
-
-    ImmutableList.Builder<Path> json = ImmutableList.builder();
-    ImmutableList.Builder<Path> zip = ImmutableList.builder();
-
-    if (Files.isDirectory(directory)) {
-      try (DirectoryStream<Path> resultsFiles =
-               Files.newDirectoryStream(directory, "results*.{json,zip}")) {
-
-        for (Path file : resultsFiles) {
-          switch (MoreFiles.getFileExtension(file)) {
-            case "json": json.add(file); break;
-            case "zip":  zip.add(file);  break;
-
-            default:
-              throw new AssertionError(
-                  "We limited our search to .json and .zip files only, "
-                      + "but we found a file \""
-                      + file
-                      + "\" with extension \""
-                      + MoreFiles.getFileExtension(file)
-                      + "\"");
-          }
-        }
-
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
-
-    return new RawFiles(json.build(), zip.build());
-  }
-
-  @Immutable
-  private static final class RawFiles {
-    /**
-     * The results.json files in this directory in no particular order.
-     */
-    final ImmutableList<Path> json;
-
-    /**
-     * The results.zip files in this directory in no particular order.
-     */
-    final ImmutableList<Path> zip;
-
-    RawFiles(ImmutableList<Path> json, ImmutableList<Path> zip) {
-      this.json = Objects.requireNonNull(json);
-      this.zip = Objects.requireNonNull(zip);
-    }
-  }
-
-  /**
    * Given a list of raw results.json files, produces a view of that file
    * suitable for display on the home page, then puts the views into buckets
    * based on the uuid of each set of results.
    */
-  private JsonFilesByUuid jsonFilesByUuid(List<Path> jsonFiles, Path directory) {
-    Objects.requireNonNull(jsonFiles);
-    Objects.requireNonNull(directory);
+  private JsonFilesByUuid jsonFilesByUuid() {
+    ImmutableList<Path> rawFiles;
+    try {
+      rawFiles = OtherFiles.listFiles(resultsDirectory, "*.json");
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
 
     Map<String, ResultsJsonView> byUuid = new HashMap<>();
-    ImmutableList.Builder<ResultsJsonView> noUuid = ImmutableList.builder();
+    List<ResultsJsonView> noUuid = new ArrayList<>();
 
-    for (Path jsonFile : jsonFiles) {
-      ResultsJsonView view = viewJsonFileMaybeFromCache(jsonFile, directory);
+    for (Path jsonFile : rawFiles) {
+      ResultsJsonView view = viewJsonFileMaybeFromCache(jsonFile);
 
       if (view == null)
         continue;
@@ -199,26 +165,24 @@ public final class HomeResultsReader {
 
     return new JsonFilesByUuid(
         /* byUuid= */ ImmutableMap.copyOf(byUuid),
-        /* noUuid= */ noUuid.build());
+        /* noUuid= */ ImmutableList.copyOf(noUuid));
   }
 
   @Nullable
-  private ResultsJsonView viewJsonFileMaybeFromCache(Path jsonFile, Path directory) {
+  private ResultsJsonView viewJsonFileMaybeFromCache(Path jsonFile) {
     Objects.requireNonNull(jsonFile);
-    Objects.requireNonNull(directory);
-    ViewCacheKey key = new ViewCacheKey(jsonFile, directory);
+    ViewCacheKey key = new ViewCacheKey(jsonFile);
     return jsonViewCache.get(key);
   }
 
   private final LoadingCache<ViewCacheKey, ResultsJsonView> jsonViewCache =
       Caffeine.newBuilder()
               .maximumSize(INSANE_NUMBER_OF_CACHE_ENTRIES)
-              .build(key -> viewJsonFileNotCached(key.file, key.directory));
+              .build(key -> viewJsonFileNotCached(key.file));
 
   @Nullable
-  private ResultsJsonView viewJsonFileNotCached(Path jsonFile, Path directory) {
+  private ResultsJsonView viewJsonFileNotCached(Path jsonFile) {
     Objects.requireNonNull(jsonFile);
-    Objects.requireNonNull(directory);
 
     Results results;
     try {
@@ -338,7 +302,7 @@ public final class HomeResultsReader {
             ? null
             : formatDuration(estimatedRemainingDuration);
 
-    Path relativePath = directory.relativize(jsonFile);
+    Path relativePath = resultsDirectory.relativize(jsonFile);
     String fileName = Joiner.on('/').join(relativePath);
 
     ResultsGitView git;
@@ -387,15 +351,19 @@ public final class HomeResultsReader {
    * suitable for display on the home page, then puts the views into buckets
    * based on the uuid of each set of results.
    */
-  private ZipFilesByUuid zipFilesByUuid(List<Path> zipFiles, Path directory) {
-    Objects.requireNonNull(zipFiles);
-    Objects.requireNonNull(directory);
+  private ZipFilesByUuid zipFilesByUuid() {
+    ImmutableList<Path> rawFiles;
+    try {
+      rawFiles = OtherFiles.listFiles(resultsDirectory, "*.zip");
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
 
     Map<String, ResultsZipView> byUuid = new HashMap<>();
-    ImmutableList.Builder<ResultsZipView> noUuid = ImmutableList.builder();
+    List<ResultsZipView> noUuid = new ArrayList<>();
 
-    for (Path zipFile : zipFiles) {
-      ResultsZipView view = viewZipFileMaybeFromCache(zipFile, directory);
+    for (Path zipFile : rawFiles) {
+      ResultsZipView view = viewZipFileMaybeFromCache(zipFile);
 
       if (view == null)
         continue;
@@ -418,26 +386,24 @@ public final class HomeResultsReader {
 
     return new ZipFilesByUuid(
         /* byUuid= */ ImmutableMap.copyOf(byUuid),
-        /* noUuid= */ noUuid.build());
+        /* noUuid= */ ImmutableList.copyOf(noUuid));
   }
 
   @Nullable
-  private ResultsZipView viewZipFileMaybeFromCache(Path zipFile, Path directory) {
+  private ResultsZipView viewZipFileMaybeFromCache(Path zipFile) {
     Objects.requireNonNull(zipFile);
-    Objects.requireNonNull(directory);
-    ViewCacheKey key = new ViewCacheKey(zipFile, directory);
+    ViewCacheKey key = new ViewCacheKey(zipFile);
     return zipViewCache.get(key);
   }
 
   private final LoadingCache<ViewCacheKey, ResultsZipView> zipViewCache =
       Caffeine.newBuilder()
               .maximumSize(INSANE_NUMBER_OF_CACHE_ENTRIES)
-              .build(key -> viewZipFileNotCached(key.file, key.directory));
+              .build(key -> viewZipFileNotCached(key.file));
 
   @Nullable
-  private ResultsZipView viewZipFileNotCached(Path zipFile, Path directory) {
+  private ResultsZipView viewZipFileNotCached(Path zipFile) {
     Objects.requireNonNull(zipFile);
-    Objects.requireNonNull(directory);
 
     //
     // Considering that these zip files may contain thousands of files,
@@ -467,7 +433,7 @@ public final class HomeResultsReader {
       return null;
 
     String uuid = results.uuid;
-    Path relativePath = directory.relativize(zipFile);
+    Path relativePath = resultsDirectory.relativize(zipFile);
     String fileName = Joiner.on('/').join(relativePath);
 
     List<Failure> failures = new ArrayList<>();
@@ -553,14 +519,12 @@ public final class HomeResultsReader {
   @Immutable
   private static final class ViewCacheKey {
     final Path file;
-    final Path directory;
 
     // When the file is modified, this cache key becomes unreachable.
     final FileTime lastModifiedTime;
 
-    ViewCacheKey(Path file, Path directory) {
+    ViewCacheKey(Path file) {
       this.file = Objects.requireNonNull(file);
-      this.directory = Objects.requireNonNull(directory);
       try {
         this.lastModifiedTime = Files.getLastModifiedTime(file);
       } catch (IOException e) {
@@ -578,55 +542,13 @@ public final class HomeResultsReader {
 
       ViewCacheKey that = (ViewCacheKey) object;
       return this.file.equals(that.file)
-          && this.directory.equals(that.directory)
           && this.lastModifiedTime.equals(that.lastModifiedTime);
     }
 
     @Override
     public int hashCode() {
-      int hash = 1;
-      hash = 31 * hash + file.hashCode();
-      hash = 31 * hash + directory.hashCode();
-      hash = 31 * hash + lastModifiedTime.hashCode();
-      return hash;
+      return file.hashCode() ^ lastModifiedTime.hashCode();
     }
-  }
-
-  /**
-   * Attempts to merge results.json views and results.zip views together by
-   * comparing their uuids.  Views without uuids cannot be merged, so the merged
-   * views in those cases contain only one of the file types.
-   */
-  private ImmutableList<ResultsView> combine(JsonFilesByUuid jsonFiles,
-                                             ZipFilesByUuid zipFiles) {
-    Objects.requireNonNull(jsonFiles);
-    Objects.requireNonNull(zipFiles);
-    List<ResultsView> results = new ArrayList<>();
-
-    Set<String> uuids =
-        Sets.union(
-            jsonFiles.byUuid.keySet(),
-            zipFiles.byUuid.keySet());
-
-    for (String uuid : uuids) {
-      ResultsJsonView json = jsonFiles.byUuid.get(uuid);
-      ResultsZipView zip = zipFiles.byUuid.get(uuid);
-      results.add(new ResultsView(json, zip));
-    }
-
-    for (ResultsJsonView json : jsonFiles.noUuid)
-      results.add(
-          new ResultsView(
-              /* json= */ json,
-              /* zip= */ null));
-
-    for (ResultsZipView zip : zipFiles.noUuid)
-      results.add(
-          new ResultsView(
-              /* json= */ null,
-              /* zip= */ zip));
-
-    return ImmutableList.sortedCopyOf(RESULTS_COMPARATOR, results);
   }
 
   private static LocalDateTime epochMillisToDateTime(long epochMillis,
