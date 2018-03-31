@@ -10,7 +10,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.Immutable;
 import java.io.BufferedReader;
@@ -36,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -61,6 +61,16 @@ public final class HomeResultsReader {
   private final Clock clock;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
+  private final LoadingCache<ViewCacheKey, ResultsJsonView> jsonCache =
+      Caffeine.newBuilder()
+              .maximumSize(INSANE_NUMBER_OF_CACHE_ENTRIES)
+              .build(key -> viewJsonFile(key.file));
+
+  private final LoadingCache<ViewCacheKey, ResultsZipView> zipCache =
+      Caffeine.newBuilder()
+              .maximumSize(INSANE_NUMBER_OF_CACHE_ENTRIES)
+              .build(key -> viewZipFile(key.file));
+
   @Inject
   public HomeResultsReader(FileStoreConfig fileStoreConfig,
                            ObjectMapper objectMapper,
@@ -77,27 +87,66 @@ public final class HomeResultsReader {
    * @return a view of the results
    */
   public ImmutableList<ResultsView> results() {
-    JsonFilesByUuid jsonFiles = jsonFilesByUuid();
-    ZipFilesByUuid zipFiles = zipFilesByUuid();
+    var jsonByUuid = new HashMap<String, ResultsJsonView>();
+    var jsonWithoutUuid = new ArrayList<ResultsJsonView>();
+
+    viewAllJsonFiles().forEach(
+        view -> {
+          if (view.uuid == null)
+            jsonWithoutUuid.add(view);
+
+          else
+            jsonByUuid.merge(
+                view.uuid,
+                view,
+                (v1, v2) -> {
+                  logger.warn(
+                      "Ignoring results.json file {}, which has the same "
+                          + "uuid ({}) as another results.json file.",
+                      view.fileName, view.uuid);
+                  return v1;
+                });
+        });
+
+    var zipByUuid = new HashMap<String, ResultsZipView>();
+    var zipWithoutUuid = new ArrayList<ResultsZipView>();
+
+    viewAllZipFiles().forEach(
+        view -> {
+          if (view.uuid == null)
+            zipWithoutUuid.add(view);
+
+          else
+            zipByUuid.merge(
+                view.uuid,
+                view,
+                (v1, v2) -> {
+                  logger.warn(
+                      "Ignoring results.zip file {}, which has the same "
+                          + "uuid ({}) as another results.zip file.",
+                      view.fileName, view.uuid);
+                  return v1;
+                });
+        });
 
     var results = new ArrayList<ResultsView>();
 
-    Set<String> uuids = Sets.union(jsonFiles.byUuid.keySet(),
-                                   zipFiles.byUuid.keySet());
+    Set<String> uuids = Sets.union(jsonByUuid.keySet(),
+                                   zipByUuid.keySet());
 
     for (String uuid : uuids) {
-      ResultsJsonView json = jsonFiles.byUuid.get(uuid);
-      ResultsZipView zip = zipFiles.byUuid.get(uuid);
+      ResultsJsonView json = jsonByUuid.get(uuid);
+      ResultsZipView zip = zipByUuid.get(uuid);
       results.add(new ResultsView(json, zip));
     }
 
-    for (ResultsJsonView json : jsonFiles.noUuid)
+    for (ResultsJsonView json : jsonWithoutUuid)
       results.add(
           new ResultsView(
               /* json= */ json,
               /* zip= */ null));
 
-    for (ResultsZipView zip : zipFiles.noUuid)
+    for (ResultsZipView zip : zipWithoutUuid)
       results.add(
           new ResultsView(
               /* json= */ null,
@@ -118,69 +167,54 @@ public final class HomeResultsReader {
   @Nullable
   public ResultsView resultsByUuid(String resultsUuid) {
     Objects.requireNonNull(resultsUuid);
-    return results().stream()
-                    .filter(results -> resultsUuid.equals(results.uuid))
-                    .findFirst()
-                    .orElse(null);
+
+    ResultsJsonView json =
+        viewAllJsonFiles()
+            .filter(view -> resultsUuid.equals(view.uuid))
+            .findAny()
+            .orElse(null);
+
+    ResultsZipView zip =
+        viewAllZipFiles()
+            .filter(view -> resultsUuid.equals(view.uuid))
+            .findAny()
+            .orElse(null);
+
+    return (json == null && zip == null)
+        ? null
+        : new ResultsView(json, zip);
   }
 
-  /**
-   * Given a list of raw results.json files, produces a view of that file
-   * suitable for display on the home page, then puts the views into buckets
-   * based on the uuid of each set of results.
-   */
-  private JsonFilesByUuid jsonFilesByUuid() {
-    ImmutableList<Path> rawFiles;
+  private Stream<ResultsJsonView> viewAllJsonFiles() {
+    ImmutableList<Path> files;
     try {
-      rawFiles = OtherFiles.listFiles(resultsDirectory, "*.json");
+      files = OtherFiles.listFiles(resultsDirectory, "*.json");
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
 
-    var byUuid = new HashMap<String, ResultsJsonView>();
-    var noUuid = new ArrayList<ResultsJsonView>();
+    return files.stream()
+                .map(file -> new ViewCacheKey(file))
+                .map(key -> jsonCache.get(key))
+                .filter(view -> view != null);
+  }
 
-    for (Path jsonFile : rawFiles) {
-      ResultsJsonView view = viewJsonFileMaybeFromCache(jsonFile);
-
-      if (view == null)
-        continue;
-
-      if (view.uuid == null)
-        noUuid.add(view);
-
-      else
-        byUuid.merge(
-            view.uuid,
-            view,
-            (v1, v2) -> {
-              logger.warn(
-                  "Ignoring results.json file {}, which has the same uuid ({}) "
-                      + "as another results.json file.",
-                  jsonFile, view.uuid);
-              return v1;
-            });
+  private Stream<ResultsZipView> viewAllZipFiles() {
+    ImmutableList<Path> files;
+    try {
+      files = OtherFiles.listFiles(resultsDirectory, "*.zip");
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
 
-    return new JsonFilesByUuid(
-        /* byUuid= */ ImmutableMap.copyOf(byUuid),
-        /* noUuid= */ ImmutableList.copyOf(noUuid));
+    return files.stream()
+                .map(file -> new ViewCacheKey(file))
+                .map(key -> zipCache.get(key))
+                .filter(view -> view != null);
   }
 
   @Nullable
-  private ResultsJsonView viewJsonFileMaybeFromCache(Path jsonFile) {
-    Objects.requireNonNull(jsonFile);
-    var key = new ViewCacheKey(jsonFile);
-    return jsonViewCache.get(key);
-  }
-
-  private final LoadingCache<ViewCacheKey, ResultsJsonView> jsonViewCache =
-      Caffeine.newBuilder()
-              .maximumSize(INSANE_NUMBER_OF_CACHE_ENTRIES)
-              .build(key -> viewJsonFileNotCached(key.file));
-
-  @Nullable
-  private ResultsJsonView viewJsonFileNotCached(Path jsonFile) {
+  private ResultsJsonView viewJsonFile(Path jsonFile) {
     Objects.requireNonNull(jsonFile);
 
     Results results;
@@ -256,11 +290,12 @@ public final class HomeResultsReader {
                          .minus(elapsedDuration);
 
     //
-    // TODO: Use something about the content of the results.json file to
-    //       determine last updated time.  Unfortunately the datetime strings
-    //       in the "completed" object do not specify their time zone even
-    //       though they depend on the time zone of that particular TFB
-    //       server.
+    // TODO: Avoid using the last modified time of the file on disk (which may
+    //       change for reasons completely unrelated to the run itself), and use
+    //       something from the results.json file to give us a last modified
+    //       time instead.  The datetime strings in the "completed" object are
+    //       no good because they are local to the TFB server, and we don't know
+    //       that server's time zone.
     //
     FileTime lastUpdatedTime;
     try {
@@ -333,85 +368,10 @@ public final class HomeResultsReader {
         /* estimatedRemainingDuration= */ estimatedRemainingDurationString);
   }
 
-  @Immutable
-  private static final class JsonFilesByUuid {
-    final ImmutableMap<String, ResultsJsonView> byUuid;
-    final ImmutableList<ResultsJsonView> noUuid;
-
-    JsonFilesByUuid(ImmutableMap<String, ResultsJsonView> byUuid,
-                    ImmutableList<ResultsJsonView> noUuid) {
-      this.byUuid = Objects.requireNonNull(byUuid);
-      this.noUuid = Objects.requireNonNull(noUuid);
-    }
-  }
-
-  /**
-   * Given a list of raw results.zip files, produces a view of that file
-   * suitable for display on the home page, then puts the views into buckets
-   * based on the uuid of each set of results.
-   */
-  private ZipFilesByUuid zipFilesByUuid() {
-    ImmutableList<Path> rawFiles;
-    try {
-      rawFiles = OtherFiles.listFiles(resultsDirectory, "*.zip");
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
-    var byUuid = new HashMap<String, ResultsZipView>();
-    var noUuid = new ArrayList<ResultsZipView>();
-
-    for (Path zipFile : rawFiles) {
-      ResultsZipView view = viewZipFileMaybeFromCache(zipFile);
-
-      if (view == null)
-        continue;
-
-      if (view.uuid == null)
-        noUuid.add(view);
-
-      else
-        byUuid.merge(
-            view.uuid,
-            view,
-            (v1, v2) -> {
-              logger.warn(
-                  "Ignoring results.zip file {}, which has the same "
-                      + "uuid ({}) as another results.zip file.",
-                  zipFile, view.uuid);
-              return v1;
-            });
-    }
-
-    return new ZipFilesByUuid(
-        /* byUuid= */ ImmutableMap.copyOf(byUuid),
-        /* noUuid= */ ImmutableList.copyOf(noUuid));
-  }
-
   @Nullable
-  private ResultsZipView viewZipFileMaybeFromCache(Path zipFile) {
-    Objects.requireNonNull(zipFile);
-    var key = new ViewCacheKey(zipFile);
-    return zipViewCache.get(key);
-  }
-
-  private final LoadingCache<ViewCacheKey, ResultsZipView> zipViewCache =
-      Caffeine.newBuilder()
-              .maximumSize(INSANE_NUMBER_OF_CACHE_ENTRIES)
-              .build(key -> viewZipFileNotCached(key.file));
-
-  @Nullable
-  private ResultsZipView viewZipFileNotCached(Path zipFile) {
+  private ResultsZipView viewZipFile(Path zipFile) {
     Objects.requireNonNull(zipFile);
 
-    //
-    // Considering that these zip files may contain thousands of files,
-    // iteration seems like a pretty inefficient way to find the results.json
-    // file.  And we can't use ZipFile.getEntry(name) because we don't know
-    // the full path (including directories) of the results.json file.
-    // Fortunately, in practice the results.json file is one of the first
-    // entries, so iteration finds it quickly.
-    //
     Results results;
     try {
       results =
@@ -470,8 +430,7 @@ public final class HomeResultsReader {
                 /* entryPath= */ "commit_id.txt",
                 /* entryReader= */
                 in -> {
-                  try (BufferedReader reader =
-                           new BufferedReader(new InputStreamReader(in, UTF_8))) {
+                  try (var reader = new BufferedReader(new InputStreamReader(in, UTF_8))) {
                     return reader.readLine();
                   }
                 });
@@ -501,18 +460,6 @@ public final class HomeResultsReader {
         /* git= */ git,
         /* fileName= */ fileName,
         /* failures= */ ImmutableList.copyOf(failures));
-  }
-
-  @Immutable
-  private static final class ZipFilesByUuid {
-    final ImmutableMap<String, ResultsZipView> byUuid;
-    final ImmutableList<ResultsZipView> noUuid;
-
-    ZipFilesByUuid(ImmutableMap<String, ResultsZipView> byUuid,
-                   ImmutableList<ResultsZipView> noUuid) {
-      this.byUuid = Objects.requireNonNull(byUuid);
-      this.noUuid = Objects.requireNonNull(noUuid);
-    }
   }
 
   @Immutable
