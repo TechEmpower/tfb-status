@@ -64,7 +64,7 @@ public final class ConfigReader {
   public static ApplicationConfig readYamlBytes(ByteSource yamlBytes) {
     Objects.requireNonNull(yamlBytes);
 
-    ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+    var objectMapper = new ObjectMapper(new YAMLFactory());
 
     ApplicationConfig config;
     try (InputStream in = yamlBytes.openStream()) {

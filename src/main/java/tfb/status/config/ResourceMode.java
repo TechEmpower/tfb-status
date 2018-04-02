@@ -28,7 +28,7 @@ public enum ResourceMode {
   private static final class DefaultModeHolder {
     static final ResourceMode VALUE;
     static {
-      Class<?> thisClass = DefaultModeHolder.class;
+      var thisClass = DefaultModeHolder.class;
       String classFilePath = thisClass.getName().replace('.', '/') + ".class";
 
       ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
