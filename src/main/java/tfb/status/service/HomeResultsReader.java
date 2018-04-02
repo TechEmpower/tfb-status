@@ -193,8 +193,8 @@ public final class HomeResultsReader {
       keys.add(new ViewCacheKey(file));
     }
     return keys.build()
-               .map(key -> jsonCache.get(key))
-               .filter(view -> view != null);
+               .map(jsonCache::get)
+               .filter(Objects::nonNull);
   }
 
   private Stream<ResultsZipView> viewAllZipFiles() throws IOException {
@@ -203,8 +203,8 @@ public final class HomeResultsReader {
       keys.add(new ViewCacheKey(file));
     }
     return keys.build()
-               .map(key -> zipCache.get(key))
-               .filter(view -> view != null);
+               .map(zipCache::get)
+               .filter(Objects::nonNull);
   }
 
   @Nullable
