@@ -74,16 +74,16 @@ public final class UploadResultsHandler implements HttpHandler {
                               DiffGenerator diffGenerator,
                               Clock clock) {
 
-    HttpHandler jsonFileHandler =
-        new NewJsonFileHandler(
+    var jsonHandler =
+        new JsonHandler(
             /* fileStoreConfig= */ fileStoreConfig,
             /* authenticator= */ authenticator,
             /* homeUpdates=*/ homeUpdates,
             /* clock= */ clock,
             /* objectMapper=*/ objectMapper);
 
-    HttpHandler zipFileHandler =
-        new NewZipFileHandler(
+    var zipHandler =
+        new ZipHandler(
             /* fileStoreConfig= */ fileStoreConfig,
             /* authenticator= */ authenticator,
             /* homeUpdates=*/ homeUpdates,
@@ -93,8 +93,8 @@ public final class UploadResultsHandler implements HttpHandler {
             /* diffGenerator=*/ diffGenerator);
 
     HttpHandler handler =
-        new MediaTypeHandler().addMediaType("application/json", jsonFileHandler)
-                              .addMediaType("application/zip", zipFileHandler);
+        new MediaTypeHandler().addMediaType("application/json", jsonHandler)
+                              .addMediaType("application/zip", zipHandler);
 
     handler = new MethodHandler().addMethod(POST, handler);
     handler = new DisableCacheHandler(handler);
@@ -108,17 +108,20 @@ public final class UploadResultsHandler implements HttpHandler {
     delegate.handleRequest(exchange);
   }
 
-  private abstract static class NewFileHandler implements HttpHandler {
+  /**
+   * Shared logic for the .json and .zip handlers.
+   */
+  private abstract static class BaseHandler implements HttpHandler {
     private final HomeUpdatesHandler homeUpdates;
     private final Clock clock;
     private final Path resultsDirectory;
     private final String fileExtension;
 
-    NewFileHandler(FileStoreConfig fileStoreConfig,
-                   Authenticator authenticator,
-                   HomeUpdatesHandler homeUpdates,
-                   Clock clock,
-                   String fileExtension) {
+    BaseHandler(FileStoreConfig fileStoreConfig,
+                Authenticator authenticator,
+                HomeUpdatesHandler homeUpdates,
+                Clock clock,
+                String fileExtension) {
       this.homeUpdates = Objects.requireNonNull(homeUpdates);
       this.clock = Objects.requireNonNull(clock);
       this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
@@ -217,15 +220,15 @@ public final class UploadResultsHandler implements HttpHandler {
     abstract void runPostUploadActions(Path newFile);
   }
 
-  private static final class NewJsonFileHandler extends NewFileHandler {
+  private static final class JsonHandler extends BaseHandler {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ObjectMapper objectMapper;
 
-    NewJsonFileHandler(FileStoreConfig fileStoreConfig,
-                       Authenticator authenticator,
-                       HomeUpdatesHandler homeUpdates,
-                       Clock clock,
-                       ObjectMapper objectMapper) {
+    JsonHandler(FileStoreConfig fileStoreConfig,
+                Authenticator authenticator,
+                HomeUpdatesHandler homeUpdates,
+                Clock clock,
+                ObjectMapper objectMapper) {
 
       super(
           /* fileStoreConfig= */ fileStoreConfig,
@@ -268,20 +271,20 @@ public final class UploadResultsHandler implements HttpHandler {
     }
   }
 
-  private static final class NewZipFileHandler extends NewFileHandler {
+  private static final class ZipHandler extends BaseHandler {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ObjectMapper objectMapper;
     private final EmailSender emailSender;
     private final DiffGenerator diffGenerator;
     private final Clock clock;
 
-    NewZipFileHandler(FileStoreConfig fileStoreConfig,
-                      Authenticator authenticator,
-                      HomeUpdatesHandler homeUpdates,
-                      Clock clock,
-                      ObjectMapper objectMapper,
-                      EmailSender emailSender,
-                      DiffGenerator diffGenerator) {
+    ZipHandler(FileStoreConfig fileStoreConfig,
+               Authenticator authenticator,
+               HomeUpdatesHandler homeUpdates,
+               Clock clock,
+               ObjectMapper objectMapper,
+               EmailSender emailSender,
+               DiffGenerator diffGenerator) {
 
       super(
           /* fileStoreConfig= */ fileStoreConfig,
