@@ -3,8 +3,6 @@ package tfb.status.service;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.Objects;
 import org.glassfish.hk2.api.Factory;
 
@@ -16,8 +14,6 @@ public final class StandardObjectMapper implements Factory<ObjectMapper> {
   public ObjectMapper provide() {
     return new ObjectMapper()
         .registerModule(new GuavaModule())
-        .registerModule(new Jdk8Module())
-        .registerModule(new JavaTimeModule())
         .configure(
             DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             false);
