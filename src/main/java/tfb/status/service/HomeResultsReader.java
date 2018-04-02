@@ -29,6 +29,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
@@ -91,7 +92,7 @@ public final class HomeResultsReader {
     var jsonWithoutUuid = new ArrayList<ResultsJsonView>();
 
     viewAllJsonFiles().forEach(
-        view -> {
+        (ResultsJsonView view) -> {
           if (view.uuid == null)
             jsonWithoutUuid.add(view);
 
@@ -112,7 +113,7 @@ public final class HomeResultsReader {
     var zipWithoutUuid = new ArrayList<ResultsZipView>();
 
     viewAllZipFiles().forEach(
-        view -> {
+        (ResultsZipView view) -> {
           if (view.uuid == null)
             zipWithoutUuid.add(view);
 
@@ -398,18 +399,19 @@ public final class HomeResultsReader {
     var failures = new ArrayList<Failure>();
 
     results.failed.inverse().asMap().forEach(
-        (framework, failedTestTypes) ->
-            failures.add(
-                new ResultsZipView.Failure(
-                    /* framework= */ framework,
-                    /* failedTestTypes= */ ImmutableList.sortedCopyOf(failedTestTypes))));
+        (String framework, Collection<String> failedTestTypes) -> {
+          failures.add(
+              new Failure(
+                  /* framework= */ framework,
+                  /* failedTestTypes= */ ImmutableList.sortedCopyOf(failedTestTypes)));
+        });
 
     results.completed.forEach(
-        (framework, message) -> {
+        (String framework, String message) -> {
           if (!results.failed.inverse().containsKey(framework)
               && !isCompletedTimestamp(message)) {
             failures.add(
-                new ResultsZipView.Failure(
+                new Failure(
                     /* framework= */ framework,
                     /* failedTestTypes= */ ImmutableList.of()));
           }

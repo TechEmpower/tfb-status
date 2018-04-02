@@ -234,50 +234,52 @@ public final class AttributesPageHandler implements HttpHandler {
                          .map(definition -> testDefinitionToMap(definition))
                          .collect(toImmutableList());
 
-      previousAttributes.forEach((attribute, info) -> {
+      previousAttributes.forEach(
+          (Attribute attribute, AttributeInfo info) -> {
 
-        ImmutableSet<String> allValues =
-            attributeMaps.stream()
-                         .map(testDefinition -> testDefinition.get(attribute))
+            ImmutableSet<String> allValues =
+                attributeMaps.stream()
+                             .map(testDefinition -> testDefinition.get(attribute))
+                             .collect(toImmutableSet());
+
+            ImmutableSet<String> oldValuesLower =
+                info.list.stream()
+                         .map(Ascii::toLowerCase)
                          .collect(toImmutableSet());
 
-        ImmutableSet<String> oldValuesLower =
-            info.list.stream()
-                     .map(Ascii::toLowerCase)
-                     .collect(toImmutableSet());
+            ImmutableSet<String> newValues =
+                allValues.stream()
+                         .filter(value -> !oldValuesLower.contains(Ascii.toLowerCase(value)))
+                         .collect(toImmutableSet());
 
-        ImmutableSet<String> newValues =
-            allValues.stream()
-                     .filter(value -> !oldValuesLower.contains(Ascii.toLowerCase(value)))
-                     .collect(toImmutableSet());
+            ImmutableSet<String> newValuesLower =
+                allValues.stream()
+                         .map(Ascii::toLowerCase)
+                         .collect(toImmutableSet());
 
-        ImmutableSet<String> newValuesLower =
-            allValues.stream()
-                     .map(Ascii::toLowerCase)
-                     .collect(toImmutableSet());
+            ImmutableSet<String> unusedValues =
+                info.list.stream()
+                         .filter(value -> !newValuesLower.contains(Ascii.toLowerCase(value)))
+                         .collect(toImmutableSet());
 
-        ImmutableSet<String> unusedValues =
-            info.list.stream()
-                     .filter(value -> !newValuesLower.contains(Ascii.toLowerCase(value)))
-                     .collect(toImmutableSet());
+            ImmutableList<String> updatedList =
+                Stream.concat(info.list.stream(), newValues.stream())
+                      .map((String value) -> {
+                        if (!unusedValues.contains(value) || value.startsWith(UNUSED_MARKER)) {
+                          return value;
+                        } else {
+                          return UNUSED_MARKER + value;
+                        }
+                      })
+                      .collect(toImmutableList());
 
-        ImmutableList<String> updatedList =
-            Stream.concat(info.list.stream(), newValues.stream())
-                  .map(value -> {
-                    if (!unusedValues.contains(value) || value.startsWith(UNUSED_MARKER)) {
-                      return value;
-                    } else {
-                      return UNUSED_MARKER + value;
-                    }
-                  })
-                  .collect(toImmutableList());
-
-        updatedAttributes.put(
-            attribute,
-            new AttributeInfo(/* code= */ attribute.code(),
-                              /* list= */ updatedList,
-                              /* v= */ info.v));
-      });
+            updatedAttributes.put(
+                attribute,
+                new AttributeInfo(
+                    /* code= */ attribute.code(),
+                    /* list= */ updatedList,
+                    /* v= */ info.v));
+          });
 
       return updatedAttributes.build();
     }
@@ -337,83 +339,86 @@ public final class AttributesPageHandler implements HttpHandler {
       var attributeToValuesLower = new EnumMap<Attribute, List<String>>(Attribute.class);
 
       updatedAttributes.forEach(
-          (attribute, info) ->
-              attributeToValuesLower.put(
-                  attribute,
-                  info.list.stream()
-                           .map(Ascii::toLowerCase)
-                           .collect(toImmutableList())));
+          (Attribute attribute, AttributeInfo info) -> {
+            attributeToValuesLower.put(
+                attribute,
+                info.list.stream()
+                         .map(Ascii::toLowerCase)
+                         .collect(toImmutableList()));
+          });
 
       var result = new ImmutableMap.Builder<String, MinifiedTestDefinition>();
 
-      testMetadata.forEach((identity, definition) -> {
+      testMetadata.forEach(
+          (Integer identity, TestDefinition definition) -> {
 
-        String versusName = definition.versus;
-        Integer versusIdentifier = null;
+            String versusName = definition.versus;
+            Integer versusIdentifier = null;
 
-        if (versusName != null && !versusName.isEmpty()) {
-          versusIdentifier =
-              testMetadata.entrySet()
-                          .stream()
-                          .filter(entry -> {
-                            TestDefinition other = entry.getValue();
-                            return versusName.equalsIgnoreCase(other.framework)
-                                || versusName.equalsIgnoreCase(other.name);
-                          })
-                          .map(Map.Entry::getKey)
-                          .findFirst()
-                          .orElse(null);
-        }
-
-        var indexes = new EnumMap<Attribute, String>(Attribute.class);
-
-        testDefinitionToMap(definition).forEach((attribute, value) -> {
-          if (attribute == Attribute.NAME) {
-            // Test names are copied as is.
-            indexes.put(attribute, value);
-          } else {
-            List<String> values = attributeToValuesLower.get(attribute);
-            if (values != null) {
-              int index = values.indexOf(Ascii.toLowerCase(value));
-              indexes.put(attribute, String.valueOf(index));
+            if (versusName != null && !versusName.isEmpty()) {
+              versusIdentifier =
+                  testMetadata.entrySet()
+                              .stream()
+                              .filter(entry -> {
+                                TestDefinition other = entry.getValue();
+                                return versusName.equalsIgnoreCase(other.framework)
+                                    || versusName.equalsIgnoreCase(other.name);
+                              })
+                              .map(Map.Entry::getKey)
+                              .findFirst()
+                              .orElse(null);
             }
-          }
-        });
 
-        result.put(
-            String.valueOf(identity),
-            new MinifiedTestDefinition(
-                /* approach= */
-                indexes.getOrDefault(Attribute.APPROACH, ""),
-                /* classification= */
-                indexes.getOrDefault(Attribute.CLASSIFICATION, ""),
-                /* database= */
-                indexes.getOrDefault(Attribute.DATABASE, ""),
-                /* databaseOs= */
-                indexes.getOrDefault(Attribute.DATABASE_OS, ""),
-                /* framework= */
-                indexes.getOrDefault(Attribute.FRAMEWORK, ""),
-                /* language= */
-                indexes.getOrDefault(Attribute.LANGUAGE, ""),
-                /* orm= */
-                indexes.getOrDefault(Attribute.ORM, ""),
-                /* os= */
-                indexes.getOrDefault(Attribute.OS, ""),
-                /* platform= */
-                indexes.getOrDefault(Attribute.PLATFORM, ""),
-                /* name= */
-                indexes.getOrDefault(Attribute.NAME, ""),
-                /* displayName= */
-                indexes.getOrDefault(Attribute.DISPLAY_NAME, ""),
-                /* webserver= */
-                indexes.getOrDefault(Attribute.WEBSERVER, ""),
-                /* identity= */
-                identity,
-                /* v= */
-                (versusIdentifier == null)
-                    ? ImmutableList.of()
-                    : ImmutableList.of(versusIdentifier)));
-      });
+            var indexes = new EnumMap<Attribute, String>(Attribute.class);
+
+            testDefinitionToMap(definition).forEach(
+                (Attribute attribute, String value) -> {
+                  if (attribute == Attribute.NAME) {
+                    // Test names are copied as is.
+                    indexes.put(attribute, value);
+                  } else {
+                    List<String> values = attributeToValuesLower.get(attribute);
+                    if (values != null) {
+                      int index = values.indexOf(Ascii.toLowerCase(value));
+                      indexes.put(attribute, String.valueOf(index));
+                    }
+                  }
+                });
+
+            result.put(
+                String.valueOf(identity),
+                new MinifiedTestDefinition(
+                    /* approach= */
+                    indexes.getOrDefault(Attribute.APPROACH, ""),
+                    /* classification= */
+                    indexes.getOrDefault(Attribute.CLASSIFICATION, ""),
+                    /* database= */
+                    indexes.getOrDefault(Attribute.DATABASE, ""),
+                    /* databaseOs= */
+                    indexes.getOrDefault(Attribute.DATABASE_OS, ""),
+                    /* framework= */
+                    indexes.getOrDefault(Attribute.FRAMEWORK, ""),
+                    /* language= */
+                    indexes.getOrDefault(Attribute.LANGUAGE, ""),
+                    /* orm= */
+                    indexes.getOrDefault(Attribute.ORM, ""),
+                    /* os= */
+                    indexes.getOrDefault(Attribute.OS, ""),
+                    /* platform= */
+                    indexes.getOrDefault(Attribute.PLATFORM, ""),
+                    /* name= */
+                    indexes.getOrDefault(Attribute.NAME, ""),
+                    /* displayName= */
+                    indexes.getOrDefault(Attribute.DISPLAY_NAME, ""),
+                    /* webserver= */
+                    indexes.getOrDefault(Attribute.WEBSERVER, ""),
+                    /* identity= */
+                    identity,
+                    /* v= */
+                    (versusIdentifier == null)
+                        ? ImmutableList.of()
+                        : ImmutableList.of(versusIdentifier)));
+          });
 
       return result.build();
     }
@@ -460,51 +465,52 @@ public final class AttributesPageHandler implements HttpHandler {
 
       var result = new ImmutableMap.Builder<Integer, TestDefinition>();
 
-      attributeLookup.minifiedTests.forEach((identity, minifiedTest) -> {
+      attributeLookup.minifiedTests.forEach(
+          (String identity, MinifiedTestDefinition minifiedTest) -> {
 
-        String versus;
-        if (minifiedTest.v.isEmpty()) {
-          versus = "";
-        } else {
-          MinifiedTestDefinition versusTest =
-              attributeLookup.minifiedTests.get(
-                  String.valueOf(minifiedTest.v.get(0)));
+            String versus;
+            if (minifiedTest.v.isEmpty()) {
+              versus = "";
+            } else {
+              MinifiedTestDefinition versusTest =
+                  attributeLookup.minifiedTests.get(
+                      String.valueOf(minifiedTest.v.get(0)));
 
-          versus = (versusTest == null) ? "" : versusTest.name;
-        }
+              versus = (versusTest == null) ? "" : versusTest.name;
+            }
 
-        result.put(
-            Integer.parseInt(identity),
-            new TestDefinition(
-                /* approach= */
-                values.get(Attribute.APPROACH, minifiedTest.approach),
-                /* classification= */
-                values.get(Attribute.CLASSIFICATION, minifiedTest.classification),
-                /* database= */
-                values.get(Attribute.DATABASE, minifiedTest.database),
-                /* databaseOs= */
-                values.get(Attribute.DATABASE_OS, minifiedTest.databaseOs),
-                /* framework= */
-                values.get(Attribute.FRAMEWORK, minifiedTest.framework),
-                /* language= */
-                values.get(Attribute.LANGUAGE, minifiedTest.language),
-                /* orm= */
-                values.get(Attribute.ORM, minifiedTest.orm),
-                /* os= */
-                values.get(Attribute.OS, minifiedTest.os),
-                /* platform= */
-                values.get(Attribute.PLATFORM, minifiedTest.platform),
-                /* name= */
-                minifiedTest.name,
-                /* displayName= */
-                (minifiedTest.displayName == null) ? "" : minifiedTest.displayName,
-                /* notes= */
-                "",
-                /* versus= */
-                versus,
-                /* webserver= */
-                values.get(Attribute.WEBSERVER, minifiedTest.webServer)));
-      });
+            result.put(
+                Integer.parseInt(identity),
+                new TestDefinition(
+                    /* approach= */
+                    values.get(Attribute.APPROACH, minifiedTest.approach),
+                    /* classification= */
+                    values.get(Attribute.CLASSIFICATION, minifiedTest.classification),
+                    /* database= */
+                    values.get(Attribute.DATABASE, minifiedTest.database),
+                    /* databaseOs= */
+                    values.get(Attribute.DATABASE_OS, minifiedTest.databaseOs),
+                    /* framework= */
+                    values.get(Attribute.FRAMEWORK, minifiedTest.framework),
+                    /* language= */
+                    values.get(Attribute.LANGUAGE, minifiedTest.language),
+                    /* orm= */
+                    values.get(Attribute.ORM, minifiedTest.orm),
+                    /* os= */
+                    values.get(Attribute.OS, minifiedTest.os),
+                    /* platform= */
+                    values.get(Attribute.PLATFORM, minifiedTest.platform),
+                    /* name= */
+                    minifiedTest.name,
+                    /* displayName= */
+                    (minifiedTest.displayName == null) ? "" : minifiedTest.displayName,
+                    /* notes= */
+                    "",
+                    /* versus= */
+                    versus,
+                    /* webserver= */
+                    values.get(Attribute.WEBSERVER, minifiedTest.webServer)));
+          });
 
       return result.build();
     }
@@ -513,13 +519,14 @@ public final class AttributesPageHandler implements HttpHandler {
       private final Table<Attribute, String, String> table = HashBasedTable.create();
 
       ValuesByAttributeAndIndex(AttributeLookup attributeLookup) {
-        attributeLookup.attributes.forEach((attribute, info) -> {
-          for (int index = 0; index < info.list.size(); index++) {
-            table.put(attribute,
-                      String.valueOf(index),
-                      info.list.get(index));
-          }
-        });
+        attributeLookup.attributes.forEach(
+            (Attribute attribute, AttributeInfo info) -> {
+              for (int index = 0; index < info.list.size(); index++) {
+                table.put(attribute,
+                          String.valueOf(index),
+                          info.list.get(index));
+              }
+            });
       }
 
       String get(Attribute attribute, String index) {

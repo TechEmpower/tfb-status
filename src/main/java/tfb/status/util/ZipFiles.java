@@ -62,7 +62,7 @@ public final class ZipFiles {
         /* zipFile= */ zipFile,
         /* entryPath= */ entryPath,
         /* ifPresent= */
-        zipEntry -> {
+        (Path zipEntry) -> {
           if (Files.isRegularFile(zipEntry)) {
             T result;
             try (InputStream in = Files.newInputStream(zipEntry)) {
