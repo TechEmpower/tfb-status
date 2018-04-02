@@ -13,7 +13,6 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -26,6 +25,8 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.mindrot.jbcrypt.BCrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.undertow.extensions.BasicAuthenticationHandler;
 
@@ -36,6 +37,7 @@ import tfb.status.undertow.extensions.BasicAuthenticationHandler;
 public final class Authenticator {
   // TODO: Use a real database.
   private final Path accountsDirectory;
+  final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
   public Authenticator(FileStoreConfig fileStoreConfig) {
@@ -165,7 +167,15 @@ public final class Authenticator {
       char[] passwordChars = ((PasswordCredential) credential).getPassword();
       String password = String.valueOf(passwordChars);
 
-      if (checkPassword(accountId, password))
+      boolean isPasswordCorrect;
+      try {
+        isPasswordCorrect = checkPassword(accountId, password);
+      } catch (IOException e) {
+        logger.error("Error checking password", e);
+        return null;
+      }
+
+      if (isPasswordCorrect)
         return new IdAsAccount(accountId);
       else
         return null;
@@ -238,8 +248,11 @@ public final class Authenticator {
    *
    * @throws IllegalArgumentException if there is already an account with that
    *         id or if the id cannot possibly be the id of an account
+   * @throws IOException if an I/O error occurs while saving the account details
    */
-  public void createNewAccount(String accountId, String password) {
+  public void createNewAccount(String accountId, String password)
+      throws IOException {
+
     Objects.requireNonNull(accountId);
     Objects.requireNonNull(password);
 
@@ -252,12 +265,8 @@ public final class Authenticator {
           "Account with id " + accountId + " already exists");
 
     String passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
-    try {
-      MoreFiles.createParentDirectories(passwordFile);
-      Files.write(passwordFile, List.of(passwordHash));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    MoreFiles.createParentDirectories(passwordFile);
+    Files.write(passwordFile, List.of(passwordHash));
   }
 
   /**
@@ -267,8 +276,11 @@ public final class Authenticator {
    * @param accountId the id of the account
    * @param password the password of the account
    * @return {@code true} if the credentials are valid
+   * @throws IOException if an I/O error occurs while verifying the account
    */
-  public boolean checkPassword(String accountId, String password) {
+  public boolean checkPassword(String accountId, String password)
+      throws IOException {
+
     Objects.requireNonNull(accountId);
     Objects.requireNonNull(password);
 
@@ -279,8 +291,6 @@ public final class Authenticator {
     String passwordHash;
     try (BufferedReader reader = Files.newBufferedReader(passwordFile)) {
       passwordHash = reader.readLine();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
     }
 
     return passwordHash != null && BCrypt.checkpw(password, passwordHash);

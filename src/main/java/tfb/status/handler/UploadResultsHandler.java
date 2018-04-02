@@ -22,7 +22,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
@@ -165,20 +164,12 @@ public final class UploadResultsHandler implements HttpHandler {
       runPostUploadActions(permanentFile);
     }
 
-    private Path destinationForIncomingFile(Path incomingFile) {
+    private Path destinationForIncomingFile(Path incomingFile) throws IOException {
       String incomingUuid = tryReadUuid(incomingFile);
       if (incomingUuid == null)
         return newResultsFile();
 
-      ImmutableList<Path> existingFiles;
-      try {
-        existingFiles = OtherFiles.listFiles(resultsDirectory,
-                                             "*." + fileExtension);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-
-      for (Path existingFile : existingFiles) {
+      for (Path existingFile : OtherFiles.listFiles(resultsDirectory, "*." + fileExtension)) {
         String existingUuid = tryReadUuid(existingFile);
         if (incomingUuid.equals(existingUuid)) {
           // TODO: Also check if the file was updated more recently than ours?

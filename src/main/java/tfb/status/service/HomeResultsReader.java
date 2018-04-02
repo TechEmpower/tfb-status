@@ -15,7 +15,6 @@ import com.google.errorprone.annotations.Immutable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -86,8 +85,9 @@ public final class HomeResultsReader {
    * rendering on the home page.
    *
    * @return a view of the results
+   * @throws IOException if an I/O error occurs while reading the results
    */
-  public ImmutableList<ResultsView> results() {
+  public ImmutableList<ResultsView> results() throws IOException {
     var jsonByUuid = new HashMap<String, ResultsJsonView>();
     var jsonWithoutUuid = new ArrayList<ResultsJsonView>();
 
@@ -164,9 +164,10 @@ public final class HomeResultsReader {
    * @param resultsUuid the UUID of the results to be viewed
    * @return a view of the results, or {@code null} if there are no matching
    *         results
+   * @throws IOException if an I/O error occurs while reading the results
    */
   @Nullable
-  public ResultsView resultsByUuid(String resultsUuid) {
+  public ResultsView resultsByUuid(String resultsUuid) throws IOException {
     Objects.requireNonNull(resultsUuid);
 
     ResultsJsonView json =
@@ -186,32 +187,24 @@ public final class HomeResultsReader {
         : new ResultsView(json, zip);
   }
 
-  private Stream<ResultsJsonView> viewAllJsonFiles() {
-    ImmutableList<Path> files;
-    try {
-      files = OtherFiles.listFiles(resultsDirectory, "*.json");
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
+  private Stream<ResultsJsonView> viewAllJsonFiles() throws IOException {
+    Stream.Builder<ViewCacheKey> keys = Stream.builder();
+    for (Path file : OtherFiles.listFiles(resultsDirectory, "*.json")) {
+      keys.add(new ViewCacheKey(file));
     }
-
-    return files.stream()
-                .map(file -> new ViewCacheKey(file))
-                .map(key -> jsonCache.get(key))
-                .filter(view -> view != null);
+    return keys.build()
+               .map(key -> jsonCache.get(key))
+               .filter(view -> view != null);
   }
 
-  private Stream<ResultsZipView> viewAllZipFiles() {
-    ImmutableList<Path> files;
-    try {
-      files = OtherFiles.listFiles(resultsDirectory, "*.zip");
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
+  private Stream<ResultsZipView> viewAllZipFiles() throws IOException {
+    Stream.Builder<ViewCacheKey> keys = Stream.builder();
+    for (Path file : OtherFiles.listFiles(resultsDirectory, "*.zip")) {
+      keys.add(new ViewCacheKey(file));
     }
-
-    return files.stream()
-                .map(file -> new ViewCacheKey(file))
-                .map(key -> zipCache.get(key))
-                .filter(view -> view != null);
+    return keys.build()
+               .map(key -> zipCache.get(key))
+               .filter(view -> view != null);
   }
 
   @Nullable
@@ -471,13 +464,9 @@ public final class HomeResultsReader {
     // When the file is modified, this cache key becomes unreachable.
     final FileTime lastModifiedTime;
 
-    ViewCacheKey(Path file) {
+    ViewCacheKey(Path file) throws IOException {
       this.file = Objects.requireNonNull(file);
-      try {
-        this.lastModifiedTime = Files.getLastModifiedTime(file);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+      this.lastModifiedTime = Files.getLastModifiedTime(file);
     }
 
     @Override

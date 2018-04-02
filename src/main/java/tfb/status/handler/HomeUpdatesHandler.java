@@ -10,6 +10,7 @@ import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import io.undertow.server.handlers.sse.ServerSentEventHandler;
+import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
@@ -115,8 +116,9 @@ public final class HomeUpdatesHandler implements HttpHandler {
    * Notifies all active listeners that a set of results has been updated.
    *
    * @param resultsUuid the resultsUuid of the results that were updated
+   * @throws IOException if an I/O error occurs while reading the results
    */
-  public void sendUpdate(String resultsUuid) {
+  public void sendUpdate(String resultsUuid) throws IOException {
     Objects.requireNonNull(resultsUuid);
 
     Set<ServerSentEventConnection> connections = eventHandler.getConnections();
