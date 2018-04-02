@@ -25,7 +25,6 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <apiguardian.version>1.0.0</apiguardian.version>
-    <asm.version>6.1.1</asm.version>
     <bcrypt.version>0.4</bcrypt.version>
     <caffeine.version>2.6.2</caffeine.version>
     <crawler-commons.version>0.9</crawler-commons.version>
@@ -48,6 +47,7 @@
     <logback.version>1.2.3</logback.version>
     <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
     <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
+    <maven-dependency-analyzer.version>1.9</maven-dependency-analyzer.version>
     <maven-dependency-plugin.version>3.0.2</maven-dependency-plugin.version>
     <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
     <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
@@ -299,18 +299,17 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>${maven-dependency-plugin.version}</version>
-          <!-- Bump this plugin's version of ASM up to the latest, because the
-               previous version of ASM is incompatible with Java 9.  We should
-               be able to remove this when a future version of the dependency
-               plugin is released.
+          <!-- Bump the version of one of this plugin's dependencies for
+               compatibility with Java 9+.  We should be able to remove this
+               when a future version of the dependency plugin is released.
 
                For more information, see:
                https://issues.apache.org/jira/browse/MDEP-559 -->
           <dependencies>
             <dependency>
-              <groupId>org.ow2.asm</groupId>
-              <artifactId>asm</artifactId>
-              <version>${asm.version}</version>
+              <groupId>org.apache.maven.shared</groupId>
+              <artifactId>maven-dependency-analyzer</artifactId>
+              <version>${maven-dependency-analyzer.version}</version>
             </dependency>
           </dependencies>
         </plugin>
