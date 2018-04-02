@@ -3,6 +3,7 @@ package tfb.status.handler;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.util.MoreAssertions.assertContains;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.ws.rs.client.WebTarget;
 import org.glassfish.jersey.media.sse.EventSource;
@@ -34,7 +35,7 @@ public final class HomeUpdatesHandlerTest {
    * updates sent via {@link HomeUpdatesHandler#sendUpdate(String)}.
    */
   @Test
-  public void testGet() {
+  public void testGet() throws IOException {
     WebTarget target = services.httpClient()
                                .target(services.localUri("/updates"));
 
