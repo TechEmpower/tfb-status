@@ -13,6 +13,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.MoreFiles;
 import com.google.common.net.MediaType;
+import com.google.common.primitives.Booleans;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
@@ -170,7 +171,8 @@ public final class UnzipResultsHandler implements HttpHandler {
               }
 
               Comparator<FileView> directoriesFirst =
-                  comparing(file -> !file.isDirectory);
+                  comparing(file -> file.isDirectory,
+                            Booleans.trueFirst());
 
               Comparator<FileView> byFileName =
                   comparing(file -> file.fileName,
