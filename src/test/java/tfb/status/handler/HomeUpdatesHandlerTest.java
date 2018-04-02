@@ -1,10 +1,9 @@
 package tfb.status.handler;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.util.MoreAssertions.assertContains;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.ws.rs.client.WebTarget;
 import org.glassfish.jersey.media.sse.EventSource;
 import org.junit.jupiter.api.AfterAll;
@@ -41,18 +40,9 @@ public final class HomeUpdatesHandlerTest {
 
     var eventSource = new EventSource(target, /* open= */ false);
 
-    var receivedEvent = new AtomicBoolean(false);
+    var incomingData = new AtomicReference<String>();
 
-    eventSource.register(
-        event -> {
-
-          assertContains(
-              "03da6340-d56c-4584-9ef2-702106203809",
-              event.readData());
-
-          receivedEvent.set(true);
-
-        });
+    eventSource.register(event -> incomingData.set(event.readData()));
 
     eventSource.open();
     try {
@@ -61,8 +51,8 @@ public final class HomeUpdatesHandlerTest {
       eventSource.close();
     }
 
-    assertTrue(
-        receivedEvent.get(),
-        "The SSE client should have received an event from the server");
+    assertContains(
+        "03da6340-d56c-4584-9ef2-702106203809",
+        incomingData.get());
   }
 }
