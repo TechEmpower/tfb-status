@@ -187,7 +187,11 @@ public final class ZipFilesTest {
    */
   @Test
   public void testReadZipEntry_rejectNullValueFromReader() {
-    @SuppressWarnings("NullAway") // Violating nullness contract on purpose.
+    // Violating nullness contract on purpose.
+    @SuppressWarnings({
+        "NullAway" /* for the NullAway Maven plugin */,
+        "ConstantConditions" /* for IntelliJ */
+    })
     ZipEntryReader<Void> entryReader = in -> null;
 
     assertThrows(
