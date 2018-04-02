@@ -389,9 +389,7 @@ public final class UploadResultsHandler implements HttpHandler {
           /* rawResultsBytes= */ rawResultsBytes);
     }
 
-    private void definitelySendEmail(Path newZipFile,
-                                     byte[] rawResultsBytes) {
-
+    private void definitelySendEmail(Path newZipFile, byte[] rawResultsBytes) {
       Results results;
       try {
         results = objectMapper.readValue(rawResultsBytes, Results.class);
@@ -402,18 +400,19 @@ public final class UploadResultsHandler implements HttpHandler {
         return;
       }
 
+      var minifiedResults =
+          new Results.TfbWebsiteView(
+              /* name= */ results.name,
+              /* completionTime= */ results.completionTime,
+              /* duration= */ results.duration,
+              /* queryIntervals= */ results.queryIntervals,
+              /* concurrencyLevels= */ results.concurrencyLevels,
+              /* rawData= */ results.rawData,
+              /* failed= */ results.failed);
+
       byte[] minifiedResultsBytes;
       try {
-        minifiedResultsBytes =
-            objectMapper.writeValueAsBytes(
-                new Results.TfbWebsiteView(
-                    /* name= */ results.name,
-                    /* completionTime= */ results.completionTime,
-                    /* duration= */ results.duration,
-                    /* queryIntervals= */ results.queryIntervals,
-                    /* concurrencyLevels= */ results.concurrencyLevels,
-                    /* rawData= */ results.rawData,
-                    /* failed= */ results.failed));
+        minifiedResultsBytes = objectMapper.writeValueAsBytes(minifiedResults);
       } catch (IOException impossible) {
         throw new AssertionError(
             "The TFB website view of results is always JSON-serializable",
