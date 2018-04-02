@@ -68,15 +68,16 @@ public final class AboutPageHandler implements HttpHandler {
 
       ImmutableMap<String, String> gitProperties;
 
-      try (InputStream in = Thread.currentThread()
-                                  .getContextClassLoader()
-                                  .getResourceAsStream("git.properties")) {
+      try (InputStream inputStream =
+               Thread.currentThread()
+                     .getContextClassLoader()
+                     .getResourceAsStream("git.properties")) {
 
-        if (in == null)
+        if (inputStream == null)
           gitProperties = ImmutableMap.of();
 
         else {
-          try (var reader = new InputStreamReader(in, UTF_8)) {
+          try (var reader = new InputStreamReader(inputStream, UTF_8)) {
             var props = new Properties();
             props.load(reader);
             gitProperties = Maps.fromProperties(props);

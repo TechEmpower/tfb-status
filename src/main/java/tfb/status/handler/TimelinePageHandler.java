@@ -107,7 +107,7 @@ public final class TimelinePageHandler implements HttpHandler {
               ZipFiles.readZipEntry(
                   /* zipFile= */ zipFile,
                   /* entryPath= */ "results.json",
-                  /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
+                  /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
         } catch (IOException e) {
           logger.warn(
               "Ignoring results.zip file {} whose results.json file "

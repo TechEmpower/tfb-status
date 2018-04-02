@@ -300,7 +300,7 @@ public final class UploadResultsHandler implements HttpHandler {
             ZipFiles.readZipEntry(
                 /* zipFile= */ zipFile,
                 /* entryPath= */ "results.json",
-                /* entryReader= */ in -> objectMapper.readValue(in, UuidOnly.class));
+                /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, UuidOnly.class));
       } catch (IOException ignored) {
         return null;
       }
@@ -316,7 +316,7 @@ public final class UploadResultsHandler implements HttpHandler {
             ZipFiles.readZipEntry(
                 /* zipFile= */ newZipFile,
                 /* entryPath= */ "results.json",
-                /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
+                /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
       } catch (IOException e) {
         logger.warn("Exception validating zip file {}", newZipFile, e);
         return false;
@@ -546,14 +546,13 @@ public final class UploadResultsHandler implements HttpHandler {
       return tryReadZipEntry(
           /* zipFile= */ zipFile,
           /* entryPath= */ "results.json",
-          /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
+          /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
     }
 
     @Nullable
     private <T> T tryReadZipEntry(Path zipFile,
                                   String entryPath,
                                   ZipFiles.ZipEntryReader<T> entryReader) {
-
       T value;
       try {
         value = ZipFiles.readZipEntry(zipFile, entryPath, entryReader);

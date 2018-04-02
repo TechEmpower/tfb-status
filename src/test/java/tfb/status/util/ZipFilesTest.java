@@ -30,7 +30,7 @@ public final class ZipFilesTest {
   private static final String DIR_ENTRY_PATH = "dir/";
 
   private static final ZipEntryReader<Void> UNUSED_READER =
-      in -> {
+      inputStream -> {
         throw new AssertionError("This reader should not have been used");
       };
 
@@ -192,7 +192,7 @@ public final class ZipFilesTest {
         "NullAway" /* for the NullAway Maven plugin */,
         "ConstantConditions" /* for IntelliJ */
     })
-    ZipEntryReader<Void> entryReader = in -> null;
+    ZipEntryReader<Void> entryReader = inputStream -> null;
 
     assertThrows(
         NullPointerException.class,
@@ -214,7 +214,7 @@ public final class ZipFilesTest {
             IOException.class,
             () -> ZipFiles.readZipEntry(zipFile,
                                         PRESENT_ENTRY_PATH,
-                                        in -> { throw e1; }));
+                                        inputStream -> { throw e1; }));
     assertSame(e1, e2);
   }
 
@@ -231,7 +231,7 @@ public final class ZipFilesTest {
             RuntimeException.class,
             () -> ZipFiles.readZipEntry(zipFile,
                                         PRESENT_ENTRY_PATH,
-                                        in -> { throw e1; }));
+                                        inputStream -> { throw e1; }));
     assertSame(e1, e2);
   }
 }

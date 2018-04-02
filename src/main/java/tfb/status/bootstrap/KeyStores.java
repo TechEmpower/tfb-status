@@ -32,8 +32,8 @@ public final class KeyStores {
     Objects.requireNonNull(password);
 
     KeyStore keyStore = newDefaultKeyStore();
-    try (InputStream in = keyStoreBytes.openStream()) {
-      keyStore.load(in, password);
+    try (InputStream inputStream = keyStoreBytes.openStream()) {
+      keyStore.load(inputStream, password);
     } catch (IOException | GeneralSecurityException e) {
       throw new InvalidKeyStoreException(e);
     }

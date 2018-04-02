@@ -133,8 +133,8 @@ public final class UnzipResultsHandler implements HttpHandler {
                 exchange.getResponseHeaders().put(CONTENT_TYPE,
                                                   mediaType.toString());
 
-              try (InputStream in = Files.newInputStream(zipEntry)) {
-                in.transferTo(exchange.getOutputStream());
+              try (InputStream inputStream = Files.newInputStream(zipEntry)) {
+                inputStream.transferTo(exchange.getOutputStream());
               }
             }
 

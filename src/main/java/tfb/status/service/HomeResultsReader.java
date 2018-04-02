@@ -372,7 +372,7 @@ public final class HomeResultsReader {
           ZipFiles.readZipEntry(
               /* zipFile= */ zipFile,
               /* entryPath= */ "results.json",
-              /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
+              /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
     } catch (IOException e) {
       logger.warn("Exception reading zip file {}", zipFile, e);
       return null;
@@ -424,8 +424,8 @@ public final class HomeResultsReader {
                 /* zipFile= */ zipFile,
                 /* entryPath= */ "commit_id.txt",
                 /* entryReader= */
-                in -> {
-                  try (var reader = new BufferedReader(new InputStreamReader(in, UTF_8))) {
+                inputStream -> {
+                  try (var reader = new BufferedReader(new InputStreamReader(inputStream, UTF_8))) {
                     return reader.readLine();
                   }
                 });

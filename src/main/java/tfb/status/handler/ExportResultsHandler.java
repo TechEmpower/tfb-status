@@ -104,7 +104,8 @@ public final class ExportResultsHandler implements HttpHandler {
                 ZipFiles.readZipEntry(
                     /* zipFile= */ requestedFile,
                     /* entryPath= */ "results.json",
-                    /* entryReader= */ in -> objectMapper.readValue(in, Results.class));
+                    /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
+
           } catch (IOException e) {
             logger.warn("Error reading zip file {}", requestedFile, e);
             exchange.setStatusCode(BAD_REQUEST);

@@ -65,8 +65,8 @@ public final class ZipFiles {
         (Path zipEntry) -> {
           if (Files.isRegularFile(zipEntry)) {
             T result;
-            try (InputStream in = Files.newInputStream(zipEntry)) {
-              result = entryReader.read(in);
+            try (InputStream inputStream = Files.newInputStream(zipEntry)) {
+              result = entryReader.read(inputStream);
             }
             Objects.requireNonNull(result, "result");
             resultHolder.set(result);
@@ -94,11 +94,12 @@ public final class ZipFiles {
     /**
      * Reads the value contained in the zip entry.
      *
-     * @param in the (unzipped) contents of the entry as a stream of bytes
+     * @param inputStream the (unzipped) contents of the entry as a stream of
+     *        bytes
      * @return the non-{@code null} result of reading the entry
      * @throws IOException if an I/O error occurs while reading the entry
      */
-    T read(InputStream in) throws IOException;
+    T read(InputStream inputStream) throws IOException;
   }
 
   /**

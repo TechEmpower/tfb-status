@@ -131,8 +131,8 @@ public final class EmailSenderTest {
         secondPart.getContentType());
 
     Point deserializedPoint;
-    try (InputStream in = secondPart.getInputStream()) {
-      deserializedPoint = objectMapper.readValue(in, Point.class);
+    try (InputStream inputStream = secondPart.getInputStream()) {
+      deserializedPoint = objectMapper.readValue(inputStream, Point.class);
     }
 
     assertEquals(point, deserializedPoint);

@@ -153,8 +153,8 @@ public final class AttributesPageHandler implements HttpHandler {
               /* zipFile= */ requestedFile,
               /* entryPath= */ "test_metadata.json",
               /* entryReader= */
-              in -> objectMapper.readValue(
-                  in,
+              inputStream -> objectMapper.readValue(
+                  inputStream,
                   new TypeReference<ImmutableList<TestDefinition>>() {}));
 
       if (newTests == null || newTests.isEmpty()) {

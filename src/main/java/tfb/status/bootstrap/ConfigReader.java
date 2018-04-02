@@ -67,8 +67,8 @@ public final class ConfigReader {
     var objectMapper = new ObjectMapper(new YAMLFactory());
 
     ApplicationConfig config;
-    try (InputStream in = yamlBytes.openStream()) {
-      config = objectMapper.readValue(in, ApplicationConfig.class);
+    try (InputStream inputStream = yamlBytes.openStream()) {
+      config = objectMapper.readValue(inputStream, ApplicationConfig.class);
     } catch (IOException e) {
       throw new InvalidConfigFileException(
           "Couldn't deserialize configuration file "
