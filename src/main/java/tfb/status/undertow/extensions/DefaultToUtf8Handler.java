@@ -29,12 +29,17 @@ public final class DefaultToUtf8Handler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws Exception {
-    exchange.addResponseCommitListener(defaultToUtf8());
+    exchange.addResponseCommitListener(DefaultToUtf8Listener.INSTANCE);
     handler.handleRequest(exchange);
   }
 
-  private static ResponseCommitListener defaultToUtf8() {
-    return exchange -> {
+  private static final class DefaultToUtf8Listener
+      implements ResponseCommitListener {
+
+    static final DefaultToUtf8Listener INSTANCE = new DefaultToUtf8Listener();
+
+    @Override
+    public void beforeCommit(HttpServerExchange exchange) {
       HeaderValues headerValues =
           exchange.getResponseHeaders().get(CONTENT_TYPE);
 
@@ -54,11 +59,11 @@ public final class DefaultToUtf8Handler implements HttpHandler {
 
       MediaType newMediaType = mediaType.withCharset(UTF_8);
       exchange.getResponseHeaders().put(CONTENT_TYPE, newMediaType.toString());
-    };
-  }
+    }
 
-  private static boolean isTextType(MediaType mediaType) {
-    // TODO: Support other common text types such as application/javascript?
-    return mediaType.is(ANY_TEXT_TYPE);
+    private static boolean isTextType(MediaType mediaType) {
+      // TODO: Support other common text types such as application/javascript?
+      return mediaType.is(ANY_TEXT_TYPE);
+    }
   }
 }
