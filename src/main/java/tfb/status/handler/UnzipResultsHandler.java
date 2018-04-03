@@ -124,7 +124,7 @@ public final class UnzipResultsHandler implements HttpHandler {
           /* zipFile= */ zipFile,
           /* entryPath= */ entrySubPath,
           /* ifPresent= */
-          zipEntry -> {
+          (Path zipEntry) -> {
 
             if (Files.isRegularFile(zipEntry)) {
               MediaType mediaType = guessMediaType(zipEntry);
