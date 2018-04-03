@@ -497,6 +497,7 @@
           <showWarnings>true</showWarnings>
           <compilerArgs>
             <arg>-Xlint:all</arg>
+            <arg>-Xdoclint:all,-missing</arg>
           </compilerArgs>
         </configuration>
       </plugin>
