@@ -14,7 +14,7 @@ public final class MoreAssertions {
 
   /**
    * Asserts that the actual media type is {@linkplain MediaType#is(MediaType)
-   * compatible) with the expected media type.
+   * compatible} with the expected media type.
    */
   public static void assertMediaType(MediaType expected,
                                      @Nullable String actual) {
