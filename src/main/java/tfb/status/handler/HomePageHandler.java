@@ -60,6 +60,7 @@ public final class HomePageHandler implements HttpHandler {
     CoreHandler(MustacheRenderer mustacheRenderer,
                 HomeResultsReader homeResultsReader,
                 FileStoreConfig fileStoreConfig) {
+
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
       this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
       this.announcementFile = Paths.get(fileStoreConfig.announcementFile);

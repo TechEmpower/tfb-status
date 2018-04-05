@@ -35,10 +35,9 @@ public final class Main {
     Ticker ticker = Ticker.systemTicker();
 
     //
-    // We try to avoid using the default locale or time zone, and we use static
-    // analysis tools to help enforce that, but we set the defaults here anyway.
-    // In case we accidentally use one of the defaults, it'll be nice if the
-    // behavior is consistent across environments.
+    // We try to avoid using the default locale or time zone, but we set the
+    // defaults here anyway.  In case we accidentally use one of the defaults,
+    // it'll be nice if the behavior is consistent across environments.
     //
     Locale.setDefault(Locale.ROOT);
     TimeZone.setDefault(TimeZone.getTimeZone(zone));

@@ -6,10 +6,10 @@ import com.google.common.base.Ticker;
 import com.google.common.io.ByteSource;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.Resources;
+import com.google.errorprone.annotations.MustBeClosed;
 import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
-import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import javax.mail.internet.MimeMessage;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.jersey.media.sse.SseFeature;
@@ -29,6 +30,9 @@ import tfb.status.config.EmailConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.util.MutableTicker;
 
+/**
+ * Creates instances of our HTTP handlers and service classes for testing.
+ */
 public final class TestServices {
   private final ApplicationConfig config;
   private final MutableClock clock;
@@ -138,9 +142,11 @@ public final class TestServices {
   }
 
   /**
-   * Produces a URI that points at the local HTTP server and that
+   * Produces a URI that points at the local HTTP server.
+   *
+   * @param path the path part of the URI, such as "/robots.txt"
    */
-  public URI localUri(String path) {
+  public String httpUri(String path) {
     String protocol =
         (config.http.keyStore == null)
             ? "http"
@@ -149,29 +155,27 @@ public final class TestServices {
     return UriBuilder.fromUri(protocol + "://localhost")
                      .port(config.http.port)
                      .path(path)
-                     .build();
+                     .build()
+                     .toString();
   }
 
   /**
-   * A valid account id that exists.
+   * Issues a GET request to the local HTTP server.
+   *
+   * <p>This is a shortcut for using {@link #httpClient()} and {@link
+   * #httpUri(String)} for one common case.  To customize the request -- to use
+   * POST instead of GET or to attach custom HTTP headers for example -- use
+   * those other methods directly.
+   *
+   * @param path the path part of the URI, such as "/robots.txt"
    */
-  public String accountId() {
-    return "tester";
-  }
-
-  /**
-   * Like {@link #accountId()}, but for another account.
-   */
-  public String otherAccountId() {
-    return "other";
-  }
-
-  /**
-   * An account id where no account with this id exists, but it's a
-   * theoretically valid id.
-   */
-  public String unknownAccountId() {
-    return "unknown";
+  @MustBeClosed
+  public Response httpGet(String path) {
+    String uri = httpUri(path);
+    return httpClient()
+        .target(uri)
+        .request()
+        .get();
   }
 
   /**
@@ -182,17 +186,11 @@ public final class TestServices {
     return writeAuthorizationHeader("tester", "password");
   }
 
-  /**
-   * Like {@link #authorizationHeader()} but for a different account.
-   */
-  public String otherAuthorizationHeader() {
-    return writeAuthorizationHeader("other", "password");
-  }
-
   private static String writeAuthorizationHeader(String username,
                                                  String password) {
     Objects.requireNonNull(username);
     Objects.requireNonNull(password);
+
     return "Basic " +
         Base64.getEncoder().encodeToString(
             (username + ":" + password).getBytes(UTF_8));

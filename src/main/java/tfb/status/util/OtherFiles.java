@@ -31,9 +31,7 @@ public final class OtherFiles {
     if (!Files.isDirectory(directory))
       return ImmutableList.of();
 
-    try (DirectoryStream<Path> files =
-             Files.newDirectoryStream(directory, glob)) {
-
+    try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, glob)) {
       return ImmutableList.copyOf(files);
     }
   }

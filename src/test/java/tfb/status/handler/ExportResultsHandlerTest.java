@@ -35,11 +35,7 @@ public final class ExportResultsHandlerTest {
    */
   @Test
   public void testGetJson() throws IOException {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/export/results.2017-12-26-05-07-14-321.json"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/export/results.2017-12-26-05-07-14-321.json")) {
 
       assertEquals(OK, response.getStatus());
 
@@ -60,11 +56,7 @@ public final class ExportResultsHandlerTest {
    */
   @Test
   public void testGetZip() throws IOException {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/export/results.2017-12-29-23-04-02-541.zip"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/export/results.2017-12-29-23-04-02-541.zip")) {
 
       assertEquals(OK, response.getStatus());
 

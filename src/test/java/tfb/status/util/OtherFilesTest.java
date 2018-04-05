@@ -2,12 +2,13 @@ package tfb.status.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -22,31 +23,15 @@ public final class OtherFilesTest {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    directory = Files.createTempDirectory("OtherFilesTest");
-    file = Files.createTempFile(directory, "file", ".txt");
-    subdirectory = Files.createTempDirectory(directory, "subdirectory");
-    subdirectoryFile = Files.createTempFile(subdirectory, "subdirectoryFile", ".txt");
-  }
-
-  @AfterAll
-  public static void afterAll() throws Exception {
-    Exception thrown = null;
-    for (Path file : List.of(subdirectoryFile, subdirectory, file, directory)) {
-      if (file != null) {
-        try {
-          Files.deleteIfExists(file);
-        } catch (Exception e) {
-          if (thrown == null) {
-            thrown = e;
-          } else {
-            thrown.addSuppressed(e);
-          }
-        }
-      }
-    }
-    if (thrown != null) {
-      throw thrown;
-    }
+    FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
+    directory = fs.getPath("/directory");
+    Files.createDirectory(directory);
+    file = directory.resolve("file.txt");
+    Files.createFile(file);
+    subdirectory = directory.resolve("subdirectory");
+    Files.createDirectory(subdirectory);
+    subdirectoryFile = subdirectory.resolve("subdirectoryFile.txt");
+    Files.createFile(subdirectoryFile);
   }
 
   @Test
@@ -54,6 +39,9 @@ public final class OtherFilesTest {
     assertEquals(
         Set.of(file, subdirectory),
         Set.copyOf(OtherFiles.listFiles(directory, "*")));
+    assertEquals(
+        Set.of(subdirectoryFile),
+        Set.copyOf(OtherFiles.listFiles(subdirectory, "*")));
   }
 
   @Test
@@ -61,6 +49,9 @@ public final class OtherFilesTest {
     assertEquals(
         Set.of(file),
         Set.copyOf(OtherFiles.listFiles(directory, "*.txt")));
+    assertEquals(
+        Set.of(subdirectoryFile),
+        Set.copyOf(OtherFiles.listFiles(subdirectory, "*.txt")));
   }
 
   @Test
@@ -68,5 +59,8 @@ public final class OtherFilesTest {
     assertEquals(
         Set.of(),
         Set.copyOf(OtherFiles.listFiles(file, "*")));
+    assertEquals(
+        Set.of(),
+        Set.copyOf(OtherFiles.listFiles(subdirectoryFile, "*")));
   }
 }

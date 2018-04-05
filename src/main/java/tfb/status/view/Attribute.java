@@ -10,11 +10,10 @@ import javax.annotation.Nullable;
  * JSON properties that are used in both {@link TestDefinition} as well as
  * {@link MinifiedTestDefinition}.
  *
- * Note that not all are present in both, and the code is typically used in the
- * minified version, while the name is used in the non-minified version.
+ * <p>Note that not all are present in both, and the code is typically used in
+ * the minified version, while the name is used in the non-minified version.
  */
 public enum Attribute {
-
   APPROACH("approach", "a"),
   CLASSIFICATION("classification", "c"),
   DATABASE("database", "d"),

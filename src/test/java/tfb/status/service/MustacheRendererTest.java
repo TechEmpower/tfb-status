@@ -1,14 +1,13 @@
 package tfb.status.service;
 
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static tfb.status.config.ResourceMode.CLASS_PATH;
 import static tfb.status.config.ResourceMode.FILE_SYSTEM;
+import static tfb.status.util.MoreAssertions.assertLinesEqual;
 
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import tfb.status.config.MustacheConfig;
-import tfb.status.util.MoreStrings;
 
 /**
  * Tests for {@link MustacheRenderer}.
@@ -31,9 +30,9 @@ public final class MustacheRendererTest {
 
     String html = mustacheRenderer.render("hello.mustache", view);
 
-    assertIterableEquals(
+    assertLinesEqual(
         List.of("<b>hello</b>"),
-        MoreStrings.linesOf(html));
+        html);
   }
 
   /**
@@ -53,9 +52,9 @@ public final class MustacheRendererTest {
 
     String html = mustacheRenderer.render("hello.mustache", view);
 
-    assertIterableEquals(
+    assertLinesEqual(
         List.of("<b>hello</b>"),
-        MoreStrings.linesOf(html));
+        html);
   }
 
   public static final class HelloView {

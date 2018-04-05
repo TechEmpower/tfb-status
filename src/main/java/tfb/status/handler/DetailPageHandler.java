@@ -57,6 +57,7 @@ public final class DetailPageHandler implements HttpHandler {
     CoreHandler(HomeResultsReader homeResultsReader,
                 MustacheRenderer mustacheRenderer,
                 ObjectMapper objectMapper) {
+
       this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
       this.objectMapper = Objects.requireNonNull(objectMapper);

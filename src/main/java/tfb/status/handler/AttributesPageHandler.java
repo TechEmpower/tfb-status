@@ -94,6 +94,7 @@ public final class AttributesPageHandler implements HttpHandler {
     CoreHandler(FileStoreConfig fileStoreConfig,
                 MustacheRenderer mustacheRenderer,
                 ObjectMapper objectMapper) {
+
       this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
       this.attributesDirectory = Paths.get(fileStoreConfig.attributesDirectory);
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
@@ -103,9 +104,9 @@ public final class AttributesPageHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
 
-      Path attributeLookupFile = attributesDirectory.resolve("tfb_lookup.json");
+      Path lookupFile = attributesDirectory.resolve("tfb_lookup.json");
 
-      if (!Files.isRegularFile(attributeLookupFile)) {
+      if (!Files.isRegularFile(lookupFile)) {
         exchange.setStatusCode(SERVICE_UNAVAILABLE);
         return;
       }
@@ -138,10 +139,9 @@ public final class AttributesPageHandler implements HttpHandler {
         return;
       }
 
-      AttributeLookup attributeLookup;
+      AttributeLookup lookup;
       try {
-        attributeLookup = objectMapper.readValue(attributeLookupFile.toFile(),
-                                                 AttributeLookup.class);
+        lookup = objectMapper.readValue(lookupFile.toFile(), AttributeLookup.class);
       } catch (IOException e) {
         logger.warn("Exception thrown while reading tfb_lookup.json", e);
         exchange.setStatusCode(BAD_REQUEST);
@@ -167,10 +167,10 @@ public final class AttributesPageHandler implements HttpHandler {
       // new test definitions.
 
       ImmutableMap<Integer, TestDefinition> oldTestMetadata =
-          mapToComplete(attributeLookup);
+          mapToComplete(lookup);
 
       ImmutableMap<Attribute, AttributeInfo> updatedAttributes =
-          updateAttributes(attributeLookup.attributes, newTests);
+          updateAttributes(lookup.attributes, newTests);
 
       ImmutableMap<String, MinifiedTestDefinition> updatedTestMetadata =
           minifyTestMetadata(updatedAttributes, newTests, oldTestMetadata);
@@ -186,7 +186,7 @@ public final class AttributesPageHandler implements HttpHandler {
         exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
         exchange.getResponseSender().send(json, UTF_8);
 
-      } else {
+      } else { // HTML format
 
         String attributes;
         String tests;
@@ -423,7 +423,8 @@ public final class AttributesPageHandler implements HttpHandler {
       return result.build();
     }
 
-    private static boolean matchesOnAttributes(TestDefinition a, TestDefinition b) {
+    private static boolean matchesOnAttributes(TestDefinition a,
+                                               TestDefinition b) {
       return (a.name.equalsIgnoreCase(b.name))
           || (a.approach.equalsIgnoreCase(b.approach)
               && a.classification.equalsIgnoreCase(b.classification)
@@ -455,17 +456,17 @@ public final class AttributesPageHandler implements HttpHandler {
     /**
      * Unminifies the test definitions from an {@link AttributeLookup} object.
      *
-     * @param attributeLookup the attributes and minified tests
+     * @param lookup the attributes and minified tests
      * @return a map of each test definition to its identity
      */
     private ImmutableMap<Integer, TestDefinition>
-    mapToComplete(AttributeLookup attributeLookup) {
+    mapToComplete(AttributeLookup lookup) {
 
-      var values = new ValuesByAttributeAndIndex(attributeLookup);
+      var values = new ValuesByAttributeAndIndex(lookup);
 
       var result = new ImmutableMap.Builder<Integer, TestDefinition>();
 
-      attributeLookup.minifiedTests.forEach(
+      lookup.minifiedTests.forEach(
           (String identity, MinifiedTestDefinition minifiedTest) -> {
 
             String versus;
@@ -473,7 +474,7 @@ public final class AttributesPageHandler implements HttpHandler {
               versus = "";
             } else {
               MinifiedTestDefinition versusTest =
-                  attributeLookup.minifiedTests.get(
+                  lookup.minifiedTests.get(
                       String.valueOf(minifiedTest.v.get(0)));
 
               versus = (versusTest == null) ? "" : versusTest.name;
@@ -518,13 +519,14 @@ public final class AttributesPageHandler implements HttpHandler {
     private static final class ValuesByAttributeAndIndex {
       private final Table<Attribute, String, String> table = HashBasedTable.create();
 
-      ValuesByAttributeAndIndex(AttributeLookup attributeLookup) {
-        attributeLookup.attributes.forEach(
+      ValuesByAttributeAndIndex(AttributeLookup lookup) {
+        lookup.attributes.forEach(
             (Attribute attribute, AttributeInfo info) -> {
               for (int index = 0; index < info.list.size(); index++) {
-                table.put(attribute,
-                          String.valueOf(index),
-                          info.list.get(index));
+                table.put(
+                    attribute,
+                    String.valueOf(index),
+                    info.list.get(index));
               }
             });
       }

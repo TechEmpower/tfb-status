@@ -34,11 +34,7 @@ public final class AboutPageHandlerTest {
    */
   @Test
   public void testGet() {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/about"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/about")) {
 
       assertEquals(OK, response.getStatus());
 

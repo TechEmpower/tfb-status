@@ -1,7 +1,6 @@
 package tfb.status.handler;
 
 import static io.undertow.util.Methods.GET;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.server.HttpHandler;
@@ -15,6 +14,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -35,7 +35,7 @@ import tfb.status.view.HomePageView.ResultsView;
 public final class HomeUpdatesHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;
   private final HomeResultsReader homeResultsReader;
-  private final ServerSentEventHandler eventHandler;
+  private final ServerSentEventHandler sseHandler;
   private final HttpHandler delegate;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -49,7 +49,7 @@ public final class HomeUpdatesHandler implements HttpHandler {
     this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
     this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
 
-    eventHandler = new ServerSentEventHandler();
+    sseHandler = new ServerSentEventHandler();
 
     //
     // The "X-Accel-Buffering: no" header prevents a proxy server like nginx
@@ -57,7 +57,7 @@ public final class HomeUpdatesHandler implements HttpHandler {
     // See: https://serverfault.com/a/801629
     //
 
-    HttpHandler handler = eventHandler;
+    HttpHandler handler = sseHandler;
     handler = new SetHeaderHandler(handler, "X-Accel-Buffering", "no");
     handler = new MethodHandler().addMethod(GET, handler);
     handler = new DisableCacheHandler(handler);
@@ -72,9 +72,9 @@ public final class HomeUpdatesHandler implements HttpHandler {
   public synchronized void start() {
 
     //
-    // The connections to this endpoint are often idle for long periods of time,
-    // and if they are idle for too long, and a proxy server like nginx is
-    // between this application and the client, the proxy server may kill the
+    // The connections to this endpoint are often idle for long periods of time.
+    // If they are idle for too long, and a proxy server like nginx is between
+    // this application and the client, the proxy server may kill the
     // connections.  To prevent this, we periodically broadcast a message to
     // every connection.
     //
@@ -86,7 +86,7 @@ public final class HomeUpdatesHandler implements HttpHandler {
 
     pingTask =
         pingScheduler.scheduleWithFixedDelay(
-            this::pingAllConnections, 30, 30, SECONDS);
+            this::pingAllConnections, 30, 30, TimeUnit.SECONDS);
   }
 
   /**
@@ -115,17 +115,17 @@ public final class HomeUpdatesHandler implements HttpHandler {
   /**
    * Notifies all active listeners that a set of results has been updated.
    *
-   * @param resultsUuid the resultsUuid of the results that were updated
+   * @param uuid the UUID of the results that were updated
    * @throws IOException if an I/O error occurs while reading the results
    */
-  public void sendUpdate(String resultsUuid) throws IOException {
-    Objects.requireNonNull(resultsUuid);
+  public void sendUpdate(String uuid) throws IOException {
+    Objects.requireNonNull(uuid);
 
-    Set<ServerSentEventConnection> connections = eventHandler.getConnections();
+    Set<ServerSentEventConnection> connections = sseHandler.getConnections();
 
     logger.info(
         "Result {} updated, {} listeners to be notified",
-        resultsUuid,  connections.size());
+        uuid,  connections.size());
 
     if (connections.isEmpty())
       //
@@ -133,7 +133,7 @@ public final class HomeUpdatesHandler implements HttpHandler {
       //
       return;
 
-    ResultsView results = homeResultsReader.resultsByUuid(resultsUuid);
+    ResultsView results = homeResultsReader.resultsByUuid(uuid);
 
     if (results == null) {
       //
@@ -143,7 +143,7 @@ public final class HomeUpdatesHandler implements HttpHandler {
       //
       logger.warn(
           "Result {} not found... what happened?",
-          resultsUuid);
+          uuid);
       return;
     }
 
@@ -159,13 +159,13 @@ public final class HomeUpdatesHandler implements HttpHandler {
   private void pingAllConnections() {
     //
     // This is conservatively written to catch RuntimeException because this
-    // code is meant to run periodically in a ScheduledThreadPoolExecutor.  If
-    // this code were to throw an uncaught exception, the executor would not
-    // schedule any more executions of this code.  We'd rather that it record
-    // the failure (which we hope is temporary) and try again next time.
+    // code runs periodically in a ScheduledThreadPoolExecutor.  If this method
+    // were to throw an exception, the executor would never call this method
+    // again.  We'd rather record the failure, hope that failure is temporary,
+    // and try again next time.
     //
     try {
-      for (ServerSentEventConnection connection : eventHandler.getConnections()) {
+      for (ServerSentEventConnection connection : sseHandler.getConnections()) {
         connection.send("ping");
       }
     } catch (RuntimeException e) {

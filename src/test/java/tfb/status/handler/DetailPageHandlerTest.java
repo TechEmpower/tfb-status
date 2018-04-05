@@ -36,11 +36,7 @@ public final class DetailPageHandlerTest {
    */
   @Test
   public void testGet() {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/results/03da6340-d56c-4584-9ef2-702106203809"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/results/03da6340-d56c-4584-9ef2-702106203809")) {
 
       assertEquals(OK, response.getStatus());
 
@@ -59,11 +55,7 @@ public final class DetailPageHandlerTest {
    * produces a {@code 404 Not Found} response.
    */
   public void testUnknownUuid() {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/results/notarealuuid"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/results/notarealuuid")) {
 
       assertEquals(NOT_FOUND, response.getStatus());
     }

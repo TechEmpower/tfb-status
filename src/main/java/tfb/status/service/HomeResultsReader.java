@@ -63,13 +63,17 @@ public final class HomeResultsReader {
 
   private final LoadingCache<ViewCacheKey, ResultsJsonView> jsonCache =
       Caffeine.newBuilder()
-              .maximumSize(INSANE_NUMBER_OF_CACHE_ENTRIES)
+              .maximumSize(VIEW_CACHE_MAX_SIZE)
               .build(key -> viewJsonFile(key.file));
 
   private final LoadingCache<ViewCacheKey, ResultsZipView> zipCache =
       Caffeine.newBuilder()
-              .maximumSize(INSANE_NUMBER_OF_CACHE_ENTRIES)
+              .maximumSize(VIEW_CACHE_MAX_SIZE)
               .build(key -> viewZipFile(key.file));
+
+  // This number should be greater than the total number of results files we'll
+  // ever have on disk at once.
+  private static final int VIEW_CACHE_MAX_SIZE = 10_000;
 
   @Inject
   public HomeResultsReader(FileStoreConfig fileStoreConfig,
@@ -161,24 +165,24 @@ public final class HomeResultsReader {
    * UUID, suitable for rendering on the home page, or {@code null} if there are
    * no results with the given UUID.
    *
-   * @param resultsUuid the UUID of the results to be viewed
+   * @param uuid the UUID of the results to be viewed
    * @return a view of the results, or {@code null} if there are no matching
    *         results
    * @throws IOException if an I/O error occurs while reading the results
    */
   @Nullable
-  public ResultsView resultsByUuid(String resultsUuid) throws IOException {
-    Objects.requireNonNull(resultsUuid);
+  public ResultsView resultsByUuid(String uuid) throws IOException {
+    Objects.requireNonNull(uuid);
 
     ResultsJsonView json =
         viewAllJsonFiles()
-            .filter(view -> resultsUuid.equals(view.uuid))
+            .filter(view -> uuid.equals(view.uuid))
             .findAny()
             .orElse(null);
 
     ResultsZipView zip =
         viewAllZipFiles()
-            .filter(view -> resultsUuid.equals(view.uuid))
+            .filter(view -> uuid.equals(view.uuid))
             .findAny()
             .orElse(null);
 
@@ -580,9 +584,4 @@ public final class HomeResultsReader {
     RESULTS_COMPARATOR =
         resultsOrderedByJsonFile.thenComparing(resultsOrderedByZipFile);
   }
-
-  /**
-   * Far more entries in the view cache than we should ever need.
-   */
-  private static final int INSANE_NUMBER_OF_CACHE_ENTRIES = 10_000;
 }

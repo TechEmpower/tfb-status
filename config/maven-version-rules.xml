@@ -2,20 +2,22 @@
 <ruleset comparisonMethod="maven"
          xmlns="http://mojo.codehaus.org/versions-maven-plugin/rule/2.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://mojo.codehaus.org/versions-maven-plugin/rule/2.0.0 http://www.mojohaus.org/versions-maven-plugin/xsd/rule-2.0.0.xsd">
+         xsi:schemaLocation="http://mojo.codehaus.org/versions-maven-plugin/rule/2.0.0
+                             http://www.mojohaus.org/versions-maven-plugin/xsd/rule-2.0.0.xsd">
 
-  <!-- When one runs "mvn versions display-dependency-updates", it is normal for
-       the plugin to say, paraphrasing:
+  <!-- When we run "mvn versions display-dependency-updates", the plugin may
+       tell us something like this:
 
-         One of your dependencies is out of date because you're using version
-         1.0.0 even though version 2.0.0-alpha1 is available!
+         One of your dependencies is out of date.  You're using v1.0 but
+         v2.0-alpha is available.
 
-       Since we don't (in general) want to use any alpha (or beta, or
-       pre-release, or release candidate) versions, we don't want to be alerted
-       about those versions.  Those alerts are useless noise, and worse: they
-       override alerts about versions that we *do* want to use.  In the 1.0.0
-       versus 2.0.0-alpha1 example, if 1.0.1 was released, the plugin wouldn't
-       tell us because it would be too busy telling us about 2.0.0-alpha1.
+       In general we only want to use stable versions of libraries.  We don't
+       want to use any alpha, beta, pre-release, or release candidate versions.
+       We don't want the plugin to tell us about those non-stable versions.
+       Those alerts are useless noise, and worse: they override alerts about
+       versions that we *do* want to use.  In the v1.0 and v2.0-alpha example,
+       if v1.1 was released, the plugin wouldn't tell us because it would be too
+       busy telling us about v2.0-alpha.
 
        It's possible to configure the plugin to ignore certain versions by way
        of pattern matching.  That's what we're doing here in this file.
@@ -29,8 +31,8 @@
        rules to ignore those versions.
 
        Note that this file has no effect unless the versions-maven-plugin is
-       actually configured to use it.  That is accomplished by configuring the
-       plugin's "rulesUri" property to point at this file.
+       actually configured to use it.  That is done in our main pom.xml file, by
+       setting the plugin's "rulesUri" property to point at this file.
 
        For more information about version rules files in general, see:
        http://www.mojohaus.org/versions-maven-plugin/version-rules.html
@@ -68,12 +70,6 @@
     <rule groupId="com.sun.mail" artifactId="javax.mail">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-rc[\d]+</ignoreVersion>
-      </ignoreVersions>
-    </rule>
-
-    <rule groupId="org.glassfish.hk2">
-      <ignoreVersions>
-        <ignoreVersion type="regex">.+\-b[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 

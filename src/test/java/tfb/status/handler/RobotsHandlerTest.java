@@ -39,11 +39,7 @@ public final class RobotsHandlerTest {
    */
   @Test
   public void testDisallowAllRobots() {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/robots.txt"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/robots.txt")) {
 
       assertEquals(OK, response.getStatus());
 
@@ -55,7 +51,7 @@ public final class RobotsHandlerTest {
 
       BaseRobotRules robotRules =
           new SimpleRobotRulesParser().parseContent(
-              /* url= */ services.localUri("/robots.txt").toString(),
+              /* url= */ services.httpUri("/robots.txt"),
               /* content = */ responseBytes,
               /* contentType= */ response.getHeaderString(CONTENT_TYPE),
               /* robotNames=*/ "Googlebot");
@@ -65,7 +61,7 @@ public final class RobotsHandlerTest {
                     "/about",
                     "/raw/results.2017-12-26-05-07-14-321.json",
                     "/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt")
-                .map(path -> services.localUri(path).toString())
+                .map(path -> services.httpUri(path))
                 .map(url -> () -> assertDisallowed(robotRules, url)));
     }
   }

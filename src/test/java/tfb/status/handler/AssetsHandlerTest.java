@@ -5,7 +5,7 @@ import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static tfb.status.util.MoreAssertions.assertLinesEqual;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 
 import java.util.List;
@@ -14,7 +14,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import tfb.status.bootstrap.TestServices;
-import tfb.status.util.MoreStrings;
 
 /**
  * Tests for {@link AssetsHandler}.
@@ -37,11 +36,7 @@ public final class AssetsHandlerTest {
    */
   @Test
   public void testGet() {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/assets/test_asset.txt"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/assets/test_asset.txt")) {
 
       assertEquals(OK, response.getStatus());
 
@@ -49,9 +44,9 @@ public final class AssetsHandlerTest {
           PLAIN_TEXT_UTF_8,
           response.getHeaderString(CONTENT_TYPE));
 
-      assertIterableEquals(
+      assertLinesEqual(
           List.of("Hello, World!"),
-          MoreStrings.linesOf(response.readEntity(String.class)));
+          response.readEntity(String.class));
     }
   }
 
@@ -61,11 +56,7 @@ public final class AssetsHandlerTest {
    */
   @Test
   public void testNotFound() {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/assets/does_not_exist.txt"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/assets/does_not_exist.txt")) {
 
       assertEquals(NOT_FOUND, response.getStatus());
     }

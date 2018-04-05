@@ -35,11 +35,7 @@ public final class HomePageHandlerTest {
    */
   @Test
   public void testGet() {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/")) {
 
       assertEquals(OK, response.getStatus());
 

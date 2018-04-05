@@ -73,6 +73,7 @@ public final class TimelinePageHandler implements HttpHandler {
     CoreHandler(FileStoreConfig fileStoreConfig,
                 MustacheRenderer mustacheRenderer,
                 ObjectMapper objectMapper) {
+
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
       this.objectMapper = Objects.requireNonNull(objectMapper);
       this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
@@ -97,7 +98,7 @@ public final class TimelinePageHandler implements HttpHandler {
       }
 
       var allFrameworks = new HashSet<String>();
-      var absentTestTypes = new HashSet<String>(Results.TEST_TYPES);
+      var missingTestTypes = new HashSet<String>(Results.TEST_TYPES);
       var dataPoints = new ArrayList<DataPointView>();
 
       for (Path zipFile : OtherFiles.listFiles(resultsDirectory, "*.zip")) {
@@ -131,7 +132,7 @@ public final class TimelinePageHandler implements HttpHandler {
 
         allFrameworks.addAll(results.frameworks);
 
-        absentTestTypes.removeIf(
+        missingTestTypes.removeIf(
             testType -> results.rps(/* testType= */ testType,
                                     /* framework= */ selectedFramework)
                         != 0);
@@ -155,13 +156,12 @@ public final class TimelinePageHandler implements HttpHandler {
       dataPoints.sort(comparing(dataPoint -> dataPoint.time));
 
       ImmutableList<TestTypeOptionView> testTypeOptions =
-          Results
-              .TEST_TYPES
+          Results.TEST_TYPES
               .stream()
               .sorted()
               .map(testType -> new TestTypeOptionView(
                   /* testType= */ testType,
-                  /* isPresent= */ !absentTestTypes.contains(testType),
+                  /* isPresent= */ !missingTestTypes.contains(testType),
                   /* isSelected= */ testType.equals(selectedTestType)))
               .collect(toImmutableList());
 

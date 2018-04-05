@@ -1,6 +1,5 @@
 package tfb.status.handler;
 
-import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
@@ -9,9 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 import static tfb.status.util.MoreAssertions.assertStartsWith;
 
-import com.google.errorprone.annotations.MustBeClosed;
-import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,9 +36,7 @@ public final class TimelinePageHandlerTest {
    */
   @Test
   public void testGet() {
-    try (Response response = getTimeline("gemini",
-                                         "json",
-                                         services.authorizationHeader())) {
+    try (Response response = services.httpGet("/timeline/gemini/json")) {
 
       assertEquals(OK, response.getStatus());
 
@@ -62,9 +56,7 @@ public final class TimelinePageHandlerTest {
    */
   @Test
   public void testUnknownTestType() {
-    try (Response response = getTimeline("gemini",
-                                         "notarealtesttypename",
-                                         services.authorizationHeader())) {
+    try (Response response = services.httpGet("/timeline/gemini/notarealtesttypename")) {
 
       assertEquals(NOT_FOUND, response.getStatus());
     }
@@ -76,25 +68,9 @@ public final class TimelinePageHandlerTest {
    */
   @Test
   public void testUnknownFramework() {
-    try (Response response = getTimeline("notarealframeworkname",
-                                         "json",
-                                         services.authorizationHeader())) {
+    try (Response response = services.httpGet("/timeline/notarealframeworkname/json")) {
 
       assertEquals(NOT_FOUND, response.getStatus());
     }
-  }
-
-  @MustBeClosed
-  private Response getTimeline(String framework,
-                               String testType,
-                               @Nullable String authorizationHeader) {
-    Objects.requireNonNull(framework);
-    Objects.requireNonNull(testType);
-    String path = "/timeline/" + framework + "/" + testType;
-    return services.httpClient()
-                   .target(services.localUri(path))
-                   .request()
-                   .header(AUTHORIZATION, authorizationHeader)
-                   .get();
   }
 }

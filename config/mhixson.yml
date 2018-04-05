@@ -1,4 +1,6 @@
-# This is required if the rest of the config is empty.
+# This "{}" is required when the rest of the file is empty or commented out.
+# Without this, the YAML parser throws an error because it expects the top-level
+# object in this file to be map-like.
 {}
 
 #http:

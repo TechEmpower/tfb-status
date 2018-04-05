@@ -7,10 +7,12 @@ import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.INTERNAL_SERVER_ERROR;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.READ;
 import static java.util.Comparator.comparing;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Booleans;
@@ -19,8 +21,8 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.util.MimeMappings;
-import java.io.InputStream;
-import java.nio.file.DirectoryStream;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -76,6 +78,7 @@ public final class UnzipResultsHandler implements HttpHandler {
 
     CoreHandler(FileStoreConfig fileStoreConfig,
                 MustacheRenderer mustacheRenderer) {
+
       this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
     }
@@ -106,7 +109,6 @@ public final class UnzipResultsHandler implements HttpHandler {
       }
 
       Path zipFileAndEntry = resultsDirectory.relativize(requestedFile);
-
       Path zipFile = resultsDirectory.resolve(zipFileAndEntry.getName(0));
 
       if (!Files.isRegularFile(zipFile)
@@ -115,10 +117,13 @@ public final class UnzipResultsHandler implements HttpHandler {
         return;
       }
 
-      String entrySubPath =
-          (zipFileAndEntry.getNameCount() == 1)
-              ? ""
-              : Joiner.on('/').join(zipFileAndEntry.subpath(1, zipFileAndEntry.getNameCount()));
+      String entrySubPath;
+      if (zipFileAndEntry.getNameCount() == 1)
+        entrySubPath = "";
+      else {
+        Path rawSubPath = zipFileAndEntry.subpath(1, zipFileAndEntry.getNameCount());
+        entrySubPath = Joiner.on('/').join(rawSubPath);
+      }
 
       ZipFiles.findZipEntry(
           /* zipFile= */ zipFile,
@@ -133,8 +138,9 @@ public final class UnzipResultsHandler implements HttpHandler {
                 exchange.getResponseHeaders().put(CONTENT_TYPE,
                                                   mediaType.toString());
 
-              try (InputStream inputStream = Files.newInputStream(zipEntry)) {
-                inputStream.transferTo(exchange.getOutputStream());
+              try (ReadableByteChannel in = Files.newByteChannel(zipEntry, READ)) {
+                WritableByteChannel out = exchange.getResponseChannel();
+                ByteStreams.copy(in, out);
               }
             }
 
@@ -153,21 +159,27 @@ public final class UnzipResultsHandler implements HttpHandler {
 
               var children = new ArrayList<FileView>();
 
-              try (DirectoryStream<Path> files = Files.newDirectoryStream(zipEntry)) {
-                for (Path file : files) {
-                  BasicFileAttributes attributes =
-                      Files.readAttributes(file, BasicFileAttributes.class);
+              for (Path file : MoreFiles.listFiles(zipEntry)) {
+                BasicFileAttributes attributes =
+                    Files.readAttributes(file, BasicFileAttributes.class);
 
-                  children.add(
-                      new FileView(
-                          /* fileName= */ file.getFileName().toString(),
-                          /* fullPath= */ zipFile.getFileName().toString() + "/" + Joiner.on('/').join(file),
-                          /* size= */ attributes.isRegularFile()
-                                              ? fileSizeToString(attributes.size(), /* si= */ true)
-                                              : null,
-                          /* isDirectory= */ attributes.isDirectory(),
-                          /* isSelected= */ false));
-                }
+                String fullPath =
+                    zipFile.getFileName().toString()
+                        + "/"
+                        + Joiner.on('/').join(file);
+
+                String size =
+                    attributes.isRegularFile()
+                        ? fileSizeToString(attributes.size(), /* si= */ true)
+                        : null;
+
+                children.add(
+                    new FileView(
+                        /* fileName= */ file.getFileName().toString(),
+                        /* fullPath= */ fullPath,
+                        /* size= */ size,
+                        /* isDirectory= */ attributes.isDirectory(),
+                        /* isSelected= */ false));
               }
 
               Comparator<FileView> directoriesFirst =
@@ -185,7 +197,9 @@ public final class UnzipResultsHandler implements HttpHandler {
                       /* breadcrumbs= */ ImmutableList.copyOf(breadcrumbs),
                       /* children= */ ImmutableList.copyOf(children));
 
-              String html = mustacheRenderer.render("unzipped-directory.mustache", unzippedDirectoryView);
+              String html = mustacheRenderer.render("unzipped-directory.mustache",
+                                                    unzippedDirectoryView);
+
               exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
               exchange.getResponseSender().send(html, UTF_8);
             }

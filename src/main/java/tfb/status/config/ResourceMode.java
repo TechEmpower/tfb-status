@@ -37,7 +37,10 @@ public enum ResourceMode {
       if (classFileUrl == null)
         throw new AssertionError("The class file for this class must exist");
 
-      VALUE = classFileUrl.getProtocol().equals("jar") ? CLASS_PATH : FILE_SYSTEM;
+      VALUE =
+          classFileUrl.getProtocol().equals("jar")
+              ? CLASS_PATH
+              : FILE_SYSTEM;
     }
   }
 }

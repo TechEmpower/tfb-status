@@ -1,21 +1,24 @@
 package tfb.status.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import tfb.status.util.ZipFiles.ZipEntryReader;
@@ -41,47 +44,26 @@ public final class ZipFilesTest {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    zipFile = Files.createTempFile("ZipFilesTest", ".zip");
+    FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
+    zipFile = fs.getPath("/archive.zip");
 
     try (var out = new ZipOutputStream(
                        new BufferedOutputStream(
-                           Files.newOutputStream(zipFile)))) {
+                           Files.newOutputStream(zipFile, CREATE_NEW)))) {
 
-      var entry = new ZipEntry(PRESENT_ENTRY_PATH);
-      out.putNextEntry(entry);
+      out.putNextEntry(new ZipEntry(PRESENT_ENTRY_PATH));
       out.write(PRESENT_ENTRY_BYTES);
       out.closeEntry();
 
-      var dir = new ZipEntry(DIR_ENTRY_PATH);
-      out.putNextEntry(dir);
+      out.putNextEntry(new ZipEntry(DIR_ENTRY_PATH));
       out.closeEntry();
     }
 
-    textFile = Files.createTempFile("ZipFilesTest", ".txt");
-    Files.write(textFile, List.of("This is not a zip file"));
-    dir = Files.createTempDirectory("ZipFilesTest");
-    missingFile = dir.resolve("missing");
-  }
-
-  @AfterAll
-  public static void afterAll() throws Exception {
-    Exception thrown = null;
-    for (Path file : List.of(zipFile, textFile, missingFile, dir)) {
-      if (file != null) {
-        try {
-          Files.deleteIfExists(file);
-        } catch (Exception e) {
-          if (thrown == null) {
-            thrown = e;
-          } else {
-            thrown.addSuppressed(e);
-          }
-        }
-      }
-    }
-    if (thrown != null) {
-      throw thrown;
-    }
+    textFile = fs.getPath("/file.txt");
+    Files.write(textFile, List.of("This is not a zip file"), CREATE_NEW);
+    dir = fs.getPath("/dir");
+    Files.createDirectory(dir);
+    missingFile = fs.getPath("/missing");
   }
 
   /**

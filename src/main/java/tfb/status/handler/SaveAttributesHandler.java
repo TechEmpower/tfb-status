@@ -1,5 +1,6 @@
 package tfb.status.handler;
 
+import static io.undertow.util.Headers.LOCATION;
 import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.SEE_OTHER;
@@ -13,7 +14,6 @@ import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.form.EagerFormParsingHandler;
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
-import io.undertow.util.Headers;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,15 +57,15 @@ public final class SaveAttributesHandler implements HttpHandler {
     private final Path attributesDirectory;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    CoreHandler(FileStoreConfig fileStoreConfig, ObjectMapper objectMapper) {
+    CoreHandler(FileStoreConfig fileStoreConfig,
+                ObjectMapper objectMapper) {
+
       this.attributesDirectory =  Paths.get(fileStoreConfig.attributesDirectory);
       this.objectMapper = Objects.requireNonNull(objectMapper);
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-      Path attributesLookupFile = attributesDirectory.resolve("tfb_lookup.json");
-
       FormData form = exchange.getAttachment(FormDataParser.FORM_DATA);
       if (form == null) {
         logger.warn("Unable to parse the request form data");
@@ -73,19 +73,18 @@ public final class SaveAttributesHandler implements HttpHandler {
         return;
       }
 
-      FormData.FormValue attributeLookupField = form.getFirst("lookupjson");
-      if (attributeLookupField == null) {
+      FormData.FormValue lookupField = form.getFirst("lookupjson");
+      if (lookupField == null) {
         logger.warn("Missing required form field: lookupjson");
         exchange.setStatusCode(BAD_REQUEST);
         return;
       }
 
-      String attributeLookupJson = attributeLookupField.getValue();
+      String lookupJson = lookupField.getValue();
 
-      AttributeLookup attributeLookup;
+      AttributeLookup lookup;
       try {
-        attributeLookup = objectMapper.readValue(attributeLookupJson,
-                                                 AttributeLookup.class);
+        lookup = objectMapper.readValue(lookupJson, AttributeLookup.class);
       } catch (IOException e) {
         logger.warn("Unable to parse the updated tfb_lookup.json", e);
         exchange.setStatusCode(BAD_REQUEST);
@@ -94,7 +93,7 @@ public final class SaveAttributesHandler implements HttpHandler {
 
       Path tempFile = Files.createTempFile("TFB_lookup_upload", ".json");
       try {
-        objectMapper.writeValue(tempFile.toFile(), attributeLookup);
+        objectMapper.writeValue(tempFile.toFile(), lookup);
       } catch (IOException e) {
         logger.warn("Unable to save tfb_lookup.json", e);
         Files.delete(tempFile);
@@ -102,13 +101,14 @@ public final class SaveAttributesHandler implements HttpHandler {
         return;
       }
 
-      MoreFiles.createParentDirectories(attributesLookupFile);
+      Path lookupFile = attributesDirectory.resolve("tfb_lookup.json");
+      MoreFiles.createParentDirectories(lookupFile);
       Files.move(
           /* source= */ tempFile,
-          /* target= */ attributesLookupFile,
+          /* target= */ lookupFile,
           /* options= */ REPLACE_EXISTING);
 
-      exchange.getResponseHeaders().put(Headers.LOCATION, "/");
+      exchange.getResponseHeaders().put(LOCATION, "/");
       exchange.setStatusCode(SEE_OTHER);
     }
   }

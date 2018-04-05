@@ -34,11 +34,7 @@ public final class UnzipResultsHandlerTest {
    */
   @Test
   public void testGet() {
-    try (Response response =
-             services.httpClient()
-                     .target(services.localUri("/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt"))
-                     .request()
-                     .get()) {
+    try (Response response = services.httpGet("/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt")) {
 
       assertEquals(OK, response.getStatus());
 

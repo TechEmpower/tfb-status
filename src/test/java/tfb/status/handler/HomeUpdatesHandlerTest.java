@@ -4,7 +4,6 @@ import static tfb.status.util.MoreAssertions.assertContains;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.ws.rs.client.WebTarget;
 import org.glassfish.jersey.media.sse.EventSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,10 +34,12 @@ public final class HomeUpdatesHandlerTest {
    */
   @Test
   public void testGet() throws IOException {
-    WebTarget target = services.httpClient()
-                               .target(services.localUri("/updates"));
+    String uri = services.httpUri("/updates");
 
-    var eventSource = new EventSource(target, /* open= */ false);
+    var eventSource =
+        new EventSource(
+            /* endpoint= */ services.httpClient().target(uri),
+            /* open= */ false);
 
     var incomingData = new AtomicReference<String>();
 

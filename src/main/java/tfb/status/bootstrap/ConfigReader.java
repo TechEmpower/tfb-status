@@ -71,9 +71,8 @@ public final class ConfigReader {
       config = objectMapper.readValue(inputStream, ApplicationConfig.class);
     } catch (IOException e) {
       throw new InvalidConfigFileException(
-          "Couldn't deserialize configuration file "
-              + yamlBytes // might have a useful toString(), might not
-              + " into an object",
+          "Unable to create configuration object from bytes, "
+              + "byte source: " + yamlBytes, // probably has a useful toString()
           e);
     }
 
