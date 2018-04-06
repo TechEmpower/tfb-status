@@ -14,12 +14,6 @@
     <maven.compiler.source>10</maven.compiler.source>
     <maven.compiler.target>10</maven.compiler.target>
 
-    <!-- This is the oldest version of Maven that we've tested this application
-         with.  If you have an older version of Maven and you don't want to
-         upgrade for whatever reason, feel free to try decreasing this version
-         number to match yours.  If you can run "mvn clean package" without
-         error after doing that, then it is probably safe to commit the change
-         to this version number. -->
     <oldestCompatibleMavenVersion>3.5.0</oldestCompatibleMavenVersion>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -49,14 +43,13 @@
     <logback.version>1.2.3</logback.version>
     <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
     <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
-    <maven-dependency-analyzer.version>1.9</maven-dependency-analyzer.version>
-    <maven-dependency-plugin.version>3.0.2</maven-dependency-plugin.version>
+    <maven-dependency-plugin.version>3.1.0</maven-dependency-plugin.version>
     <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
     <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
     <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
     <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
     <maven-resources-plugin.version>3.0.2</maven-resources-plugin.version>
-    <maven-shade-plugin.version>3.1.0</maven-shade-plugin.version>
+    <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
     <maven-site-plugin.version>3.7</maven-site-plugin.version>
     <!-- We're using Surefire 2.19.1 instead of 2.20(.1) or 2.21.0 because the
          more recent versions are incompatible with JUnit 5.
@@ -282,41 +275,16 @@
   </dependencies>
 
   <build>
-    <!-- Give the jar file that we build a nice and short name by default.  The
-         "-1.0-SNAPSHOT" part that Maven would put in the jar name otherwise is
-         noise to us.  This isn't a library and (at least for now) the version
-         doesn't matter because we aren't going to change it. -->
+    <!-- Omit the version number from the name of the jar file we build. -->
     <finalName>tfb-status</finalName>
 
     <pluginManagement>
       <plugins>
-        <!-- The default version of the Maven dependency plugin seems to be
-             unable to execute "mvn dependency:analyze" properly, and specifying
-             a more recent version fixes that problem. -->
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>${maven-dependency-plugin.version}</version>
-          <!-- Bump the version of one of this plugin's dependencies for
-               compatibility with Java 9+.  We should be able to remove this
-               when a future version of the dependency plugin is released.
-
-               For more information, see:
-               https://issues.apache.org/jira/browse/MDEP-559 -->
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.maven.shared</groupId>
-              <artifactId>maven-dependency-analyzer</artifactId>
-              <version>${maven-dependency-analyzer.version}</version>
-            </dependency>
-          </dependencies>
+          <groupId>pl.project13.maven</groupId>
+          <artifactId>git-commit-id-plugin</artifactId>
+          <version>${git-commit-id-plugin.version}</version>
         </plugin>
-
-        <!-- These are other commonly used plugins that the Maven versions
-             plugin warns us about if we don't specify their versions.  We're
-             mainly specifying the versions here to avoid the warnings, but
-             supposedly this makes the behavior of these plugins more reliable
-             across installations as well. -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
@@ -324,8 +292,23 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${maven-compiler-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${maven-dependency-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
           <version>${maven-deploy-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${maven-enforcer-plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -344,6 +327,11 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${maven-shade-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
           <version>${maven-site-plugin.version}</version>
         </plugin>
@@ -359,34 +347,10 @@
             </dependency>
           </dependencies>
         </plugin>
-
-        <!-- For consistency, specify *all* plugin versions in the
-             <pluginManagement> section, including the plugins that we also
-             configure in the <plugins> section. -->
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-enforcer-plugin</artifactId>
-          <version>${maven-enforcer-plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>${maven-compiler-plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>${maven-shade-plugin.version}</version>
-        </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>versions-maven-plugin</artifactId>
           <version>${versions-maven-plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>pl.project13.maven</groupId>
-          <artifactId>git-commit-id-plugin</artifactId>
-          <version>${git-commit-id-plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -493,14 +457,12 @@
         </configuration>
       </plugin>
 
-      <!-- We enable the standard warnings from javac that are (for some strange
-           reason) disabled by default. -->
+      <!-- We enable warnings from javac that are disabled by default. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <encoding>UTF-8</encoding>
-          <forceJavacCompilerUse>true</forceJavacCompilerUse>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
           <compilerArgs>
