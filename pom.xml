@@ -38,8 +38,8 @@
     <jersey.version>2.26</jersey.version>
     <jimfs.version>1.1</jimfs.version>
     <jsr305.version>3.0.2</jsr305.version>
-    <junit-jupiter.version>5.1.0</junit-jupiter.version>
-    <junit-platform.version>1.1.0</junit-platform.version>
+    <junit-jupiter.version>5.1.1</junit-jupiter.version>
+    <junit-platform.version>1.1.1</junit-platform.version>
     <logback.version>1.2.3</logback.version>
     <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
     <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
@@ -51,11 +51,14 @@
     <maven-resources-plugin.version>3.0.2</maven-resources-plugin.version>
     <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
     <maven-site-plugin.version>3.7</maven-site-plugin.version>
-    <!-- We're using Surefire 2.19.1 instead of 2.20(.1) or 2.21.0 because the
-         more recent versions are incompatible with JUnit 5.
+    <!-- We're using maven-surefire-plugin 2.19.1 instead of 2.20(.1) or 2.21.0
+         because the more recent versions are incompatible with the current
+         release of JUnit 5.
 
-         Supposedly this is fixed in the next release of JUnit.  See:
-         https://github.com/junit-team/junit5/issues/809 -->
+         This is a bug in junit-platform-surefire-provider.  See:
+         https://github.com/junit-team/junit5/issues/1341
+
+         Supposedly this is fixed in the next release, version 1.2.0. -->
     <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
     <mustache.version>0.9.5</mustache.version>
     <slf4j.version>1.7.25</slf4j.version>
@@ -64,15 +67,15 @@
     <versions-maven-plugin.version>2.5</versions-maven-plugin.version>
   </properties>
 
-  <!-- We include <prerequisites> for the sake of the versions plugin, which
+  <!-- We include <prerequisites> for the sake of versions-maven-plugin, which
        provides the very useful "mvn versions:display-dependency-updates"
        command.  That plugin breaks if we remove <prerequisites>.
 
-       Maven warns us that we should remove <prerequisites> and use the enforcer
-       plugin instead.  We do also use the enforcer plugin, but we must keep
-       <prerequisites> to avoid breaking the versions plugin.
+       Maven warns us that we should remove <prerequisites> and use
+       maven-enforcer-plugin instead.  We do also use maven-enforcer-plugin, but
+       we must keep <prerequisites> to avoid breaking versions-maven-plugin.
 
-       This is a bug in the versions plugin.  See:
+       This is a bug in versions-maven-plugin.  See:
        https://github.com/mojohaus/versions-maven-plugin/issues/48
 
        Supposedly this is fixed in the next release, version 2.6. -->
