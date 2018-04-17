@@ -177,7 +177,7 @@ public final class HomePageView {
       this.branchName = branchName;
       if (this.repositoryUrl != null) {
         this.commitUrl = repositoryUrl.replace(".git$", "")
-                + "/commit/" + this.commitId;
+                + "/tree/" + this.commitId;
       } else {
         this.commitUrl = null;
       }
