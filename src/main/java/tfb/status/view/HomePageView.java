@@ -167,6 +167,7 @@ public final class HomePageView {
     public final String commitId;
     @Nullable public final String repositoryUrl;
     @Nullable public final String branchName;
+    @Nullable public final String commitUrl;
 
     public ResultsGitView(String commitId,
                           @Nullable String repositoryUrl,
@@ -174,6 +175,12 @@ public final class HomePageView {
       this.commitId = Objects.requireNonNull(commitId);
       this.repositoryUrl = repositoryUrl;
       this.branchName = branchName;
+      if (this.repositoryUrl != null) {
+        this.commitUrl = repositoryUrl.replace(".git$", "")
+                + "/tree/" + this.commitId;
+      } else {
+        this.commitUrl = null;
+      }
     }
   }
 }
