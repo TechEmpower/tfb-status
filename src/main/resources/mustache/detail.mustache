@@ -26,22 +26,42 @@ The HTML of the results detail page.
 {{/uuid}}
 
 {{#git}}
-  <dl>
-    <dt>TFB git commit ID</dt>
-    <dd>
-      {{#commitUrl}}<a href="{{commitUrl}}">{{commitId}}</a>{{/commitUrl}}
-      {{^commitUrl}}<code>{{commitId}}</code>{{/commitUrl}}
-    </dd>
-    <dt>TFB git repository URL</dt>
-    <dd>{{#repositoryUrl}}<a href="{{repositoryUrl}}">{{repositoryUrl}}</a>{{/repositoryUrl}}
-        {{^repositoryUrl}}
-            (unknown, probably <a href="https://github.com/TechEmpower/FrameworkBenchmarks.git">
-            https://github.com/TechEmpower/FrameworkBenchmarks.git</a>)
-        {{/repositoryUrl}}</dd>
-    <dt>TFB git branch name</dt>
-    <dd>{{#branchName}}<code>{{branchName}}</code>{{/branchName}}
-        {{^branchName}}(unknown, probably <code>master</code>){{/branchName}}</dd>
-  </dl>
+  <p>
+  commit:
+  {{#browseCommitUrl}}
+    <a href="{{browseCommitUrl}}"><code>{{commitId}}</code></a>
+  {{/browseCommitUrl}}
+  {{^browseCommitUrl}}
+    <code>{{commitId}}</code>
+  {{/browseCommitUrl}}
+  <br>
+  repository:
+  {{#repositoryUrl}}
+    {{#browseRepositoryUrl}}
+      <a href="{{browseRepositoryUrl}}"><code>{{repositoryUrl}}</code></a>
+    {{/browseRepositoryUrl}}
+    {{^browseRepositoryUrl}}
+      <code>{{repositoryUrl}}</code>
+    {{/browseRepositoryUrl}}
+  {{/repositoryUrl}}
+  {{^repositoryUrl}}
+    (unknown, probably
+    <a href="https://github.com/TechEmpower/FrameworkBenchmarks"
+    ><code>https://github.com/TechEmpower/FrameworkBenchmarks.git</code></a>)
+  {{/repositoryUrl}}
+  <br>
+  branch:
+  {{#branchName}}
+    {{#browseBranchUrl}}
+      <a href="{{browseBranchUrl}}"><code>{{branchName}}</code></a>
+    {{/browseBranchUrl}}
+    {{^browseBranchUrl}}
+      <code>{{branchName}}</code>
+    {{/browseBranchUrl}}
+  {{/branchName}}
+  {{^branchName}}
+    (unknown, probably <code>master</code>)
+  {{/branchName}}
 {{/git}}
 {{^git}}
   <p>We don't know what version of TFB was used for this run.

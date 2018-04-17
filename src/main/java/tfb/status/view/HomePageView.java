@@ -3,6 +3,8 @@ package tfb.status.view;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -167,7 +169,10 @@ public final class HomePageView {
     public final String commitId;
     @Nullable public final String repositoryUrl;
     @Nullable public final String branchName;
-    @Nullable public final String commitUrl;
+
+    @Nullable public final String browseRepositoryUrl;
+    @Nullable public final String browseCommitUrl;
+    @Nullable public final String browseBranchUrl;
 
     public ResultsGitView(String commitId,
                           @Nullable String repositoryUrl,
@@ -175,12 +180,35 @@ public final class HomePageView {
       this.commitId = Objects.requireNonNull(commitId);
       this.repositoryUrl = repositoryUrl;
       this.branchName = branchName;
-      if (this.repositoryUrl != null) {
-        this.commitUrl = repositoryUrl.replace(".git$", "")
-                + "/tree/" + this.commitId;
+
+      if (repositoryUrl == null) {
+        this.browseRepositoryUrl = null;
+        this.browseCommitUrl = null;
+        this.browseBranchUrl = null;
       } else {
-        this.commitUrl = null;
+        Matcher githubMatcher = GITHUB_REPOSITORY_PATTERN.matcher(repositoryUrl);
+        if (githubMatcher.matches()) {
+
+          this.browseRepositoryUrl =
+              "https://github.com" + githubMatcher.group("path");
+
+          this.browseCommitUrl =
+              browseRepositoryUrl + "/tree/" + commitId;
+
+          this.browseBranchUrl =
+              (branchName == null)
+                  ? null
+                  : browseRepositoryUrl + "/tree/" + branchName;
+
+        } else {
+          this.browseRepositoryUrl = null;
+          this.browseCommitUrl = null;
+          this.browseBranchUrl = null;
+        }
       }
     }
+
+    private static final Pattern GITHUB_REPOSITORY_PATTERN =
+        Pattern.compile("^(https|git)://github\\.com(?<path>/.*)\\.git$");
   }
 }
