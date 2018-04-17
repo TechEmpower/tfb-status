@@ -80,6 +80,13 @@
       </ignoreVersions>
     </rule>
 
+    <rule groupId="org.junit.platform">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\-M[\d]+</ignoreVersion>
+        <ignoreVersion type="regex">.+\-RC[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
     <rule groupId="ch.qos.logback" artifactId="logback-classic">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-alpha[\d]+</ignoreVersion>
