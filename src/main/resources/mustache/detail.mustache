@@ -28,10 +28,16 @@ The HTML of the results detail page.
 {{#git}}
   <dl>
     <dt>TFB git commit ID</dt>
-    <dd><code>{{commitId}}</code></dd>
+    <dd>
+      {{#commitUrl}}<a href="{{commitUrl}}">{{commitId}}</a>{{/commitUrl}}
+      {{^commitUrl}}<code>{{commitId}}</code>{{/commitUrl}}
+    </dd>
     <dt>TFB git repository URL</dt>
-    <dd>{{#repositoryUrl}}<code>{{repositoryUrl}}</code>{{/repositoryUrl}}
-        {{^repositoryUrl}}(unknown, probably <code>https://github.com/TechEmpower/FrameworkBenchmarks.git</code>){{/repositoryUrl}}</dd>
+    <dd>{{#repositoryUrl}}<a href="{{repositoryUrl}}">{{repositoryUrl}}</a>{{/repositoryUrl}}
+        {{^repositoryUrl}}
+            (unknown, probably <a href="https://github.com/TechEmpower/FrameworkBenchmarks.git">
+            https://github.com/TechEmpower/FrameworkBenchmarks.git</a>)
+        {{/repositoryUrl}}</dd>
     <dt>TFB git branch name</dt>
     <dd>{{#branchName}}<code>{{branchName}}</code>{{/branchName}}
         {{^branchName}}(unknown, probably <code>master</code>){{/branchName}}</dd>
