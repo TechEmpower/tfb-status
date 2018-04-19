@@ -210,7 +210,7 @@ public final class Results {
       case "db":
       case "fortune":
         return executions.stream()
-                         .mapToLong(execution -> execution.totalRequests)
+                         .mapToLong(execution -> requestsForExecution(execution))
                          .max()
                          .orElse(0);
 
@@ -225,11 +225,15 @@ public final class Results {
         if (executions.isEmpty())
           return 0;
         else
-          return executions.get(executions.size() - 1).totalRequests;
+          return requestsForExecution(executions.get(executions.size() - 1));
 
       default:
         return 0;
     }
+  }
+
+  private static long requestsForExecution(SingleWrkExecution execution) {
+    return execution.totalRequests - execution.status5xx;
   }
 
   /**
