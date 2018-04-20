@@ -152,11 +152,14 @@ public final class HomePageView {
     public static final class Failure {
       public final String framework;
       public final ImmutableList<String> failedTestTypes;
+      public final boolean hadSetupProblems;
 
       public Failure(String framework,
-                     ImmutableList<String> failedTestTypes) {
+                     ImmutableList<String> failedTestTypes,
+                     boolean hadSetupProblems) {
         this.framework = Objects.requireNonNull(framework);
         this.failedTestTypes = Objects.requireNonNull(failedTestTypes);
+        this.hadSetupProblems = Objects.requireNonNull(hadSetupProblems);
       }
     }
   }

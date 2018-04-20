@@ -98,8 +98,8 @@ The HTML of the results detail page.
     {{#zip.failures}}
       <li>
         [{{framework}}]
-        {{#failedTestTypes.isEmpty}} had problems starting or stopping{{/failedTestTypes.isEmpty}}
-        {{^failedTestTypes.isEmpty}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}
+        {{#hadSetupProblems}} had problems starting or stopping{{/hadSetupProblems}}
+        {{^failedTestTypes.isEmpty}}{{#hadSetupProblems}},{{/hadSetupProblems}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}
     {{/zip.failures}}
     </ul>
   {{/zip.failures.isEmpty}}

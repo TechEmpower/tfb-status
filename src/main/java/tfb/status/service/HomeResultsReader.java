@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Joiner;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.Immutable;
 import java.io.BufferedReader;
@@ -28,9 +30,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -251,6 +253,16 @@ public final class HomeResultsReader {
     int successfulTests = results.succeeded.values().size();
     int failedTests = results.failed.values().size();
 
+    for (String testType : Results.TEST_TYPES) {
+      for (String framework : results.frameworks) {
+        if (results.succeeded.containsEntry(testType, framework)
+            && results.requests(testType, framework) == 0) {
+          successfulTests--;
+          failedTests++;
+        }
+      }
+    }
+
     LocalDateTime startTime =
         (results.startTime == null)
             ? null
@@ -395,24 +407,39 @@ public final class HomeResultsReader {
 
     var failures = new ArrayList<Failure>();
 
-    results.failed.inverse().asMap().forEach(
-        (String framework, Collection<String> failedTestTypes) -> {
-          failures.add(
-              new Failure(
-                  /* framework= */ framework,
-                  /* failedTestTypes= */ ImmutableList.sortedCopyOf(failedTestTypes)));
-        });
+    SetMultimap<String, String> frameworkToFailedTestTypes =
+        HashMultimap.create(results.failed.inverse());
+
+    for (String testType : Results.TEST_TYPES) {
+      for (String framework : results.frameworks) {
+        if (results.succeeded.containsEntry(testType, framework)
+            && results.requests(testType, framework) == 0) {
+          frameworkToFailedTestTypes.put(framework, testType);
+        }
+      }
+    }
+
+    Set<String> frameworksWithSetupIssues = new HashSet<>();
 
     results.completed.forEach(
         (String framework, String message) -> {
-          if (!results.failed.inverse().containsKey(framework)
-              && !isCompletedTimestamp(message)) {
-            failures.add(
-                new Failure(
-                    /* framework= */ framework,
-                    /* failedTestTypes= */ ImmutableList.of()));
+          if (!isCompletedTimestamp(message)) {
+            frameworksWithSetupIssues.add(framework);
           }
         });
+
+    for (String framework : Sets.union(frameworkToFailedTestTypes.keySet(),
+                                       frameworksWithSetupIssues)) {
+
+      Set<String> failedTestTypes = frameworkToFailedTestTypes.get(framework);
+      boolean hadSetupProblems = frameworksWithSetupIssues.contains(framework);
+
+      failures.add(
+          new Failure(
+              /* framework= */ framework,
+              /* failedTestTypes= */ ImmutableList.sortedCopyOf(failedTestTypes),
+              /* hadSetupProblems= */ hadSetupProblems));
+    }
 
     failures.sort(comparing(failure -> failure.framework,
                             String.CASE_INSENSITIVE_ORDER));
