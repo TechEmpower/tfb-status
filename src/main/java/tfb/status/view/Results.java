@@ -272,6 +272,8 @@ public final class Results {
     public final ImmutableListMultimap<String, SingleWrkExecution> query;
     public final ImmutableListMultimap<String, SingleWrkExecution> update;
     public final ImmutableListMultimap<String, SingleWrkExecution> fortune;
+
+    @JsonProperty("cached_query")
     public final ImmutableListMultimap<String, SingleWrkExecution> cachedQuery;
 
     @JsonCreator
