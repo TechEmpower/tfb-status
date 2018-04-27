@@ -67,18 +67,10 @@
     <versions-maven-plugin.version>2.5</versions-maven-plugin.version>
   </properties>
 
-  <!-- We include <prerequisites> for the sake of versions-maven-plugin, which
-       provides the very useful "mvn versions:display-dependency-updates"
-       command.  That plugin breaks if we remove <prerequisites>.
+  <!-- We include <prerequisites> to work around a bug in versions-maven-plugin.
+       See: https://github.com/mojohaus/versions-maven-plugin/issues/48
 
-       Maven warns us that we should remove <prerequisites> and use
-       maven-enforcer-plugin instead.  We do also use maven-enforcer-plugin, but
-       we must keep <prerequisites> to avoid breaking versions-maven-plugin.
-
-       This is a bug in versions-maven-plugin.  See:
-       https://github.com/mojohaus/versions-maven-plugin/issues/48
-
-       Supposedly this is fixed in the next release, version 2.6. -->
+       Supposedly that bug is fixed in the next release, version 2.6. -->
   <prerequisites>
     <maven>${oldestCompatibleMavenVersion}</maven>
   </prerequisites>
