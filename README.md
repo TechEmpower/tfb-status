@@ -1,7 +1,7 @@
-This is a web application that consumes results from the TechEmpower Framework
-Benchmarks (TFB).  TFB may be configured to upload its results files to some
-other server between tests and after a full run, and this application this is
-meant to be that other server.
+This is a web application that consumes results from the [TechEmpower Framework
+Benchmarks] (https://github.com/TechEmpower/FrameworkBenchmarks) (TFB).  TFB may
+be configured to upload its results files to some other server between tests and
+after a full run, and this application this is meant to be that other server.
 
 To build:
 
