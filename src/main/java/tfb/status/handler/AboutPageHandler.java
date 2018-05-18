@@ -13,12 +13,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.text.NumberFormat;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
 import javax.inject.Inject;
@@ -36,8 +30,8 @@ public final class AboutPageHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public AboutPageHandler(MustacheRenderer mustacheRenderer, Clock clock) {
-    HttpHandler handler = new CoreHandler(mustacheRenderer, clock);
+  public AboutPageHandler(MustacheRenderer mustacheRenderer) {
+    HttpHandler handler = new CoreHandler(mustacheRenderer);
 
     handler = new MethodHandler().addMethod(GET, handler);
     handler = new DisableCacheHandler(handler);
@@ -52,20 +46,13 @@ public final class AboutPageHandler implements HttpHandler {
 
   private static final class CoreHandler implements HttpHandler {
     private final MustacheRenderer mustacheRenderer;
-    private final Clock clock;
-    private final Instant startTime;
 
-    CoreHandler(MustacheRenderer mustacheRenderer, Clock clock) {
+    CoreHandler(MustacheRenderer mustacheRenderer) {
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
-      this.clock = Objects.requireNonNull(clock);
-      this.startTime = clock.instant();
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-      Instant now = clock.instant();
-      Duration uptime = Duration.between(startTime, now);
-
       ImmutableMap<String, String> gitProperties;
 
       try (InputStream inputStream =
@@ -87,7 +74,6 @@ public final class AboutPageHandler implements HttpHandler {
 
       var aboutPageView =
           new AboutPageView(
-              /* uptime= */ formatDuration(uptime),
               /* gitProperties= */
               gitProperties.entrySet()
                            .stream()
@@ -99,28 +85,6 @@ public final class AboutPageHandler implements HttpHandler {
       String html = mustacheRenderer.render("about.mustache", aboutPageView);
       exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
       exchange.getResponseSender().send(html, UTF_8);
-    }
-
-    /**
-     * Returns a string representing the duration like "1d 3h 12m 55s".
-     */
-    private static String formatDuration(Duration duration) {
-      Objects.requireNonNull(duration);
-
-      long days = duration.toDaysPart();
-      int hours = duration.toHoursPart();
-      int minutes = duration.toMinutesPart();
-      int seconds = duration.toSecondsPart();
-
-      NumberFormat integerFormat = NumberFormat.getIntegerInstance(Locale.ROOT);
-      var parts = new ArrayList<String>();
-
-      if (days > 0)    parts.add(integerFormat.format(days) + "d");
-      if (hours > 0)   parts.add(integerFormat.format(hours) + "h");
-      if (minutes > 0) parts.add(integerFormat.format(minutes) + "m");
-      if (seconds > 0) parts.add(integerFormat.format(seconds) + "s");
-
-      return parts.isEmpty() ? "0s" : String.join(" ", parts);
     }
   }
 }

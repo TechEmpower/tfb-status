@@ -10,12 +10,6 @@ import java.util.Objects;
 @Immutable
 public final class AboutPageView {
   /**
-   * The amount of time this application instance has been running, as human
-   * readable text.
-   */
-  public final String uptime;
-
-  /**
    * The content of the git.properties file from the classpath, or an empty list
    * if that file is not present.
    *
@@ -25,9 +19,7 @@ public final class AboutPageView {
    */
   public final ImmutableList<GitPropertyView> gitProperties;
 
-  public AboutPageView(String uptime,
-                       ImmutableList<GitPropertyView> gitProperties) {
-    this.uptime = Objects.requireNonNull(uptime);
+  public AboutPageView(ImmutableList<GitPropertyView> gitProperties) {
     this.gitProperties = Objects.requireNonNull(gitProperties);
   }
 
