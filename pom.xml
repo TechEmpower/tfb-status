@@ -252,6 +252,7 @@
       <groupId>com.github.crawler-commons</groupId>
       <artifactId>crawler-commons</artifactId>
       <version>${crawler-commons.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.jimfs</groupId>
