@@ -159,7 +159,7 @@ public final class HomePageView {
                      boolean hadSetupProblems) {
         this.framework = Objects.requireNonNull(framework);
         this.failedTestTypes = Objects.requireNonNull(failedTestTypes);
-        this.hadSetupProblems = Objects.requireNonNull(hadSetupProblems);
+        this.hadSetupProblems = hadSetupProblems;
       }
     }
   }
