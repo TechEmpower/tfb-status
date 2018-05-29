@@ -170,6 +170,7 @@ public final class Results {
       @JsonProperty(value = "concurrencyLevels", required = true)
       ImmutableList<Integer> concurrencyLevels,
 
+      @Nullable
       @JsonProperty(value = "git", required = false)
       GitInfo git) {
 
