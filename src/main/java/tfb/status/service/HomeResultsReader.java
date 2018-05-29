@@ -1,19 +1,23 @@
 package tfb.status.service;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 import static java.util.Comparator.reverseOrder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.Immutable;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -37,8 +41,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -77,6 +86,9 @@ public final class HomeResultsReader {
   // ever have on disk at once.
   private static final int VIEW_CACHE_MAX_SIZE = 10_000;
 
+  @GuardedBy("this") @Nullable private ScheduledThreadPoolExecutor purgeScheduler;
+  @GuardedBy("this") @Nullable private ScheduledFuture<?> purgeTask;
+
   @Inject
   public HomeResultsReader(FileStoreConfig fileStoreConfig,
                            ObjectMapper objectMapper,
@@ -84,6 +96,39 @@ public final class HomeResultsReader {
     this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.clock = Objects.requireNonNull(clock);
+  }
+
+  /**
+   * Initializes resources used by this service.
+   */
+  @PostConstruct
+  public synchronized void start() {
+    purgeScheduler = new ScheduledThreadPoolExecutor(1);
+    purgeScheduler.setRemoveOnCancelPolicy(true);
+    purgeScheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+    purgeScheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+
+    purgeTask =
+        purgeScheduler.scheduleWithFixedDelay(
+            this::purgeUnreachableCacheKeys, 1, 1, TimeUnit.HOURS);
+  }
+
+  /**
+   * Cleans up resources used by this service.
+   */
+  @PreDestroy
+  public synchronized void stop() {
+    ScheduledFuture<?> task = this.purgeTask;
+    if (task != null) {
+      task.cancel(false);
+      this.purgeTask = null;
+    }
+
+    ScheduledThreadPoolExecutor scheduler = this.purgeScheduler;
+    if (scheduler != null) {
+      scheduler.shutdownNow();
+      this.purgeScheduler = null;
+    }
   }
 
   /**
@@ -488,6 +533,22 @@ public final class HomeResultsReader {
         /* failures= */ ImmutableList.copyOf(failures));
   }
 
+  private void purgeUnreachableCacheKeys() {
+    purgeUnreachableCacheKeys(jsonCache);
+    purgeUnreachableCacheKeys(zipCache);
+  }
+
+  private static void purgeUnreachableCacheKeys(Cache<ViewCacheKey, ?> cache) {
+    ImmutableSet<ViewCacheKey> unreachableKeys =
+        cache.asMap()
+             .keySet()
+             .stream()
+             .filter(ViewCacheKey::isUnreachable)
+             .collect(toImmutableSet());
+
+    cache.invalidateAll(unreachableKeys);
+  }
+
   @Immutable
   private static final class ViewCacheKey {
     final Path file;
@@ -516,6 +577,24 @@ public final class HomeResultsReader {
     @Override
     public int hashCode() {
       return file.hashCode() ^ lastModifiedTime.hashCode();
+    }
+
+    /**
+     * Returns {@code true} if the file has been modified since this cache key
+     * was created, meaning this cache key is effectively unreachable.
+     */
+    boolean isUnreachable() {
+      try {
+        return !lastModifiedTime.equals(Files.getLastModifiedTime(file));
+      } catch (IOException ignored) {
+        //
+        // This would happen if the file is deleted, for example.
+        //
+        // Since an exception here implies that constructing a new key for this
+        // file would also throw an exception, this key is unreachable.
+        //
+        return true;
+      }
     }
   }
 
