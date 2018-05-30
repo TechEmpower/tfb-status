@@ -86,7 +86,17 @@ public final class HomeUpdatesHandler implements HttpHandler {
 
     pingTask =
         pingScheduler.scheduleWithFixedDelay(
-            this::pingAllConnections, 30, 30, TimeUnit.SECONDS);
+            /* command= */ () -> {
+              try {
+                pingAllConnections();
+              } catch (RuntimeException e) {
+                // An uncaught exception would de-schedule this task.
+                logger.error("Error pinging SSE connections", e);
+              }
+            },
+            /* initialDelay= */ 30,
+            /* delay= */ 30,
+            /* unit= */ TimeUnit.SECONDS);
   }
 
   /**
@@ -156,20 +166,13 @@ public final class HomeUpdatesHandler implements HttpHandler {
       connection.send(html);
   }
 
+  /**
+   * Broadcasts the text {@code "ping"} to all currently-open SSE connections.
+   * This text may be discarded client-side.
+   */
   private void pingAllConnections() {
-    //
-    // This is conservatively written to catch RuntimeException because this
-    // code runs periodically in a ScheduledThreadPoolExecutor.  If this method
-    // were to throw an exception, the executor would never call this method
-    // again.  We'd rather record the failure, hope that failure is temporary,
-    // and try again next time.
-    //
-    try {
-      for (ServerSentEventConnection connection : sseHandler.getConnections()) {
-        connection.send("ping");
-      }
-    } catch (RuntimeException e) {
-      logger.error("Error pinging SSE connections", e);
+    for (ServerSentEventConnection connection : sseHandler.getConnections()) {
+      connection.send("ping");
     }
   }
 }

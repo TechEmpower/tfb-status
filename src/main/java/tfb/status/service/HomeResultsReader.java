@@ -110,7 +110,17 @@ public final class HomeResultsReader {
 
     purgeTask =
         purgeScheduler.scheduleWithFixedDelay(
-            this::purgeUnreachableCacheKeys, 1, 1, TimeUnit.HOURS);
+            /* command= */ () -> {
+              try {
+                purgeUnreachableCacheKeys();
+              } catch (RuntimeException e) {
+                // An uncaught exception would de-schedule this task.
+                logger.error("Error purging unreachable cache keys", e);
+              }
+            },
+            /* initialDelay= */ 1,
+            /* delay= */ 1,
+            /* unit= */ TimeUnit.HOURS);
   }
 
   /**
@@ -533,6 +543,10 @@ public final class HomeResultsReader {
         /* failures= */ ImmutableList.copyOf(failures));
   }
 
+  /**
+   * Trims the internal cache, removing entries that are "dead" because they
+   * have {@linkplain ViewCacheKey#isUnreachable() unreachable} keys.
+   */
   private void purgeUnreachableCacheKeys() {
     purgeUnreachableCacheKeys(jsonCache);
     purgeUnreachableCacheKeys(zipCache);
