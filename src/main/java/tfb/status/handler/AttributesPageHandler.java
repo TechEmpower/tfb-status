@@ -117,7 +117,7 @@ public final class AttributesPageHandler implements HttpHandler {
         return;
       }
 
-      boolean jsonFormat = "json".equals(queryParameter(exchange, "format"));
+      boolean isJson = "json".equals(queryParameter(exchange, "format"));
 
       Path requestedFile;
       try {
@@ -175,7 +175,7 @@ public final class AttributesPageHandler implements HttpHandler {
       ImmutableMap<String, MinifiedTestDefinition> updatedTestMetadata =
           minifyTestMetadata(updatedAttributes, newTests, oldTestMetadata);
 
-      if (jsonFormat) {
+      if (isJson) {
 
         var attributesJsonView =
             new AttributesJsonView(
@@ -223,7 +223,7 @@ public final class AttributesPageHandler implements HttpHandler {
      * @param testDefinitions the test_metadata.json file from the tfb run
      * @return the updated attribute definition
      */
-    private ImmutableMap<Attribute, AttributeInfo>
+    private static ImmutableMap<Attribute, AttributeInfo>
     updateAttributes(Map<Attribute, AttributeInfo> previousAttributes,
                      List<TestDefinition> testDefinitions) {
 
@@ -304,7 +304,7 @@ public final class AttributesPageHandler implements HttpHandler {
      * @param oldTestDefinitions the unminified test definitions from tfb_lookup
      * @return the new minified test definitions
      */
-    private ImmutableMap<String, MinifiedTestDefinition>
+    private static ImmutableMap<String, MinifiedTestDefinition>
     minifyTestMetadata(Map<Attribute, AttributeInfo> updatedAttributes,
                        List<TestDefinition> newTestDefinitions,
                        Map<Integer, TestDefinition> oldTestDefinitions) {
@@ -326,8 +326,8 @@ public final class AttributesPageHandler implements HttpHandler {
                               .findFirst()
                               .orElse(null);
 
-        // In some cases we might have multiple new tests that match to on of the
-        // old tests; in these cases we simply assign them a new identity to
+        // In some cases we might have multiple new tests that match to one of
+        // the old tests; in these cases we simply assign them a new identity to
         // avoid overriding.
         if (identity == null || testMetadata.containsKey(identity)) {
           identity = nextIdentity++;
@@ -459,7 +459,7 @@ public final class AttributesPageHandler implements HttpHandler {
      * @param lookup the attributes and minified tests
      * @return a map of each test definition to its identity
      */
-    private ImmutableMap<Integer, TestDefinition>
+    private static ImmutableMap<Integer, TestDefinition>
     mapToComplete(AttributeLookup lookup) {
 
       var values = new ValuesByAttributeAndIndex(lookup);
