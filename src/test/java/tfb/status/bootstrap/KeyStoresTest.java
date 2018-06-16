@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
  */
 public final class KeyStoresTest {
   /**
-   * Tests that {@link KeyStores#readKeyStore(ByteSource, char[])} is able to
+   * Verifies that {@link KeyStores#readKeyStore(ByteSource, char[])} is able to
    * open a valid key store file.
    */
   @Test
@@ -29,8 +29,9 @@ public final class KeyStoresTest {
   }
 
   /**
-   * Tests that {@link KeyStores#readKeyStoreAsSslContext(ByteSource, char[])}
-   * is able to open a valid key store file.
+   * Verifies that {@link
+   * KeyStores#readKeyStoreAsSslContext(ByteSource, char[])} is able to open a
+   * valid key store file.
    */
   @Test
   public void testReadKeyStoreAsSslContext() {

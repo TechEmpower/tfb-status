@@ -33,7 +33,8 @@ public final class AuthenticatorTest {
   }
 
   /**
-   * Tests that {@link Authenticator#accountExists(String)} works as expected.
+   * Verifies that {@link Authenticator#accountExists(String)} works as
+   * expected.
    */
   @Test
   public void testAccountExists() {
@@ -42,7 +43,7 @@ public final class AuthenticatorTest {
   }
 
   /**
-   * Tests that {@link Authenticator#checkPassword(String, String)} works as
+   * Verifies that {@link Authenticator#checkPassword(String, String)} works as
    * expected.
    */
   @Test

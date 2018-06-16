@@ -14,7 +14,7 @@ import tfb.status.config.MustacheConfig;
  */
 public final class MustacheRendererTest {
   /**
-   * Tests that {@link MustacheRenderer#render(String, Object...)} is able to
+   * Verifies that {@link MustacheRenderer#render(String, Object...)} is able to
    * render templates from the class path.
    */
   @Test
@@ -36,7 +36,7 @@ public final class MustacheRendererTest {
   }
 
   /**
-   * Tests that {@link MustacheRenderer#render(String, Object...)} is able to
+   * Verifies that {@link MustacheRenderer#render(String, Object...)} is able to
    * render templates from the file system.
    */
   @Test

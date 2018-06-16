@@ -29,8 +29,8 @@ public final class UnzipResultsHandlerTest {
   }
 
   /**
-   * Tests that a GET request for a file within a results.zip file that exists
-   * is successful.
+   * Verifies that a GET request for a file within a results.zip file that
+   * exists is successful.
    */
   @Test
   public void testGet() {

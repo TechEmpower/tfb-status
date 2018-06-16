@@ -32,7 +32,7 @@ public final class AssetsHandlerTest {
   }
 
   /**
-   * Tests that a GET request for an asset file that exists is successful.
+   * Verifies that a GET request for an asset file that exists is successful.
    */
   @Test
   public void testGet() {
@@ -51,8 +51,8 @@ public final class AssetsHandlerTest {
   }
 
   /**
-   * Tests that a GET request for an assets file that does not exists results in
-   * {@code 404 Not Found}.
+   * Verifies that a GET request for an assets file that does not exists results
+   * in {@code 404 Not Found}.
    */
   @Test
   public void testNotFound() {

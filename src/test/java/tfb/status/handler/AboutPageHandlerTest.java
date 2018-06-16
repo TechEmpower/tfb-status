@@ -30,7 +30,7 @@ public final class AboutPageHandlerTest {
   }
 
   /**
-   * Tests that {@code GET /about} produces an HTML response.
+   * Verifies that {@code GET /about} produces an HTML response.
    */
   @Test
   public void testGet() {

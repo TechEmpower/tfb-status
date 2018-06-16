@@ -31,7 +31,7 @@ public final class HomeResultsReaderTest {
   }
 
   /**
-   * Tests that {@link HomeResultsReader#results()} returns the full list of
+   * Verifies that {@link HomeResultsReader#results()} returns the full list of
    * stored results.
    */
   @Test
@@ -43,7 +43,7 @@ public final class HomeResultsReaderTest {
   }
 
   /**
-   * Tests that {@link HomeResultsReader#resultsByUuid(String)} returns the
+   * Verifies that {@link HomeResultsReader#resultsByUuid(String)} returns the
    * expected content for a known-good UUID.
    */
   @Test
@@ -83,8 +83,8 @@ public final class HomeResultsReaderTest {
   }
 
   /**
-   * Tests that {@link HomeResultsReader#resultsByUuid(String)} returns {@code
-   * null} for an unknown UUID.
+   * Verifies that {@link HomeResultsReader#resultsByUuid(String)} returns
+   * {@code null} for an unknown UUID.
    */
   @Test
   public void testResultsByUuid_notFound() throws IOException {

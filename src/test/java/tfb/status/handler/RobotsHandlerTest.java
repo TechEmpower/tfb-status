@@ -34,8 +34,8 @@ public final class RobotsHandlerTest {
   }
 
   /**
-   * Tests that {@code GET /robots.txt} produces a response that disallows all
-   * robots.
+   * Verifies that {@code GET /robots.txt} produces a response that disallows
+   * all robots.
    */
   @Test
   public void testDisallowAllRobots() {

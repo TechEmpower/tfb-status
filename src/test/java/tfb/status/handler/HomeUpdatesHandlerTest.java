@@ -29,7 +29,7 @@ public final class HomeUpdatesHandlerTest {
   }
 
   /**
-   * Tests that {@code GET /updates} produces an event stream that broadcasts
+   * Verifies that {@code GET /updates} produces an event stream that broadcasts
    * updates sent via {@link HomeUpdatesHandler#sendUpdate(String)}.
    */
   @Test

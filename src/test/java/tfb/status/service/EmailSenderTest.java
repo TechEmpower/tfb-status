@@ -46,7 +46,7 @@ public final class EmailSenderTest {
   }
 
   /**
-   * Tests that {@link EmailSender#sendEmail(String, String, List)} sends the
+   * Verifies that {@link EmailSender#sendEmail(String, String, List)} sends the
    * expected email when there are no attachments.
    */
   @Test
@@ -72,7 +72,7 @@ public final class EmailSenderTest {
   }
 
   /**
-   * Tests that {@link EmailSender#sendEmail(String, String, List)} sends the
+   * Verifies that {@link EmailSender#sendEmail(String, String, List)} sends the
    * expected email when there is at least one attachment.
    */
   @Test

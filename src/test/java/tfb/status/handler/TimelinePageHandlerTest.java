@@ -31,8 +31,8 @@ public final class TimelinePageHandlerTest {
   }
 
   /**
-   * Tests that a GET request for the timeline with valid parameters produces an
-   * HTML response.
+   * Verifies that a GET request for the timeline with valid parameters produces
+   * an HTML response.
    */
   @Test
   public void testGet() {
@@ -51,7 +51,7 @@ public final class TimelinePageHandlerTest {
   }
 
   /**
-   * Tests that a GET request for the timeline with an unknown test type
+   * Verifies that a GET request for the timeline with an unknown test type
    * specified produces a {@code 404 Not Found} response.
    */
   @Test
@@ -63,7 +63,7 @@ public final class TimelinePageHandlerTest {
   }
 
   /**
-   * Tests that a GET request for the timeline with an unknown framework
+   * Verifies that a GET request for the timeline with an unknown framework
    * specified produces a {@code 404 Not Found} response.
    */
   @Test

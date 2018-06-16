@@ -31,7 +31,8 @@ public final class ExportResultsHandlerTest {
   }
 
   /**
-   * Tests that a GET request for a results.json file that exists is successful.
+   * Verifies that a GET request for a results.json file that exists is
+   * successful.
    */
   @Test
   public void testGetJson() throws IOException {
@@ -52,7 +53,8 @@ public final class ExportResultsHandlerTest {
   }
 
   /**
-   * Tests that a GET request for a results.zip file that exists is successful.
+   * Verifies that a GET request for a results.zip file that exists is
+   * successful.
    */
   @Test
   public void testGetZip() throws IOException {

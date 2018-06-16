@@ -32,7 +32,7 @@ public final class StandardObjectMapperTest {
   }
 
   /**
-   * Tests that the object mapper is compatible with certain important types
+   * Verifies that the object mapper is compatible with certain important types
    * from the Guava library, especially during deserialization.
    */
   @Test
@@ -65,8 +65,8 @@ public final class StandardObjectMapperTest {
   }
 
   /**
-   * Tests that the object mapper does not throw an exception when deserializing
-   * JSON that contains unrecognized properties
+   * Verifies that the object mapper does not throw an exception when
+   * deserializing JSON that contains unrecognized properties
    */
   @Test
   public void testUnknownPropertiesIgnored() throws IOException {

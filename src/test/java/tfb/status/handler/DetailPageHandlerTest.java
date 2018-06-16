@@ -31,7 +31,7 @@ public final class DetailPageHandlerTest {
   }
 
   /**
-   * Tests that a GET request for the results detail page with a valid uuid
+   * Verifies that a GET request for the results detail page with a valid uuid
    * produces an HTML response.
    */
   @Test
@@ -51,8 +51,8 @@ public final class DetailPageHandlerTest {
   }
 
   /**
-   * Tests that a GET request for the results detail page with an unknown uuid
-   * produces a {@code 404 Not Found} response.
+   * Verifies that a GET request for the results detail page with an unknown
+   * uuid produces a {@code 404 Not Found} response.
    */
   public void testUnknownUuid() {
     try (Response response = services.httpGet("/results/notarealuuid")) {

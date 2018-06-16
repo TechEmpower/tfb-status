@@ -19,8 +19,9 @@ public final class RequestValuesTest {
   private static final String UNPARSEABLE_VALUE = "ten";
 
   /**
-   * Tests that {@link RequestValues#queryParameter(HttpServerExchange, String)}
-   * reads a present value from the query string.
+   * Verifies that {@link
+   * RequestValues#queryParameter(HttpServerExchange, String)} reads a present
+   * value from the query string.
    */
   @Test
   public void testQueryParameter_happyPath() {
@@ -32,8 +33,9 @@ public final class RequestValuesTest {
   }
 
   /**
-   * Tests that {@link RequestValues#queryParameter(HttpServerExchange, String)}
-   * returns {@code null} when there is no query parameter with the given name.
+   * Verifies that {@link
+   * RequestValues#queryParameter(HttpServerExchange, String)} returns {@code
+   * null} when there is no query parameter with the given name.
    */
   @Test
   public void testQueryParameter_nullWhenNoValue() {
@@ -42,9 +44,10 @@ public final class RequestValuesTest {
   }
 
   /**
-   * Tests that {@link RequestValues#queryParameter(HttpServerExchange, String)}
-   * returns {@code null} when the exchange has an empty collection of values
-   * for the query parameter with the given name.
+   * Verifies that {@link
+   * RequestValues#queryParameter(HttpServerExchange, String)} returns {@code
+   * null} when the exchange has an empty collection of values for the query
+   * parameter with the given name.
    *
    * <p>This is a slightly different scenario than when there is no value for
    * the parameter at all.  It may be that the only way to reach this state is
@@ -58,9 +61,9 @@ public final class RequestValuesTest {
   }
 
   /**
-   * Tests that {@link RequestValues#queryParameter(HttpServerExchange, String)}
-   * returns {@code null} when there are two values for the given query
-   * parameter.
+   * Verifies that {@link
+   * RequestValues#queryParameter(HttpServerExchange, String)} returns {@code
+   * null} when there are two values for the given query parameter.
    */
   @Test
   public void testQueryParameter_nullWhenTwoValues() {
@@ -71,7 +74,7 @@ public final class RequestValuesTest {
   }
 
   /**
-   * Tests that {@link
+   * Verifies that {@link
    * RequestValues#queryParameterAsInt(HttpServerExchange, String, int, int)}
    * reads a present integer value from the query string.
    */
@@ -86,7 +89,7 @@ public final class RequestValuesTest {
   }
 
   /**
-   * Tests that {@link
+   * Verifies that {@link
    * RequestValues#queryParameterAsInt(HttpServerExchange, String, int, int)}
    * returns the default value when there is no query parameter with the given
    * name.
@@ -101,7 +104,7 @@ public final class RequestValuesTest {
   }
 
   /**
-   * Tests that {@link
+   * Verifies that {@link
    * RequestValues#queryParameterAsInt(HttpServerExchange, String, int, int)}
    * returns the default value when the exchange has an empty collection of
    * values for the query parameter with the given name.
@@ -121,7 +124,7 @@ public final class RequestValuesTest {
   }
 
   /**
-   * Tests that {@link
+   * Verifies that {@link
    * RequestValues#queryParameterAsInt(HttpServerExchange, String, int, int)}
    * returns the default value when there are two values for the given query
    * parameter.
@@ -138,7 +141,7 @@ public final class RequestValuesTest {
   }
 
   /**
-   * Tests that {@link
+   * Verifies that {@link
    * RequestValues#queryParameterAsInt(HttpServerExchange, String, int, int)}
    * returns the default value when there is one value for the given query
    * parameter but it cannot be parsed as an integer.

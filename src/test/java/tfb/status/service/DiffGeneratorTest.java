@@ -33,8 +33,8 @@ public final class DiffGeneratorTest {
   }
 
   /**
-   * Tests that the {@link DiffGenerator#diff(Results, Results)} method produces
-   * HTML output that reflects the input results.
+   * Verifies that the {@link DiffGenerator#diff(Results, Results)} method
+   * produces HTML output that reflects the input results.
    */
   @Test
   public void testDiff()  {

@@ -31,7 +31,7 @@ public final class HomePageHandlerTest {
   }
 
   /**
-   * Tests that {@code GET /} produces an HTML response.
+   * Verifies that {@code GET /} produces an HTML response.
    */
   @Test
   public void testGet() {

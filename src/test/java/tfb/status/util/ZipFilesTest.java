@@ -67,9 +67,9 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)} is
-   * able to read a present entry from a valid zip file given a relative entry
-   * path.
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * is able to read a present entry from a valid zip file given a relative
+   * entry path.
    */
   @Test
   public void testReadZipEntry_relativePath() throws IOException {
@@ -81,9 +81,9 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)} is
-   * able to read a present entry from a valid zip file given an absolute entry
-   * path.
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * is able to read a present entry from a valid zip file given an absolute
+   * entry path.
    */
   @Test
   public void testReadZipEntry_absolutePath() throws IOException {
@@ -95,7 +95,7 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
    * rejects a zip file that does not exist.
    */
   @Test
@@ -108,7 +108,7 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
    * rejects a zip file that is not actually in zip format.
    */
   @Test
@@ -121,7 +121,7 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
    * rejects a zip file that is a directory.
    */
   @Test
@@ -134,7 +134,7 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
    * rejects an entry path containing invalid characters.  The exception thrown
    * should be {@link IOException} rather than {@link InvalidPathException}.
    *
@@ -151,7 +151,7 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
    * returns {@code null} (rather than throwing an exception) when the entry
    * path refers to a directory entry in the zip file.
    */
@@ -163,7 +163,7 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
    * throws a {@link NullPointerException} when the entry reader produces a
    * {@code null} result.
    */
@@ -184,7 +184,7 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
    * propagates an {@link IOException} thrown by the entry reader.
    */
   @Test
@@ -201,7 +201,7 @@ public final class ZipFilesTest {
   }
 
   /**
-   * Tests that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
+   * Verifies that {@link ZipFiles#readZipEntry(Path, String, ZipEntryReader)}
    * propagates a {@link RuntimeException} thrown by the entry reader.
    */
   @Test

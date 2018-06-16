@@ -34,6 +34,10 @@ public final class OtherFilesTest {
     Files.createFile(subdirectoryFile);
   }
 
+  /**
+   * Verifies that {@link OtherFiles#listFiles(Path, String)} returns the list
+   * of all files in the directory when given the {@code "*"} pattern.
+   */
   @Test
   public void testListFiles_all() throws IOException {
     assertEquals(
@@ -44,6 +48,11 @@ public final class OtherFilesTest {
         Set.copyOf(OtherFiles.listFiles(subdirectory, "*")));
   }
 
+  /**
+   * Verifies that {@link OtherFiles#listFiles(Path, String)} returns only the
+   * matching files in the directory when given a pattern that does not match
+   * all files.
+   */
   @Test
   public void testListFiles_glob() throws IOException {
     assertEquals(
@@ -54,6 +63,10 @@ public final class OtherFilesTest {
         Set.copyOf(OtherFiles.listFiles(subdirectory, "*.txt")));
   }
 
+  /**
+   * Verifies that {@link OtherFiles#listFiles(Path, String)} returns an empty
+   * list when the specified directory is not a directory.
+   */
   @Test
   public void testListFiles_emptyWhenNotDirectory() throws IOException {
     assertEquals(
