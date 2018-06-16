@@ -102,7 +102,7 @@ public final class MinifiedTestDefinition {
       String displayName,
 
       @JsonProperty(value = "w", required = true)
-      String webserver,
+      String webServer,
 
       @JsonProperty(value = "ii", required = true)
       int identity,
@@ -123,6 +123,6 @@ public final class MinifiedTestDefinition {
     this.platform = Objects.requireNonNull(platform);
     this.name = Objects.requireNonNull(name);
     this.displayName = displayName;
-    this.webServer = Objects.requireNonNull(webserver);
+    this.webServer = Objects.requireNonNull(webServer);
   }
 }
