@@ -18,7 +18,7 @@ import tfb.status.undertow.extensions.MethodHandler;
 /**
  * Handles HTTP requests for static assets such as JavaScript and CSS files.
  * The files are loaded from either the class path or the file system, depending
- * on the application's {@linkplain AssetsConfig assets configuration}.
+ * on this application's {@linkplain AssetsConfig assets configuration}.
  */
 @Singleton
 public final class AssetsHandler implements HttpHandler {

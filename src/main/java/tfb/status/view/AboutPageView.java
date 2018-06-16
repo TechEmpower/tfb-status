@@ -13,7 +13,7 @@ public final class AboutPageView {
    * The content of the git.properties file from the classpath, or an empty list
    * if that file is not present.
    *
-   * <p>The git.properties file is generated when the application is packaged
+   * <p>The git.properties file is generated when this application is packaged
    * for deployment.  It contains information about the local git repository
    * such as the current commit id.
    */

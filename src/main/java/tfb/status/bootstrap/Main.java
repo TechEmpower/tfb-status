@@ -9,7 +9,7 @@ import org.glassfish.hk2.api.ServiceLocator;
 import tfb.status.config.ApplicationConfig;
 
 /**
- * Provides the {@code main} method for starting the application.
+ * Provides the {@code main} method for starting this application.
  */
 public final class Main {
   private Main() {
@@ -17,10 +17,10 @@ public final class Main {
   }
 
   /**
-   * Starts the application.
+   * Starts this application.
    *
    * @param args the command line arguments, which must consist of a single
-   *        argument, and that one argument must specify the path to the
+   *        argument, and that one argument must specify the path to this
    *        application's YAML configuration file
    */
   public static void main(String[] args) {

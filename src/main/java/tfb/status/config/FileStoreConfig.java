@@ -7,7 +7,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
- * The configuration for miscellaneous files stored by the application.
+ * The configuration for miscellaneous files stored by this application.
  */
 @Immutable
 public final class FileStoreConfig {

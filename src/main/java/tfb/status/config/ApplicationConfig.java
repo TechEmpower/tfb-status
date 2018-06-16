@@ -7,7 +7,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
- * The parent configuration object for the entire application, containing all
+ * The parent configuration object for this entire application, containing all
  * other component-specific configuration objects.
  */
 @Immutable

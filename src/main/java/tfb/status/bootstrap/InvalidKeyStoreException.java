@@ -6,8 +6,8 @@ import java.util.Objects;
  * An exception thrown when a Java KeyStore file cannot be loaded.  See the
  * {@linkplain #getCause() cause} of this exception for details.
  *
- * <p>Possible reasons for this exception to be thrown include (but are not
- * limited to):
+ * <p>Possible reasons for this exception to be thrown include, but are not
+ * limited to:
  *
  * <ul>
  * <li>The KeyStore file does not exist.

@@ -7,7 +7,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
- * The configuration for static assets served by the application.
+ * The configuration for static assets served by this application.
  */
 @Immutable
 public final class AssetsConfig {

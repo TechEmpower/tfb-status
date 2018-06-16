@@ -7,7 +7,7 @@ import java.util.Objects;
 import org.glassfish.hk2.api.Factory;
 
 /**
- * Provides the standard {@link ObjectMapper} used by the application.
+ * Provides the standard {@link ObjectMapper} used by this application.
  */
 public final class StandardObjectMapper implements Factory<ObjectMapper> {
   @Override

@@ -1,17 +1,18 @@
 package tfb.status.bootstrap;
 
 import java.util.Objects;
+import tfb.status.config.ApplicationConfig;
 
 /**
- * An exception thrown when the configuration file for the application cannot be
- * deserialized into an object for any reason.
+ * An exception thrown when this application's configuration file cannot be
+ * deserialized into an {@link ApplicationConfig} object for any reason.
  *
- * <p>Possible reasons for this exception to be thrown include (but are not
- * limited to):
+ * <p>Possible reasons for this exception to be thrown include, but are not
+ * limited to:
  *
  * <ul>
- * <li>The configuration does not exist.
- * <li>The configuration file has an invalid format.
+ * <li>The configuration file does not exist.
+ * <li>The configuration file is not in a supported format.
  * <li>The configuration file is missing required properties.
  * </ul>
  */

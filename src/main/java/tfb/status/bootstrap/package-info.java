@@ -1,5 +1,5 @@
 /**
- * Classes responsible for launching the application.  {@link
+ * Classes responsible for launching this application.  {@link
  * tfb.status.bootstrap.Main} is the entry point, providing the {@code main}
  * method.
  */

@@ -100,7 +100,7 @@ public final class TestServices {
   }
 
   /**
-   * The {@link ServiceLocator} capable of producing all services in the
+   * The {@link ServiceLocator} capable of producing all services in this
    * application.
    *
    * @see Services#newServiceLocator(ApplicationConfig, Clock, Ticker)
@@ -118,7 +118,7 @@ public final class TestServices {
   public synchronized MimeMessage onlyEmailMessage() {
     if (mailServer == null)
       throw new IllegalStateException(
-          "Email was disabled in the application config");
+          "Email was disabled in this application's config");
 
     MimeMessage[] messages = mailServer.getReceivedMessages();
     try {
@@ -135,7 +135,7 @@ public final class TestServices {
 
   /**
    * The {@linkplain Client HTTP client} that should be used for making requests
-   * to the local {@linkplain HttpServer HTTP server} running the application.
+   * to the local {@linkplain HttpServer HTTP server} running this application.
    */
   public Client httpClient() {
     return httpClient;

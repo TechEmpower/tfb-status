@@ -17,7 +17,7 @@ import javax.mail.internet.InternetAddress;
 import tfb.status.config.ApplicationConfig;
 
 /**
- * Reads the application configuration from a file.
+ * Reads this application's configuration from a file.
  */
 public final class ConfigReader {
   private ConfigReader() {
@@ -25,11 +25,11 @@ public final class ConfigReader {
   }
 
   /**
-   * Reads the application configuration from a YAML file.
+   * Reads this application's configuration from a YAML file on disk.
    *
-   * @param yamlFilePath the path to the YAML configuration file for the
+   * @param yamlFilePath the path to the YAML configuration file for this
    *        application
-   * @return the configuration object for the application
+   * @return the configuration object for this application
    * @throws InvalidConfigFileException if there is a problem reading the
    *         configuration file
    */
@@ -41,23 +41,27 @@ public final class ConfigReader {
       yamlFile = Paths.get(yamlFilePath);
     } catch (InvalidPathException e) {
       throw new InvalidConfigFileException(
-          "The path for the configuration file " + yamlFilePath + " is invalid",
+          "The specified path for the configuration file, \""
+              + yamlFilePath
+              + "\", is invalid according to the host file system",
           e);
     }
 
     if (!Files.isRegularFile(yamlFile))
       throw new InvalidConfigFileException(
-          "Configuration file " + yamlFilePath + " is not a file");
+          "The specified path for the configuration file, \""
+              + yamlFilePath
+              + "\", does not point to an existing file");
 
     return readYamlBytes(MoreFiles.asByteSource(yamlFile));
   }
 
   /**
-   * Reads the application configuration from the raw bytes of a YAML file.
+   * Reads this application's configuration from the raw bytes of a YAML file.
    *
-   * @param yamlBytes the raw bytes of the YAML configuration file for the
+   * @param yamlBytes the raw bytes of the YAML configuration file for this
    *        application
-   * @return the configuration object for the application
+   * @return the configuration object for this application
    * @throws InvalidConfigFileException if there is a problem reading the
    *         configuration file bytes
    */
@@ -125,7 +129,7 @@ public final class ConfigReader {
       directory = Paths.get(directoryPath);
     } catch (InvalidPathException e) {
       throw new InvalidConfigFileException(
-          propertyName + ": invalid path " + directoryPath,
+          propertyName + ": invalid path \"" + directoryPath + "\"",
           e);
     }
 
@@ -135,9 +139,9 @@ public final class ConfigReader {
       } else {
         throw new InvalidConfigFileException(
             propertyName
-                + ": the path "
+                + ": the path \""
                 + directoryPath
-                + " exists but is not a directory");
+                + "\" exists but is not a directory");
       }
     }
 
@@ -151,10 +155,11 @@ public final class ConfigReader {
         } else {
           throw new InvalidConfigFileException(
               propertyName
-                  + ": the path "
+                  + ": the path \""
                   + directoryPath
-                  + " has a non-directory parent "
-                  + parent);
+                  + "\" has a non-directory parent \""
+                  + parent
+                  + "\"");
         }
       }
     }

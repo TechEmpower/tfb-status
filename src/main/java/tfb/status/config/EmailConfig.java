@@ -6,7 +6,7 @@ import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 
 /**
- * The configuration for emails sent by the application.
+ * The configuration for emails sent by this application.
  */
 @Immutable
 public final class EmailConfig {

@@ -7,7 +7,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
- * The configuration for Mustache templates rendered by the application.
+ * The configuration for Mustache templates rendered by this application.
  */
 @Immutable
 public final class MustacheConfig {
