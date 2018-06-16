@@ -182,9 +182,9 @@ public final class ZipFiles {
    * An action performed on a zip entry, where the zip entry is represented as a
    * {@link Path}.
    *
-   * <p>The action should process the {@link Path} immediately and not save a
-   * reference to it for later use, as the {@linkplain Path#getFileSystem() file
-   * system} will be closed once this action returns.
+   * <p>The {@link Path} will be readable until the action returns, at which
+   * point the zip file will be closed and the {@link Path} will become
+   * unreadable.
    *
    * <p>This interface should only be used by callers of {@link
    * #findZipEntry(Path, String, ZipEntryConsumer, Runnable)}.
