@@ -37,29 +37,6 @@ public final class DiffGenerator {
    * @return an HTML document string
    */
   public String diff(Results oldResults, Results newResults) {
-    return render(lines(oldResults, newResults));
-  }
-
-  @Immutable
-  private static final class DiffLine {
-    final String framework;
-    final String testType;
-    final double oldRps;
-    final double newRps;
-
-    DiffLine(String framework, String testType, double oldRps, double newRps) {
-      this.framework = Objects.requireNonNull(framework);
-      this.testType = Objects.requireNonNull(testType);
-      this.oldRps = oldRps;
-      this.newRps = newRps;
-    }
-  }
-
-  /**
-   * Generates a logical diff between the two sets of results.
-   */
-  private ImmutableList<DiffLine> lines(Results oldResults,
-                                        Results newResults) {
     Objects.requireNonNull(oldResults);
     Objects.requireNonNull(newResults);
 
@@ -83,18 +60,9 @@ public final class DiffGenerator {
       }
     }
 
-    return ImmutableList.sortedCopyOf(
-        comparing(line -> line.framework,
-                  String.CASE_INSENSITIVE_ORDER),
-        lines);
-  }
+    lines.sort(comparing(line -> line.framework,
+                         String.CASE_INSENSITIVE_ORDER));
 
-  /**
-   * Accepts a logical diff between two sets of results, returns the rendering
-   * of that diff as HTML.
-   */
-  private String render(Iterable<DiffLine> lines) {
-    Objects.requireNonNull(lines);
     int totalAdded = 0;
     int totalRemoved = 0;
     int totalSame = 0;
@@ -168,6 +136,21 @@ public final class DiffGenerator {
             /* lines= */ lineViews.build());
 
     return mustacheRenderer.render("diff.mustache", outerView);
+  }
+
+  @Immutable
+  private static final class DiffLine {
+    final String framework;
+    final String testType;
+    final double oldRps;
+    final double newRps;
+
+    DiffLine(String framework, String testType, double oldRps, double newRps) {
+      this.framework = Objects.requireNonNull(framework);
+      this.testType = Objects.requireNonNull(testType);
+      this.oldRps = oldRps;
+      this.newRps = newRps;
+    }
   }
 
   // TODO: Make this threshold configurable.
