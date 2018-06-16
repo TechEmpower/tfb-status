@@ -410,7 +410,7 @@ public final class AttributesPageHandler implements HttpHandler {
                     indexes.getOrDefault(Attribute.NAME, ""),
                     /* displayName= */
                     indexes.getOrDefault(Attribute.DISPLAY_NAME, ""),
-                    /* webserver= */
+                    /* webServer= */
                     indexes.getOrDefault(Attribute.WEBSERVER, ""),
                     /* identity= */
                     identity,
