@@ -5,6 +5,7 @@ import static com.google.common.net.MediaType.HTML_UTF_8;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
+import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,8 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.service.HomeResultsReader;
@@ -65,12 +68,15 @@ public final class DetailPageHandler implements HttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-      String uuid = exchange.getRelativePath()
-                            .substring(1); // omit leading slash
+      Matcher matcher = REQUEST_PATH_PATTERN.matcher(exchange.getRelativePath());
 
-      boolean isJson = uuid.endsWith(".json");
-      if (isJson)
-        uuid = uuid.substring(0, uuid.length() - ".json".length());
+      if (!matcher.matches()) {
+        exchange.setStatusCode(BAD_REQUEST);
+        return;
+      }
+
+      String uuid = matcher.group("uuid");
+      boolean isJson = exchange.getRelativePath().endsWith(".json");
 
       ResultsView result = homeResultsReader.resultsByUuid(uuid);
 
@@ -91,5 +97,9 @@ public final class DetailPageHandler implements HttpHandler {
         exchange.getResponseSender().send(html);
       }
     }
+
+    // Matches "/6f221937-b8e5-4b22-a52d-020d2538fa64.json", for example.
+    private static final Pattern REQUEST_PATH_PATTERN =
+        Pattern.compile("^/(?<uuid>[\\w-]+)(\\.json)?$");
   }
 }
