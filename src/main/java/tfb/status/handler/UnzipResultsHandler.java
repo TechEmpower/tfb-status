@@ -197,8 +197,9 @@ public final class UnzipResultsHandler implements HttpHandler {
                       /* breadcrumbs= */ ImmutableList.copyOf(breadcrumbs),
                       /* children= */ ImmutableList.copyOf(children));
 
-              String html = mustacheRenderer.render("unzipped-directory.mustache",
-                                                    unzippedDirectoryView);
+              String html =
+                  mustacheRenderer.render("unzipped-directory.mustache",
+                                          unzippedDirectoryView);
 
               exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
               exchange.getResponseSender().send(html, UTF_8);

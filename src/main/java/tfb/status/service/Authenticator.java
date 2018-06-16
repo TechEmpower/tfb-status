@@ -308,13 +308,13 @@ public final class Authenticator {
   }
 
   /**
-   * Returns the file containing the password for the account with the given id,
-   * or {@code null} if the string is not a possible account id.  The returned
-   * file exists if the account exists.
+   * Returns the file containing the password hash for the account with the
+   * given id, or {@code null} if the string is not a possible account id.  The
+   * returned file exists if the account exists.
    *
    * @param accountId the id of the account
-   * @return the file containing the password, or {@code null} if the account id
-   *         is invalid
+   * @return the file containing the password hash, or {@code null} if the
+   *         account id is invalid
    */
   @Nullable
   private Path getPasswordFile(String accountId) {

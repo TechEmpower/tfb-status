@@ -443,7 +443,9 @@ public final class HomeResultsReader {
           ZipFiles.readZipEntry(
               /* zipFile= */ zipFile,
               /* entryPath= */ "results.json",
-              /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
+              /* entryReader= */ inputStream ->
+                                     objectMapper.readValue(inputStream,
+                                                            Results.class));
     } catch (IOException e) {
       logger.warn("Exception reading zip file {}", zipFile, e);
       return null;
@@ -511,12 +513,17 @@ public final class HomeResultsReader {
                 /* entryPath= */ "commit_id.txt",
                 /* entryReader= */
                 inputStream -> {
-                  try (var reader = new BufferedReader(new InputStreamReader(inputStream, UTF_8))) {
+                  try (var reader =
+                           new BufferedReader(
+                               new InputStreamReader(inputStream, UTF_8))) {
+
                     return reader.readLine();
                   }
                 });
       } catch (IOException e) {
-        logger.warn("Exception reading git commit id from zip file {}", zipFile, e);
+        logger.warn(
+            "Exception reading git commit id from zip file {}",
+            zipFile, e);
         gitCommitId = null;
       }
 
@@ -679,6 +686,8 @@ public final class HomeResultsReader {
     // In practice, the results files are named like this:
     //
     //   results.{uploaded_at_date_time}.{json|zip}.
+    //
+    // where {uploaded_at_date_time} is in the format "yyyy-MM-dd-HH-mm-ss-SSS".
     //
     // Therefore, sorting by file name effectively sorts the results by when
     // they were uploaded, and this comparator puts the most recently uploaded

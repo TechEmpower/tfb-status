@@ -169,7 +169,9 @@ public final class UploadResultsHandler implements HttpHandler {
       if (incomingUuid == null)
         return newResultsFile();
 
-      for (Path existingFile : OtherFiles.listFiles(resultsDirectory, "*." + fileExtension)) {
+      for (Path existingFile : OtherFiles.listFiles(resultsDirectory,
+                                                    "*." + fileExtension)) {
+
         String existingUuid = tryReadUuid(existingFile);
         if (incomingUuid.equals(existingUuid)) {
           // TODO: Also check if the file was updated more recently than ours?
@@ -300,7 +302,9 @@ public final class UploadResultsHandler implements HttpHandler {
             ZipFiles.readZipEntry(
                 /* zipFile= */ zipFile,
                 /* entryPath= */ "results.json",
-                /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, UuidOnly.class));
+                /* entryReader= */ inputStream ->
+                                       objectMapper.readValue(inputStream,
+                                                              UuidOnly.class));
       } catch (IOException ignored) {
         return null;
       }
@@ -316,7 +320,9 @@ public final class UploadResultsHandler implements HttpHandler {
             ZipFiles.readZipEntry(
                 /* zipFile= */ newZipFile,
                 /* entryPath= */ "results.json",
-                /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
+                /* entryReader= */ inputStream ->
+                                       objectMapper.readValue(inputStream,
+                                                              Results.class));
       } catch (IOException e) {
         logger.warn("Exception validating zip file {}", newZipFile, e);
         return false;
@@ -411,7 +417,6 @@ public final class UploadResultsHandler implements HttpHandler {
       }
 
       byte[] testMetadataBytes = findTestMetadataBytes(newZipFile);
-      boolean isTestMetadataPresent = testMetadataBytes != null;
       Path previousZipFile = findPreviousZipFile(newZipFile);
 
       Results previousResults =
@@ -420,32 +425,22 @@ public final class UploadResultsHandler implements HttpHandler {
               : findResults(previousZipFile);
 
       if (previousResults != null
-          && !areResultsComparable(results, previousResults))
+          && !areResultsComparable(results, previousResults)) {
         previousResults = null;
+      }
 
       String diff =
           (previousResults == null)
               ? null
               : diffGenerator.diff(previousResults, results);
 
-      String newCommitId =
-          (results.git == null)
-              ? null
-              : results.git.commitId;
-
-      String previousCommitId =
-          (previousResults == null || previousResults.git == null)
-              ? null
-              : previousResults.git.commitId;
-
       String subject = "Run complete: " + results.name;
 
       String textContent =
           prepareEmailBody(
               /* results= */ results,
-              /* isTestMetadataPresent= */ isTestMetadataPresent,
-              /* previousCommitId= */ previousCommitId,
-              /* newCommitId= */ newCommitId);
+              /* previousResults= */ previousResults,
+              /* isTestMetadataPresent= */ testMetadataBytes != null);
 
       ImmutableList<DataSource> attachments =
           prepareEmailAttachments(
@@ -511,7 +506,7 @@ public final class UploadResultsHandler implements HttpHandler {
       return previousZipFile;
     }
 
-    private boolean areResultsComparable(Results a, Results b) {
+    private static boolean areResultsComparable(Results a, Results b) {
       Objects.requireNonNull(a);
       Objects.requireNonNull(b);
       return a.environmentDescription != null
@@ -546,7 +541,9 @@ public final class UploadResultsHandler implements HttpHandler {
       return tryReadZipEntry(
           /* zipFile= */ zipFile,
           /* entryPath= */ "results.json",
-          /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
+          /* entryReader= */ inputStream ->
+                                 objectMapper.readValue(inputStream,
+                                                        Results.class));
     }
 
     @Nullable
@@ -572,9 +569,20 @@ public final class UploadResultsHandler implements HttpHandler {
     }
 
     private String prepareEmailBody(Results results,
-                                    boolean isTestMetadataPresent,
-                                    @Nullable String previousCommitId,
-                                    @Nullable String newCommitId) {
+                                    @Nullable Results previousResults,
+                                    boolean isTestMetadataPresent) {
+
+      Objects.requireNonNull(results);
+
+      String newCommitId =
+          (results.git == null)
+              ? null
+              : results.git.commitId;
+
+      String previousCommitId =
+          (previousResults == null || previousResults.git == null)
+              ? null
+              : previousResults.git.commitId;
 
       // TODO: Consider using a template engine.
       var sb = new StringBuilder();
@@ -592,7 +600,7 @@ public final class UploadResultsHandler implements HttpHandler {
       if (isTestMetadataPresent)
         sb.append("The test_metadata.json file is also attached.\n");
       else
-        sb.append("There was no test_metadata.json file included in the results.\n");
+        sb.append("No test_metadata.json file was included with the results.\n");
 
       sb.append("\n");
       sb.append("Commit id from previous run: ");

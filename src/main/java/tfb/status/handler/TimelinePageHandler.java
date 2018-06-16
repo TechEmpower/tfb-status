@@ -108,7 +108,9 @@ public final class TimelinePageHandler implements HttpHandler {
               ZipFiles.readZipEntry(
                   /* zipFile= */ zipFile,
                   /* entryPath= */ "results.json",
-                  /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
+                  /* entryReader= */ inputStream ->
+                                         objectMapper.readValue(inputStream,
+                                                                Results.class));
         } catch (IOException e) {
           logger.warn(
               "Ignoring results.zip file {} whose results.json file "
@@ -126,8 +128,8 @@ public final class TimelinePageHandler implements HttpHandler {
         }
 
         if (results.startTime == null)
-          // We could try to read the timestamp from somewhere else, but
-          // it's not worth the added complexity.
+          // We could try to read the timestamp from somewhere else, but it's
+          // not worth the added complexity.
           continue;
 
         allFrameworks.addAll(results.frameworks);

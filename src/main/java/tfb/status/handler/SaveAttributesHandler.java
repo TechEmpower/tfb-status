@@ -28,6 +28,9 @@ import tfb.status.service.Authenticator;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.AttributeLookup;
 
+/**
+ * Handles requests to replace the content of the tfb_lookup.json file on disk.
+ */
 @Singleton
 public final class SaveAttributesHandler implements HttpHandler {
   private final HttpHandler delegate;

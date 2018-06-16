@@ -9,7 +9,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
- * An entry in attribute definition for tfb_lookup.json.
+ * An entry in the attribute definition for tfb_lookup.json.
  */
 @Immutable
 public final class AttributeInfo {
