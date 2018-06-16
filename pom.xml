@@ -22,13 +22,13 @@
     <apiguardian.version>1.0.0</apiguardian.version>
     <bcrypt.version>0.4</bcrypt.version>
     <caffeine.version>2.6.2</caffeine.version>
-    <crawler-commons.version>0.9</crawler-commons.version>
+    <crawler-commons.version>0.10</crawler-commons.version>
     <error-prone.version>2.3.1</error-prone.version>
     <git-commit-id-plugin.version>2.2.4</git-commit-id-plugin.version>
     <greenmail.version>1.5.7</greenmail.version>
     <guava.version>25.1-jre</guava.version>
     <hk2.version>2.5.0-b61</hk2.version>
-    <jackson.version>2.9.5</jackson.version>
+    <jackson.version>2.9.6</jackson.version>
     <javamail.version>1.6.1</javamail.version>
     <javax-activation.version>1.1.1</javax-activation.version>
     <javax-annotation-api.version>1.3.2</javax-annotation-api.version>
@@ -53,6 +53,7 @@
     <maven-site-plugin.version>3.7</maven-site-plugin.version>
     <maven-surefire-plugin.version>2.21.0</maven-surefire-plugin.version>
     <mustache.version>0.9.5</mustache.version>
+    <nullaway.version>0.4.6</nullaway.version>
     <slf4j.version>1.7.25</slf4j.version>
     <threeten-extra.version>1.3.2</threeten-extra.version>
     <undertow.version>2.0.9.Final</undertow.version>
@@ -344,7 +345,7 @@
     </pluginManagement>
 
     <plugins>
-      <!-- Helps to ensure that the current environment has a recent enough
+      <!-- Helps to ensure that the build environment has a recent enough
            version of Maven that is compatible with this project. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -386,7 +387,7 @@
 
             <!-- Without the logback-classic dependency, we wouldn't have any
                  implementation of the slf4j API, and so all of our log
-                 statements throughout the application would do nothing. -->
+                 statements throughout this application would do nothing. -->
             <ignoredUnusedDeclaredDependency>ch.qos.logback:logback-classic</ignoredUnusedDeclaredDependency>
 
             <!-- Without the hk2-locator dependency, we wouldn't be able to
@@ -445,7 +446,8 @@
         </configuration>
       </plugin>
 
-      <!-- We enable warnings from javac that are disabled by default. -->
+      <!-- We enable warnings from javac that are disabled by default, and we
+           use a compiler plugin. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -456,11 +458,82 @@
           <compilerArgs>
             <arg>-Xlint:all</arg>
             <arg>-Xdoclint:all,-missing</arg>
+            <arg>
+
+              <!-- Enable Error Prone, which is a static analysis tool for Java
+                   that acts at compile time.
+
+                   See: https://errorprone.info/
+
+                   We use Error Prone as a compiler plugin because that approach
+                   is compatible with Java 10, whereas the normal method of
+                   using Error Prone (replacing the default compiler completely)
+                   is incompatible with Java 10 right now.
+
+                   As a side effect of using Error Prone this way, we have to
+                   declare all the -Xep options within a single <arg>.
+
+                   See: https://github.com/google/error-prone/issues/860#issuecomment-396154710
+              -->
+              -Xplugin:ErrorProne
+
+              <!-- Sometimes it's interesting to see what Error Prone's
+                   experimental checks tell us.  The experimental checks are
+                   disabled by default because they're often broken (they throw
+                   an exception when scanning our code) or wrong (they give bad
+                   advice).  Every once in a while, though, they say something
+                   useful.
+
+                   Uncomment this argument to enable the experimental
+                   checks. -->
+              <!--
+              -XepAllDisabledChecksAsWarnings
+              -->
+
+              <!-- We disagree that adding a "@Var" annotation to every
+                   non-constant variable would make our code more readable.
+                   Similarly, we disagree that adding a "final" modifier to
+                   every constant variable would make our code more
+                   readable. -->
+              -Xep:Var:OFF
+
+              <!-- We don't think that every method that can be static should be
+                   static.  For example, if a method *sounds* like something an
+                   instance would do, then it should probably be non-static even
+                   if it doesn't refer to instance-level state. -->
+              -Xep:MethodCanBeStatic:OFF
+
+              <!-- Enable NullAway, which is a plugin for Error Prone that
+                   offers additional checks to help us handle null correctly.
+
+                   See: https://github.com/uber/NullAway
+              -->
+              -Xep:NullAway:ERROR
+              -XepOpt:NullAway:AnnotatedPackages=tfb.status
+
+            </arg>
+
+            <!-- Without this, compilation fails.  Error Prone is not currently
+                 compatible with the default compilation policy. -->
+            <arg>-XDcompilePolicy=byfile</arg>
+
           </compilerArgs>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>com.google.errorprone</groupId>
+              <artifactId>error_prone_core</artifactId>
+              <version>${error-prone.version}</version>
+            </path>
+            <path>
+              <groupId>com.uber.nullaway</groupId>
+              <artifactId>nullaway</artifactId>
+              <version>${nullaway.version}</version>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
 
-      <!-- We package the application into a fat jar file containing both our
+      <!-- We package this application into a fat jar file containing both our
            application and all of its dependencies.  This jar file can be
            produced by running the command "mvn clean package" from the root
            directory of the project. -->
