@@ -7,7 +7,7 @@ import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 
 /**
- * A representation of the tfb_lookup.json file associated to an account.
+ * A representation of the tfb_lookup.json file.
  */
 @Immutable
 public final class AttributeLookup {
