@@ -20,7 +20,13 @@ public final class RobotsHandler implements HttpHandler {
 
   public RobotsHandler() {
     HttpHandler handler =
-        new FixedResponseBodyHandler("User-agent: *\nDisallow: /");
+        new FixedResponseBodyHandler(
+            String.join(
+                "\n",
+                "User-agent: *",
+                "Allow: /$",
+                "Allow: /assets",
+                "Disallow: /"));
 
     handler = new SetHeaderHandler(handler,
                                    CONTENT_TYPE,

@@ -6,6 +6,7 @@ import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 
 import crawlercommons.robots.BaseRobotRules;
@@ -56,14 +57,31 @@ public final class RobotsHandlerTest {
               /* contentType= */ response.getHeaderString(CONTENT_TYPE),
               /* robotNames=*/ "Googlebot");
 
-      assertAll(
+      Stream<String> allowedPaths =
           Stream.of("/",
-                    "/about",
+                    "/assets/css/home.css",
+                    "/assets/js/home.js");
+
+      Stream<String> disallowedPaths =
+          Stream.of("/about",
                     "/raw/results.2017-12-26-05-07-14-321.json",
-                    "/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt")
-                .map(path -> services.httpUri(path))
-                .map(url -> () -> assertDisallowed(robotRules, url)));
+                    "/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt");
+
+      assertAll(
+          Stream.concat(
+              allowedPaths
+                  .map(path -> services.httpUri(path))
+                  .map(url -> () -> assertAllowed(robotRules, url)),
+              disallowedPaths
+                  .map(path -> services.httpUri(path))
+                  .map(url -> () -> assertDisallowed(robotRules, url))));
     }
+  }
+
+  private static void assertAllowed(BaseRobotRules robotRules, String url) {
+    assertTrue(
+        robotRules.isAllowed(url),
+        "should be allowed: " + url);
   }
 
   private static void assertDisallowed(BaseRobotRules robotRules, String url) {
