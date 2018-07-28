@@ -1,7 +1,5 @@
 package tfb.status.bootstrap;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import com.google.common.base.Ticker;
 import com.google.common.io.ByteSource;
 import com.google.common.io.MoreFiles;
@@ -15,7 +13,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Clock;
-import java.util.Base64;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import javax.mail.internet.MimeMessage;
@@ -30,6 +27,7 @@ import tfb.status.config.ApplicationConfig;
 import tfb.status.config.EmailConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.handler.RootHandler;
+import tfb.status.util.BasicAuthUtils;
 import tfb.status.util.MutableTicker;
 
 /**
@@ -210,17 +208,7 @@ public final class TestServices {
    * HTTP request to the local server, making that request pass authentication.
    */
   public String authorizationHeader() {
-    return writeAuthorizationHeader("tester", "password");
-  }
-
-  private static String writeAuthorizationHeader(String username,
-                                                 String password) {
-    Objects.requireNonNull(username);
-    Objects.requireNonNull(password);
-
-    return "Basic " +
-        Base64.getEncoder().encodeToString(
-            (username + ":" + password).getBytes(UTF_8));
+    return BasicAuthUtils.writeAuthorizationHeader("tester", "password");
   }
 
   private static ApplicationConfig newApplicationConfig() {
