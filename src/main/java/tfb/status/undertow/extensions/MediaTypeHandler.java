@@ -76,7 +76,7 @@ public final class MediaTypeHandler implements HttpHandler {
   public void handleRequest(HttpServerExchange exchange) throws Exception {
     MediaType requestedMediaType = detectMediaType(exchange);
     for (Mapping mapping : mappings) {
-      if (mapping.mediaType.is(requestedMediaType)) {
+      if (requestedMediaType.is(mapping.mediaType)) {
         mapping.handler.handleRequest(exchange);
         return;
       }
