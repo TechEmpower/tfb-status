@@ -93,6 +93,12 @@
       </ignoreVersions>
     </rule>
 
+    <rule groupId="javax.xml.bind" artifactId="jaxb-api">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\-b[\d\.]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
   </rules>
 
 </ruleset>
