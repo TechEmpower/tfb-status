@@ -7,6 +7,7 @@ import static io.undertow.util.Methods.OPTIONS;
 import static io.undertow.util.StatusCodes.METHOD_NOT_ALLOWED;
 
 import com.google.common.base.Joiner;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
@@ -36,10 +37,11 @@ public final class MethodHandler implements HttpHandler {
    * @param method the required method of the request, see {@link
    *        io.undertow.util.Methods}
    * @param handler the handler for requests having this method
-   * @return this handler instance
+   * @return this {@link MethodHandler} instance (for chaining)
    * @throws IllegalStateException if this method was already mapped to another
    *         handler
    */
+  @CanIgnoreReturnValue
   public MethodHandler addMethod(HttpString method, HttpHandler handler) {
     Objects.requireNonNull(method);
     Objects.requireNonNull(handler);

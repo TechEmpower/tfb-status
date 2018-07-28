@@ -4,6 +4,7 @@ import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
 
 import com.google.common.net.MediaType;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
@@ -35,6 +36,7 @@ public final class MediaTypeHandler implements HttpHandler {
    * @throws IllegalArgumentException if the input is not a valid media type
    *         (see {@link MediaType#parse(String)})
    */
+  @CanIgnoreReturnValue
   public MediaTypeHandler addMediaType(String mediaType, HttpHandler handler) {
     Objects.requireNonNull(mediaType);
     Objects.requireNonNull(handler);
@@ -47,10 +49,11 @@ public final class MediaTypeHandler implements HttpHandler {
    * @param mediaType the required media type ({@code Content-Type} header) of
    *        the requests
    * @param handler the handler for requests having this media type
-   * @return this handler instance
+   * @return this {@link MediaTypeHandler} instance (for chaining)
    * @throws IllegalStateException if this media type was already mapped to
    *         another handler
    */
+  @CanIgnoreReturnValue
   public MediaTypeHandler addMediaType(MediaType mediaType, HttpHandler handler) {
     Objects.requireNonNull(mediaType);
     Objects.requireNonNull(handler);
@@ -58,7 +61,7 @@ public final class MediaTypeHandler implements HttpHandler {
     for (Mapping mapping : mappings)
       if (mediaType.is(mapping.mediaType))
         throw new IllegalStateException(
-            "This [media type, handler] mapping is unusable, because all "
+            "This [media type, handler] mapping is unusable because all "
                 + "requests that could match the specified media type \""
                 + mediaType
                 + "\" would instead match the media type \""
