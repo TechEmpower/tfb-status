@@ -18,6 +18,7 @@ import tfb.status.undertow.extensions.ExceptionLoggingHandler;
  */
 @Singleton
 public final class RootHandler implements HttpHandler {
+  private final PathHandler pathHandler;
   private final HttpHandler delegate;
 
   @Inject
@@ -35,7 +36,7 @@ public final class RootHandler implements HttpHandler {
                      Provider<AttributesPageHandler> attributes,
                      Provider<SaveAttributesHandler> saveAttributes) {
 
-    HttpHandler handler =
+    pathHandler =
         new PathHandler().addExactPath("/", new LazyHandler(home))
                          .addExactPath("/updates", new LazyHandler(updates))
                          .addExactPath("/upload", new LazyHandler(upload))
@@ -50,6 +51,7 @@ public final class RootHandler implements HttpHandler {
                          .addExactPath("/saveAttributes", new LazyHandler(saveAttributes))
                          .addExactPath("/attributes", new LazyHandler(attributes));
 
+    HttpHandler handler = pathHandler;
     handler = newAccessLoggingHandler(handler);
     handler = new ExceptionLoggingHandler(handler);
     handler = new BlockingHandler(handler);
@@ -60,6 +62,42 @@ public final class RootHandler implements HttpHandler {
   @Override
   public void handleRequest(HttpServerExchange exchange) throws Exception {
     delegate.handleRequest(exchange);
+  }
+
+  /**
+   * Modifies the routing behavior of this root handler such that, from now on,
+   * incoming HTTP requests whose {@link HttpServerExchange#getRelativePath()
+   * paths} are exactly equal to the provided path will be handled by the
+   * provided handler.
+   *
+   * <p>This method is meant to be used in tests only.
+   *
+   * @param path the exact path string to be matched
+   * @param handler the handler for requests matching this path
+   * @see PathHandler#addExactPath(String, HttpHandler)
+   */
+  public void addExactPath(String path, HttpHandler handler) {
+    Objects.requireNonNull(path);
+    Objects.requireNonNull(handler);
+    pathHandler.addExactPath(path, handler);
+  }
+
+  /**
+   * Modifies the routing behavior of this root handler such that, from now on,
+   * incoming HTTP requests whose {@link HttpServerExchange#getRelativePath()
+   * paths} start with the provided prefix will be handled by the provided
+   * handler.
+   *
+   * <p>This method is meant to be used in tests only.
+   *
+   * @param pathPrefix the path prefix string to be matched
+   * @param handler the handler for requests matching this path
+   * @see PathHandler#addPrefixPath(String, HttpHandler)
+   */
+  public void addPrefixPath(String pathPrefix, HttpHandler handler) {
+    Objects.requireNonNull(pathPrefix);
+    Objects.requireNonNull(handler);
+    pathHandler.addPrefixPath(pathPrefix, handler);
   }
 
   /**

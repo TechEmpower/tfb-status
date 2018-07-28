@@ -10,6 +10,7 @@ import com.google.errorprone.annotations.MustBeClosed;
 import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
+import io.undertow.server.HttpHandler;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,6 +29,7 @@ import org.threeten.extra.MutableClock;
 import tfb.status.config.ApplicationConfig;
 import tfb.status.config.EmailConfig;
 import tfb.status.config.HttpServerConfig;
+import tfb.status.handler.RootHandler;
 import tfb.status.util.MutableTicker;
 
 /**
@@ -131,6 +133,26 @@ public final class TestServices {
       throw new IllegalStateException("There is not exactly one email");
 
     return messages[0];
+  }
+
+  /**
+   * Adds a new exact route to the root handler of the HTTP server.
+   *
+   * @see RootHandler#addExactPath(String, HttpHandler)
+   */
+  public void addExactPath(String path, HttpHandler handler) {
+    RootHandler rootHandler = serviceLocator.getService(RootHandler.class);
+    rootHandler.addExactPath(path, handler);
+  }
+
+  /**
+   * Adds a new prefix route to the root handler of the HTTP server.
+   *
+   * @see RootHandler#addPrefixPath(String, HttpHandler)
+   */
+  public void addPrefixPath(String path, HttpHandler handler) {
+    RootHandler rootHandler = serviceLocator.getService(RootHandler.class);
+    rootHandler.addPrefixPath(path, handler);
   }
 
   /**
