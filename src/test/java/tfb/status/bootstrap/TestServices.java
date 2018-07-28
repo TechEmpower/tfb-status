@@ -169,6 +169,8 @@ public final class TestServices {
    * @param path the path part of the URI, such as "/robots.txt"
    */
   public String httpUri(String path) {
+    Objects.requireNonNull(path);
+
     String protocol =
         (config.http.keyStore == null)
             ? "http"
@@ -193,7 +195,10 @@ public final class TestServices {
    */
   @MustBeClosed
   public Response httpGet(String path) {
+    Objects.requireNonNull(path);
+
     String uri = httpUri(path);
+
     return httpClient()
         .target(uri)
         .request()
