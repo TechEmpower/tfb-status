@@ -5,7 +5,7 @@ import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 
 /**
- * A view of the performance over time of a given framework + test type
+ * A view of the performance over time of a given [framework, test type]
  * combination.
  */
 @Immutable
@@ -22,7 +22,7 @@ public final class TimelinePageView {
 
   /**
    * All the available [time, requests per second] data points representing the
-   * performance of this framework + test type combination over time.
+   * performance of this [framework, test type] combination over time.
    */
   public final ImmutableList<DataPointView> dataPoints;
 
@@ -50,7 +50,7 @@ public final class TimelinePageView {
   }
 
   /**
-   * The performance of a framework + test type combination during one test
+   * The performance of a [framework, test type] combination during one test
    * execution.
    */
   @Immutable

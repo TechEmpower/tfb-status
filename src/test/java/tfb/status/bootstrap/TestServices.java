@@ -148,9 +148,9 @@ public final class TestServices {
    *
    * @see RootHandler#addPrefixPath(String, HttpHandler)
    */
-  public void addPrefixPath(String path, HttpHandler handler) {
+  public void addPrefixPath(String pathPrefix, HttpHandler handler) {
     RootHandler rootHandler = serviceLocator.getService(RootHandler.class);
-    rootHandler.addPrefixPath(path, handler);
+    rootHandler.addPrefixPath(pathPrefix, handler);
   }
 
   /**

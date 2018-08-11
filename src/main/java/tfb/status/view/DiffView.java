@@ -32,46 +32,46 @@ public final class DiffView {
   @Immutable
   public static final class DiffSummaryView {
     /**
-     * The number of framework + test type combinations that were present in the
-     * new results but not the old results.
+     * The number of [framework, test type] combinations that were present in
+     * the new results but not the old results.
      */
     public final String totalAdded;
 
     /**
-     * The number of framework + test type combinations that were present in the
-     * old results but not the new results.
+     * The number of [framework, test type] combinations that were present in
+     * the old results but not the new results.
      */
     public final String totalRemoved;
 
     /**
-     * The number of framework + test type combinations that were present in
+     * The number of [framework, test type] combinations that were present in
      * both the old results and the new results.
      */
     public final String totalBothRounds;
 
     /**
-     * The number of framework + test type combinations that performed roughly
+     * The number of [framework, test type] combinations that performed roughly
      * as well in the new results as in the old results (within some {@linkplain
      * #rpsChangeThreshold threshold}.
      */
     public final String totalSame;
 
     /**
-     * The number of framework + test type combinations that performed markedly
+     * The number of [framework, test type] combinations that performed markedly
      * better in the new results as compared to the old results (outside of some
      * {@linkplain #rpsChangeThreshold threshold}.
      */
     public final String totalBetter;
 
     /**
-     * The number of framework + test type combinations that performed markedly
+     * The number of [framework, test type] combinations that performed markedly
      * worse in the new results as compared to the old results (outside of some
      * {@linkplain #rpsChangeThreshold threshold}.
      */
     public final String totalWorse;
 
     /**
-     * The percentage by which the performance of a framework + test type
+     * The percentage by which the performance of a [framework, test type]
      * combination must change between two sets of results in order to be
      * considered truly different.  We expect run-to-run variance, and this
      * number is used to flag performance differences that exceed the expected
@@ -103,8 +103,8 @@ public final class DiffView {
   @Immutable
   public static final class DiffLineView {
     /**
-     * A string indicating whether this line represents a new framework + test
-     * type combination, a removed one, or one that existed in both the old and
+     * A string indicating whether this line represents a new [framework, test
+     * type] combination, a removed one, or one that existed in both the old and
      * new results.
      */
     public final String addedOrRemoved;
