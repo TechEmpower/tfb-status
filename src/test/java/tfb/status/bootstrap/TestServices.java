@@ -38,6 +38,8 @@ public final class TestServices {
   private final MutableClock clock;
   private final MutableTicker ticker;
   private final ServiceLocator serviceLocator;
+
+  // TODO: Lazy-initialize these.
   private final Client httpClient;
   @Nullable private final GreenMail mailServer;
 
@@ -48,13 +50,12 @@ public final class TestServices {
     this.serviceLocator = Services.newServiceLocator(config, clock, ticker);
     this.httpClient = newHttpClient(config.http);
 
-    if (config.email == null)
-      mailServer = null;
-    else {
-      mailServer = newMailServer(config.email);
-      mailServer.start();
-    }
+    this.mailServer =
+        (config.email == null)
+            ? null
+            : newMailServer(config.email);
 
+    // TODO: Can this be lazy-initialized?
     HttpServer httpServer = serviceLocator.getService(HttpServer.class);
     httpServer.start();
   }
@@ -235,10 +236,14 @@ public final class TestServices {
   }
 
   private static GreenMail newMailServer(EmailConfig config) {
-    return new GreenMail(
-        new ServerSetup(
-            /* port= */ config.port,
-            /* bindAddress= */ "localhost",
-            /* protocol= */ "smtp"));
+    GreenMail mailServer =
+        new GreenMail(
+            new ServerSetup(
+                /* port= */ config.port,
+                /* bindAddress= */ "localhost",
+                /* protocol= */ "smtp"));
+
+    mailServer.start();
+    return mailServer;
   }
 }
