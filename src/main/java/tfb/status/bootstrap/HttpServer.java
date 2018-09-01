@@ -7,6 +7,7 @@ import io.undertow.UndertowOptions;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -59,11 +60,11 @@ public final class HttpServer {
   }
 
   /**
-   * Starts this server.
+   * Starts this server if it is currently stopped.
    */
+  @PostConstruct
   public synchronized void start() {
-    if (isRunning)
-      throw new IllegalStateException("This server is already running");
+    if (isRunning) return;
 
     server.start();
     isRunning = true;
@@ -71,22 +72,14 @@ public final class HttpServer {
   }
 
   /**
-   * Stops this server.
+   * Stops this server if it is currently running.
    */
+  @PreDestroy
   public synchronized void stop() {
-    if (!isRunning)
-      throw new IllegalStateException("This server is already stopped");
+    if (!isRunning) return;
 
     server.stop();
     isRunning = false;
     logger.info("stopped [{}]", serverInfo);
-  }
-
-  /**
-   * Stops this server if it is currently running.
-   */
-  @PreDestroy
-  public synchronized void stopIfRunning() {
-    if (isRunning) stop();
   }
 }

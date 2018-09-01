@@ -1,5 +1,7 @@
 package tfb.status.bootstrap;
 
+import static org.glassfish.hk2.api.InstanceLifecycleEventType.PRE_PRODUCTION;
+
 import com.google.common.base.Ticker;
 import com.google.common.io.ByteSource;
 import com.google.common.io.MoreFiles;
@@ -14,19 +16,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Clock;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.mail.internet.MimeMessage;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.Filter;
+import org.glassfish.hk2.api.InstanceLifecycleEvent;
+import org.glassfish.hk2.api.InstanceLifecycleListener;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.media.sse.SseFeature;
 import org.threeten.extra.MutableClock;
 import tfb.status.config.ApplicationConfig;
 import tfb.status.config.EmailConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.handler.RootHandler;
+import tfb.status.service.EmailSender;
 import tfb.status.util.BasicAuthUtils;
 import tfb.status.util.MutableTicker;
 
@@ -34,47 +44,52 @@ import tfb.status.util.MutableTicker;
  * Creates instances of our HTTP handlers and service classes for testing.
  */
 public final class TestServices {
-  private final ApplicationConfig config;
+  final ApplicationConfig config;
   private final MutableClock clock;
   private final MutableTicker ticker;
   private final ServiceLocator serviceLocator;
-
-  // TODO: Lazy-initialize these.
-  private final Client httpClient;
-  @Nullable private final GreenMail mailServer;
 
   public TestServices() {
     this.config = newApplicationConfig();
     this.clock = MutableClock.epochUTC();
     this.ticker = new MutableTicker();
     this.serviceLocator = Services.newServiceLocator(config, clock, ticker);
-    this.httpClient = newHttpClient(config.http);
 
-    this.mailServer =
-        (config.email == null)
-            ? null
-            : newMailServer(config.email);
+    var binder = new AbstractBinder() {
 
-    // TODO: Can this be lazy-initialized?
-    HttpServer httpServer = serviceLocator.getService(HttpServer.class);
-    httpServer.start();
+      @Override
+      protected void configure() {
+        bindFactory(HttpClientFactory.class)
+            .to(Client.class)
+            .in(Singleton.class);
+
+        if (config.email != null) {
+          bindFactory(MailServerFactory.class)
+              .to(GreenMail.class)
+              .in(Singleton.class);
+        }
+
+        // For HTTP and email, when someone tries to use the client, make sure
+        // the server is ready.
+
+        bind(HttpServerDependency.class)
+            .to(InstanceLifecycleListener.class)
+            .in(Singleton.class);
+
+        bind(MailServerDependency.class)
+            .to(InstanceLifecycleListener.class)
+            .in(Singleton.class);
+      }
+    };
+
+    ServiceLocatorUtilities.bind(serviceLocator, binder);
   }
 
   /**
    * Shuts down all services.
    */
   public void shutdown() {
-    try {
-      httpClient.close();
-    } finally {
-      try {
-        serviceLocator.shutdown();
-      } finally {
-        if (mailServer != null) {
-          mailServer.stop();
-        }
-      }
-    }
+    serviceLocator.shutdown();
   }
 
   /**
@@ -117,6 +132,7 @@ public final class TestServices {
    * @throws IllegalStateException if there is not exactly one email message
    */
   public synchronized MimeMessage onlyEmailMessage() {
+    GreenMail mailServer = serviceLocator.getService(GreenMail.class);
     if (mailServer == null)
       throw new IllegalStateException(
           "Email was disabled in this application's config");
@@ -159,7 +175,7 @@ public final class TestServices {
    * to the local {@linkplain HttpServer HTTP server} running this application.
    */
   public Client httpClient() {
-    return httpClient;
+    return serviceLocator.getService(Client.class);
   }
 
   /**
@@ -218,32 +234,109 @@ public final class TestServices {
     return ConfigReader.readYamlBytes(bytes);
   }
 
-  private static Client newHttpClient(HttpServerConfig config) {
-    ClientBuilder builder = ClientBuilder.newBuilder();
+  private static final class HttpClientFactory implements Factory<Client> {
+    private final HttpServerConfig config;
 
-    builder.register(SseFeature.class);
-
-    if (config.keyStore != null) {
-      Path keyStoreFile = Paths.get(config.keyStore.path);
-
-      builder.trustStore(
-          KeyStores.readKeyStore(
-              /* keyStoreBytes= */ MoreFiles.asByteSource(keyStoreFile),
-              /* password= */ config.keyStore.password.toCharArray()));
+    @Inject
+    public HttpClientFactory(HttpServerConfig config) {
+      this.config = Objects.requireNonNull(config);
     }
 
-    return builder.build();
+    @Override
+    public Client provide() {
+      ClientBuilder builder = ClientBuilder.newBuilder();
+
+      builder.register(SseFeature.class);
+
+      if (config.keyStore != null) {
+        Path keyStoreFile = Paths.get(config.keyStore.path);
+
+        builder.trustStore(
+            KeyStores.readKeyStore(
+                /* keyStoreBytes= */ MoreFiles.asByteSource(keyStoreFile),
+                /* password= */ config.keyStore.password.toCharArray()));
+      }
+
+      return builder.build();
+    }
+
+    @Override
+    public void dispose(Client instance) {
+      instance.close();
+    }
   }
 
-  private static GreenMail newMailServer(EmailConfig config) {
-    GreenMail mailServer =
-        new GreenMail(
-            new ServerSetup(
-                /* port= */ config.port,
-                /* bindAddress= */ "localhost",
-                /* protocol= */ "smtp"));
+  private static final class MailServerFactory implements Factory<GreenMail> {
+    private final EmailConfig config;
 
-    mailServer.start();
-    return mailServer;
+    @Inject
+    public MailServerFactory(EmailConfig config) {
+      this.config = Objects.requireNonNull(config);
+    }
+
+    @Override
+    public GreenMail provide() {
+      GreenMail mailServer =
+          new GreenMail(
+              new ServerSetup(
+                  /* port= */ config.port,
+                  /* bindAddress= */ "localhost",
+                  /* protocol= */ "smtp"));
+
+      mailServer.start();
+      return mailServer;
+    }
+
+    @Override
+    public void dispose(GreenMail instance) {
+      instance.stop();
+    }
+  }
+
+  private abstract static class HiddenDependency
+      implements InstanceLifecycleListener {
+
+    private final ServiceLocator serviceLocator;
+    private final Class<?> fromClass;
+    private final Class<?> toClass;
+
+    HiddenDependency(ServiceLocator serviceLocator,
+                     Class<?> fromClass,
+                     Class<?> toClass) {
+      this.serviceLocator = Objects.requireNonNull(serviceLocator);
+      this.fromClass = Objects.requireNonNull(fromClass);
+      this.toClass = Objects.requireNonNull(toClass);
+    }
+
+    @Override
+    public Filter getFilter() {
+      return descriptor -> descriptor.getAdvertisedContracts()
+                                     .contains(fromClass.getName());
+    }
+
+    @Override
+    public void lifecycleEvent(InstanceLifecycleEvent lifecycleEvent) {
+      if (lifecycleEvent.getEventType() == PRE_PRODUCTION) {
+        serviceLocator.getService(toClass);
+      }
+    }
+  }
+
+  private static final class HttpServerDependency extends HiddenDependency {
+    @Inject
+    public HttpServerDependency(ServiceLocator serviceLocator) {
+      super(/* serviceLocator= */ serviceLocator,
+            /* fromClass= */ Client.class,
+            /* toClass= */ HttpServer.class);
+    }
+  }
+
+  private static final class MailServerDependency extends HiddenDependency {
+    @Inject
+    public MailServerDependency(ServiceLocator serviceLocator) {
+      super(/* serviceLocator= */ serviceLocator,
+            /* fromClass= */ EmailSender.class,
+            /* toClass= */ GreenMail.class);
+    }
   }
 }
