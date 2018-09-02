@@ -12,7 +12,7 @@ import tfb.status.undertow.extensions.FixedResponseBodyHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 
 /**
- * Handles requests for robots.txt.  We currently disallow all robots.
+ * Handles requests for robots.txt.
  */
 @Singleton
 public final class RobotsHandler implements HttpHandler {
