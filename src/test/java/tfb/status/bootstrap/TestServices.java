@@ -68,21 +68,20 @@ public final class TestServices {
               .to(GreenMail.class)
               .in(Singleton.class);
         }
-
-        // For HTTP and email, when someone tries to use the client, make sure
-        // the server is ready.
-
-        bind(HttpServerDependency.class)
-            .to(InstanceLifecycleListener.class)
-            .in(Singleton.class);
-
-        bind(MailServerDependency.class)
-            .to(InstanceLifecycleListener.class)
-            .in(Singleton.class);
       }
     };
 
     ServiceLocatorUtilities.bind(serviceLocator, binder);
+
+    forceDependency(
+        /* serviceLocator= */ serviceLocator,
+        /* fromClass= */ Client.class,
+        /* toClass= */ HttpServer.class);
+
+    forceDependency(
+        /* serviceLocator= */ serviceLocator,
+        /* fromClass= */ EmailSender.class,
+        /* toClass= */ GreenMail.class);
   }
 
   /**
@@ -234,6 +233,62 @@ public final class TestServices {
     return ConfigReader.readYamlBytes(bytes);
   }
 
+  /**
+   * Tells the service locator that {@code toClass} must be initialized before
+   * {@code fromClass} even if {@code fromClass} does not explicitly declare
+   * that dependency.
+   */
+  private static void forceDependency(ServiceLocator serviceLocator,
+                                      Class<?> fromClass,
+                                      Class<?> toClass) {
+
+    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(fromClass);
+    Objects.requireNonNull(toClass);
+
+    var binder = new AbstractBinder() {
+
+      @Override
+      protected void configure() {
+        bind(new ForcedDependency(serviceLocator, fromClass, toClass))
+            .to(InstanceLifecycleListener.class);
+      }
+    };
+
+    ServiceLocatorUtilities.bind(serviceLocator, binder);
+  }
+
+  @Singleton
+  private static final class ForcedDependency
+      implements InstanceLifecycleListener {
+
+    private final ServiceLocator serviceLocator;
+    private final Class<?> fromClass;
+    private final Class<?> toClass;
+
+    ForcedDependency(ServiceLocator serviceLocator,
+                     Class<?> fromClass,
+                     Class<?> toClass) {
+
+      this.serviceLocator = Objects.requireNonNull(serviceLocator);
+      this.fromClass = Objects.requireNonNull(fromClass);
+      this.toClass = Objects.requireNonNull(toClass);
+    }
+
+    @Override
+    public Filter getFilter() {
+      return descriptor -> descriptor.getAdvertisedContracts()
+                                     .contains(fromClass.getName());
+    }
+
+    @Override
+    public void lifecycleEvent(InstanceLifecycleEvent lifecycleEvent) {
+      if (lifecycleEvent.getEventType() == PRE_PRODUCTION) {
+        serviceLocator.getService(toClass);
+      }
+    }
+  }
+
   @Singleton
   private static final class HttpClientFactory implements Factory<Client> {
     private final HttpServerConfig config;
@@ -292,53 +347,6 @@ public final class TestServices {
     @Override
     public void dispose(GreenMail instance) {
       instance.stop();
-    }
-  }
-
-  private abstract static class HiddenDependency
-      implements InstanceLifecycleListener {
-
-    private final ServiceLocator serviceLocator;
-    private final Class<?> fromClass;
-    private final Class<?> toClass;
-
-    HiddenDependency(ServiceLocator serviceLocator,
-                     Class<?> fromClass,
-                     Class<?> toClass) {
-      this.serviceLocator = Objects.requireNonNull(serviceLocator);
-      this.fromClass = Objects.requireNonNull(fromClass);
-      this.toClass = Objects.requireNonNull(toClass);
-    }
-
-    @Override
-    public Filter getFilter() {
-      return descriptor -> descriptor.getAdvertisedContracts()
-                                     .contains(fromClass.getName());
-    }
-
-    @Override
-    public void lifecycleEvent(InstanceLifecycleEvent lifecycleEvent) {
-      if (lifecycleEvent.getEventType() == PRE_PRODUCTION) {
-        serviceLocator.getService(toClass);
-      }
-    }
-  }
-
-  private static final class HttpServerDependency extends HiddenDependency {
-    @Inject
-    public HttpServerDependency(ServiceLocator serviceLocator) {
-      super(/* serviceLocator= */ serviceLocator,
-            /* fromClass= */ Client.class,
-            /* toClass= */ HttpServer.class);
-    }
-  }
-
-  private static final class MailServerDependency extends HiddenDependency {
-    @Inject
-    public MailServerDependency(ServiceLocator serviceLocator) {
-      super(/* serviceLocator= */ serviceLocator,
-            /* fromClass= */ EmailSender.class,
-            /* toClass= */ GreenMail.class);
     }
   }
 }
