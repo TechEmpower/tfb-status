@@ -5,11 +5,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import javax.inject.Singleton;
 
 /**
  * The configuration for the HTTP server.
  */
 @Immutable
+@Singleton
 public final class HttpServerConfig {
   /**
    * The hostname for the server.  The server accepts incoming HTTP requests

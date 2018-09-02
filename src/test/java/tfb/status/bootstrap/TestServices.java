@@ -59,12 +59,12 @@ public final class TestServices {
 
       @Override
       protected void configure() {
-        bindFactory(HttpClientFactory.class)
+        bindFactory(HttpClientFactory.class, Singleton.class)
             .to(Client.class)
             .in(Singleton.class);
 
         if (config.email != null) {
-          bindFactory(MailServerFactory.class)
+          bindFactory(MailServerFactory.class, Singleton.class)
               .to(GreenMail.class)
               .in(Singleton.class);
         }
@@ -234,6 +234,7 @@ public final class TestServices {
     return ConfigReader.readYamlBytes(bytes);
   }
 
+  @Singleton
   private static final class HttpClientFactory implements Factory<Client> {
     private final HttpServerConfig config;
 
@@ -266,6 +267,7 @@ public final class TestServices {
     }
   }
 
+  @Singleton
   private static final class MailServerFactory implements Factory<GreenMail> {
     private final EmailConfig config;
 

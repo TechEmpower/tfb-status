@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import java.util.Objects;
+import javax.inject.Singleton;
 import org.glassfish.hk2.api.Factory;
 
 /**
  * Provides the standard {@link ObjectMapper} used by this application.
  */
+@Singleton
 public final class StandardObjectMapper implements Factory<ObjectMapper> {
   @Override
   public ObjectMapper provide() {

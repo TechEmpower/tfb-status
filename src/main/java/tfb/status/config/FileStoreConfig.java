@@ -5,11 +5,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import javax.inject.Singleton;
 
 /**
  * The configuration for miscellaneous files stored by this application.
  */
 @Immutable
+@Singleton
 public final class FileStoreConfig {
   /**
    * The root directory for uploaded results files.

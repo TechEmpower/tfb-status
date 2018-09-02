@@ -4,11 +4,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
+import javax.inject.Singleton;
 
 /**
  * The configuration for emails sent by this application.
  */
 @Immutable
+@Singleton
 public final class EmailConfig {
   /**
    * The hostname of the mail server.

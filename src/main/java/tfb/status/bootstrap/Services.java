@@ -98,7 +98,7 @@ public final class Services {
         bindAsContract(EmailSender.class).in(Singleton.class);
         bindAsContract(DiffGenerator.class).in(Singleton.class);
 
-        bindFactory(StandardObjectMapper.class)
+        bindFactory(StandardObjectMapper.class, Singleton.class)
             .to(ObjectMapper.class)
             .in(Singleton.class);
 
