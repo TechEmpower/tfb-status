@@ -29,16 +29,29 @@ public final class KeyStoresTest {
   }
 
   /**
-   * Verifies that {@link
-   * KeyStores#readKeyStoreAsSslContext(ByteSource, char[])} is able to open a
-   * valid key store file.
+   * Verifies that {@link KeyStores#readServerSslContext(ByteSource, char[])} is
+   * able to open a valid key store file.
    */
   @Test
-  public void testReadKeyStoreAsSslContext() {
+  public void testReadServerSslContext() {
     URL url = Resources.getResource("localhost.jks");
     ByteSource bytes = Resources.asByteSource(url);
     char[] password = "password".toCharArray();
-    SSLContext sslContext = KeyStores.readKeyStoreAsSslContext(bytes, password);
+    SSLContext sslContext = KeyStores.readServerSslContext(bytes, password);
+    assertEquals("TLS", sslContext.getProtocol());
+
+  }
+
+  /**
+   * Verifies that {@link KeyStores#readClientSslContext(ByteSource, char[])} is
+   * able to open a valid key store file.
+   */
+  @Test
+  public void testReadClientSslContext() {
+    URL url = Resources.getResource("localhost.jks");
+    ByteSource bytes = Resources.asByteSource(url);
+    char[] password = "password".toCharArray();
+    SSLContext sslContext = KeyStores.readClientSslContext(bytes, password);
     assertEquals("TLS", sslContext.getProtocol());
   }
 }

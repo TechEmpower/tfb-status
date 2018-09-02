@@ -8,6 +8,7 @@ import java.security.KeyStore;
 import java.util.Objects;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 /**
  * Utility methods for working with {@link KeyStore} and {@link SSLContext}.
@@ -42,15 +43,17 @@ public final class KeyStores {
   }
 
   /**
-   * Produces an {@link SSLContext} instance from a Java KeyStore (JKS) file.
+   * Produces an {@link SSLContext} instance from a Java KeyStore (JKS) file for
+   * server-side use; the key store contains the certificate(s) to be presented
+   * by the server.
    *
    * @param keyStoreBytes the bytes of the key store
    * @param password the password for the key store
    * @return an SSL context
    * @throws InvalidKeyStoreException if the key store cannot be loaded
    */
-  public static SSLContext readKeyStoreAsSslContext(ByteSource keyStoreBytes,
-                                                    char[] password) {
+  public static SSLContext readServerSslContext(ByteSource keyStoreBytes,
+                                                char[] password) {
 
     KeyStore keyStore = readKeyStore(keyStoreBytes, password);
 
@@ -64,8 +67,8 @@ public final class KeyStores {
     SSLContext sslContext = newTlsSslContext();
     try {
       sslContext.init(
-          /* keyManagers= */ keyManagerFactory.getKeyManagers(),
-          /* trustManagers= */ null,
+          /* km= */ keyManagerFactory.getKeyManagers(),
+          /* tm= */ null,
           /* random= */ null);
     } catch (GeneralSecurityException e) {
       throw new InvalidKeyStoreException(e);
@@ -75,7 +78,42 @@ public final class KeyStores {
   }
 
   /**
-   * Returns a new, not-yet-loaded {@code KeyStore} of the default type.
+   * Produces an {@link SSLContext} instance from a Java KeyStore (JKS) file for
+   * client-side use; the key store contains the certificate(s) to be trusted by
+   * the client.
+   *
+   * @param keyStoreBytes the bytes of the key store
+   * @param password the password for the key store
+   * @return an SSL context
+   * @throws InvalidKeyStoreException if the key store cannot be loaded
+   */
+  public static SSLContext readClientSslContext(ByteSource keyStoreBytes,
+                                                char[] password) {
+
+    KeyStore keyStore = readKeyStore(keyStoreBytes, password);
+
+    TrustManagerFactory trustManagerFactory = newDefaultTrustManagerFactory();
+    try {
+      trustManagerFactory.init(keyStore);
+    } catch (GeneralSecurityException e) {
+      throw new InvalidKeyStoreException(e);
+    }
+
+    SSLContext sslContext = newTlsSslContext();
+    try {
+      sslContext.init(
+          /* km= */ null,
+          /* tm= */ trustManagerFactory.getTrustManagers(),
+          /* random= */ null);
+    } catch (GeneralSecurityException e) {
+      throw new InvalidKeyStoreException(e);
+    }
+
+    return sslContext;
+  }
+
+  /**
+   * Returns a new, not-yet-loaded {@link KeyStore} of the default type.
    */
   private static KeyStore newDefaultKeyStore() {
     String type = KeyStore.getDefaultType();
@@ -89,7 +127,7 @@ public final class KeyStores {
   }
 
   /**
-   * Returns a new, not-yet-initialized {@code KeyManagerFactory} that uses the
+   * Returns a new, not-yet-initialized {@link KeyManagerFactory} that uses the
    * default algorithm.
    */
   private static KeyManagerFactory newDefaultKeyManagerFactory() {
@@ -104,7 +142,22 @@ public final class KeyStores {
   }
 
   /**
-   * Returns a new, not-yet-initialized {@code SSLContext} that uses the TLS
+   * Returns a new, not-yet-initialized {@link TrustManagerFactory} that uses
+   * the default algorithm.
+   */
+  private static TrustManagerFactory newDefaultTrustManagerFactory() {
+    String algorithm = TrustManagerFactory.getDefaultAlgorithm();
+    try {
+      return TrustManagerFactory.getInstance(algorithm);
+    } catch (GeneralSecurityException impossible) {
+      throw new AssertionError(
+          "The default TrustManagerFactory algorithm is always supported",
+          impossible);
+    }
+  }
+
+  /**
+   * Returns a new, not-yet-initialized {@link SSLContext} that uses the TLS
    * protocol.
    */
   private static SSLContext newTlsSslContext() {

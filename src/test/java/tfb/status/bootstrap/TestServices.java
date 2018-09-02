@@ -19,6 +19,7 @@ import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.internet.MimeMessage;
+import javax.net.ssl.SSLContext;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Response;
@@ -307,10 +308,12 @@ public final class TestServices {
       if (config.keyStore != null) {
         Path keyStoreFile = Paths.get(config.keyStore.path);
 
-        builder.trustStore(
-            KeyStores.readKeyStore(
+        SSLContext sslContext =
+            KeyStores.readClientSslContext(
                 /* keyStoreBytes= */ MoreFiles.asByteSource(keyStoreFile),
-                /* password= */ config.keyStore.password.toCharArray()));
+                /* password= */ config.keyStore.password.toCharArray());
+
+        builder.sslContext(sslContext);
       }
 
       return builder.build();
