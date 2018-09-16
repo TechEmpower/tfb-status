@@ -1,4 +1,4 @@
-package tfb.status.bootstrap;
+package tfb.status.util;
 
 import com.google.common.io.ByteSource;
 import java.io.IOException;

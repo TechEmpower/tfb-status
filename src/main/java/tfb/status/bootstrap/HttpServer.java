@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.handler.RootHandler;
+import tfb.status.util.KeyStores;
 
 /**
  * The HTTP server for this application.
