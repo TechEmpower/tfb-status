@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 import org.glassfish.hk2.api.ServiceLocator;
 import tfb.status.config.ApplicationConfig;
+import tfb.status.service.HttpServer;
 
 /**
  * Provides the {@code main} method for starting this application.

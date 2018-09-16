@@ -38,6 +38,7 @@ import tfb.status.config.EmailConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.handler.RootHandler;
 import tfb.status.service.EmailSender;
+import tfb.status.service.HttpServer;
 import tfb.status.util.BasicAuthUtils;
 import tfb.status.util.KeyStores;
 import tfb.status.util.MutableTicker;
