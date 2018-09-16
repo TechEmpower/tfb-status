@@ -33,7 +33,6 @@ import tfb.status.service.Authenticator;
 import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
 import tfb.status.service.HomeResultsReader;
-import tfb.status.service.HttpServer;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.service.StandardObjectMapper;
 
