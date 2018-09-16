@@ -230,10 +230,13 @@ public final class TestServices {
     return BasicAuthUtils.writeAuthorizationHeader("tester", "password");
   }
 
+  /**
+   * Returns an {@link ApplicationConfig} suitable for use in testing.
+   */
   private static ApplicationConfig newApplicationConfig() {
     URL url = Resources.getResource("test_config.yml");
     ByteSource bytes = Resources.asByteSource(url);
-    return ConfigReader.readYamlBytes(bytes);
+    return ApplicationConfig.readYamlBytes(bytes);
   }
 
   /**

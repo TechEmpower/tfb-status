@@ -44,7 +44,7 @@ public final class Main {
     TimeZone.setDefault(TimeZone.getTimeZone(zone));
 
     ApplicationConfig config =
-        ConfigReader.readYamlFile(/* yamlFilePath= */ args[0]);
+        ApplicationConfig.readYamlFile(/* yamlFilePath= */ args[0]);
 
     ServiceLocator serviceLocator =
         Services.newServiceLocator(config, clock, ticker);
