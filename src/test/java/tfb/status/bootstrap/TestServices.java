@@ -293,6 +293,7 @@ public final class TestServices {
     }
   }
 
+  // TODO: Use java.net.http.HttpClient?
   @Singleton
   private static final class HttpClientFactory implements Factory<Client> {
     private final HttpServerConfig config;
