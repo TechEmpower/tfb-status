@@ -11,8 +11,8 @@
   <version>1.0-SNAPSHOT</version>
 
   <properties>
-    <maven.compiler.source>10</maven.compiler.source>
-    <maven.compiler.target>10</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
 
     <oldestCompatibleMavenVersion>3.5.0</oldestCompatibleMavenVersion>
 
@@ -459,7 +459,16 @@
 
                    See: https://github.com/google/error-prone/issues/860#issuecomment-396154710
               -->
+
+              <!-- We're temporarily disabling Error Prone because it's
+                   incompatible with Java 11.
+
+                   See: https://github.com/google/error-prone/issues/1127
+              -->
+
+              <!--
               -Xplugin:ErrorProne
+              -->
 
               <!-- Sometimes it's interesting to see what Error Prone's
                    experimental checks tell us.  The experimental checks are
@@ -479,21 +488,27 @@
                    Similarly, we disagree that adding a "final" modifier to
                    every constant variable would make our code more
                    readable. -->
+              <!--
               -Xep:Var:OFF
+              -->
 
               <!-- We don't think that every method that can be static should be
                    static.  For example, if a method *sounds* like something an
                    instance would do, then it should probably be non-static even
                    if it doesn't refer to instance-level state. -->
+              <!--
               -Xep:MethodCanBeStatic:OFF
+              -->
 
               <!-- Enable NullAway, which is a plugin for Error Prone that
                    offers additional checks to help us handle null correctly.
 
                    See: https://github.com/uber/NullAway
               -->
+              <!--
               -Xep:NullAway:ERROR
               -XepOpt:NullAway:AnnotatedPackages=tfb.status
+              -->
 
             </arg>
 
