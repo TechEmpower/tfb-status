@@ -36,7 +36,7 @@ import tfb.status.undertow.extensions.BasicAuthenticationHandler;
 public final class Authenticator {
   // TODO: Use a real database.
   private final Path accountsDirectory;
-  final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
   public Authenticator(FileStoreConfig fileStoreConfig) {
@@ -95,7 +95,7 @@ public final class Authenticator {
     return accountToId(account);
   }
 
-  static String accountToId(Account account) {
+  private static String accountToId(Account account) {
     Objects.requireNonNull(account, "account");
 
     //
@@ -145,8 +145,6 @@ public final class Authenticator {
   }
 
   private final class ThisAsIdentityManager implements IdentityManager {
-    ThisAsIdentityManager() {}
-
     @Override
     @Nullable
     public Account verify(Account account) {

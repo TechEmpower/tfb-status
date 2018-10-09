@@ -223,7 +223,7 @@ public final class UnzipResultsHandler implements HttpHandler {
      * is not a good guess.
      */
     @Nullable
-    static MediaType guessMediaType(Path file) {
+    private static MediaType guessMediaType(Path file) {
       String extension = MoreFiles.getFileExtension(file);
 
       String mediaTypeString =
@@ -236,7 +236,7 @@ public final class UnzipResultsHandler implements HttpHandler {
     }
 
     // https://stackoverflow.com/a/3758880/359008
-    static String fileSizeToString(long bytes, boolean si) {
+    private static String fileSizeToString(long bytes, boolean si) {
       int unit = si ? 1000 : 1024;
       if (bytes < unit) return bytes + " B";
       int exp = (int) (Math.log(bytes) / Math.log(unit));

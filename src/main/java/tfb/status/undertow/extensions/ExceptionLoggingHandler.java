@@ -43,8 +43,6 @@ public final class ExceptionLoggingHandler implements HttpHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    ExceptionLoggingListener() {}
-
     @Override
     public void exchangeEvent(HttpServerExchange exchange,
                               NextListener nextListener) {

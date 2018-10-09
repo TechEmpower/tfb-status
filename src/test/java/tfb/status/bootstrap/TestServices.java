@@ -45,7 +45,7 @@ import tfb.status.util.MutableTicker;
  * Creates instances of our HTTP handlers and service classes for testing.
  */
 public final class TestServices {
-  final ApplicationConfig config;
+  private final ApplicationConfig config;
   private final MutableClock clock;
   private final MutableTicker ticker;
   private final ServiceLocator serviceLocator;
