@@ -512,11 +512,9 @@ public final class HomeResultsReader {
                 /* entryPath= */ "commit_id.txt",
                 /* entryReader= */
                 inputStream -> {
-                  try (var reader =
-                           new BufferedReader(
-                               new InputStreamReader(inputStream, UTF_8))) {
-
-                    return reader.readLine();
+                  try (var isr = new InputStreamReader(inputStream, UTF_8);
+                       var br = new BufferedReader(isr)) {
+                    return br.readLine();
                   }
                 });
       } catch (IOException e) {

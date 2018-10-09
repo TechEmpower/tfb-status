@@ -47,16 +47,16 @@ public final class ZipFilesTest {
     FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
     zipFile = fs.getPath("/archive.zip");
 
-    try (var out = new ZipOutputStream(
-                       new BufferedOutputStream(
-                           Files.newOutputStream(zipFile, CREATE_NEW)))) {
+    try (var fos = Files.newOutputStream(zipFile, CREATE_NEW);
+         var bos = new BufferedOutputStream(fos);
+         var zos = new ZipOutputStream(bos)) {
 
-      out.putNextEntry(new ZipEntry(PRESENT_ENTRY_PATH));
-      out.write(PRESENT_ENTRY_BYTES);
-      out.closeEntry();
+      zos.putNextEntry(new ZipEntry(PRESENT_ENTRY_PATH));
+      zos.write(PRESENT_ENTRY_BYTES);
+      zos.closeEntry();
 
-      out.putNextEntry(new ZipEntry(DIR_ENTRY_PATH));
-      out.closeEntry();
+      zos.putNextEntry(new ZipEntry(DIR_ENTRY_PATH));
+      zos.closeEntry();
     }
 
     textFile = fs.getPath("/file.txt");
