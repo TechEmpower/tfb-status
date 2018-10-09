@@ -1,13 +1,10 @@
 package tfb.status.util;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.net.MediaType;
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -140,14 +137,6 @@ public final class MoreAssertions {
 
     assertIterableEquals(
         expected,
-        lines(actual));
-  }
-
-  private static ImmutableList<String> lines(String string) {
-    try (var reader = new BufferedReader(new StringReader(string))) {
-      return reader.lines().collect(toImmutableList());
-    } catch (IOException impossible) {
-      throw new AssertionError("The string is in memory", impossible);
-    }
+        actual.lines().collect(toList()));
   }
 }
