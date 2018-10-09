@@ -5,7 +5,6 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -41,7 +40,7 @@ public final class HttpServer {
       builder.addHttpListener(config.port, config.host);
 
     else {
-      Path keyStoreFile = Paths.get(config.keyStore.path);
+      Path keyStoreFile = Path.of(config.keyStore.path);
 
       SSLContext sslContext =
           KeyStores.readServerSslContext(

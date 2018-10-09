@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import javax.inject.Singleton;
@@ -102,7 +101,7 @@ public final class ApplicationConfig {
 
     Path yamlFile;
     try {
-      yamlFile = Paths.get(yamlFilePath);
+      yamlFile = Path.of(yamlFilePath);
     } catch (InvalidPathException e) {
       throw new InvalidConfigFileException(
           "The specified path for the configuration file, \""
@@ -191,7 +190,7 @@ public final class ApplicationConfig {
 
     Path directory;
     try {
-      directory = Paths.get(directoryPath);
+      directory = Path.of(directoryPath);
     } catch (InvalidPathException e) {
       throw new InvalidConfigFileException(
           propertyName + ": invalid path \"" + directoryPath + "\"",

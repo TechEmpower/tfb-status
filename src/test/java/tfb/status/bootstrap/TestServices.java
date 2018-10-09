@@ -13,7 +13,6 @@ import com.icegreen.greenmail.util.ServerSetup;
 import io.undertow.server.HttpHandler;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Clock;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -310,7 +309,7 @@ public final class TestServices {
       builder.register(SseFeature.class);
 
       if (config.keyStore != null) {
-        Path keyStoreFile = Paths.get(config.keyStore.path);
+        Path keyStoreFile = Path.of(config.keyStore.path);
 
         SSLContext sslContext =
             KeyStores.readClientSslContext(

@@ -26,7 +26,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.Clock;
 import java.time.Duration;
@@ -123,7 +122,7 @@ public final class UploadResultsHandler implements HttpHandler {
                 String fileExtension) {
       this.homeUpdates = Objects.requireNonNull(homeUpdates);
       this.clock = Objects.requireNonNull(clock);
-      this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
+      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
       this.fileExtension = Objects.requireNonNull(fileExtension);
     }
 

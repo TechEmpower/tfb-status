@@ -17,7 +17,6 @@ import io.undertow.server.handlers.form.FormDataParser;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -63,7 +62,7 @@ public final class SaveAttributesHandler implements HttpHandler {
     CoreHandler(FileStoreConfig fileStoreConfig,
                 ObjectMapper objectMapper) {
 
-      this.attributesDirectory =  Paths.get(fileStoreConfig.attributesDirectory);
+      this.attributesDirectory =  Path.of(fileStoreConfig.attributesDirectory);
       this.objectMapper = Objects.requireNonNull(objectMapper);
     }
 

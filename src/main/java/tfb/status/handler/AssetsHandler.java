@@ -8,7 +8,6 @@ import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.config.AssetsConfig;
@@ -45,7 +44,7 @@ public final class AssetsHandler implements HttpHandler {
         return new ResourceHandler(resourceManager);
       }
       case FILE_SYSTEM: {
-        Path assetsRoot = Paths.get(config.root);
+        Path assetsRoot = Path.of(config.root);
         var resourceManager = new PathResourceManager(assetsRoot);
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setCacheTime(0);

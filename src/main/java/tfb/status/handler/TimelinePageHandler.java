@@ -16,7 +16,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
@@ -76,7 +75,7 @@ public final class TimelinePageHandler implements HttpHandler {
 
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
       this.objectMapper = Objects.requireNonNull(objectMapper);
-      this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
+      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
     }
 
     @Override

@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -58,7 +57,7 @@ public final class ExportResultsHandler implements HttpHandler {
 
     CoreHandler(FileStoreConfig fileStoreConfig, ObjectMapper objectMapper) {
       this.objectMapper = Objects.requireNonNull(objectMapper);
-      this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
+      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
     }
 
     @Override

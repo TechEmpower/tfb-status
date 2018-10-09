@@ -8,7 +8,6 @@ import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.config.FileStoreConfig;
@@ -22,7 +21,7 @@ public final class DownloadResultsHandler implements HttpHandler {
 
   @Inject
   public DownloadResultsHandler(FileStoreConfig fileStoreConfig) {
-    Path resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
+    Path resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
     var resourceManager = new PathResourceManager(resultsDirectory);
 
     HttpHandler handler = new ResourceHandler(resourceManager);

@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -95,8 +94,8 @@ public final class AttributesPageHandler implements HttpHandler {
                 MustacheRenderer mustacheRenderer,
                 ObjectMapper objectMapper) {
 
-      this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
-      this.attributesDirectory = Paths.get(fileStoreConfig.attributesDirectory);
+      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
+      this.attributesDirectory = Path.of(fileStoreConfig.attributesDirectory);
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
       this.objectMapper = Objects.requireNonNull(objectMapper);
     }

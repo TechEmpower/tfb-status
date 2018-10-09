@@ -16,7 +16,6 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.List;
 import java.util.Objects;
@@ -41,7 +40,7 @@ public final class Authenticator {
 
   @Inject
   public Authenticator(FileStoreConfig fileStoreConfig) {
-    this.accountsDirectory = Paths.get(fileStoreConfig.accountsDirectory);
+    this.accountsDirectory = Path.of(fileStoreConfig.accountsDirectory);
   }
 
   /**

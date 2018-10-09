@@ -13,7 +13,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -63,7 +62,7 @@ public final class HomePageHandler implements HttpHandler {
 
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
       this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
-      this.announcementFile = Paths.get(fileStoreConfig.announcementFile);
+      this.announcementFile = Path.of(fileStoreConfig.announcementFile);
     }
 
     @Override

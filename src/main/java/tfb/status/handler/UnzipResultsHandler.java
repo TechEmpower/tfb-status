@@ -26,7 +26,6 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -79,7 +78,7 @@ public final class UnzipResultsHandler implements HttpHandler {
     CoreHandler(FileStoreConfig fileStoreConfig,
                 MustacheRenderer mustacheRenderer) {
 
-      this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
+      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
     }
 

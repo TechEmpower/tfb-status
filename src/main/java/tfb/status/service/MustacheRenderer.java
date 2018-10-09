@@ -7,7 +7,6 @@ import com.github.mustachejava.resolver.ClasspathResolver;
 import com.github.mustachejava.resolver.FileSystemResolver;
 import java.io.StringWriter;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -69,7 +68,7 @@ public final class MustacheRenderer {
         return fileName -> onlyFactory.compile(fileName);
       }
       case FILE_SYSTEM: {
-        Path mustacheRoot = Paths.get(config.root);
+        Path mustacheRoot = Path.of(config.root);
         var resolver = new FileSystemResolver(mustacheRoot.toFile());
         return fileName -> {
           var newFactory = new DefaultMustacheFactory(resolver);

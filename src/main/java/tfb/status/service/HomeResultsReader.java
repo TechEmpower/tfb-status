@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.text.NumberFormat;
 import java.time.Clock;
@@ -93,7 +92,7 @@ public final class HomeResultsReader {
   public HomeResultsReader(FileStoreConfig fileStoreConfig,
                            ObjectMapper objectMapper,
                            Clock clock) {
-    this.resultsDirectory = Paths.get(fileStoreConfig.resultsDirectory);
+    this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.clock = Objects.requireNonNull(clock);
   }
