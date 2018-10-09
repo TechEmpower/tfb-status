@@ -253,8 +253,8 @@ public final class HomeResultsReader {
       keys.add(new ViewCacheKey(file));
     }
     return keys.build()
-               .map(jsonCache::get)
-               .filter(Objects::nonNull);
+               .map(key -> jsonCache.get(key))
+               .filter(view -> view != null);
   }
 
   private Stream<ResultsZipView> viewAllZipFiles() throws IOException {
@@ -263,8 +263,8 @@ public final class HomeResultsReader {
       keys.add(new ViewCacheKey(file));
     }
     return keys.build()
-               .map(zipCache::get)
-               .filter(Objects::nonNull);
+               .map(key -> zipCache.get(key))
+               .filter(view -> view != null);
   }
 
   @Nullable
@@ -561,7 +561,7 @@ public final class HomeResultsReader {
         cache.asMap()
              .keySet()
              .stream()
-             .filter(ViewCacheKey::isUnreachable)
+             .filter(key -> key.isUnreachable())
              .collect(toImmutableSet());
 
     cache.invalidateAll(unreachableKeys);

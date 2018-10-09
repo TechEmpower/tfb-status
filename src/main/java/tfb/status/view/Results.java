@@ -311,37 +311,37 @@ public final class Results {
       this.json =
           Objects.requireNonNullElseGet(
               json,
-              ImmutableListMultimap::of);
+              () -> ImmutableListMultimap.of());
 
       this.plaintext =
           Objects.requireNonNullElseGet(
               plaintext,
-              ImmutableListMultimap::of);
+              () -> ImmutableListMultimap.of());
 
       this.db =
           Objects.requireNonNullElseGet(
               db,
-              ImmutableListMultimap::of);
+              () -> ImmutableListMultimap.of());
 
       this.query =
           Objects.requireNonNullElseGet(
               query,
-              ImmutableListMultimap::of);
+              () -> ImmutableListMultimap.of());
 
       this.update =
           Objects.requireNonNullElseGet(
               update,
-              ImmutableListMultimap::of);
+              () -> ImmutableListMultimap.of());
 
       this.fortune =
           Objects.requireNonNullElseGet(
               fortune,
-              ImmutableListMultimap::of);
+              () -> ImmutableListMultimap.of());
 
       this.cachedQuery =
           Objects.requireNonNullElseGet(
               cachedQuery,
-              ImmutableListMultimap::of);
+              () -> ImmutableListMultimap.of());
     }
   }
 

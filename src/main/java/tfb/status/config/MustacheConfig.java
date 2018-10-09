@@ -27,7 +27,7 @@ public final class MustacheConfig {
       @JsonProperty(value = "root", required = false)
       String root) {
 
-    this.mode = Objects.requireNonNullElseGet(mode, ResourceMode::defaultMode);
+    this.mode = Objects.requireNonNullElseGet(mode, () -> ResourceMode.defaultMode());
     this.root = Objects.requireNonNullElseGet(root, () -> defaultRoot(this.mode));
   }
 

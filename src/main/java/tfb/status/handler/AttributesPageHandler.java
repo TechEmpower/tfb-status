@@ -243,7 +243,7 @@ public final class AttributesPageHandler implements HttpHandler {
 
             ImmutableSet<String> oldValuesLower =
                 info.list.stream()
-                         .map(Ascii::toLowerCase)
+                         .map(value -> Ascii.toLowerCase(value))
                          .collect(toImmutableSet());
 
             ImmutableSet<String> newValues =
@@ -253,7 +253,7 @@ public final class AttributesPageHandler implements HttpHandler {
 
             ImmutableSet<String> newValuesLower =
                 allValues.stream()
-                         .map(Ascii::toLowerCase)
+                         .map(value -> Ascii.toLowerCase(value))
                          .collect(toImmutableSet());
 
             ImmutableSet<String> unusedValues =
@@ -321,7 +321,7 @@ public final class AttributesPageHandler implements HttpHandler {
             oldTestDefinitions.entrySet()
                               .stream()
                               .filter(entry -> matchesOnAttributes(newTest, entry.getValue()))
-                              .map(Map.Entry::getKey)
+                              .map(entry -> entry.getKey())
                               .findFirst()
                               .orElse(null);
 
@@ -342,7 +342,7 @@ public final class AttributesPageHandler implements HttpHandler {
             attributeToValuesLower.put(
                 attribute,
                 info.list.stream()
-                         .map(Ascii::toLowerCase)
+                         .map(value -> Ascii.toLowerCase(value))
                          .collect(toImmutableList()));
           });
 
@@ -363,7 +363,7 @@ public final class AttributesPageHandler implements HttpHandler {
                                 return versusName.equalsIgnoreCase(other.framework)
                                     || versusName.equalsIgnoreCase(other.name);
                               })
-                              .map(Map.Entry::getKey)
+                              .map(entry -> entry.getKey())
                               .findFirst()
                               .orElse(null);
             }

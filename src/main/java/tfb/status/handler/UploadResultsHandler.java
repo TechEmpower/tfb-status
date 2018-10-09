@@ -21,7 +21,6 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
@@ -453,7 +452,7 @@ public final class UploadResultsHandler implements HttpHandler {
           newZipFile,
           attachments.size(),
           attachments.stream()
-                     .map(DataSource::getName)
+                     .map(attachment -> attachment.getName())
                      .collect(joining(", ")));
 
       try {
@@ -524,7 +523,7 @@ public final class UploadResultsHandler implements HttpHandler {
       return tryReadZipEntry(
           /* zipFile= */ zipFile,
           /* entryPath= */ "results.json",
-          /* entryReader= */ InputStream::readAllBytes);
+          /* entryReader= */ entry -> entry.readAllBytes());
     }
 
     @Nullable
@@ -532,7 +531,7 @@ public final class UploadResultsHandler implements HttpHandler {
       return tryReadZipEntry(
           /* zipFile= */ zipFile,
           /* entryPath= */ "test_metadata.json",
-          /* entryReader= */ InputStream::readAllBytes);
+          /* entryReader= */ entry -> entry.readAllBytes());
     }
 
     @Nullable

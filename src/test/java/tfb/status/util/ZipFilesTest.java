@@ -11,7 +11,6 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -77,7 +76,7 @@ public final class ZipFilesTest {
         PRESENT_ENTRY_BYTES,
         ZipFiles.readZipEntry(zipFile,
                               PRESENT_ENTRY_PATH,
-                              InputStream::readAllBytes));
+                              entry -> entry.readAllBytes()));
   }
 
   /**
@@ -91,7 +90,7 @@ public final class ZipFilesTest {
         PRESENT_ENTRY_BYTES,
         ZipFiles.readZipEntry(zipFile,
                               PRESENT_ENTRY_ABSOLUTE_PATH,
-                              InputStream::readAllBytes));
+                              entry -> entry.readAllBytes()));
   }
 
   /**
