@@ -91,7 +91,7 @@ public final class HomePageHandler implements HttpHandler {
       String announcement = null;
       if (Files.isRegularFile(announcementFile)) {
         List<String> lines = Files.readAllLines(announcementFile, UTF_8);
-        announcement = String.join("\n", lines).trim();
+        announcement = String.join("\n", lines).strip();
         if (announcement.isEmpty()) {
           announcement = null;
         }
