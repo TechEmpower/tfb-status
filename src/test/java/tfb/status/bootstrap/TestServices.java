@@ -30,7 +30,6 @@ import org.glassfish.hk2.api.InstanceLifecycleListener;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.media.sse.SseFeature;
 import org.threeten.extra.MutableClock;
 import tfb.status.config.ApplicationConfig;
 import tfb.status.config.EmailConfig;
@@ -306,8 +305,6 @@ public final class TestServices {
     @Override
     public Client provide() {
       ClientBuilder builder = ClientBuilder.newBuilder();
-
-      builder.register(SseFeature.class);
 
       if (config.keyStore != null) {
         Path keyStoreFile = Path.of(config.keyStore.path);
