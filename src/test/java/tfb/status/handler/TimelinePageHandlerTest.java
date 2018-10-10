@@ -8,7 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 import static tfb.status.util.MoreAssertions.assertStartsWith;
 
-import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -35,19 +36,21 @@ public final class TimelinePageHandlerTest {
    * an HTML response.
    */
   @Test
-  public void testGet() {
-    try (Response response = services.httpGet("/timeline/gemini/json")) {
+  public void testGet() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/timeline/gemini/json");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      assertMediaType(
-          HTML_UTF_8,
-          response.getHeaderString(CONTENT_TYPE));
+    assertMediaType(
+        HTML_UTF_8,
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
-      assertStartsWith(
-          "<!DOCTYPE html>",
-          response.readEntity(String.class));
-    }
+    assertStartsWith(
+        "<!DOCTYPE html>",
+        response.body());
   }
 
   /**
@@ -55,11 +58,11 @@ public final class TimelinePageHandlerTest {
    * specified produces a {@code 404 Not Found} response.
    */
   @Test
-  public void testUnknownTestType() {
-    try (Response response = services.httpGet("/timeline/gemini/notarealtesttypename")) {
+  public void testUnknownTestType() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/timeline/gemini/notarealtesttypename");
 
-      assertEquals(NOT_FOUND, response.getStatus());
-    }
+    assertEquals(NOT_FOUND, response.statusCode());
   }
 
   /**
@@ -67,10 +70,10 @@ public final class TimelinePageHandlerTest {
    * specified produces a {@code 404 Not Found} response.
    */
   @Test
-  public void testUnknownFramework() {
-    try (Response response = services.httpGet("/timeline/notarealframeworkname/json")) {
+  public void testUnknownFramework() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/timeline/notarealframeworkname/json");
 
-      assertEquals(NOT_FOUND, response.getStatus());
-    }
+    assertEquals(NOT_FOUND, response.statusCode());
   }
 }

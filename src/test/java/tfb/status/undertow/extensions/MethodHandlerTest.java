@@ -1,20 +1,22 @@
 package tfb.status.undertow.extensions;
 
 import static com.google.common.net.HttpHeaders.ALLOW;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.Methods.OPTIONS;
 import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.METHOD_NOT_ALLOWED;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.base.Splitter;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Set;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -25,12 +27,10 @@ import tfb.status.bootstrap.TestServices;
  */
 public final class MethodHandlerTest {
   private static TestServices services;
-  private static Client httpClient;
 
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-    httpClient = services.httpClient();
 
     services.addExactPath(
         "/none",
@@ -68,28 +68,49 @@ public final class MethodHandlerTest {
    * OPTIONS requests.
    */
   @Test
-  public void testNoMethodsAllowed() {
-    String uri = services.httpUri("/none");
+  public void testNoMethodsAllowed() throws IOException, InterruptedException {
+    URI uri = services.httpUri("/none");
 
-    try (Response response = httpClient.target(uri).request().get()) {
-      assertEquals(METHOD_NOT_ALLOWED, response.getStatus());
-    }
+    HttpResponse<String> response1 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .GET()
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-    try (Response response = httpClient.target(uri).request().post(Entity.text("hi"))) {
-      assertEquals(METHOD_NOT_ALLOWED, response.getStatus());
-    }
+    assertEquals(METHOD_NOT_ALLOWED, response1.statusCode());
 
-    try (Response response = httpClient.target(uri).request().head()) {
-      assertEquals(METHOD_NOT_ALLOWED, response.getStatus());
-    }
+    HttpResponse<String> response2 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .header(CONTENT_TYPE, "text/plain")
+                       .POST(HttpRequest.BodyPublishers.ofString("hi"))
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-    try (Response response = httpClient.target(uri).request().options()) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("", response.readEntity(String.class));
-      assertEquals(
-          Set.of("OPTIONS"),
-          parseAllowHeader(response));
-    }
+    assertEquals(METHOD_NOT_ALLOWED, response2.statusCode());
+
+    HttpResponse<String> response3 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(METHOD_NOT_ALLOWED, response3.statusCode());
+
+    HttpResponse<String> response4 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(OK, response4.statusCode());
+    assertEquals("", response4.body());
+    assertEquals(
+        Set.of("OPTIONS"),
+        parseAllowHeader(response4));
   }
 
   /**
@@ -97,30 +118,53 @@ public final class MethodHandlerTest {
    * allows GET, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetOnly() {
-    String uri = services.httpUri("/getOnly");
+  public void testGetOnly() throws IOException, InterruptedException {
+    URI uri = services.httpUri("/getOnly");
 
-    try (Response response = httpClient.target(uri).request().get()) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("getHandler", response.readEntity(String.class));
-    }
+    HttpResponse<String> response1 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .GET()
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-    try (Response response = httpClient.target(uri).request().post(Entity.text("hi"))) {
-      assertEquals(METHOD_NOT_ALLOWED, response.getStatus());
-    }
+    assertEquals(OK, response1.statusCode());
+    assertEquals("getHandler", response1.body());
 
-    try (Response response = httpClient.target(uri).request().head()) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("", response.readEntity(String.class));
-    }
+    HttpResponse<String> response2 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .header(CONTENT_TYPE, "text/plain")
+                       .POST(HttpRequest.BodyPublishers.ofString("hi"))
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-    try (Response response = httpClient.target(uri).request().options()) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("", response.readEntity(String.class));
-      assertEquals(
-          Set.of("GET", "HEAD", "OPTIONS"),
-          parseAllowHeader(response));
-    }
+    assertEquals(METHOD_NOT_ALLOWED, response2.statusCode());
+
+    HttpResponse<String> response3 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(OK, response3.statusCode());
+
+    // FIXME: This assertion fails when we use HTTP/2.
+    assertEquals("", response3.body());
+
+    HttpResponse<String> response4 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(OK, response4.statusCode());
+    assertEquals("", response4.body());
+    assertEquals(
+        Set.of("GET", "HEAD", "OPTIONS"),
+        parseAllowHeader(response4));
   }
 
   /**
@@ -128,29 +172,50 @@ public final class MethodHandlerTest {
    * allows POST and OPTIONS requests.
    */
   @Test
-  public void testPostOnly() {
-    String uri = services.httpUri("/postOnly");
+  public void testPostOnly() throws IOException, InterruptedException {
+    URI uri = services.httpUri("/postOnly");
 
-    try (Response response = httpClient.target(uri).request().get()) {
-      assertEquals(METHOD_NOT_ALLOWED, response.getStatus());
-    }
+    HttpResponse<String> response1 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .GET()
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-    try (Response response = httpClient.target(uri).request().post(Entity.text("hi"))) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("postHandler", response.readEntity(String.class));
-    }
+    assertEquals(METHOD_NOT_ALLOWED, response1.statusCode());
 
-    try (Response response = httpClient.target(uri).request().head()) {
-      assertEquals(METHOD_NOT_ALLOWED, response.getStatus());
-    }
+    HttpResponse<String> response2 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .header(CONTENT_TYPE, "text/plain")
+                       .POST(HttpRequest.BodyPublishers.ofString("hi"))
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-    try (Response response = httpClient.target(uri).request().options()) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("", response.readEntity(String.class));
-      assertEquals(
-          Set.of("POST", "OPTIONS"),
-          parseAllowHeader(response));
-    }
+    assertEquals(OK, response2.statusCode());
+    assertEquals("postHandler", response2.body());
+
+    HttpResponse<String> response3 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(METHOD_NOT_ALLOWED, response3.statusCode());
+
+    HttpResponse<String> response4 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(OK, response4.statusCode());
+    assertEquals("", response4.body());
+    assertEquals(
+        Set.of("POST", "OPTIONS"),
+        parseAllowHeader(response4));
   }
 
   /**
@@ -158,31 +223,54 @@ public final class MethodHandlerTest {
    * allows GET, POST, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetAndPost() {
-    String uri = services.httpUri("/getAndPost");
+  public void testGetAndPost() throws IOException, InterruptedException {
+    URI uri = services.httpUri("/getAndPost");
 
-    try (Response response = httpClient.target(uri).request().get()) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("getHandler", response.readEntity(String.class));
-    }
+    HttpResponse<String> response1 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .GET()
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-    try (Response response = httpClient.target(uri).request().post(Entity.text("hi"))) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("postHandler", response.readEntity(String.class));
-    }
+    assertEquals(OK, response1.statusCode());
+    assertEquals("getHandler", response1.body());
 
-    try (Response response = httpClient.target(uri).request().head()) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("", response.readEntity(String.class));
-    }
+    HttpResponse<String> response2 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .header(CONTENT_TYPE, "text/plain")
+                       .POST(HttpRequest.BodyPublishers.ofString("hi"))
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-    try (Response response = httpClient.target(uri).request().options()) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("", response.readEntity(String.class));
-      assertEquals(
-          Set.of("GET", "POST", "HEAD", "OPTIONS"),
-          parseAllowHeader(response));
-    }
+    assertEquals(OK, response2.statusCode());
+    assertEquals("postHandler", response2.body());
+
+    HttpResponse<String> response3 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(OK, response3.statusCode());
+
+    // FIXME: This assertion fails when we use HTTP/2.
+    assertEquals("", response3.body());
+
+    HttpResponse<String> response4 =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(OK, response4.statusCode());
+    assertEquals("", response4.body());
+    assertEquals(
+        Set.of("GET", "POST", "HEAD", "OPTIONS"),
+        parseAllowHeader(response4));
   }
 
   /**
@@ -190,18 +278,25 @@ public final class MethodHandlerTest {
    * {@link MethodHandler}.
    */
   @Test
-  public void testOverrideOptions() {
-    String uri = services.httpUri("/overrideOptions");
+  public void testOverrideOptions() throws IOException, InterruptedException {
+    URI uri = services.httpUri("/overrideOptions");
 
-    try (Response response = httpClient.target(uri).request().options()) {
-      assertEquals(OK, response.getStatus());
-      assertEquals("optionsHandler", response.readEntity(String.class));
-      assertNull(response.getHeaderString(ALLOW));
-    }
+    HttpResponse<String> response =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(OK, response.statusCode());
+    assertEquals("optionsHandler", response.body());
+    assertTrue(response.headers().firstValue(ALLOW).isEmpty());
   }
 
-  private static Set<String> parseAllowHeader(Response response) {
-    String headerValue = response.getHeaderString(ALLOW);
+  private static Set<String> parseAllowHeader(HttpResponse<?> response) {
+    String headerValue = response.headers()
+                                 .firstValue(ALLOW)
+                                 .orElse(null);
 
     if (headerValue == null)
       return Set.of();

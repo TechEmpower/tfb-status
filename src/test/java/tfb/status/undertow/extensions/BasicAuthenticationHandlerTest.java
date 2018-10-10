@@ -5,17 +5,19 @@ import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static io.undertow.util.StatusCodes.OK;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.security.Principal;
 import java.util.Set;
 import javax.annotation.Nullable;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,6 @@ import tfb.status.util.BasicAuthUtils;
  */
 public final class BasicAuthenticationHandlerTest {
   private static TestServices services;
-  private static Client httpClient;
 
   private static final String CORRECT_USERNAME = "correct_username";
   private static final String CORRECT_PASSWORD = "correct_password";
@@ -92,7 +93,6 @@ public final class BasicAuthenticationHandlerTest {
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-    httpClient = services.httpClient();
 
     services.addExactPath(
         "/basicAuth",
@@ -112,20 +112,23 @@ public final class BasicAuthenticationHandlerTest {
    * not specify any credentials.
    */
   @Test
-  public void testMissingCredentials() {
-    String uri = services.httpUri("/basicAuth");
+  public void testMissingCredentials() throws IOException, InterruptedException {
+    URI uri = services.httpUri("/basicAuth");
 
-    try (Response response =
-             httpClient.target(uri)
-                       .request()
-                       .get()) {
+    HttpResponse<String> response =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .GET()
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-      assertEquals(UNAUTHORIZED, response.getStatus());
+    assertEquals(UNAUTHORIZED, response.statusCode());
 
-      assertEquals(
-          "Basic realm=\"testRealm\"",
-          response.getHeaderString(WWW_AUTHENTICATE));
-    }
+    assertEquals(
+        "Basic realm=\"testRealm\"",
+        response.headers()
+                .firstValue(WWW_AUTHENTICATE)
+                .orElse(null));
   }
 
   /**
@@ -133,26 +136,29 @@ public final class BasicAuthenticationHandlerTest {
    * specify invalid credentials.
    */
   @Test
-  public void testInvalidCredentials() {
-    String uri = services.httpUri("/basicAuth");
+  public void testInvalidCredentials() throws IOException, InterruptedException {
+    URI uri = services.httpUri("/basicAuth");
 
     String invalidCredentials =
         BasicAuthUtils.writeAuthorizationHeader(
             "wrong_username",
             "wrong_password");
 
-    try (Response response =
-             httpClient.target(uri)
-                       .request()
+    HttpResponse<String> response =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
                        .header(AUTHORIZATION, invalidCredentials)
-                       .get()) {
+                       .GET()
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-      assertEquals(UNAUTHORIZED, response.getStatus());
+    assertEquals(UNAUTHORIZED, response.statusCode());
 
-      assertEquals(
-          "Basic realm=\"testRealm\"",
-          response.getHeaderString(WWW_AUTHENTICATE));
-    }
+    assertEquals(
+        "Basic realm=\"testRealm\"",
+        response.headers()
+                .firstValue(WWW_AUTHENTICATE)
+                .orElse(null));
   }
 
   /**
@@ -160,23 +166,26 @@ public final class BasicAuthenticationHandlerTest {
    * specify valid credentials.
    */
   @Test
-  public void testValidCredentials() {
-    String uri = services.httpUri("/basicAuth");
+  public void testValidCredentials() throws IOException, InterruptedException {
+    URI uri = services.httpUri("/basicAuth");
 
     String validCredentials =
         BasicAuthUtils.writeAuthorizationHeader(
             CORRECT_USERNAME,
             CORRECT_PASSWORD);
 
-    try (Response response =
-             httpClient.target(uri)
-                       .request()
+    HttpResponse<String> response =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
                        .header(AUTHORIZATION, validCredentials)
-                       .get()) {
+                       .GET()
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      assertNull(response.getHeaderString(WWW_AUTHENTICATE));
-    }
+    assertTrue(response.headers()
+                       .firstValue(WWW_AUTHENTICATE)
+                       .isEmpty());
   }
 }

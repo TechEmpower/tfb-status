@@ -12,8 +12,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.StringJoiner;
-import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -43,13 +45,26 @@ public final class HomeUpdatesHandlerTest {
    */
   @Test
   public void testGet() throws IOException, InterruptedException {
-    try (Response response = services.httpGet("/updates")) {
+    URI uri = services.httpUri("/updates");
 
-      assertEquals(OK, response.getStatus());
+    HttpResponse<InputStream> response =
+        services.httpClient().send(
+            HttpRequest.newBuilder(uri)
+                       .GET()
+                       .build(),
+            HttpResponse.BodyHandlers.ofInputStream());
+
+    try (var is = response.body();
+         var isr = new InputStreamReader(is, UTF_8);
+         var br = new BufferedReader(isr)) {
+
+      assertEquals(OK, response.statusCode());
 
       assertMediaType(
           MediaType.create("text", "event-stream"),
-          response.getHeaderString(CONTENT_TYPE));
+          response.headers()
+                  .firstValue(CONTENT_TYPE)
+                  .orElse(null));
 
       //
       // Undertow adds our incoming SSE connection to its internal collection,
@@ -60,30 +75,18 @@ public final class HomeUpdatesHandlerTest {
 
       updates.sendUpdate("03da6340-d56c-4584-9ef2-702106203809");
 
-      assertContains(
-          "03da6340-d56c-4584-9ef2-702106203809",
-          readSseMessage(response));
-    }
-  }
-
-  /**
-   * Reads one SSE message from the provided HTTP response.
-   */
-  private static String readSseMessage(Response response) throws IOException {
-    var joiner = new StringJoiner("\n");
-
-    try (var is = response.readEntity(InputStream.class);
-         var isr = new InputStreamReader(is, UTF_8);
-         var br = new BufferedReader(isr)) {
+      var message = new StringJoiner("\n");
 
       for (String line = br.readLine();
            line != null && line.startsWith("data:");
            line = br.readLine()) {
 
-        joiner.add(line.substring("data:".length()));
+        message.add(line.substring("data:".length()));
       }
-    }
 
-    return joiner.toString();
+      assertContains(
+          "03da6340-d56c-4584-9ef2-702106203809",
+          message.toString());
+    }
   }
 }

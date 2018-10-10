@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -39,17 +39,17 @@ public final class DownloadResultsHandlerTest {
    * successful.
    */
   @Test
-  public void testGetJson() throws IOException {
-    try (Response response = services.httpGet("/raw/results.2017-12-26-05-07-14-321.json")) {
+  public void testGetJson() throws IOException, InterruptedException {
+    HttpResponse<byte[]> response =
+        services.httpGetBytes("/raw/results.2017-12-26-05-07-14-321.json");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      byte[] responseBytes = response.readEntity(byte[].class);
+    byte[] responseBytes = response.body();
 
-      Results results = objectMapper.readValue(responseBytes, Results.class);
+    Results results = objectMapper.readValue(responseBytes, Results.class);
 
-      assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);
-    }
+    assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);
   }
 
   /**
@@ -57,26 +57,26 @@ public final class DownloadResultsHandlerTest {
    * successful.
    */
   @Test
-  public void testGetZip() throws IOException {
-    try (Response response = services.httpGet("/raw/results.2017-12-29-23-04-02-541.zip")) {
+  public void testGetZip() throws IOException, InterruptedException {
+    HttpResponse<byte[]> response =
+        services.httpGetBytes("/raw/results.2017-12-29-23-04-02-541.zip");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      byte[] responseBytes = response.readEntity(byte[].class);
+    byte[] responseBytes = response.body();
 
-      Results results;
+    Results results;
 
-      try (var zip = new ZipInputStream(new ByteArrayInputStream(responseBytes))) {
-        ZipEntry entry;
-        do entry = zip.getNextEntry();
-        while (entry != null && !entry.getName().endsWith("/results.json"));
+    try (var zip = new ZipInputStream(new ByteArrayInputStream(responseBytes))) {
+      ZipEntry entry;
+      do entry = zip.getNextEntry();
+      while (entry != null && !entry.getName().endsWith("/results.json"));
 
-        assertNotNull(entry, "results.json entry not found");
+      assertNotNull(entry, "results.json entry not found");
 
-        results = objectMapper.readValue(zip, Results.class);
-      }
-
-      assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);
+      results = objectMapper.readValue(zip, Results.class);
     }
+
+    assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);
   }
 }

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import javax.ws.rs.core.Response;
+import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -35,21 +35,21 @@ public final class ExportResultsHandlerTest {
    * successful.
    */
   @Test
-  public void testGetJson() throws IOException {
-    try (Response response = services.httpGet("/export/results.2017-12-26-05-07-14-321.json")) {
+  public void testGetJson() throws IOException, InterruptedException {
+    HttpResponse<byte[]> response =
+        services.httpGetBytes("/export/results.2017-12-26-05-07-14-321.json");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      byte[] responseBytes = response.readEntity(byte[].class);
+    byte[] responseBytes = response.body();
 
-      Results.TfbWebsiteView minifiedResults =
-          objectMapper.readValue(responseBytes,
-                                 Results.TfbWebsiteView.class);
+    Results.TfbWebsiteView minifiedResults =
+        objectMapper.readValue(responseBytes,
+                               Results.TfbWebsiteView.class);
 
-      assertEquals(
-          "Continuous Benchmarking Run 2017-12-26 06:48:23",
-          minifiedResults.name);
-    }
+    assertEquals(
+        "Continuous Benchmarking Run 2017-12-26 06:48:23",
+        minifiedResults.name);
   }
 
   /**
@@ -57,20 +57,20 @@ public final class ExportResultsHandlerTest {
    * successful.
    */
   @Test
-  public void testGetZip() throws IOException {
-    try (Response response = services.httpGet("/export/results.2017-12-29-23-04-02-541.zip")) {
+  public void testGetZip() throws IOException, InterruptedException {
+    HttpResponse<byte[]> response =
+        services.httpGetBytes("/export/results.2017-12-29-23-04-02-541.zip");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      byte[] responseBytes = response.readEntity(byte[].class);
+    byte[] responseBytes = response.body();
 
-      Results.TfbWebsiteView minifiedResults =
-          objectMapper.readValue(responseBytes,
-                                 Results.TfbWebsiteView.class);
+    Results.TfbWebsiteView minifiedResults =
+        objectMapper.readValue(responseBytes,
+                               Results.TfbWebsiteView.class);
 
-      assertEquals(
-          "Continuous Benchmarking Run 2017-12-26 06:48:23",
-          minifiedResults.name);
-    }
+    assertEquals(
+        "Continuous Benchmarking Run 2017-12-26 06:48:23",
+        minifiedResults.name);
   }
 }

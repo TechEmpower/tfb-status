@@ -8,7 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 import static tfb.status.util.MoreAssertions.assertStartsWith;
 
-import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -35,29 +36,31 @@ public final class DetailPageHandlerTest {
    * produces an HTML response.
    */
   @Test
-  public void testGet() {
-    try (Response response = services.httpGet("/results/03da6340-d56c-4584-9ef2-702106203809")) {
+  public void testGet() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/results/03da6340-d56c-4584-9ef2-702106203809");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      assertMediaType(
-          HTML_UTF_8,
-          response.getHeaderString(CONTENT_TYPE));
+    assertMediaType(
+        HTML_UTF_8,
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
-      assertStartsWith(
-          "<!DOCTYPE html>",
-          response.readEntity(String.class));
-    }
+    assertStartsWith(
+        "<!DOCTYPE html>",
+        response.body());
   }
 
   /**
    * Verifies that a GET request for the results detail page with an unknown
    * uuid produces a {@code 404 Not Found} response.
    */
-  public void testUnknownUuid() {
-    try (Response response = services.httpGet("/results/notarealuuid")) {
+  public void testUnknownUuid() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/results/notarealuuid");
 
-      assertEquals(NOT_FOUND, response.getStatus());
-    }
+    assertEquals(NOT_FOUND, response.statusCode());
   }
 }

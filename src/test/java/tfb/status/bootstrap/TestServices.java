@@ -6,12 +6,16 @@ import com.google.common.base.Ticker;
 import com.google.common.io.ByteSource;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.Resources;
-import com.google.errorprone.annotations.MustBeClosed;
 import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import io.undertow.server.HttpHandler;
+import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Objects;
@@ -19,10 +23,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.internet.MimeMessage;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.InstanceLifecycleEvent;
@@ -60,7 +60,7 @@ public final class TestServices {
       @Override
       protected void configure() {
         bindFactory(HttpClientFactory.class, Singleton.class)
-            .to(Client.class)
+            .to(HttpClient.class)
             .in(Singleton.class);
 
         if (config.email != null) {
@@ -75,7 +75,7 @@ public final class TestServices {
 
     forceDependency(
         /* serviceLocator= */ serviceLocator,
-        /* fromClass= */ Client.class,
+        /* fromClass= */ HttpClient.class,
         /* toClass= */ HttpServer.class);
 
     forceDependency(
@@ -170,11 +170,12 @@ public final class TestServices {
   }
 
   /**
-   * The {@linkplain Client HTTP client} that should be used for making requests
-   * to the local {@linkplain HttpServer HTTP server} running this application.
+   * The {@linkplain HttpClient HTTP client} that should be used for making
+   * requests to the local {@linkplain HttpServer HTTP server} running this
+   * application.
    */
-  public Client httpClient() {
-    return serviceLocator.getService(Client.class);
+  public HttpClient httpClient() {
+    return serviceLocator.getService(HttpClient.class);
   }
 
   /**
@@ -182,23 +183,34 @@ public final class TestServices {
    *
    * @param path the path part of the URI, such as "/robots.txt"
    */
-  public String httpUri(String path) {
+  public URI httpUri(String path) {
     Objects.requireNonNull(path);
 
-    String protocol =
-        (config.http.keyStore == null)
-            ? "http"
-            : "https";
+    boolean https = config.http.keyStore != null;
+    int port = config.http.port;
 
-    return UriBuilder.fromUri(protocol + "://localhost")
-                     .port(config.http.port)
-                     .path(path)
-                     .build()
-                     .toString();
+    StringBuilder uri = new StringBuilder();
+
+    uri.append("http");
+    if (https) {
+      uri.append("s");
+    }
+
+    uri.append("://localhost");
+
+    if ((https && port != 443) || (!https && port != 80)) {
+      uri.append(":");
+      uri.append(port);
+    }
+
+    uri.append(path);
+
+    return URI.create(uri.toString());
   }
 
   /**
-   * Issues a GET request to the local HTTP server.
+   * Issues a GET request to the local HTTP server, reading the response body as
+   * a string.
    *
    * <p>This is a shortcut for using {@link #httpClient()} and {@link
    * #httpUri(String)} for one common case.  To customize the request -- to use
@@ -207,16 +219,43 @@ public final class TestServices {
    *
    * @param path the path part of the URI, such as "/robots.txt"
    */
-  @MustBeClosed
-  public Response httpGet(String path) {
+  public HttpResponse<String> httpGetString(String path)
+      throws IOException, InterruptedException {
+
     Objects.requireNonNull(path);
 
-    String uri = httpUri(path);
+    URI uri = httpUri(path);
 
-    return httpClient()
-        .target(uri)
-        .request()
-        .get();
+    return httpClient().send(
+        HttpRequest.newBuilder(uri)
+                   .GET()
+                   .build(),
+        HttpResponse.BodyHandlers.ofString());
+  }
+
+  /**
+   * Issues a GET request to the local HTTP server, reading the response body as
+   * a byte array.
+   *
+   * <p>This is a shortcut for using {@link #httpClient()} and {@link
+   * #httpUri(String)} for one common case.  To customize the request -- to use
+   * POST instead of GET or to attach custom HTTP headers for example -- use
+   * those other methods directly.
+   *
+   * @param path the path part of the URI, such as "/robots.txt"
+   */
+  public HttpResponse<byte[]> httpGetBytes(String path)
+      throws IOException, InterruptedException {
+
+    Objects.requireNonNull(path);
+
+    URI uri = httpUri(path);
+
+    return httpClient().send(
+        HttpRequest.newBuilder(uri)
+                   .GET()
+                   .build(),
+        HttpResponse.BodyHandlers.ofByteArray());
   }
 
   /**
@@ -292,9 +331,8 @@ public final class TestServices {
     }
   }
 
-  // TODO: Use java.net.http.HttpClient?
   @Singleton
-  private static final class HttpClientFactory implements Factory<Client> {
+  private static final class HttpClientFactory implements Factory<HttpClient> {
     private final HttpServerConfig config;
 
     @Inject
@@ -303,8 +341,8 @@ public final class TestServices {
     }
 
     @Override
-    public Client provide() {
-      ClientBuilder builder = ClientBuilder.newBuilder();
+    public HttpClient provide() {
+      HttpClient.Builder builder = HttpClient.newBuilder();
 
       if (config.keyStore != null) {
         Path keyStoreFile = Path.of(config.keyStore.path);
@@ -321,8 +359,9 @@ public final class TestServices {
     }
 
     @Override
-    public void dispose(Client instance) {
-      instance.close();
+    public void dispose(HttpClient instance) {
+      Objects.requireNonNull(instance);
+      // No cleanup required.
     }
   }
 

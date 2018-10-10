@@ -6,7 +6,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,17 +41,17 @@ public final class FixedResponseBodyHandlerTest {
    * Verifies that a {@link FixedResponseBodyHandler} can send a UTF-8 string.
    */
   @Test
-  public void testUtf8() {
-    try (Response response = services.httpGet("/utf8")) {
+  public void testUtf8() throws IOException, InterruptedException {
+    HttpResponse<byte[]> response =
+        services.httpGetBytes("/utf8");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      byte[] responseBytes = response.readEntity(byte[].class);
+    byte[] responseBytes = response.body();
 
-      assertArrayEquals(
-          "utf8Handler".getBytes(UTF_8),
-          responseBytes);
-    }
+    assertArrayEquals(
+        "utf8Handler".getBytes(UTF_8),
+        responseBytes);
   }
 
   /**
@@ -58,16 +59,16 @@ public final class FixedResponseBodyHandlerTest {
    * charset other than UTF-8.
    */
   @Test
-  public void testNotUtf8() {
-    try (Response response = services.httpGet("/utf16")) {
+  public void testNotUtf8() throws IOException, InterruptedException {
+    HttpResponse<byte[]> response =
+        services.httpGetBytes("/utf16");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      byte[] responseBytes = response.readEntity(byte[].class);
+    byte[] responseBytes = response.body();
 
-      assertArrayEquals(
-          "utf16Handler".getBytes(UTF_16),
-          responseBytes);
-    }
+    assertArrayEquals(
+        "utf16Handler".getBytes(UTF_16),
+        responseBytes);
   }
 }

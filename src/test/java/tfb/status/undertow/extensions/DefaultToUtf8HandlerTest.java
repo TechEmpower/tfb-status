@@ -3,12 +3,13 @@ package tfb.status.undertow.extensions;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 
 import com.google.common.net.MediaType;
 import io.undertow.server.handlers.SetHeaderHandler;
-import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -67,13 +68,17 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of text responses that already specify UTF-8 as the charset.
    */
   @Test
-  public void testAlreadyUtf8() {
-    try (Response response = services.httpGet("/utf8")) {
-      assertEquals(OK, response.getStatus());
-      assertMediaType(
-          MediaType.parse("text/plain;charset=utf-8"),
-          response.getHeaderString(CONTENT_TYPE));
-    }
+  public void testAlreadyUtf8() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/utf8");
+
+    assertEquals(OK, response.statusCode());
+
+    assertMediaType(
+        MediaType.parse("text/plain;charset=utf-8"),
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
   }
 
   /**
@@ -82,13 +87,17 @@ public final class DefaultToUtf8HandlerTest {
    * UTF-8.
    */
   @Test
-  public void testOtherCharset() {
-    try (Response response = services.httpGet("/otherCharset")) {
-      assertEquals(OK, response.getStatus());
-      assertMediaType(
-          MediaType.parse("text/plain;charset=us-ascii"),
-          response.getHeaderString(CONTENT_TYPE));
-    }
+  public void testOtherCharset() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/otherCharset");
+
+    assertEquals(OK, response.statusCode());
+
+    assertMediaType(
+        MediaType.parse("text/plain;charset=us-ascii"),
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
   }
 
   /**
@@ -96,13 +105,17 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of text responses that do not specify a charset.
    */
   @Test
-  public void testMissingCharset() {
-    try (Response response = services.httpGet("/missingCharset")) {
-      assertEquals(OK, response.getStatus());
-      assertMediaType(
-          MediaType.parse("text/plain;charset=utf-8"),
-          response.getHeaderString(CONTENT_TYPE));
-    }
+  public void testMissingCharset() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/missingCharset");
+
+    assertEquals(OK, response.statusCode());
+
+    assertMediaType(
+        MediaType.parse("text/plain;charset=utf-8"),
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
   }
 
   /**
@@ -110,13 +123,17 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of non-text responses.
    */
   @Test
-  public void testNonText() {
-    try (Response response = services.httpGet("/nonText")) {
-      assertEquals(OK, response.getStatus());
-      assertMediaType(
-          MediaType.parse("application/octet-stream"),
-          response.getHeaderString(CONTENT_TYPE));
-    }
+  public void testNonText() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/nonText");
+
+    assertEquals(OK, response.statusCode());
+
+    assertMediaType(
+        MediaType.parse("application/octet-stream"),
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
   }
 
   /**
@@ -125,10 +142,14 @@ public final class DefaultToUtf8HandlerTest {
    * all.
    */
   @Test
-  public void testMissingContentType() {
-    try (Response response = services.httpGet("/missingContentType")) {
-      assertEquals(OK, response.getStatus());
-      assertNull(response.getHeaderString(CONTENT_TYPE));
-    }
+  public void testMissingContentType() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/missingContentType");
+
+    assertEquals(OK, response.statusCode());
+
+    assertTrue(response.headers()
+                       .firstValue(CONTENT_TYPE)
+                       .isEmpty());
   }
 }

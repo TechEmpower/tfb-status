@@ -8,8 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static tfb.status.util.MoreAssertions.assertLinesEqual;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.util.List;
-import javax.ws.rs.core.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -35,19 +36,21 @@ public final class AssetsHandlerTest {
    * Verifies that a GET request for an asset file that exists is successful.
    */
   @Test
-  public void testGet() {
-    try (Response response = services.httpGet("/assets/test_asset.txt")) {
+  public void testGet() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/assets/test_asset.txt");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      assertMediaType(
-          PLAIN_TEXT_UTF_8,
-          response.getHeaderString(CONTENT_TYPE));
+    assertMediaType(
+        PLAIN_TEXT_UTF_8,
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
-      assertLinesEqual(
-          List.of("Hello, World!"),
-          response.readEntity(String.class));
-    }
+    assertLinesEqual(
+        List.of("Hello, World!"),
+        response.body());
   }
 
   /**
@@ -55,10 +58,10 @@ public final class AssetsHandlerTest {
    * in {@code 404 Not Found}.
    */
   @Test
-  public void testNotFound() {
-    try (Response response = services.httpGet("/assets/does_not_exist.txt")) {
+  public void testNotFound() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/assets/does_not_exist.txt");
 
-      assertEquals(NOT_FOUND, response.getStatus());
-    }
+    assertEquals(NOT_FOUND, response.statusCode());
   }
 }

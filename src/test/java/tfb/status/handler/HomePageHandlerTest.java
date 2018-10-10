@@ -8,7 +8,8 @@ import static tfb.status.util.MoreAssertions.assertContains;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 import static tfb.status.util.MoreAssertions.assertStartsWith;
 
-import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -34,24 +35,26 @@ public final class HomePageHandlerTest {
    * Verifies that {@code GET /} produces an HTML response.
    */
   @Test
-  public void testGet() {
-    try (Response response = services.httpGet("/")) {
+  public void testGet() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      assertMediaType(
-          HTML_UTF_8,
-          response.getHeaderString(CONTENT_TYPE));
+    assertMediaType(
+        HTML_UTF_8,
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
-      String body = response.readEntity(String.class);
+    String body = response.body();
 
-      assertStartsWith(
-          "<!DOCTYPE html>",
-          body);
+    assertStartsWith(
+        "<!DOCTYPE html>",
+        body);
 
-      assertContains(
-          "This is the test announcement!",
-          body);
-    }
-  }
+    assertContains(
+        "This is the test announcement!",
+        body);
+}
 }

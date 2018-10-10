@@ -6,7 +6,8 @@ import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static tfb.status.util.MoreAssertions.assertMediaType;
 
-import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -33,18 +34,20 @@ public final class UnzipResultsHandlerTest {
    * exists is successful.
    */
   @Test
-  public void testGet() {
-    try (Response response = services.httpGet("/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt")) {
+  public void testGet() throws IOException, InterruptedException {
+    HttpResponse<byte[]> response =
+        services.httpGetBytes("/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt");
 
-      assertEquals(OK, response.getStatus());
+    assertEquals(OK, response.statusCode());
 
-      assertMediaType(
-          PLAIN_TEXT_UTF_8,
-          response.getHeaderString(CONTENT_TYPE));
+    assertMediaType(
+        PLAIN_TEXT_UTF_8,
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
-      byte[] responseBytes = response.readEntity(byte[].class);
+    byte[] responseBytes = response.body();
 
-      assertEquals(33399L, responseBytes.length);
-    }
+    assertEquals(33399L, responseBytes.length);
   }
 }
