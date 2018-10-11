@@ -186,6 +186,10 @@ public final class TestServices {
   public URI httpUri(String path) {
     Objects.requireNonNull(path);
 
+    if (!path.startsWith("/")) {
+      throw new IllegalArgumentException("The path must start with '/'");
+    }
+
     boolean https = config.http.keyStore != null;
     int port = config.http.port;
 
