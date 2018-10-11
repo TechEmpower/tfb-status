@@ -424,7 +424,7 @@ public final class AttributesPageHandler implements HttpHandler {
 
     private static boolean matchesOnAttributes(TestDefinition a,
                                                TestDefinition b) {
-      return (a.name.equalsIgnoreCase(b.name))
+      return a.name.equalsIgnoreCase(b.name)
           || (a.approach.equalsIgnoreCase(b.approach)
               && a.classification.equalsIgnoreCase(b.classification)
               && a.database.equalsIgnoreCase(b.database)

@@ -37,7 +37,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
@@ -291,9 +290,7 @@ public final class HomeResultsReader {
     int frameworksWithCleanSetup = 0;
     int frameworksWithSetupProblems = 0;
 
-    for (Map.Entry<String, String> entry : results.completed.entrySet()) {
-      String framework = entry.getKey();
-      String message = entry.getValue();
+    for (String message : results.completed.values()) {
       if (isCompletedTimestamp(message))
         frameworksWithCleanSetup++;
       else
