@@ -149,8 +149,6 @@ public final class MethodHandlerTest {
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response3.statusCode());
-
-    // FIXME: This assertion fails when we use HTTP/2.
     assertEquals("", response3.body());
 
     HttpResponse<String> response4 =
@@ -255,8 +253,6 @@ public final class MethodHandlerTest {
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response3.statusCode());
-
-    // FIXME: This assertion fails when we use HTTP/2.
     assertEquals("", response3.body());
 
     HttpResponse<String> response4 =

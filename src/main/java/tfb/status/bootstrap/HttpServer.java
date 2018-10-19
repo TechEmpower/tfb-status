@@ -48,20 +48,7 @@ public final class HttpServer {
               /* password= */ config.keyStore.password.toCharArray());
 
       builder.addHttpsListener(config.port, config.host, sslContext);
-
-      //
-      // FIXME: Enable HTTP/2 once Undertow's HTTP/2 HEAD handling is fixed.
-      //
-      // Undertow is supposed to ensure that the response body for HEAD requests
-      // remains empty, and it does so under HTTP 1.x, but it doesn't do so
-      // under HTTP/2.
-      //
-      // Possible explanation:
-      // There is some logic related to HEAD requests in
-      // HttpServerConnection.getSinkConduit that is not present in
-      // Http2ServerConnection.getSinkConduit.
-      //
-      builder.setServerOption(UndertowOptions.ENABLE_HTTP2, false);
+      builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
     }
 
     serverInfo =
