@@ -60,7 +60,7 @@ public final class DiffGeneratorTest {
             /* query= */ null,
             /* update= */ null,
             /* fortune= */ null,
-            /* cached_query= */ null);
+            /* cachedQuery= */ null);
 
     Results results =
         new Results(
