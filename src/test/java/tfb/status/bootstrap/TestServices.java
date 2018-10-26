@@ -42,6 +42,13 @@ import tfb.status.util.MutableTicker;
 
 /**
  * Creates instances of our HTTP handlers and service classes for testing.
+ *
+ * <p>Use {@link #serviceLocator()} to retrieve instances of service classes.
+ * For example, <code>serviceLocator().getService(EmailSender.class)</code>
+ * returns an instance of {@link EmailSender}.
+ *
+ * <p><strong>Important:</strong> Call {@link #shutdown()} once the tests are
+ * complete.
  */
 public final class TestServices {
   private final ApplicationConfig config;
