@@ -13,6 +13,7 @@ import org.glassfish.hk2.api.Factory;
 @Singleton
 public final class StandardObjectMapper implements Factory<ObjectMapper> {
   @Override
+  @Singleton
   public ObjectMapper provide() {
     return new ObjectMapper()
         .registerModule(new GuavaModule())

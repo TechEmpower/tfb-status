@@ -345,6 +345,7 @@ public final class TestServices {
     }
 
     @Override
+    @Singleton
     public HttpClient provide() {
       HttpClient.Builder builder = HttpClient.newBuilder();
 
@@ -379,6 +380,7 @@ public final class TestServices {
     }
 
     @Override
+    @Singleton
     public GreenMail provide() {
       GreenMail mailServer =
           new GreenMail(
