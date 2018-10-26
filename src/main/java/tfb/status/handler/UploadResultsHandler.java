@@ -231,8 +231,8 @@ public final class UploadResultsHandler implements HttpHandler {
       this.objectMapper = Objects.requireNonNull(objectMapper);
     }
 
-    @Nullable
     @Override
+    @Nullable
     String tryReadUuid(Path jsonFile) {
       Objects.requireNonNull(jsonFile);
       UuidOnly parsed;
@@ -290,8 +290,8 @@ public final class UploadResultsHandler implements HttpHandler {
       this.diffGenerator = Objects.requireNonNull(diffGenerator);
     }
 
-    @Nullable
     @Override
+    @Nullable
     String tryReadUuid(Path zipFile) {
       Objects.requireNonNull(zipFile);
       UuidOnly parsed;
