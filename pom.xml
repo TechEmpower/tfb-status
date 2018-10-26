@@ -422,6 +422,18 @@
               -XepAllDisabledChecksAsWarnings
               -->
 
+              <!-- These two opt-in checks don't apply to our project because
+                   we're not running on Java 7 or Android. -->
+              -Xep:Java7ApiChecker:OFF
+              -Xep:AndroidJdkLibsChecker:OFF
+
+              <!-- This check is potentially interesting but it's broken in
+                   Error Prone 2.3.2.  It should be fixed in the next release.
+
+                   TODO: Re-enable this check when we next upgrade Error Prone.
+              -->
+              -Xep:NullableDereference:OFF
+
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
                    Similarly, we disagree that adding a "final" modifier to
