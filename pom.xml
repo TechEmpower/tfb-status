@@ -398,9 +398,9 @@
                    See: https://errorprone.info/
 
                    We use Error Prone as a compiler plugin because that approach
-                   is compatible with Java 10, whereas the normal method of
+                   is compatible with Java 10+, whereas the normal method of
                    using Error Prone (replacing the default compiler completely)
-                   is incompatible with Java 10 right now.
+                   is incompatible with Java 10+ right now.
 
                    As a side effect of using Error Prone this way, we have to
                    declare all the -Xep options within a single <arg>.
