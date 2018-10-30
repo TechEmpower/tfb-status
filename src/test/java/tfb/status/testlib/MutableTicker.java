@@ -1,4 +1,4 @@
-package tfb.status.util;
+package tfb.status.testlib;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;

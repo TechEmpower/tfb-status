@@ -1,7 +1,7 @@
 package tfb.status.service;
 
-import static tfb.status.util.MoreAssertions.assertContains;
-import static tfb.status.util.MoreAssertions.assertHtmlDocument;
+import static tfb.status.testlib.MoreAssertions.assertContains;
+import static tfb.status.testlib.MoreAssertions.assertHtmlDocument;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.bootstrap.TestServices;
+import tfb.status.testlib.TestServices;
 import tfb.status.view.Results;
 import tfb.status.view.Results.RawData;
 import tfb.status.view.Results.SingleWrkExecution;

@@ -2,7 +2,7 @@ package tfb.status.service;
 
 import static tfb.status.config.ResourceMode.CLASS_PATH;
 import static tfb.status.config.ResourceMode.FILE_SYSTEM;
-import static tfb.status.util.MoreAssertions.assertLinesEqual;
+import static tfb.status.testlib.MoreAssertions.assertLinesEqual;
 
 import java.util.List;
 import java.util.Objects;

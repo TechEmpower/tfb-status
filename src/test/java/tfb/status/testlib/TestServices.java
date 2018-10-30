@@ -1,4 +1,4 @@
-package tfb.status.bootstrap;
+package tfb.status.testlib;
 
 import static org.glassfish.hk2.api.InstanceLifecycleEventType.PRE_PRODUCTION;
 
@@ -31,14 +31,14 @@ import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.threeten.extra.MutableClock;
+import tfb.status.bootstrap.HttpServer;
+import tfb.status.bootstrap.Services;
 import tfb.status.config.ApplicationConfig;
 import tfb.status.config.EmailConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.handler.RootHandler;
 import tfb.status.service.EmailSender;
-import tfb.status.util.BasicAuthUtils;
 import tfb.status.util.KeyStores;
-import tfb.status.util.MutableTicker;
 
 /**
  * Creates instances of our HTTP handlers and service classes for testing.

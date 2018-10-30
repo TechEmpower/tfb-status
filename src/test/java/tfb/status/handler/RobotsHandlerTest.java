@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static tfb.status.util.MoreAssertions.assertMediaType;
+import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import crawlercommons.robots.BaseRobotRules;
 import crawlercommons.robots.SimpleRobotRulesParser;
@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.bootstrap.TestServices;
+import tfb.status.testlib.TestServices;
 
 /**
  * Tests for {@link RobotsHandler}.

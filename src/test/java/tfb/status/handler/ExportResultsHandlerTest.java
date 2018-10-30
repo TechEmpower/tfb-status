@@ -9,7 +9,7 @@ import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.bootstrap.TestServices;
+import tfb.status.testlib.TestServices;
 import tfb.status.view.Results;
 
 /**

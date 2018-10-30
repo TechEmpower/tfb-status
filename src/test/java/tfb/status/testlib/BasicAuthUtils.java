@@ -1,4 +1,4 @@
-package tfb.status.util;
+package tfb.status.testlib;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 

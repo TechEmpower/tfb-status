@@ -21,8 +21,8 @@ import javax.annotation.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.bootstrap.TestServices;
-import tfb.status.util.BasicAuthUtils;
+import tfb.status.testlib.BasicAuthUtils;
+import tfb.status.testlib.TestServices;
 
 /**
  * Tests for {@link BasicAuthenticationHandler}.

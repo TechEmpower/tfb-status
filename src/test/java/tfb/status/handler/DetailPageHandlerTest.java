@@ -5,15 +5,15 @@ import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static tfb.status.util.MoreAssertions.assertHtmlDocument;
-import static tfb.status.util.MoreAssertions.assertMediaType;
+import static tfb.status.testlib.MoreAssertions.assertHtmlDocument;
+import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.bootstrap.TestServices;
+import tfb.status.testlib.TestServices;
 
 /**
  * Tests for {@link DetailPageHandler}.

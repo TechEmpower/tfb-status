@@ -4,7 +4,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static tfb.status.util.MoreAssertions.assertMediaType;
+import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import com.google.common.net.MediaType;
 import io.undertow.server.handlers.SetHeaderHandler;
@@ -13,7 +13,7 @@ import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.bootstrap.TestServices;
+import tfb.status.testlib.TestServices;
 
 /**
  * Tests for {@link DefaultToUtf8Handler}.

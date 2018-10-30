@@ -3,9 +3,9 @@ package tfb.status.service;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static tfb.status.util.MoreAssertions.assertInstanceOf;
-import static tfb.status.util.MoreAssertions.assertLinesEqual;
-import static tfb.status.util.MoreAssertions.assertMediaType;
+import static tfb.status.testlib.MoreAssertions.assertInstanceOf;
+import static tfb.status.testlib.MoreAssertions.assertLinesEqual;
+import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -23,7 +23,7 @@ import javax.mail.internet.MimeMultipart;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.bootstrap.TestServices;
+import tfb.status.testlib.TestServices;
 
 /**
  * Tests for {@link EmailSender}.

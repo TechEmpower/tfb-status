@@ -4,8 +4,8 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static tfb.status.util.MoreAssertions.assertContains;
-import static tfb.status.util.MoreAssertions.assertMediaType;
+import static tfb.status.testlib.MoreAssertions.assertContains;
+import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import com.google.common.net.MediaType;
 import java.io.BufferedReader;
@@ -19,7 +19,7 @@ import java.util.StringJoiner;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.bootstrap.TestServices;
+import tfb.status.testlib.TestServices;
 
 /**
  * Tests for {@link HomeUpdatesHandler}.
