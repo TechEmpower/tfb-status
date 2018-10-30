@@ -67,7 +67,9 @@ public final class DownloadResultsHandlerTest {
 
     Results results;
 
-    try (var zip = new ZipInputStream(new ByteArrayInputStream(responseBytes))) {
+    try (var bais = new ByteArrayInputStream(responseBytes);
+         var zip = new ZipInputStream(bais)) {
+
       ZipEntry entry;
       do entry = zip.getNextEntry();
       while (entry != null && !entry.getName().endsWith("/results.json"));
