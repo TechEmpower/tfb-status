@@ -223,7 +223,7 @@ public final class MediaTypeHandlerTest {
    */
   @Test
   public void testUnusableHandlerRejected() {
-    MediaTypeHandler handler = new MediaTypeHandler();
+    var handler = new MediaTypeHandler();
     handler.addMediaType("text/*", exchange -> {});
 
     assertThrows(

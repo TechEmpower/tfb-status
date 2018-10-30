@@ -41,7 +41,7 @@ public final class DiffGeneratorTest {
     String framework = "not_a_real_framework";
     String expectedRps = "789";
 
-    SingleWrkExecution execution =
+    var execution =
         new SingleWrkExecution(
             /* totalRequests= */ 789,
             /* latencyAvg= */ null,
@@ -52,7 +52,7 @@ public final class DiffGeneratorTest {
             /* read= */ 0,
             /* connect= */ 0);
 
-    RawData rawData =
+    var rawData =
         new RawData(
             /* json= */ ImmutableListMultimap.of(framework, execution),
             /* plaintext= */ null,
@@ -62,7 +62,7 @@ public final class DiffGeneratorTest {
             /* fortune= */ null,
             /* cachedQuery= */ null);
 
-    Results results =
+    var results =
         new Results(
             /* uuid= */ null,
             /* name= */null,

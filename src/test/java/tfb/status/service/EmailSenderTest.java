@@ -155,7 +155,7 @@ public final class EmailSenderTest {
       } else if (!(object instanceof Point)) {
         return false;
       } else {
-        Point that = (Point) object;
+        var that = (Point) object;
         return this.x == that.x
             && this.y == that.y;
       }

@@ -472,7 +472,7 @@ public final class HomeResultsReader {
       }
     }
 
-    Set<String> frameworksWithSetupIssues = new HashSet<>();
+    var frameworksWithSetupIssues = new HashSet<String>();
 
     results.completed.forEach(
         (String framework, String message) -> {
@@ -584,7 +584,7 @@ public final class HomeResultsReader {
       if (!(object instanceof ViewCacheKey))
         return false;
 
-      ViewCacheKey that = (ViewCacheKey) object;
+      var that = (ViewCacheKey) object;
       return this.file.equals(that.file)
           && this.lastModifiedTime.equals(that.lastModifiedTime);
     }

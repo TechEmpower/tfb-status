@@ -200,7 +200,7 @@ public final class TestServices {
     boolean https = config.http.keyStore != null;
     int port = config.http.port;
 
-    StringBuilder uri = new StringBuilder();
+    var uri = new StringBuilder();
 
     uri.append("http");
     if (https) {
@@ -385,7 +385,7 @@ public final class TestServices {
     @Override
     @Singleton
     public GreenMail provide() {
-      GreenMail mailServer =
+      var mailServer =
           new GreenMail(
               new ServerSetup(
                   /* port= */ config.port,

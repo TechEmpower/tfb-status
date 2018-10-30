@@ -228,7 +228,7 @@ public final class Authenticator {
       if (!(object instanceof IdAsPrincipal))
         return false;
 
-      IdAsPrincipal that = (IdAsPrincipal) object;
+      var that = (IdAsPrincipal) object;
       return this.accountId.equals(that.accountId);
     }
 
