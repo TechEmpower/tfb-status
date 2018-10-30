@@ -117,9 +117,7 @@ public final class BasicAuthenticationHandlerTest {
 
     HttpResponse<String> response =
         services.httpClient().send(
-            HttpRequest.newBuilder(uri)
-                       .GET()
-                       .build(),
+            HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(UNAUTHORIZED, response.statusCode());
@@ -148,7 +146,6 @@ public final class BasicAuthenticationHandlerTest {
         services.httpClient().send(
             HttpRequest.newBuilder(uri)
                        .header(AUTHORIZATION, invalidCredentials)
-                       .GET()
                        .build(),
             HttpResponse.BodyHandlers.ofString());
 
@@ -178,7 +175,6 @@ public final class BasicAuthenticationHandlerTest {
         services.httpClient().send(
             HttpRequest.newBuilder(uri)
                        .header(AUTHORIZATION, validCredentials)
-                       .GET()
                        .build(),
             HttpResponse.BodyHandlers.ofString());
 

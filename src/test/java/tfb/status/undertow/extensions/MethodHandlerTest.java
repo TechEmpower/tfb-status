@@ -73,9 +73,7 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response1 =
         services.httpClient().send(
-            HttpRequest.newBuilder(uri)
-                       .GET()
-                       .build(),
+            HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response1.statusCode());
@@ -123,9 +121,7 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response1 =
         services.httpClient().send(
-            HttpRequest.newBuilder(uri)
-                       .GET()
-                       .build(),
+            HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response1.statusCode());
@@ -175,9 +171,7 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response1 =
         services.httpClient().send(
-            HttpRequest.newBuilder(uri)
-                       .GET()
-                       .build(),
+            HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response1.statusCode());
@@ -226,9 +220,7 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response1 =
         services.httpClient().send(
-            HttpRequest.newBuilder(uri)
-                       .GET()
-                       .build(),
+            HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response1.statusCode());

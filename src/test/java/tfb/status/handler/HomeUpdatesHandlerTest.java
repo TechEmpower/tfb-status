@@ -49,9 +49,7 @@ public final class HomeUpdatesHandlerTest {
 
     HttpResponse<InputStream> response =
         services.httpClient().send(
-            HttpRequest.newBuilder(uri)
-                       .GET()
-                       .build(),
+            HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofInputStream());
 
     try (var is = response.body();

@@ -238,9 +238,7 @@ public final class TestServices {
     URI uri = httpUri(path);
 
     return httpClient().send(
-        HttpRequest.newBuilder(uri)
-                   .GET()
-                   .build(),
+        HttpRequest.newBuilder(uri).build(),
         HttpResponse.BodyHandlers.ofString());
   }
 
@@ -263,9 +261,7 @@ public final class TestServices {
     URI uri = httpUri(path);
 
     return httpClient().send(
-        HttpRequest.newBuilder(uri)
-                   .GET()
-                   .build(),
+        HttpRequest.newBuilder(uri).build(),
         HttpResponse.BodyHandlers.ofByteArray());
   }
 
