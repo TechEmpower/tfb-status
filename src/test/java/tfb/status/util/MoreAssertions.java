@@ -108,7 +108,7 @@ public final class MoreAssertions {
 
     if (actual == null)
       throw new AssertionError(
-          "expected string to contain \""
+          "expected string to start with \""
               + expected
               + "\", actual value was null");
 
@@ -138,5 +138,17 @@ public final class MoreAssertions {
     assertIterableEquals(
         expected,
         actual.lines().collect(toList()));
+  }
+
+  /**
+   * Asserts that the provided string is an HTML document.
+   */
+  public static void assertHtmlDocument(@Nullable String actual) {
+    if (actual == null)
+      throw new AssertionError(
+          "expected string to be an HTML document, actual value was null");
+
+    // TODO: Use an HTML parser?
+    assertStartsWith("<!DOCTYPE html>", actual);
   }
 }

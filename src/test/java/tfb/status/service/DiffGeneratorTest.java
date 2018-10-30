@@ -1,7 +1,7 @@
 package tfb.status.service;
 
 import static tfb.status.util.MoreAssertions.assertContains;
-import static tfb.status.util.MoreAssertions.assertStartsWith;
+import static tfb.status.util.MoreAssertions.assertHtmlDocument;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -81,7 +81,7 @@ public final class DiffGeneratorTest {
 
     String html = diffGenerator.diff(results, results);
 
-    assertStartsWith("<!DOCTYPE html>", html);
+    assertHtmlDocument(html);
     assertContains(framework, html);
     assertContains(expectedRps, html);
   }

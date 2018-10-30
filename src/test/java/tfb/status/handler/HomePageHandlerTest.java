@@ -5,8 +5,8 @@ import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static tfb.status.util.MoreAssertions.assertContains;
+import static tfb.status.util.MoreAssertions.assertHtmlDocument;
 import static tfb.status.util.MoreAssertions.assertMediaType;
-import static tfb.status.util.MoreAssertions.assertStartsWith;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
@@ -49,9 +49,7 @@ public final class HomePageHandlerTest {
 
     String body = response.body();
 
-    assertStartsWith(
-        "<!DOCTYPE html>",
-        body);
+    assertHtmlDocument(body);
 
     assertContains(
         "This is the test announcement!",

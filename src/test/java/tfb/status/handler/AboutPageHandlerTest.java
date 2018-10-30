@@ -4,8 +4,8 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static tfb.status.util.MoreAssertions.assertHtmlDocument;
 import static tfb.status.util.MoreAssertions.assertMediaType;
-import static tfb.status.util.MoreAssertions.assertStartsWith;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
@@ -46,8 +46,6 @@ public final class AboutPageHandlerTest {
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
 
-    assertStartsWith(
-        "<!DOCTYPE html>",
-        response.body());
+    assertHtmlDocument(response.body());
   }
 }
