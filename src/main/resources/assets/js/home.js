@@ -26,11 +26,6 @@
 
   function handleSseMessage(event) {
     const html = event.data;
-    if (html === "ping") {
-      // This is the server sending bogus content in order to prevent the
-      // connection from being idle for too long.
-      return;
-    }
     const fragment = createFragment(html);
     const newRow = fragment.querySelector("tr");
     if (newRow === null) {
