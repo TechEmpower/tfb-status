@@ -372,6 +372,7 @@
           </execution>
         </executions>
         <configuration>
+          <failOnNoGitDirectory>false</failOnNoGitDirectory>
           <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>
           <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
