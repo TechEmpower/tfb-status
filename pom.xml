@@ -324,7 +324,7 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
         <configuration>
-          <rulesUri>file://${basedir}/config/maven-version-rules.xml</rulesUri>
+          <rulesUri>file://${basedir}/maven-version-rules.xml</rulesUri>
         </configuration>
       </plugin>
 
