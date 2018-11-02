@@ -52,7 +52,7 @@ public final class HttpServerConfig {
     this.keyStore = keyStore;
   }
 
-  private static final String DEFAULT_HOST = "::";
+  private static final String DEFAULT_HOST = "0.0.0.0";
   private static final int DEFAULT_PORT = 80;
 
   /**
