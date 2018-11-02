@@ -36,7 +36,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.FileStoreConfig;
+import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.DefaultToUtf8Handler;
 import tfb.status.undertow.extensions.MethodHandler;
@@ -52,10 +52,10 @@ public final class UnzipResultsHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public UnzipResultsHandler(FileStoreConfig fileStoreConfig,
+  public UnzipResultsHandler(FileStore fileStore,
                              MustacheRenderer mustacheRenderer) {
 
-    HttpHandler handler = new CoreHandler(fileStoreConfig, mustacheRenderer);
+    HttpHandler handler = new CoreHandler(fileStore, mustacheRenderer);
 
     handler = new DefaultToUtf8Handler(handler);
     handler = new MethodHandler().addMethod(GET, handler);
@@ -71,14 +71,14 @@ public final class UnzipResultsHandler implements HttpHandler {
   }
 
   private static final class CoreHandler implements HttpHandler {
-    private final Path resultsDirectory;
+    private final FileStore fileStore;
     private final MustacheRenderer mustacheRenderer;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    CoreHandler(FileStoreConfig fileStoreConfig,
+    CoreHandler(FileStore fileStore,
                 MustacheRenderer mustacheRenderer) {
 
-      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
+      this.fileStore = Objects.requireNonNull(fileStore);
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
     }
 
@@ -95,20 +95,23 @@ public final class UnzipResultsHandler implements HttpHandler {
 
       Path requestedFile;
       try {
-        requestedFile = resultsDirectory.resolve(relativePath);
+        requestedFile = fileStore.resultsDirectory().resolve(relativePath);
       } catch (InvalidPathException ignored) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }
 
       if (!requestedFile.equals(requestedFile.normalize())
-          || !requestedFile.startsWith(resultsDirectory)) {
+          || !requestedFile.startsWith(fileStore.resultsDirectory())) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }
 
-      Path zipFileAndEntry = resultsDirectory.relativize(requestedFile);
-      Path zipFile = resultsDirectory.resolve(zipFileAndEntry.getName(0));
+      Path zipFileAndEntry =
+          fileStore.resultsDirectory().relativize(requestedFile);
+
+      Path zipFile =
+          fileStore.resultsDirectory().resolve(zipFileAndEntry.getName(0));
 
       if (!Files.isRegularFile(zipFile)
           || !MoreFiles.getFileExtension(zipFile).equals("zip")) {

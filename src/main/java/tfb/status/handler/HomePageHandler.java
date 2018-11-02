@@ -12,12 +12,11 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import tfb.status.config.FileStoreConfig;
+import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.MethodHandler;
@@ -34,11 +33,11 @@ public final class HomePageHandler implements HttpHandler {
   @Inject
   public HomePageHandler(MustacheRenderer mustacheRenderer,
                          HomeResultsReader homeResultsReader,
-                         FileStoreConfig fileStoreConfig) {
+                         FileStore fileStore) {
 
     HttpHandler handler = new CoreHandler(mustacheRenderer,
                                           homeResultsReader,
-                                          fileStoreConfig);
+                                          fileStore);
 
     handler = new MethodHandler().addMethod(GET, handler);
     handler = new DisableCacheHandler(handler);
@@ -54,15 +53,15 @@ public final class HomePageHandler implements HttpHandler {
   private static final class CoreHandler implements HttpHandler {
     private final MustacheRenderer mustacheRenderer;
     private final HomeResultsReader homeResultsReader;
-    private final Path announcementFile;
+    private final FileStore fileStore;
 
     CoreHandler(MustacheRenderer mustacheRenderer,
                 HomeResultsReader homeResultsReader,
-                FileStoreConfig fileStoreConfig) {
+                FileStore fileStore) {
 
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
       this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
-      this.announcementFile = Path.of(fileStoreConfig.announcementFile);
+      this.fileStore = Objects.requireNonNull(fileStore);
     }
 
     @Override
@@ -89,12 +88,15 @@ public final class HomePageHandler implements HttpHandler {
                           Math.min(results.size(), skip + limit));
 
       String announcement = null;
-      if (Files.isRegularFile(announcementFile)) {
-        List<String> lines = Files.readAllLines(announcementFile, UTF_8);
+
+      if (Files.isRegularFile(fileStore.announcementFile())) {
+        List<String> lines =
+            Files.readAllLines(fileStore.announcementFile(), UTF_8);
+
         announcement = String.join("\n", lines).strip();
-        if (announcement.isEmpty()) {
+
+        if (announcement.isEmpty())
           announcement = null;
-        }
       }
 
       var homePageView =

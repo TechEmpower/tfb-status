@@ -22,8 +22,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.FileStoreConfig;
 import tfb.status.service.Authenticator;
+import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.AttributeLookup;
 
@@ -35,11 +35,11 @@ public final class SaveAttributesHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public SaveAttributesHandler(FileStoreConfig fileStoreConfig,
+  public SaveAttributesHandler(FileStore fileStore,
                                Authenticator authenticator,
                                ObjectMapper objectMapper) {
 
-    HttpHandler handler = new CoreHandler(fileStoreConfig, objectMapper);
+    HttpHandler handler = new CoreHandler(fileStore, objectMapper);
 
     handler = new MethodHandler().addMethod(POST, handler);
     handler = new DisableCacheHandler(handler);
@@ -56,13 +56,11 @@ public final class SaveAttributesHandler implements HttpHandler {
 
   private static final class CoreHandler implements HttpHandler {
     private final ObjectMapper objectMapper;
-    private final Path attributesDirectory;
+    private final FileStore fileStore;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    CoreHandler(FileStoreConfig fileStoreConfig,
-                ObjectMapper objectMapper) {
-
-      this.attributesDirectory =  Path.of(fileStoreConfig.attributesDirectory);
+    CoreHandler(FileStore fileStore, ObjectMapper objectMapper) {
+      this.fileStore = Objects.requireNonNull(fileStore);
       this.objectMapper = Objects.requireNonNull(objectMapper);
     }
 
@@ -103,8 +101,11 @@ public final class SaveAttributesHandler implements HttpHandler {
         return;
       }
 
-      Path lookupFile = attributesDirectory.resolve("tfb_lookup.json");
+      Path lookupFile =
+          fileStore.attributesDirectory().resolve("tfb_lookup.json");
+
       MoreFiles.createParentDirectories(lookupFile);
+
       Files.move(
           /* source= */ tempFile,
           /* target= */ lookupFile,

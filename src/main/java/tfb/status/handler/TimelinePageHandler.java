@@ -25,7 +25,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.FileStoreConfig;
+import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.OtherFiles;
@@ -44,11 +44,11 @@ public final class TimelinePageHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public TimelinePageHandler(FileStoreConfig fileStoreConfig,
+  public TimelinePageHandler(FileStore fileStore,
                              MustacheRenderer mustacheRenderer,
                              ObjectMapper objectMapper) {
 
-    HttpHandler handler = new CoreHandler(fileStoreConfig,
+    HttpHandler handler = new CoreHandler(fileStore,
                                           mustacheRenderer,
                                           objectMapper);
 
@@ -66,16 +66,16 @@ public final class TimelinePageHandler implements HttpHandler {
   private static final class CoreHandler implements HttpHandler {
     private final MustacheRenderer mustacheRenderer;
     private final ObjectMapper objectMapper;
-    private final Path resultsDirectory;
+    private final FileStore fileStore;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    CoreHandler(FileStoreConfig fileStoreConfig,
+    CoreHandler(FileStore fileStore,
                 MustacheRenderer mustacheRenderer,
                 ObjectMapper objectMapper) {
 
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
       this.objectMapper = Objects.requireNonNull(objectMapper);
-      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
+      this.fileStore = Objects.requireNonNull(fileStore);
     }
 
     @Override
@@ -100,7 +100,8 @@ public final class TimelinePageHandler implements HttpHandler {
       var missingTestTypes = new HashSet<String>(Results.TEST_TYPES);
       var dataPoints = new ArrayList<DataPointView>();
 
-      for (Path zipFile : OtherFiles.listFiles(resultsDirectory, "*.zip")) {
+      for (Path zipFile : OtherFiles.listFiles(fileStore.resultsDirectory(),
+                                               "*.zip")) {
         Results results;
         try {
           results =

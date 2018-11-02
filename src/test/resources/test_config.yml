@@ -20,7 +20,4 @@ mustache:
   root: mustache
 
 fileStore:
-  resultsDirectory: src/test/resources/test_results
-  accountsDirectory: src/test/resources/test_accounts
-  attributesDirectory: src/test/resources/test_attributes
-  announcementFile: src/test/resources/announcement.txt
+  root: src/test/resources/test_managed_files

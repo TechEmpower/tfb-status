@@ -26,7 +26,6 @@ import javax.inject.Singleton;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.FileStoreConfig;
 import tfb.status.undertow.extensions.BasicAuthenticationHandler;
 
 /**
@@ -34,13 +33,12 @@ import tfb.status.undertow.extensions.BasicAuthenticationHandler;
  */
 @Singleton
 public final class Authenticator {
-  // TODO: Use a real database.
-  private final Path accountsDirectory;
+  private final FileStore fileStore;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
-  public Authenticator(FileStoreConfig fileStoreConfig) {
-    this.accountsDirectory = Path.of(fileStoreConfig.accountsDirectory);
+  public Authenticator(FileStore fileStore) {
+    this.fileStore = Objects.requireNonNull(fileStore);
   }
 
   /**
@@ -315,7 +313,7 @@ public final class Authenticator {
    */
   @Nullable
   private Path getPasswordFile(String accountId) {
-    return resolveChildPath(accountsDirectory, accountId);
+    return resolveChildPath(fileStore.accountsDirectory(), accountId);
   }
 
   @Nullable

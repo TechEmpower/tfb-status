@@ -82,7 +82,7 @@ public final class ApplicationConfig {
     this.fileStore =
         Objects.requireNonNullElseGet(
             fileStore,
-            () -> new FileStoreConfig(null, null, null, null));
+            () -> new FileStoreConfig(null));
 
     this.email = email;
   }
@@ -144,12 +144,8 @@ public final class ApplicationConfig {
     }
 
     verifyDirectory(
-        "fileStore.resultsDirectory",
-        config.fileStore.resultsDirectory);
-
-    verifyDirectory(
-        "fileStore.accountsDirectory",
-        config.fileStore.accountsDirectory);
+        "fileStore.root",
+        config.fileStore.root);
 
     verifyHostAndPort(
         "http.host",

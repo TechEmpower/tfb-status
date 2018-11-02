@@ -32,6 +32,7 @@ import tfb.status.handler.UploadResultsHandler;
 import tfb.status.service.Authenticator;
 import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
+import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.service.StandardObjectMapper;
@@ -97,6 +98,7 @@ public final class Services {
         bindAsContract(HomeResultsReader.class).in(Singleton.class);
         bindAsContract(EmailSender.class).in(Singleton.class);
         bindAsContract(DiffGenerator.class).in(Singleton.class);
+        bindAsContract(FileStore.class).in(Singleton.class);
 
         bindFactory(StandardObjectMapper.class, Singleton.class)
             .to(ObjectMapper.class)

@@ -40,8 +40,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.FileStoreConfig;
 import tfb.status.service.Authenticator;
+import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
@@ -62,12 +62,12 @@ public final class AttributesPageHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public AttributesPageHandler(FileStoreConfig fileStoreConfig,
+  public AttributesPageHandler(FileStore fileStore,
                                MustacheRenderer mustacheRenderer,
                                Authenticator authenticator,
                                ObjectMapper objectMapper) {
 
-    HttpHandler handler = new CoreHandler(fileStoreConfig,
+    HttpHandler handler = new CoreHandler(fileStore,
                                           mustacheRenderer,
                                           objectMapper);
 
@@ -84,18 +84,16 @@ public final class AttributesPageHandler implements HttpHandler {
   }
 
   private static final class CoreHandler implements HttpHandler {
-    private final Path resultsDirectory;
-    private final Path attributesDirectory;
+    private final FileStore fileStore;
     private final ObjectMapper objectMapper;
     private final MustacheRenderer mustacheRenderer;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    CoreHandler(FileStoreConfig fileStoreConfig,
+    CoreHandler(FileStore fileStore,
                 MustacheRenderer mustacheRenderer,
                 ObjectMapper objectMapper) {
 
-      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
-      this.attributesDirectory = Path.of(fileStoreConfig.attributesDirectory);
+      this.fileStore = Objects.requireNonNull(fileStore);
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
       this.objectMapper = Objects.requireNonNull(objectMapper);
     }
@@ -103,7 +101,8 @@ public final class AttributesPageHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
 
-      Path lookupFile = attributesDirectory.resolve("tfb_lookup.json");
+      Path lookupFile =
+          fileStore.attributesDirectory().resolve("tfb_lookup.json");
 
       if (!Files.isRegularFile(lookupFile)) {
         exchange.setStatusCode(SERVICE_UNAVAILABLE);
@@ -120,14 +119,14 @@ public final class AttributesPageHandler implements HttpHandler {
 
       Path requestedFile;
       try {
-        requestedFile = resultsDirectory.resolve(zipFileName);
+        requestedFile = fileStore.resultsDirectory().resolve(zipFileName);
       } catch (InvalidPathException ignored) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }
 
       if (!requestedFile.equals(requestedFile.normalize())
-          || !requestedFile.startsWith(resultsDirectory)) {
+          || !requestedFile.startsWith(fileStore.resultsDirectory())) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }

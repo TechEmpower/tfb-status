@@ -50,7 +50,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.FileStoreConfig;
 import tfb.status.util.OtherFiles;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.HomePageView.ResultsGitView;
@@ -88,10 +87,11 @@ public final class HomeResultsReader {
   @GuardedBy("this") @Nullable private ScheduledFuture<?> purgeTask;
 
   @Inject
-  public HomeResultsReader(FileStoreConfig fileStoreConfig,
+  public HomeResultsReader(FileStore fileStore,
                            ObjectMapper objectMapper,
                            Clock clock) {
-    this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
+
+    this.resultsDirectory = fileStore.resultsDirectory();
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.clock = Objects.requireNonNull(clock);
   }

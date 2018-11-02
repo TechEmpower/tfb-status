@@ -14,10 +14,7 @@ http:
 #  root: src/main/resources/mustache
 
 #fileStore:
-#  resultsDirectory: results
-#  accountsDirectory: accounts
-#  attributesDirectory: attributes
-#  announcementFile: announcement.txt
+#  root: managed_files
 
 #email:
 #  host: mail.techempower.com

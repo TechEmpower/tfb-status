@@ -7,10 +7,9 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
-import java.nio.file.Path;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import tfb.status.config.FileStoreConfig;
+import tfb.status.service.FileStore;
 
 /**
  * Handles requests to download full, raw, previously-uploaded results files.
@@ -20,9 +19,8 @@ public final class DownloadResultsHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public DownloadResultsHandler(FileStoreConfig fileStoreConfig) {
-    Path resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
-    var resourceManager = new PathResourceManager(resultsDirectory);
+  public DownloadResultsHandler(FileStore fileStore) {
+    var resourceManager = new PathResourceManager(fileStore.resultsDirectory());
 
     HttpHandler handler = new ResourceHandler(resourceManager);
     handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");

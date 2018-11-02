@@ -8,73 +8,28 @@ import javax.annotation.Nullable;
 import javax.inject.Singleton;
 
 /**
- * The configuration for miscellaneous files stored by this application.
+ * The configuration for miscellaneous files managed by this application.
  */
 @Immutable
 @Singleton
 public final class FileStoreConfig {
   /**
-   * The root directory for uploaded results files.
+   * The root directory for miscellaneous files managed by this application.
    */
-  public final String resultsDirectory;
-
-  /**
-   * The root directory for user account files.
-   */
-  public final String accountsDirectory;
-
-  /**
-   * The root directory for tfb_lookup.json files.
-   */
-  public final String attributesDirectory;
-
-  /**
-   * The text file containing an announcement to be displayed on the home page.
-   */
-  public final String announcementFile;
+  public final String root;
 
   @JsonCreator
   public FileStoreConfig(
 
       @Nullable
-      @JsonProperty(value = "resultsDirectory", required = false)
-      String resultsDirectory,
+      @JsonProperty(value = "root", required = false)
+      String root) {
 
-      @Nullable
-      @JsonProperty(value = "accountsDirectory", required = false)
-      String accountsDirectory,
-
-      @Nullable
-      @JsonProperty(value = "attributesDirectory", required = false)
-      String attributesDirectory,
-
-      @Nullable
-      @JsonProperty(value = "announcementFile", required = false)
-      String announcementFile) {
-
-    this.resultsDirectory =
+    this.root =
         Objects.requireNonNullElse(
-            resultsDirectory,
-            DEFAULT_RESULTS_DIRECTORY);
-
-    this.accountsDirectory =
-        Objects.requireNonNullElse(
-            accountsDirectory,
-            DEFAULT_ACCOUNTS_DIRECTORY);
-
-    this.attributesDirectory =
-        Objects.requireNonNullElse(
-            attributesDirectory,
-            DEFAULT_ATTRIBUTE_LOOKUP_DIRECTORY);
-
-    this.announcementFile =
-        Objects.requireNonNullElse(
-            announcementFile,
-            DEFAULT_ANNOUNCEMENT_FILE);
+            root,
+            DEFAULT_ROOT);
   }
 
-  private static final String DEFAULT_RESULTS_DIRECTORY = "results";
-  private static final String DEFAULT_ACCOUNTS_DIRECTORY = "accounts";
-  private static final String DEFAULT_ATTRIBUTE_LOOKUP_DIRECTORY = "attributes";
-  private static final String DEFAULT_ANNOUNCEMENT_FILE = "announcement.txt";
+  private static final String DEFAULT_ROOT = "managed_files";
 }

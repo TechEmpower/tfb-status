@@ -20,7 +20,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.FileStoreConfig;
+import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
@@ -34,10 +34,10 @@ public final class ExportResultsHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public ExportResultsHandler(FileStoreConfig fileStoreConfig,
+  public ExportResultsHandler(FileStore fileStore,
                               ObjectMapper objectMapper) {
 
-    HttpHandler handler = new CoreHandler(fileStoreConfig, objectMapper);
+    HttpHandler handler = new CoreHandler(fileStore, objectMapper);
 
     handler = new MethodHandler().addMethod(GET, handler);
     handler = new DisableCacheHandler(handler);
@@ -52,12 +52,12 @@ public final class ExportResultsHandler implements HttpHandler {
 
   private static final class CoreHandler implements HttpHandler {
     private final ObjectMapper objectMapper;
-    private final Path resultsDirectory;
+    private final FileStore fileStore;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    CoreHandler(FileStoreConfig fileStoreConfig, ObjectMapper objectMapper) {
+    CoreHandler(FileStore fileStore, ObjectMapper objectMapper) {
       this.objectMapper = Objects.requireNonNull(objectMapper);
-      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
+      this.fileStore = Objects.requireNonNull(fileStore);
     }
 
     @Override
@@ -68,14 +68,14 @@ public final class ExportResultsHandler implements HttpHandler {
 
       Path requestedFile;
       try {
-        requestedFile = resultsDirectory.resolve(relativePath);
+        requestedFile = fileStore.resultsDirectory().resolve(relativePath);
       } catch (InvalidPathException ignored) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }
 
       if (!requestedFile.equals(requestedFile.normalize())
-          || !requestedFile.startsWith(resultsDirectory)) {
+          || !requestedFile.startsWith(fileStore.resultsDirectory())) {
         exchange.setStatusCode(NOT_FOUND);
         return;
       }
@@ -103,7 +103,9 @@ public final class ExportResultsHandler implements HttpHandler {
                 ZipFiles.readZipEntry(
                     /* zipFile= */ requestedFile,
                     /* entryPath= */ "results.json",
-                    /* entryReader= */ inputStream -> objectMapper.readValue(inputStream, Results.class));
+                    /* entryReader= */ inputStream ->
+                                           objectMapper.readValue(inputStream,
+                                                                  Results.class));
 
           } catch (IOException e) {
             logger.warn("Error reading zip file {}", requestedFile, e);

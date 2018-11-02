@@ -40,10 +40,10 @@ import javax.inject.Singleton;
 import javax.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.FileStoreConfig;
 import tfb.status.service.Authenticator;
 import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
+import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.OtherFiles;
@@ -63,7 +63,7 @@ public final class UploadResultsHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public UploadResultsHandler(FileStoreConfig fileStoreConfig,
+  public UploadResultsHandler(FileStore fileStore,
                               Authenticator authenticator,
                               ObjectMapper objectMapper,
                               EmailSender emailSender,
@@ -73,7 +73,7 @@ public final class UploadResultsHandler implements HttpHandler {
 
     var jsonHandler =
         new JsonHandler(
-            /* fileStoreConfig= */ fileStoreConfig,
+            /* fileStore= */ fileStore,
             /* authenticator= */ authenticator,
             /* homeUpdates=*/ homeUpdates,
             /* clock= */ clock,
@@ -81,7 +81,7 @@ public final class UploadResultsHandler implements HttpHandler {
 
     var zipHandler =
         new ZipHandler(
-            /* fileStoreConfig= */ fileStoreConfig,
+            /* fileStore= */ fileStore,
             /* authenticator= */ authenticator,
             /* homeUpdates=*/ homeUpdates,
             /* clock= */ clock,
@@ -111,17 +111,17 @@ public final class UploadResultsHandler implements HttpHandler {
   private abstract static class BaseHandler implements HttpHandler {
     private final HomeUpdatesHandler homeUpdates;
     private final Clock clock;
-    private final Path resultsDirectory;
+    private final FileStore fileStore;
     private final String fileExtension;
 
-    BaseHandler(FileStoreConfig fileStoreConfig,
+    BaseHandler(FileStore fileStore,
                 Authenticator authenticator,
                 HomeUpdatesHandler homeUpdates,
                 Clock clock,
                 String fileExtension) {
       this.homeUpdates = Objects.requireNonNull(homeUpdates);
       this.clock = Objects.requireNonNull(clock);
-      this.resultsDirectory = Path.of(fileStoreConfig.resultsDirectory);
+      this.fileStore = Objects.requireNonNull(fileStore);
       this.fileExtension = Objects.requireNonNull(fileExtension);
     }
 
@@ -149,7 +149,9 @@ public final class UploadResultsHandler implements HttpHandler {
       }
 
       Path permanentFile = destinationForIncomingFile(tempFile);
+
       MoreFiles.createParentDirectories(permanentFile);
+
       Files.move(
           /* source= */ tempFile,
           /* target= */ permanentFile,
@@ -167,7 +169,7 @@ public final class UploadResultsHandler implements HttpHandler {
       if (incomingUuid == null)
         return newResultsFile();
 
-      for (Path existingFile : OtherFiles.listFiles(resultsDirectory,
+      for (Path existingFile : OtherFiles.listFiles(fileStore.resultsDirectory(),
                                                     "*." + fileExtension)) {
 
         String existingUuid = tryReadUuid(existingFile);
@@ -187,7 +189,7 @@ public final class UploadResultsHandler implements HttpHandler {
       LocalDateTime now = LocalDateTime.now(clock);
       String timestamp = formatter.format(now);
 
-      return resultsDirectory.resolve(
+      return fileStore.resultsDirectory().resolve(
           "results." + timestamp + "." + fileExtension);
     }
 
@@ -215,14 +217,14 @@ public final class UploadResultsHandler implements HttpHandler {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ObjectMapper objectMapper;
 
-    JsonHandler(FileStoreConfig fileStoreConfig,
+    JsonHandler(FileStore fileStore,
                 Authenticator authenticator,
                 HomeUpdatesHandler homeUpdates,
                 Clock clock,
                 ObjectMapper objectMapper) {
 
       super(
-          /* fileStoreConfig= */ fileStoreConfig,
+          /* fileStore= */ fileStore,
           /* authenticator= */ authenticator,
           /* homeUpdates= */ homeUpdates,
           /* clock= */ clock,
@@ -269,7 +271,7 @@ public final class UploadResultsHandler implements HttpHandler {
     private final DiffGenerator diffGenerator;
     private final Clock clock;
 
-    ZipHandler(FileStoreConfig fileStoreConfig,
+    ZipHandler(FileStore fileStore,
                Authenticator authenticator,
                HomeUpdatesHandler homeUpdates,
                Clock clock,
@@ -278,7 +280,7 @@ public final class UploadResultsHandler implements HttpHandler {
                DiffGenerator diffGenerator) {
 
       super(
-          /* fileStoreConfig= */ fileStoreConfig,
+          /* fileStore= */ fileStore,
           /* authenticator= */ authenticator,
           /* homeUpdates= */ homeUpdates,
           /* clock= */ clock,
