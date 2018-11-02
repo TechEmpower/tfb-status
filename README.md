@@ -9,7 +9,13 @@ To build:
 mvn clean package
 ```
 
-To run:
+To run with a default configuration:
+
+```
+java -jar target/tfb-status.jar
+```
+
+To run with a custom configuration:
 
 ```
 java -jar target/tfb-status.jar path/to/config.yml

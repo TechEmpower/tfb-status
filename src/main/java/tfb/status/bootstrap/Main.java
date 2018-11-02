@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 import org.glassfish.hk2.api.ServiceLocator;
 import tfb.status.config.ApplicationConfig;
+import tfb.status.config.ApplicationConfig.InvalidConfigFileException;
 
 /**
  * Provides the {@code main} method for starting this application.
@@ -19,16 +20,18 @@ public final class Main {
   /**
    * Starts this application.
    *
-   * @param args the command line arguments, which must consist of a single
-   *        argument, and that one argument must specify the path to this
-   *        application's YAML configuration file
+   * <p>If there are zero arguments, then a {@linkplain
+   * ApplicationConfig#defaultConfig() default configuration} will be used.  If
+   * there is one argument, then that argument specifies the path to this
+   * application's {@linkplain ApplicationConfig#readYamlFile(String) YAML
+   * configuration file}.
+   *
+   * @param args the command line arguments
+   * @throws InvalidConfigFileException if there is one argument and the YAML
+   *         configuration file specified by that argument is invalid
+   * @throws IllegalArgumentException if there are two or more arguments
    */
   public static void main(String[] args) {
-    if (args.length != 1)
-      throw new IllegalArgumentException(
-          "Expected one argument: the path to the YAML configuration file "
-              + "(received " + args.length + " arguments instead)");
-
     // TODO: Consider using UTC.
     ZoneId zone = ZoneId.of("America/Los_Angeles");
     Clock clock = Clock.system(zone);
@@ -42,8 +45,20 @@ public final class Main {
     Locale.setDefault(Locale.ROOT);
     TimeZone.setDefault(TimeZone.getTimeZone(zone));
 
-    ApplicationConfig config =
-        ApplicationConfig.readYamlFile(/* yamlFilePath= */ args[0]);
+    ApplicationConfig config;
+    switch (args.length) {
+      case 0:
+        config = ApplicationConfig.defaultConfig();
+        break;
+      case 1:
+        config = ApplicationConfig.readYamlFile(/* yamlFilePath= */ args[0]);
+        break;
+      default:
+        throw new IllegalArgumentException(
+            "Expected zero or one arguments, received "
+                + args.length
+                + " arguments instead");
+    }
 
     ServiceLocator serviceLocator =
         Services.newServiceLocator(config, clock, ticker);

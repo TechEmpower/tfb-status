@@ -23,8 +23,9 @@ import javax.mail.internet.InternetAddress;
  * The parent configuration object for this entire application, containing all
  * other component-specific configuration objects.
  *
- * <p>This class provides factory methods for reading configuration from a YAML
- * file.  See {@link #readYamlFile(String)} and {@link
+ * <p>This class provides factory methods for obtaining a default configuration
+ * and for reading a configuration from a YAML file.  See {@link
+ * #defaultConfig()}, {@link #readYamlFile(String)}, and {@link
  * #readYamlBytes(ByteSource)}.
  */
 @Immutable
@@ -85,6 +86,13 @@ public final class ApplicationConfig {
             () -> new FileStoreConfig(null));
 
     this.email = email;
+  }
+
+  /**
+   * Returns a default configuration for this application.
+   */
+  public static ApplicationConfig defaultConfig() {
+    return new ApplicationConfig(null, null, null, null, null);
   }
 
   /**
