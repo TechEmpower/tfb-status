@@ -1,6 +1,11 @@
-http:
-#  host: "::"
-  port: 8080
+# This "{}" is required when the rest of the file is empty or commented out.
+# Without this, the YAML parser throws an error because it expects the top-level
+# object in this file to be map-like.
+{}
+
+#http:
+#  host: "0.0.0.0"
+#  port: 80
 #  keyStore:
 #    path: src/test/resources/localhost.jks
 #    password: password
