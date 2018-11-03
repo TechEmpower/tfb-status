@@ -3,6 +3,16 @@ Benchmarks](https://github.com/TechEmpower/FrameworkBenchmarks) (TFB).  TFB may
 be configured to upload its results files to some other server between tests and
 after a full run, and this application this is meant to be that other server.
 
+## Running with Docker
+
+To build and run with [Docker Compose](https://docs.docker.com/compose/):
+
+```
+docker-compose up --build
+```
+
+## Running without Docker
+
 To build:
 
 ```

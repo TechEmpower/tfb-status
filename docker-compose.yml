@@ -1,0 +1,8 @@
+version: "3"
+services:
+  tfbstatus:
+    build: .
+    ports:
+      - "80:80"
+    volumes:
+      - ./managed_files:/tfbstatus/managed_files
