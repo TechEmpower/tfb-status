@@ -24,6 +24,7 @@
     <caffeine.version>2.6.2</caffeine.version>
     <crawler-commons.version>0.10</crawler-commons.version>
     <error-prone.version>2.3.2</error-prone.version>
+    <extra-enforcer-rules.version>1.0-beta-9</extra-enforcer-rules.version>
     <git-commit-id-plugin.version>2.2.5</git-commit-id-plugin.version>
     <greenmail.version>1.5.8</greenmail.version>
     <guava.version>26.0-jre</guava.version>
@@ -256,6 +257,13 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>${maven-enforcer-plugin.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>extra-enforcer-rules</artifactId>
+              <version>${extra-enforcer-rules.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -296,28 +304,6 @@
     </pluginManagement>
 
     <plugins>
-      <!-- Helps to ensure that the build environment has a recent enough
-           version of Maven that is compatible with this project. -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <configuration>
-          <rules>
-            <requireMavenVersion>
-              <version>${oldestCompatibleMavenVersion}</version>
-            </requireMavenVersion>
-          </rules>
-        </configuration>
-        <executions>
-          <execution>
-            <id>enforce-versions</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
       <!-- Make the output of "mvn versions display-dependency-updates" more
            useful by ignoring versions that we don't want to use. -->
       <plugin>
@@ -364,6 +350,12 @@
       <plugin>
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
+        <configuration>
+          <failOnNoGitDirectory>false</failOnNoGitDirectory>
+          <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
+          <generateGitPropertiesFile>true</generateGitPropertiesFile>
+          <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+        </configuration>
         <executions>
           <execution>
             <goals>
@@ -371,12 +363,6 @@
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <failOnNoGitDirectory>false</failOnNoGitDirectory>
-          <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
-          <generateGitPropertiesFile>true</generateGitPropertiesFile>
-          <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
-        </configuration>
       </plugin>
 
       <!-- We enable warnings from javac that are disabled by default, and we
@@ -476,6 +462,39 @@
             </path>
           </annotationProcessorPaths>
         </configuration>
+      </plugin>
+
+      <!-- Enable some additional validation of the build environment and our
+           dependencies. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <configuration>
+          <rules>
+            <requireMavenVersion>
+              <version>${oldestCompatibleMavenVersion}</version>
+            </requireMavenVersion>
+            <banDuplicateClasses>
+              <findAllDuplicates>true</findAllDuplicates>
+            </banDuplicateClasses>
+            <bannedDependencies>
+              <excludes>
+                <!-- We use JUnit 5, so we cannot allow JUnit 4 as a dependency.
+                     Having both on our classpath at once would be unacceptably
+                     confusing. -->
+                <exclude>junit:junit</exclude>
+              </excludes>
+            </bannedDependencies>
+          </rules>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- We package this application into a fat jar file containing both our
