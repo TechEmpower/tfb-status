@@ -489,7 +489,11 @@
         </configuration>
         <executions>
           <execution>
-            <phase>compile</phase>
+            <!-- Delay execution until our <scope>test</scope> dependencies are
+                 resolved.  In earlier phases, the <bannedDependencies> rule
+                 might trigger unhelpful warnings like this: "Could not find
+                 some:library:jar:1.0:test at null". -->
+            <phase>test-compile</phase>
             <goals>
               <goal>enforce</goal>
             </goals>
