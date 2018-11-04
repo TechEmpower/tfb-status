@@ -23,6 +23,7 @@ import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -46,7 +47,6 @@ import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
-import tfb.status.util.OtherFiles;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 import tfb.status.view.Results.UuidOnly;
@@ -119,6 +119,7 @@ public final class UploadResultsHandler implements HttpHandler {
                 HomeUpdatesHandler homeUpdates,
                 Clock clock,
                 String fileExtension) {
+
       this.homeUpdates = Objects.requireNonNull(homeUpdates);
       this.clock = Objects.requireNonNull(clock);
       this.fileStore = Objects.requireNonNull(fileStore);
@@ -164,18 +165,23 @@ public final class UploadResultsHandler implements HttpHandler {
       runPostUploadActions(permanentFile);
     }
 
-    private Path destinationForIncomingFile(Path incomingFile) throws IOException {
+    private Path destinationForIncomingFile(Path incomingFile)
+        throws IOException {
+
       String incomingUuid = tryReadUuid(incomingFile);
       if (incomingUuid == null)
         return newResultsFile();
 
-      for (Path existingFile : OtherFiles.listFiles(fileStore.resultsDirectory(),
-                                                    "*." + fileExtension)) {
+      try (DirectoryStream<Path> filesOfSameType =
+               Files.newDirectoryStream(fileStore.resultsDirectory(),
+                                        "*." + fileExtension)) {
 
-        String existingUuid = tryReadUuid(existingFile);
-        if (incomingUuid.equals(existingUuid)) {
+        for (Path existingFile : filesOfSameType) {
+          String existingUuid = tryReadUuid(existingFile);
+
           // TODO: Also check if the file was updated more recently than ours?
-          return existingFile;
+          if (incomingUuid.equals(existingUuid))
+            return existingFile;
         }
       }
 
@@ -266,6 +272,7 @@ public final class UploadResultsHandler implements HttpHandler {
 
   private static final class ZipHandler extends BaseHandler {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final FileStore fileStore;
     private final ObjectMapper objectMapper;
     private final EmailSender emailSender;
     private final DiffGenerator diffGenerator;
@@ -286,6 +293,7 @@ public final class UploadResultsHandler implements HttpHandler {
           /* clock= */ clock,
           /* fileExtension= */ "zip");
 
+      this.fileStore = Objects.requireNonNull(fileStore);
       this.objectMapper = Objects.requireNonNull(objectMapper);
       this.clock = Objects.requireNonNull(clock);
       this.emailSender = Objects.requireNonNull(emailSender);
@@ -470,37 +478,28 @@ public final class UploadResultsHandler implements HttpHandler {
     private Path findPreviousZipFile(Path newZipFile) {
       Path previousZipFile = null;
       FileTime previousTime = null;
-      Path directory = newZipFile.getParent();
-      if (directory == null)
-        return null;
 
-      ImmutableList<Path> allZipFiles;
-      try {
-        allZipFiles = OtherFiles.listFiles(directory, "*.zip");
+      try (DirectoryStream<Path> zipFiles =
+               Files.newDirectoryStream(fileStore.resultsDirectory(),
+                                        "*.zip")) {
+
+        for (Path file : zipFiles) {
+          if (file.equals(newZipFile))
+            continue;
+
+          FileTime time = Files.getLastModifiedTime(file);
+
+          if (previousZipFile == null || time.compareTo(previousTime) > 0) {
+            previousZipFile = file;
+            previousTime = time;
+          }
+        }
+
       } catch (IOException e) {
         logger.warn(
             "Error finding predecessor of new zip file {}",
             newZipFile, e);
         return null;
-      }
-
-      for (Path file : allZipFiles) {
-        if (file.equals(newZipFile))
-          continue;
-
-        FileTime time;
-        try {
-          time = Files.getLastModifiedTime(file);
-        } catch (IOException e) {
-          logger.warn(
-              "Error finding predecessor of new zip file {}",
-              newZipFile, e);
-          return null;
-        }
-        if (previousZipFile == null || time.compareTo(previousTime) > 0) {
-          previousZipFile = file;
-          previousTime = time;
-        }
       }
 
       return previousZipFile;

@@ -15,6 +15,8 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.MethodHandler;
-import tfb.status.util.OtherFiles;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 import tfb.status.view.TimelinePageView;
@@ -100,53 +101,57 @@ public final class TimelinePageHandler implements HttpHandler {
       var missingTestTypes = new HashSet<String>(Results.TEST_TYPES);
       var dataPoints = new ArrayList<DataPointView>();
 
-      for (Path zipFile : OtherFiles.listFiles(fileStore.resultsDirectory(),
-                                               "*.zip")) {
-        Results results;
-        try {
-          results =
-              ZipFiles.readZipEntry(
-                  /* zipFile= */ zipFile,
-                  /* entryPath= */ "results.json",
-                  /* entryReader= */ inputStream ->
-                                         objectMapper.readValue(inputStream,
-                                                                Results.class));
-        } catch (IOException e) {
-          logger.warn(
-              "Ignoring results.zip file {} whose results.json file "
-                  + "could not be parsed",
-              zipFile, e);
-          continue;
-        }
+      try (DirectoryStream<Path> zipFiles =
+               Files.newDirectoryStream(fileStore.resultsDirectory(),
+                                        "*.zip")) {
 
-        if (results == null) {
-          logger.warn(
-              "Ignoring results.zip file {} that did not contain a "
-                  + "results.json file",
-              zipFile);
-          continue;
-        }
+        for (Path zipFile : zipFiles) {
+          Results results;
+          try {
+            results =
+                ZipFiles.readZipEntry(
+                    /* zipFile= */ zipFile,
+                    /* entryPath= */ "results.json",
+                    /* entryReader= */ inputStream ->
+                                           objectMapper.readValue(inputStream,
+                                                                  Results.class));
+          } catch (IOException e) {
+            logger.warn(
+                "Ignoring results.zip file {} whose results.json file "
+                    + "could not be parsed",
+                zipFile, e);
+            continue;
+          }
 
-        if (results.startTime == null)
-          // We could try to read the timestamp from somewhere else, but it's
-          // not worth the added complexity.
-          continue;
+          if (results == null) {
+            logger.warn(
+                "Ignoring results.zip file {} that did not contain a "
+                    + "results.json file",
+                zipFile);
+            continue;
+          }
 
-        allFrameworks.addAll(results.frameworks);
+          if (results.startTime == null)
+            // We could try to read the timestamp from somewhere else, but it's
+            // not worth the added complexity.
+            continue;
 
-        missingTestTypes.removeIf(
-            testType -> results.rps(/* testType= */ testType,
-                                    /* framework= */ selectedFramework)
-                        != 0);
+          allFrameworks.addAll(results.frameworks);
 
-        double rps = results.rps(/* testType= */ selectedTestType,
-                                 /* framework= */ selectedFramework);
+          missingTestTypes.removeIf(
+              testType -> results.rps(/* testType= */ testType,
+                                      /* framework= */ selectedFramework)
+                          != 0);
 
-        if (rps != 0) {
-          dataPoints.add(
-              new DataPointView(
-                  /* time= */ results.startTime,
-                  /* rps= */ rps));
+          double rps = results.rps(/* testType= */ selectedTestType,
+              /* framework= */ selectedFramework);
+
+          if (rps != 0) {
+            dataPoints.add(
+                new DataPointView(
+                    /* time= */ results.startTime,
+                    /* rps= */ rps));
+          }
         }
       }
 

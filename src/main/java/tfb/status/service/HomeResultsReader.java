@@ -21,6 +21,7 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -50,7 +51,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.util.OtherFiles;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.HomePageView.ResultsGitView;
 import tfb.status.view.HomePageView.ResultsJsonView;
@@ -64,7 +64,7 @@ import tfb.status.view.Results;
  */
 @Singleton
 public final class HomeResultsReader {
-  private final Path resultsDirectory;
+  private final FileStore fileStore;
   private final ObjectMapper objectMapper;
   private final Clock clock;
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -91,7 +91,7 @@ public final class HomeResultsReader {
                            ObjectMapper objectMapper,
                            Clock clock) {
 
-    this.resultsDirectory = fileStore.resultsDirectory();
+    this.fileStore = Objects.requireNonNull(fileStore);
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.clock = Objects.requireNonNull(clock);
   }
@@ -248,9 +248,14 @@ public final class HomeResultsReader {
 
   private Stream<ResultsJsonView> viewAllJsonFiles() throws IOException {
     Stream.Builder<ViewCacheKey> keys = Stream.builder();
-    for (Path file : OtherFiles.listFiles(resultsDirectory, "*.json")) {
-      keys.add(new ViewCacheKey(file));
+
+    try (DirectoryStream<Path> jsonFiles =
+             Files.newDirectoryStream(fileStore.resultsDirectory(), "*.json")) {
+
+      for (Path file : jsonFiles)
+        keys.add(new ViewCacheKey(file));
     }
+
     return keys.build()
                .map(key -> jsonCache.get(key))
                .filter(view -> view != null);
@@ -258,9 +263,14 @@ public final class HomeResultsReader {
 
   private Stream<ResultsZipView> viewAllZipFiles() throws IOException {
     Stream.Builder<ViewCacheKey> keys = Stream.builder();
-    for (Path file : OtherFiles.listFiles(resultsDirectory, "*.zip")) {
-      keys.add(new ViewCacheKey(file));
+
+    try (DirectoryStream<Path> zipFiles =
+             Files.newDirectoryStream(fileStore.resultsDirectory(), "*.zip")) {
+
+      for (Path file : zipFiles)
+        keys.add(new ViewCacheKey(file));
     }
+
     return keys.build()
                .map(key -> zipCache.get(key))
                .filter(view -> view != null);
@@ -397,7 +407,7 @@ public final class HomeResultsReader {
             ? null
             : formatDuration(estimatedRemainingDuration);
 
-    Path relativePath = resultsDirectory.relativize(jsonFile);
+    Path relativePath = fileStore.resultsDirectory().relativize(jsonFile);
     String fileName = Joiner.on('/').join(relativePath);
 
     ResultsGitView git;
@@ -455,7 +465,7 @@ public final class HomeResultsReader {
       return null;
 
     String uuid = results.uuid;
-    Path relativePath = resultsDirectory.relativize(zipFile);
+    Path relativePath = fileStore.resultsDirectory().relativize(zipFile);
     String fileName = Joiner.on('/').join(relativePath);
 
     var failures = new ArrayList<Failure>();
