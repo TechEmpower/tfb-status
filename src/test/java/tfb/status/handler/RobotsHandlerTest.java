@@ -36,8 +36,8 @@ public final class RobotsHandlerTest {
   }
 
   /**
-   * Verifies that {@code GET /robots.txt} produces a response that disallows
-   * all robots.
+   * Verifies that {@code GET /robots.txt} produces a response with the expected
+   * paths allowed and disallowed.
    */
   @Test
   public void testDisallowAllRobots() throws IOException, InterruptedException {
