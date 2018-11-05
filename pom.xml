@@ -17,9 +17,7 @@
     <oldestCompatibleMavenVersion>3.5.0</oldestCompatibleMavenVersion>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <apiguardian.version>1.0.0</apiguardian.version>
     <bcrypt.version>0.4</bcrypt.version>
     <caffeine.version>2.6.2</caffeine.version>
     <crawler-commons.version>0.10</crawler-commons.version>
@@ -50,7 +48,7 @@
     <maven-site-plugin.version>3.7.1</maven-site-plugin.version>
     <maven-surefire-plugin.version>2.22.0</maven-surefire-plugin.version>
     <mustache.version>0.9.5</mustache.version>
-    <nullaway.version>0.5.5</nullaway.version>
+    <nullaway.version>0.6.0</nullaway.version>
     <slf4j.version>1.7.25</slf4j.version>
     <threeten-extra.version>1.4</threeten-extra.version>
     <undertow.version>2.0.15.Final</undertow.version>
@@ -177,12 +175,6 @@
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
       <version>${junit-jupiter.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apiguardian</groupId>
-      <artifactId>apiguardian-api</artifactId>
-      <version>${apiguardian.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -335,10 +327,6 @@
             <!-- Without the junit-jupiter-engine dependency, our tests wouldn't
                  run at all. -->
             <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter-engine</ignoredUnusedDeclaredDependency>
-
-            <!-- Without the apiguardian-api dependency, we would get warnings
-                 about missing class files when compiling our tests. -->
-            <ignoredUnusedDeclaredDependency>org.apiguardian:apiguardian-api</ignoredUnusedDeclaredDependency>
 
           </ignoredUnusedDeclaredDependencies>
         </configuration>
