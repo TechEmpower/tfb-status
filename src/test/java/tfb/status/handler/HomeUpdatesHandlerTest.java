@@ -15,7 +15,14 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
 import java.util.StringJoiner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,11 +47,12 @@ public final class HomeUpdatesHandlerTest {
   }
 
   /**
-   * Verifies that {@code GET /updates} produces an event stream that broadcasts
-   * updates sent via {@link HomeUpdatesHandler#sendUpdate(String)}.
+   * Verifies that an SSE client can use {@code GET /updates} to listen for
+   * updates to the home page, which are broadcast via {@link
+   * HomeUpdatesHandler#sendUpdate(String)}.
    */
   @Test
-  public void testGet() throws IOException, InterruptedException {
+  public void testSseGet() throws IOException, InterruptedException {
     URI uri = services.httpUri("/updates");
 
     HttpResponse<InputStream> response =
@@ -64,11 +72,9 @@ public final class HomeUpdatesHandlerTest {
                   .firstValue(CONTENT_TYPE)
                   .orElse(null));
 
-      //
       // Undertow adds our incoming SSE connection to its internal collection,
       // but it does so *after* it responds to our HTTP request.  We need to
       // wait for that collection to be updated before we proceed.
-      //
       Thread.sleep(100);
 
       updates.sendUpdate("03da6340-d56c-4584-9ef2-702106203809");
@@ -85,6 +91,54 @@ public final class HomeUpdatesHandlerTest {
       assertContains(
           "03da6340-d56c-4584-9ef2-702106203809",
           message.toString());
+    }
+  }
+
+  /**
+   * Verifies that a web socket client can use {@code GET /updates} to listen
+   * for updates to the home page, which are broadcast via {@link
+   * HomeUpdatesHandler#sendUpdate(String)}.
+   */
+  @Test
+  public void testWebSocketGet() throws IOException,
+                                        InterruptedException,
+                                        ExecutionException,
+                                        TimeoutException {
+
+    URI uri = services.webSocketUri("/updates");
+
+    var future = new CompletableFuture<String>();
+
+    var listener =
+        new WebSocket.Listener() {
+          @Override
+          @Nullable
+          public CompletionStage<?> onText(WebSocket webSocket,
+                                           CharSequence data,
+                                           boolean last) {
+            future.complete(data.toString());
+            return null;
+          }
+        };
+
+    WebSocket webSocket =
+        services.httpClient()
+                .newWebSocketBuilder()
+                .buildAsync(uri, listener)
+                .get(1, TimeUnit.SECONDS);
+
+    try {
+
+      updates.sendUpdate("03da6340-d56c-4584-9ef2-702106203809");
+
+      String message = future.get(1, TimeUnit.SECONDS);
+
+      assertContains(
+          "03da6340-d56c-4584-9ef2-702106203809",
+          message);
+
+    } finally {
+      webSocket.abort();
     }
   }
 }

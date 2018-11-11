@@ -191,25 +191,38 @@ public final class TestServices {
    * @param path the path part of the URI, such as "/robots.txt"
    */
   public URI httpUri(String path) {
-    Objects.requireNonNull(path);
+    return createUri(path, /* isWebSocket= */ false);
+  }
 
-    if (!path.startsWith("/")) {
+  /**
+   * Produces a URI that points at the local web socket server.
+   *
+   * @param path the path part of the URI, such as "/robots.txt"
+   */
+  public URI webSocketUri(String path) {
+    return createUri(path, /* isWebSocket= */ true);
+  }
+
+  private URI createUri(String path, boolean isWebSocket) {
+    if (!path.startsWith("/"))
       throw new IllegalArgumentException("The path must start with '/'");
-    }
 
-    boolean https = config.http.keyStore != null;
+    boolean encrypted = config.http.keyStore != null;
     int port = config.http.port;
+
+    boolean nonStandardPort =
+        (encrypted && port != 443) || (!encrypted && port != 80);
 
     var uri = new StringBuilder();
 
-    uri.append("http");
-    if (https) {
-      uri.append("s");
-    }
+    if (isWebSocket)
+      uri.append(encrypted ? "wss" : "ws");
+    else
+      uri.append(encrypted ? "https" : "http");
 
     uri.append("://localhost");
 
-    if ((https && port != 443) || (!https && port != 80)) {
+    if (nonStandardPort) {
       uri.append(":");
       uri.append(port);
     }

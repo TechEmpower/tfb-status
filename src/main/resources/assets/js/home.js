@@ -5,6 +5,7 @@
 (function() {
 
   let updateEventSource;
+  let updateWebSocket;
 
   function enableSse() {
     updateEventSource = new EventSource("/updates");
@@ -18,6 +19,20 @@
     }
   }
 
+  function enableWebSockets() {
+    const protocol = (location.protocol === "https:") ? "wss:" : "ws:";
+    const uri = protocol + "//" + location.host + "/updates";
+    updateWebSocket = new WebSocket(uri);
+    updateWebSocket.onmessage = handleWebSocketMessage;
+    updateWebSocket.onclose = handleWebSocketClose;
+  }
+
+  function disableWebSockets() {
+    if (updateWebSocket !== undefined) {
+      updateWebSocket.close();
+    }
+  }
+
   function createFragment(html) {
     const template = document.createElement("template");
     template.innerHTML = html;
@@ -26,6 +41,15 @@
 
   function handleSseMessage(event) {
     const html = event.data;
+    handleIncomingHtml(html);
+  }
+
+  function handleWebSocketMessage(event) {
+    const html = event.data;
+    handleIncomingHtml(html);
+  }
+
+  function handleIncomingHtml(html) {
     const fragment = createFragment(html);
     const newRow = fragment.querySelector("tr");
     if (newRow === null) {
@@ -62,7 +86,18 @@
     }
   }
 
-  window.addEventListener("load", enableSse);
-  window.addEventListener("beforeunload", disableSse);
+  function handleWebSocketClose(event) {
+    setTimeout(enableWebSockets, 30000);
+  }
+
+  // TODO: After testing this for a while, probably move to web sockets only.
+  const useWebSockets = location.search.includes("useWebSockets");
+  if (useWebSockets) {
+    window.addEventListener("load", enableWebSockets);
+    window.addEventListener("beforeunload", disableWebSockets);
+  } else {
+    window.addEventListener("load", enableSse);
+    window.addEventListener("beforeunload", disableSse);
+  }
 
 })();
