@@ -119,11 +119,21 @@ public final class RootHandler implements HttpHandler {
 
   private static HttpHandler newAccessLoggingHandler(HttpHandler handler) {
     Objects.requireNonNull(handler);
+
     Logger logger = LoggerFactory.getLogger("http");
+
+    String formatString =
+        String.join(
+            " :: ",
+            "%{REQUEST_LINE}",
+            "%{RESPONSE_CODE} %{RESPONSE_REASON_PHRASE}",
+            "%{BYTES_SENT} bytes",
+            "%{RESPONSE_TIME} ms");
+
     return new AccessLogHandler(
         /* next= */ handler,
         /* accessLogReceiver= */ message -> logger.info(message),
-        /* formatString= */ "common",
+        /* formatString= */ formatString,
         /* classLoader= */ Thread.currentThread().getContextClassLoader());
   }
 }

@@ -35,6 +35,7 @@ public final class HttpServer {
 
     Undertow.Builder builder = Undertow.builder();
     builder.setHandler(rootHandler);
+    builder.setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true);
 
     if (config.keyStore == null)
       builder.addHttpListener(config.port, config.host);
