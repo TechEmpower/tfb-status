@@ -18,7 +18,19 @@ public final class FixedResponseBodyHandler implements HttpHandler {
   private final ByteBuffer buffer;
 
   /**
-   * Constructs a new handler that writes a string in UTF-8.
+   * Constructs a new HTTP handler that writes the provided raw bytes to all
+   * responses.
+   *
+   * @param responseBody the body of all responses from this handler
+   */
+  public FixedResponseBodyHandler(byte[] responseBody) {
+    Objects.requireNonNull(responseBody);
+    this.buffer = ByteBuffer.wrap(responseBody.clone()).asReadOnlyBuffer();
+  }
+
+  /**
+   * Constructs a new HTTP handler that writes the provided string, using UTF-8
+   * encoding, to all responses.
    *
    * @param responseBody the body of all responses from this handler
    */
@@ -27,7 +39,8 @@ public final class FixedResponseBodyHandler implements HttpHandler {
   }
 
   /**
-   * Constructs a new handler that writes a string in the provided charset.
+   * Constructs a new HTTP handler that writes the provided string, using the
+   * provided charset for encoding, to all responses.
    *
    * @param responseBody the body of all responses from this handler
    * @param charset the charset for encoding the string to bytes
@@ -35,8 +48,7 @@ public final class FixedResponseBodyHandler implements HttpHandler {
   public FixedResponseBodyHandler(String responseBody, Charset charset) {
     Objects.requireNonNull(responseBody);
     Objects.requireNonNull(charset);
-    byte[] bytes = responseBody.getBytes(charset);
-    this.buffer = ByteBuffer.wrap(bytes).asReadOnlyBuffer();
+    this.buffer = charset.encode(responseBody).asReadOnlyBuffer();
   }
 
   @Override

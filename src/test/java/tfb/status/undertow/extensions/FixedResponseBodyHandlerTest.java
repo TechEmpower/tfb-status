@@ -22,14 +22,6 @@ public final class FixedResponseBodyHandlerTest {
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-
-    services.addExactPath(
-        "/utf8",
-        new FixedResponseBodyHandler("utf8Handler"));
-
-    services.addExactPath(
-        "/utf16",
-        new FixedResponseBodyHandler("utf16Handler", UTF_16));
   }
 
   @AfterAll
@@ -38,20 +30,43 @@ public final class FixedResponseBodyHandlerTest {
   }
 
   /**
+   * Verifies that a {@link FixedResponseBodyHandler} can send a byte array.
+   */
+  @Test
+  public void testBytes() throws IOException, InterruptedException {
+    byte[] expectedBytes = "hello".getBytes(UTF_8);
+
+    services.addExactPath(
+        "/bytes",
+        new FixedResponseBodyHandler(expectedBytes));
+
+    HttpResponse<byte[]> response = services.httpGetBytes("/bytes");
+
+    assertEquals(OK, response.statusCode());
+
+    assertArrayEquals(
+        expectedBytes,
+        response.body());
+  }
+
+  /**
    * Verifies that a {@link FixedResponseBodyHandler} can send a UTF-8 string.
    */
   @Test
   public void testUtf8() throws IOException, InterruptedException {
-    HttpResponse<byte[]> response =
-        services.httpGetBytes("/utf8");
+    String expectedString = "hi";
+
+    services.addExactPath(
+        "/utf8",
+        new FixedResponseBodyHandler(expectedString));
+
+    HttpResponse<byte[]> response = services.httpGetBytes("/utf8");
 
     assertEquals(OK, response.statusCode());
 
-    byte[] responseBytes = response.body();
-
     assertArrayEquals(
-        "utf8Handler".getBytes(UTF_8),
-        responseBytes);
+        expectedString.getBytes(UTF_8),
+        response.body());
   }
 
   /**
@@ -60,15 +75,40 @@ public final class FixedResponseBodyHandlerTest {
    */
   @Test
   public void testNotUtf8() throws IOException, InterruptedException {
-    HttpResponse<byte[]> response =
-        services.httpGetBytes("/utf16");
+    String expectedString = "hey";
+
+    services.addExactPath(
+        "/utf16",
+        new FixedResponseBodyHandler(expectedString, UTF_16));
+
+    HttpResponse<byte[]> response = services.httpGetBytes("/utf16");
 
     assertEquals(OK, response.statusCode());
 
-    byte[] responseBytes = response.body();
-
     assertArrayEquals(
-        "utf16Handler".getBytes(UTF_16),
-        responseBytes);
+        expectedString.getBytes(UTF_16),
+        response.body());
+  }
+
+  /**
+   * Verifies that multiple requests to the same {@link
+   * FixedResponseBodyHandler} each have the same response.
+   */
+  @Test
+  public void testMultipleRequests() throws IOException, InterruptedException {
+    String expectedString = "greetings";
+
+    services.addExactPath(
+        "/multiple",
+        new FixedResponseBodyHandler(expectedString));
+
+    HttpResponse<String> response1 = services.httpGetString("/multiple");
+    HttpResponse<String> response2 = services.httpGetString("/multiple");
+
+    assertEquals(OK, response1.statusCode());
+    assertEquals(OK, response2.statusCode());
+
+    assertEquals(expectedString, response1.body());
+    assertEquals(expectedString, response2.body());
   }
 }
