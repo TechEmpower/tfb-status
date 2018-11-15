@@ -36,11 +36,11 @@ public final class RobotsHandlerTest {
   }
 
   /**
-   * Verifies that {@code GET /robots.txt} produces a response with the expected
-   * paths allowed and disallowed.
+   * Verifies that {@code GET /robots.txt} produces a response that defines the
+   * expected rules for robots.
    */
   @Test
-  public void testDisallowAllRobots() throws IOException, InterruptedException {
+  public void testRobotRules() throws IOException, InterruptedException {
     HttpResponse<byte[]> response =
         services.httpGetBytes("/robots.txt");
 

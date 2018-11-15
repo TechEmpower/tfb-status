@@ -65,7 +65,7 @@ public final class DiffGeneratorTest {
     var results =
         new Results(
             /* uuid= */ null,
-            /* name= */null,
+            /* name= */ null,
             /* environmentDescription= */ null,
             /* startTime= */ null,
             /* completionTime= */ null,
