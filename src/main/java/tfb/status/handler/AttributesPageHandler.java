@@ -27,6 +27,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -138,8 +139,8 @@ public final class AttributesPageHandler implements HttpHandler {
       }
 
       AttributeLookup lookup;
-      try {
-        lookup = objectMapper.readValue(lookupFile.toFile(), AttributeLookup.class);
+      try (InputStream inputStream = Files.newInputStream(lookupFile)) {
+        lookup = objectMapper.readValue(inputStream, AttributeLookup.class);
       } catch (IOException e) {
         logger.warn("Exception thrown while reading tfb_lookup.json", e);
         exchange.setStatusCode(BAD_REQUEST);

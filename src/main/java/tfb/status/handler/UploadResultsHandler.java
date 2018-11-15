@@ -21,6 +21,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.DirectoryStream;
@@ -244,8 +245,8 @@ public final class UploadResultsHandler implements HttpHandler {
     String tryReadUuid(Path jsonFile) {
       Objects.requireNonNull(jsonFile);
       UuidOnly parsed;
-      try {
-        parsed = objectMapper.readValue(jsonFile.toFile(), UuidOnly.class);
+      try (InputStream inputStream = Files.newInputStream(jsonFile)) {
+        parsed = objectMapper.readValue(inputStream, UuidOnly.class);
       } catch (IOException ignored) {
         return null;
       }
@@ -255,8 +256,8 @@ public final class UploadResultsHandler implements HttpHandler {
     @Override
     boolean isValidNewFile(Path newJsonFile) {
       Objects.requireNonNull(newJsonFile);
-      try {
-        objectMapper.readValue(newJsonFile.toFile(), Results.class);
+      try (InputStream inputStream = Files.newInputStream(newJsonFile)) {
+        objectMapper.readValue(inputStream, Results.class);
         return true;
       } catch (IOException e) {
         logger.warn("Exception validating json file {}", newJsonFile, e);

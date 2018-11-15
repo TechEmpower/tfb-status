@@ -12,6 +12,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -88,8 +89,8 @@ public final class ExportResultsHandler implements HttpHandler {
       Results results;
       switch (MoreFiles.getFileExtension(requestedFile)) {
         case "json":
-          try {
-            results = objectMapper.readValue(requestedFile.toFile(), Results.class);
+          try (InputStream inputStream = Files.newInputStream(requestedFile)) {
+            results = objectMapper.readValue(inputStream, Results.class);
           } catch (IOException e) {
             logger.warn("Exception reading json file {}", requestedFile, e);
             exchange.setStatusCode(BAD_REQUEST);

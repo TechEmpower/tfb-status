@@ -15,6 +15,7 @@ import io.undertow.server.handlers.form.EagerFormParsingHandler;
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -92,8 +93,8 @@ public final class SaveAttributesHandler implements HttpHandler {
       }
 
       Path tempFile = Files.createTempFile("TFB_lookup_upload", ".json");
-      try {
-        objectMapper.writeValue(tempFile.toFile(), lookup);
+      try (OutputStream outputStream = Files.newOutputStream(tempFile)) {
+        objectMapper.writeValue(outputStream, lookup);
       } catch (IOException e) {
         logger.warn("Unable to save tfb_lookup.json", e);
         Files.delete(tempFile);

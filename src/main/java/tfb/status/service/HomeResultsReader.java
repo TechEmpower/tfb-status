@@ -20,6 +20,7 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -281,8 +282,8 @@ public final class HomeResultsReader {
     Objects.requireNonNull(jsonFile);
 
     Results results;
-    try {
-      results = objectMapper.readValue(jsonFile.toFile(), Results.class);
+    try (InputStream inputStream = Files.newInputStream(jsonFile)) {
+      results = objectMapper.readValue(inputStream, Results.class);
     } catch (IOException e) {
       logger.warn("Exception reading json file {}", jsonFile, e);
       return null;
