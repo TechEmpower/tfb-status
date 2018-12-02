@@ -1,6 +1,7 @@
 package tfb.status.service;
 
 import com.google.common.io.ByteSource;
+import com.google.common.net.HostAndPort;
 import com.google.common.net.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +18,7 @@ import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
@@ -35,15 +37,37 @@ public final class EmailSender {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   /**
-   * Constructs a new email sender that uses the provided settings for all the
-   * emails it sends.
+   * Constructs a new email sender with the provided configuration.
    *
    * @param config the configuration for emails, or {@code null} if outbound
    *        emails should be quietly discarded
+   * @throws IllegalArgumentException if the configuration is invalid
    */
   @Inject
   public EmailSender(@Optional @Nullable EmailConfig config) {
+    if (config != null) {
+      verifyHostAndPort(config.host, config.port);
+      verifyEmailAddress(config.from);
+      verifyEmailAddress(config.to);
+    }
+
     this.config = config;
+  }
+
+  private static void verifyHostAndPort(String host, int port) {
+    Objects.requireNonNull(host);
+    HostAndPort.fromParts(host, port);
+  }
+
+  private static void verifyEmailAddress(String emailAddress) {
+    Objects.requireNonNull(emailAddress);
+    try {
+      new InternetAddress(emailAddress);
+    } catch (AddressException e) {
+      throw new IllegalArgumentException(
+          "Invalid email address " + emailAddress,
+          e);
+    }
   }
 
   /**

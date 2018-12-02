@@ -1,5 +1,8 @@
 package tfb.status.service;
 
+import com.google.common.io.MoreFiles;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -14,38 +17,80 @@ import tfb.status.config.FileStoreConfig;
  */
 @Singleton
 public final class FileStore {
-  private final FileStoreConfig config;
+  private final Path resultsDirectory;
+  private final Path accountsDirectory;
+  private final Path attributesDirectory;
+  private final Path announcementFile;
 
+  /**
+   * Constructs a new file store with the provided configuration.
+   *
+   * @param config the configuration for this file store
+   * @throws IllegalArgumentException if the configuration is invalid
+   * @throws IOException if an I/O error occurs while creating the required
+   *         directories and files
+   */
   @Inject
-  public FileStore(FileStoreConfig config) {
-    this.config = Objects.requireNonNull(config);
+  public FileStore(FileStoreConfig config) throws IOException {
+    Objects.requireNonNull(config);
+
+    Path root = Path.of(config.root);
+    createDirectoryIfNecessary(root);
+
+    resultsDirectory = root.resolve("results");
+    createDirectoryIfNecessary(resultsDirectory);
+
+    accountsDirectory = root.resolve("accounts");
+    createDirectoryIfNecessary(accountsDirectory);
+
+    attributesDirectory = root.resolve("attributes");
+    createDirectoryIfNecessary(attributesDirectory);
+
+    announcementFile = root.resolve("announcement.txt");
+    createFileIfNecessary(announcementFile);
+  }
+
+  private static void createDirectoryIfNecessary(Path directory) throws IOException {
+    Objects.requireNonNull(directory);
+    if (!Files.isDirectory(directory)) {
+      MoreFiles.createParentDirectories(directory);
+      Files.createDirectory(directory);
+    }
+  }
+
+  private static void createFileIfNecessary(Path file) throws IOException {
+    Objects.requireNonNull(file);
+    if (!Files.isRegularFile(file)) {
+      MoreFiles.createParentDirectories(file);
+      Files.createFile(file);
+    }
   }
 
   /**
    * The root directory for uploaded results files.
    */
   public Path resultsDirectory() {
-    return Path.of(config.root, "results");
+    return resultsDirectory;
   }
 
   /**
    * The root directory for user account files.
    */
   public Path accountsDirectory() {
-    return Path.of(config.root, "accounts");
+    return accountsDirectory;
   }
 
   /**
    * The root directory for tfb_lookup.json files.
    */
   public Path attributesDirectory() {
-    return Path.of(config.root, "attributes");
+    return attributesDirectory;
   }
 
   /**
    * The text file containing an announcement to be displayed on the home page.
    */
   public Path announcementFile() {
-    return Path.of(config.root, "announcement.txt");
+    return announcementFile;
   }
 }
