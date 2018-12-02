@@ -2,7 +2,7 @@ http:
   host: "localhost"
   port: 8443
   keyStore:
-    path: src/test/resources/localhost.jks
+    path: localhost.jks
     password: password
 
 email:
@@ -20,4 +20,4 @@ mustache:
   root: mustache
 
 fileStore:
-  root: src/test/resources/test_managed_files
+  root: test_managed_files

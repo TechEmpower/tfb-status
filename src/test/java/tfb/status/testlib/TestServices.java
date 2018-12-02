@@ -4,20 +4,24 @@ import static org.glassfish.hk2.api.InstanceLifecycleEventType.PRE_PRODUCTION;
 
 import com.google.common.base.Ticker;
 import com.google.common.io.MoreFiles;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import io.undertow.server.HttpHandler;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Objects;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.internet.MimeMessage;
@@ -55,10 +59,13 @@ public final class TestServices {
   private final ServiceLocator serviceLocator;
 
   public TestServices() {
-    // TODO: Use an in-memory file system.
-    FileSystem fileSystem = FileSystems.getDefault();
+    FileSystem fileSystem = Jimfs.newFileSystem(Configuration.unix());
 
-    Path configFile = fileSystem.getPath("src/test/resources/test_config.yml");
+    copyDirectory(
+        /* sourceRoot= */ Path.of("src/test/resources"),
+        /* targetRoot= */ fileSystem.getPath(""));
+
+    Path configFile = fileSystem.getPath("test_config.yml");
     ApplicationConfig config = ApplicationConfig.readYamlFile(configFile);
 
     this.clock = MutableClock.epochUTC();
@@ -94,6 +101,28 @@ public final class TestServices {
         /* serviceLocator= */ serviceLocator,
         /* fromClass= */ EmailSender.class,
         /* toClass= */ GreenMail.class);
+  }
+
+  private static void copyDirectory(Path sourceRoot, Path targetRoot) {
+    try (Stream<Path> paths = Files.walk(sourceRoot)) {
+      paths.forEach(
+          (Path source) -> {
+            Path target = targetRoot;
+            for (Path part : sourceRoot.relativize(source))
+              target = target.resolve(part.toString());
+
+            if (Files.exists(target))
+              return;
+
+            try {
+              Files.copy(source, target);
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          });
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   /**
