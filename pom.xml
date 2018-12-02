@@ -22,10 +22,10 @@
     <caffeine.version>2.6.2</caffeine.version>
     <crawler-commons.version>0.10</crawler-commons.version>
     <error-prone.version>2.3.2</error-prone.version>
-    <extra-enforcer-rules.version>1.0-beta-9</extra-enforcer-rules.version>
+    <extra-enforcer-rules.version>1.1</extra-enforcer-rules.version>
     <git-commit-id-plugin.version>2.2.5</git-commit-id-plugin.version>
-    <greenmail.version>1.5.8</greenmail.version>
-    <guava.version>26.0-jre</guava.version>
+    <greenmail.version>1.5.9</greenmail.version>
+    <guava.version>27.0.1-jre</guava.version>
     <hk2.version>2.5.0-b62</hk2.version>
     <jackson.version>2.9.7</jackson.version>
     <javamail.version>1.6.2</javamail.version>
@@ -34,7 +34,7 @@
     <javax-inject.version>1</javax-inject.version>
     <jimfs.version>1.1</jimfs.version>
     <jsr305.version>3.0.2</jsr305.version>
-    <junit-jupiter.version>5.3.1</junit-jupiter.version>
+    <junit-jupiter.version>5.3.2</junit-jupiter.version>
     <logback.version>1.2.3</logback.version>
     <maven-clean-plugin.version>3.1.0</maven-clean-plugin.version>
     <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
