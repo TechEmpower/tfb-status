@@ -7,7 +7,9 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.config.AssetsConfig;
@@ -24,8 +26,8 @@ public final class AssetsHandler implements HttpHandler {
   private final HttpHandler delegate;
 
   @Inject
-  public AssetsHandler(AssetsConfig config) {
-    HttpHandler handler = newConfiguredResourceHandler(config);
+  public AssetsHandler(AssetsConfig config, FileSystem fileSystem) {
+    HttpHandler handler = newResourceHandler(config, fileSystem);
     handler = new DefaultToUtf8Handler(handler);
     handler = new MethodHandler().addMethod(GET, handler);
     delegate = handler;
@@ -36,7 +38,11 @@ public final class AssetsHandler implements HttpHandler {
     delegate.handleRequest(exchange);
   }
 
-  private static HttpHandler newConfiguredResourceHandler(AssetsConfig config) {
+  private static HttpHandler newResourceHandler(AssetsConfig config,
+                                                FileSystem fileSystem) {
+    Objects.requireNonNull(config);
+    Objects.requireNonNull(fileSystem);
+
     switch (config.mode) {
       case CLASS_PATH: {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -44,13 +50,14 @@ public final class AssetsHandler implements HttpHandler {
         return new ResourceHandler(resourceManager);
       }
       case FILE_SYSTEM: {
-        Path assetsRoot = Path.of(config.root);
+        Path assetsRoot = fileSystem.getPath(config.root);
         var resourceManager = new PathResourceManager(assetsRoot);
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setCacheTime(0);
         return resourceHandler;
       }
     }
+
     throw new AssertionError("Unknown resource mode: " + config.mode);
   }
 }

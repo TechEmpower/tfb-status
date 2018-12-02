@@ -9,6 +9,7 @@ import com.github.mustachejava.resolver.ClasspathResolver;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -26,8 +27,8 @@ public final class MustacheRenderer {
   private final MustacheRepository mustacheRepository;
 
   @Inject
-  public MustacheRenderer(MustacheConfig config) {
-    mustacheRepository = newConfiguredMustacheRepository(config);
+  public MustacheRenderer(MustacheConfig config, FileSystem fileSystem) {
+    mustacheRepository = newMustacheRepository(config, fileSystem);
   }
 
   /**
@@ -65,8 +66,11 @@ public final class MustacheRenderer {
     Mustache get(String fileName);
   }
 
-  private static MustacheRepository
-  newConfiguredMustacheRepository(MustacheConfig config) {
+  private static MustacheRepository newMustacheRepository(MustacheConfig config,
+                                                          FileSystem fileSystem) {
+    Objects.requireNonNull(config);
+    Objects.requireNonNull(fileSystem);
+
     switch (config.mode) {
       case CLASS_PATH: {
         var resolver = new ClasspathResolver(config.root);
@@ -74,7 +78,7 @@ public final class MustacheRenderer {
         return fileName -> onlyFactory.compile(fileName);
       }
       case FILE_SYSTEM: {
-        Path mustacheRoot = Path.of(config.root);
+        Path mustacheRoot = fileSystem.getPath(config.root);
         var resolver = new NioFileSystemResolver(mustacheRoot);
         return fileName -> {
           var newFactory = new DefaultMustacheFactory(resolver);

@@ -1,6 +1,8 @@
 package tfb.status.bootstrap;
 
 import com.google.common.base.Ticker;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.ZoneId;
@@ -36,6 +38,7 @@ public final class Main {
     ZoneId zone = ZoneId.of("America/Los_Angeles");
     Clock clock = Clock.system(zone);
     Ticker ticker = Ticker.systemTicker();
+    FileSystem fileSystem = FileSystems.getDefault();
 
     // We try to avoid using the default locale or time zone, but we set the
     // defaults here anyway.  In case we accidentally use one of the defaults,
@@ -50,7 +53,7 @@ public final class Main {
         break;
 
       case 1:
-        Path yamlFile = Path.of(args[0]);
+        Path yamlFile = fileSystem.getPath(args[0]);
         config = ApplicationConfig.readYamlFile(yamlFile);
         break;
 
@@ -62,7 +65,7 @@ public final class Main {
     }
 
     ServiceLocator serviceLocator =
-        Services.newServiceLocator(config, clock, ticker);
+        Services.newServiceLocator(config, clock, ticker, fileSystem);
 
     HttpServer httpServer = serviceLocator.getService(HttpServer.class);
     httpServer.start();

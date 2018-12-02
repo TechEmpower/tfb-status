@@ -4,6 +4,7 @@ import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Objects;
 import javax.annotation.PostConstruct;
@@ -29,9 +30,13 @@ public final class HttpServer {
   @GuardedBy("this") private boolean isRunning;
 
   @Inject
-  public HttpServer(HttpServerConfig config, RootHandler rootHandler) {
+  public HttpServer(HttpServerConfig config,
+                    RootHandler rootHandler,
+                    FileSystem fileSystem) {
+
     Objects.requireNonNull(config);
     Objects.requireNonNull(rootHandler);
+    Objects.requireNonNull(fileSystem);
 
     Undertow.Builder builder = Undertow.builder();
     builder.setHandler(rootHandler);
@@ -41,7 +46,7 @@ public final class HttpServer {
       builder.addHttpListener(config.port, config.host);
 
     else {
-      Path keyStoreFile = Path.of(config.keyStore.path);
+      Path keyStoreFile = fileSystem.getPath(config.keyStore.path);
 
       SSLContext sslContext =
           KeyStores.readServerSslContext(

@@ -3,19 +3,18 @@ package tfb.status.testlib;
 import static org.glassfish.hk2.api.InstanceLifecycleEventType.PRE_PRODUCTION;
 
 import com.google.common.base.Ticker;
-import com.google.common.io.ByteSource;
 import com.google.common.io.MoreFiles;
-import com.google.common.io.Resources;
 import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Objects;
@@ -56,11 +55,17 @@ public final class TestServices {
   private final ServiceLocator serviceLocator;
 
   public TestServices() {
-    Path yamlFile = Path.of("src/test/resources/test_config.yml");
-    ApplicationConfig config = ApplicationConfig.readYamlFile(yamlFile);
+    // TODO: Use an in-memory file system.
+    FileSystem fileSystem = FileSystems.getDefault();
+
+    Path configFile = fileSystem.getPath("src/test/resources/test_config.yml");
+    ApplicationConfig config = ApplicationConfig.readYamlFile(configFile);
+
     this.clock = MutableClock.epochUTC();
     this.ticker = new MutableTicker();
-    this.serviceLocator = Services.newServiceLocator(config, clock, ticker);
+
+    this.serviceLocator =
+        Services.newServiceLocator(config, clock, ticker, fileSystem);
 
     var binder = new AbstractBinder() {
 
@@ -118,7 +123,7 @@ public final class TestServices {
    * The {@link ServiceLocator} capable of producing all services in this
    * application.
    *
-   * @see Services#newServiceLocator(ApplicationConfig, Clock, Ticker)
+   * @see Services#newServiceLocator(ApplicationConfig, Clock, Ticker, FileSystem)
    */
   public ServiceLocator serviceLocator() {
     return serviceLocator;
@@ -339,10 +344,12 @@ public final class TestServices {
   @Singleton
   private static final class HttpClientFactory implements Factory<HttpClient> {
     private final HttpServerConfig config;
+    private final FileSystem fileSystem;
 
     @Inject
-    public HttpClientFactory(HttpServerConfig config) {
+    public HttpClientFactory(HttpServerConfig config, FileSystem fileSystem) {
       this.config = Objects.requireNonNull(config);
+      this.fileSystem = Objects.requireNonNull(fileSystem);
     }
 
     @Override
@@ -351,7 +358,7 @@ public final class TestServices {
       HttpClient.Builder builder = HttpClient.newBuilder();
 
       if (config.keyStore != null) {
-        Path keyStoreFile = Path.of(config.keyStore.path);
+        Path keyStoreFile = fileSystem.getPath(config.keyStore.path);
 
         SSLContext sslContext =
             KeyStores.readClientSslContext(

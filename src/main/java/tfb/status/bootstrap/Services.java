@@ -3,6 +3,7 @@ package tfb.status.bootstrap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Ticker;
 import java.lang.annotation.Annotation;
+import java.nio.file.FileSystem;
 import java.time.Clock;
 import java.util.Objects;
 import javax.inject.Singleton;
@@ -60,10 +61,12 @@ public final class Services {
    */
   public static ServiceLocator newServiceLocator(ApplicationConfig config,
                                                  Clock clock,
-                                                 Ticker ticker) {
+                                                 Ticker ticker,
+                                                 FileSystem fileSystem) {
     Objects.requireNonNull(config);
     Objects.requireNonNull(clock);
     Objects.requireNonNull(ticker);
+    Objects.requireNonNull(fileSystem);
 
     var binder = new AbstractBinder() {
 
@@ -124,6 +127,10 @@ public final class Services {
         //
         bind(clock).to(Clock.class);
         bind(ticker).to(Ticker.class);
+
+        // TODO: Describe the file system APIs to avoid and which APIs to use
+        //       instead, like we already did for the date-time APIs.
+        bind(fileSystem).to(FileSystem.class);
       }
     };
 

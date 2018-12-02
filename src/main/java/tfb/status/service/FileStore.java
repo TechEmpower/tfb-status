@@ -2,6 +2,8 @@ package tfb.status.service;
 
 import com.google.common.io.MoreFiles;
 import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -27,19 +29,23 @@ public final class FileStore {
    * Constructs a new file store with the provided configuration.
    *
    * @param config the configuration for this file store
+   * @param fileSystem the file system to be used
    * @throws IllegalArgumentException if the configuration is invalid
    * @throws IOException if an I/O error occurs while creating the required
    *         directories and files
    */
   @Inject
-  public FileStore(FileStoreConfig config) throws IOException {
+  public FileStore(FileStoreConfig config, FileSystem fileSystem) throws IOException {
     Objects.requireNonNull(config);
+    Objects.requireNonNull(fileSystem);
 
-    Path root = Path.of(config.root);
+    Path root = fileSystem.getPath(config.root);
     createDirectoryIfNecessary(root);
 
-    tempDirectory = Path.of(System.getProperty("java.io.tmpdir"));
-    createDirectoryIfNecessary(tempDirectory);
+    if (fileSystem.equals(FileSystems.getDefault()))
+      tempDirectory = fileSystem.getPath(System.getProperty("java.io.tmpdir"));
+    else
+      tempDirectory = root.resolve("temp");
 
     resultsDirectory = root.resolve("results");
     createDirectoryIfNecessary(resultsDirectory);
