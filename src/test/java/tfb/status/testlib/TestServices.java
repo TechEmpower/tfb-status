@@ -51,13 +51,12 @@ import tfb.status.util.KeyStores;
  * complete.
  */
 public final class TestServices {
-  private final ApplicationConfig config;
   private final MutableClock clock;
   private final MutableTicker ticker;
   private final ServiceLocator serviceLocator;
 
   public TestServices() {
-    this.config = newApplicationConfig();
+    ApplicationConfig config = newApplicationConfig();
     this.clock = MutableClock.epochUTC();
     this.ticker = new MutableTicker();
     this.serviceLocator = Services.newServiceLocator(config, clock, ticker);
@@ -96,13 +95,6 @@ public final class TestServices {
    */
   public void shutdown() {
     serviceLocator.shutdown();
-  }
-
-  /**
-   * The {@link ApplicationConfig} used by every service that is configurable.
-   */
-  public ApplicationConfig config() {
-    return config;
   }
 
   /**
@@ -207,8 +199,9 @@ public final class TestServices {
     if (!path.startsWith("/"))
       throw new IllegalArgumentException("The path must start with '/'");
 
-    boolean encrypted = config.http.keyStore != null;
-    int port = config.http.port;
+    HttpServerConfig config = serviceLocator.getService(HttpServerConfig.class);
+    boolean encrypted = config.keyStore != null;
+    int port = config.port;
 
     boolean nonStandardPort =
         (encrypted && port != 443) || (!encrypted && port != 80);
