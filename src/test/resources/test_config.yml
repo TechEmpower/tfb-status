@@ -13,7 +13,7 @@ email:
 
 assets:
   mode: CLASS_PATH
-  root: test_assets
+  root: assets
 
 mustache:
   mode: CLASS_PATH
