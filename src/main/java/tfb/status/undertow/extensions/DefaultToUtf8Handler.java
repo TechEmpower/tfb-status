@@ -4,6 +4,7 @@ import static com.google.common.net.MediaType.ANY_TEXT_TYPE;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.net.MediaType;
 import io.undertow.server.HttpHandler;
@@ -62,8 +63,16 @@ public final class DefaultToUtf8Handler implements HttpHandler {
     }
 
     private static boolean isTextType(MediaType mediaType) {
-      // TODO: Support other common text types such as application/javascript?
-      return mediaType.is(ANY_TEXT_TYPE);
+      for (MediaType textType : KNOWN_TEXT_TYPES)
+        if (mediaType.is(textType))
+          return true;
+
+      return false;
     }
+
+    private static ImmutableSet<MediaType> KNOWN_TEXT_TYPES =
+        ImmutableSet.of(
+            ANY_TEXT_TYPE,
+            MediaType.create("application", "javascript"));
   }
 }

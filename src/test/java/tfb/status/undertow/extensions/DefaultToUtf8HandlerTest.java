@@ -47,6 +47,13 @@ public final class DefaultToUtf8HandlerTest {
                                  "text/plain")));
 
     services.addExactPath(
+        "/missingCharset.js",
+        new DefaultToUtf8Handler(
+            new SetHeaderHandler(exchange -> {},
+                                 CONTENT_TYPE,
+                                 "application/javascript")));
+
+    services.addExactPath(
         "/nonText",
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
@@ -113,6 +120,24 @@ public final class DefaultToUtf8HandlerTest {
 
     assertMediaType(
         MediaType.parse("text/plain;charset=utf-8"),
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
+  }
+
+  /**
+   * Verifies that {@link DefaultToUtf8Handler} modifies the {@code
+   * Content-Type} of JavaScript responses that do not specify a charset.
+   */
+  @Test
+  public void testMissingCharset_js() throws IOException, InterruptedException {
+    HttpResponse<String> response =
+        services.httpGetString("/missingCharset.js");
+
+    assertEquals(OK, response.statusCode());
+
+    assertMediaType(
+        MediaType.parse("application/javascript;charset=utf-8"),
         response.headers()
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
