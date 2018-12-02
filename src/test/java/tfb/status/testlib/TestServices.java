@@ -283,9 +283,8 @@ public final class TestServices {
    * Returns an {@link ApplicationConfig} suitable for use in testing.
    */
   private static ApplicationConfig newApplicationConfig() {
-    URL url = Resources.getResource("test_config.yml");
-    ByteSource bytes = Resources.asByteSource(url);
-    return ApplicationConfig.readYamlBytes(bytes);
+    Path yamlFile = Path.of("src/test/resources/test_config.yml");
+    return ApplicationConfig.readYamlFile(yamlFile);
   }
 
   /**
