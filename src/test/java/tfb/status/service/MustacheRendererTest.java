@@ -1,67 +1,51 @@
 package tfb.status.service;
 
-import static tfb.status.config.ResourceMode.CLASS_PATH;
-import static tfb.status.config.ResourceMode.FILE_SYSTEM;
-import static tfb.status.testlib.MoreAssertions.assertLinesEqual;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static tfb.status.testlib.MoreAssertions.assertHtmlDocument;
 
-import java.util.List;
-import java.util.Objects;
+import com.github.mustachejava.MustacheNotFoundException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.config.MustacheConfig;
+import tfb.status.testlib.TestServices;
 
 /**
  * Tests for {@link MustacheRenderer}.
  */
 public final class MustacheRendererTest {
-  /**
-   * Verifies that {@link MustacheRenderer#render(String, Object...)} is able to
-   * render templates from the class path.
-   */
-  @Test
-  public void testClassPathMode() {
-    var config =
-        new MustacheConfig(
-            /* mode= */ CLASS_PATH,
-            /* root= */ "test_mustache");
+  private static TestServices services;
+  private static MustacheRenderer mustacheRenderer;
 
-    var mustacheRenderer = new MustacheRenderer(config);
+  @BeforeAll
+  public static void beforeAll() {
+    services = new TestServices();
+    mustacheRenderer = services.serviceLocator().getService(MustacheRenderer.class);
+  }
 
-    var view = new HelloView("hello");
-
-    String html = mustacheRenderer.render("hello.mustache", view);
-
-    assertLinesEqual(
-        List.of("<b>hello</b>"),
-        html);
+  @AfterAll
+  public static void afterAll() {
+    services.shutdown();
   }
 
   /**
    * Verifies that {@link MustacheRenderer#render(String, Object...)} is able to
-   * render templates from the file system.
+   * render a known mustache template.
    */
   @Test
-  public void testFileSystemMode() {
-    var config =
-        new MustacheConfig(
-            /* mode= */ FILE_SYSTEM,
-            /* root= */ "src/test/resources/test_mustache");
-
-    var mustacheRenderer = new MustacheRenderer(config);
-
-    var view = new HelloView("hello");
-
-    String html = mustacheRenderer.render("hello.mustache", view);
-
-    assertLinesEqual(
-        List.of("<b>hello</b>"),
-        html);
+  public void testRenderKnownTemplate() {
+    String html = mustacheRenderer.render("home.mustache");
+    assertHtmlDocument(html);
   }
 
-  public static final class HelloView {
-    public final String message;
-
-    public HelloView(String message) {
-      this.message = Objects.requireNonNull(message);
-    }
+  /**
+   * Verifies that {@link MustacheRenderer#render(String, Object...)} throws
+   * {@link MustacheNotFoundException} when given a template file name that does
+   * not exist.
+   */
+  @Test
+  public void testRenderUnknownTemplate() {
+    assertThrows(
+        MustacheNotFoundException.class,
+        () -> mustacheRenderer.render("not_a_real_template.mustache"));
   }
 }
