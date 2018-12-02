@@ -17,6 +17,7 @@ import tfb.status.config.FileStoreConfig;
  */
 @Singleton
 public final class FileStore {
+  private final Path tempDirectory;
   private final Path resultsDirectory;
   private final Path accountsDirectory;
   private final Path attributesDirectory;
@@ -36,6 +37,9 @@ public final class FileStore {
 
     Path root = Path.of(config.root);
     createDirectoryIfNecessary(root);
+
+    tempDirectory = Path.of(System.getProperty("java.io.tmpdir"));
+    createDirectoryIfNecessary(tempDirectory);
 
     resultsDirectory = root.resolve("results");
     createDirectoryIfNecessary(resultsDirectory);
@@ -64,6 +68,13 @@ public final class FileStore {
       MoreFiles.createParentDirectories(file);
       Files.createFile(file);
     }
+  }
+
+  /**
+   * The root directory for temporary files.
+   */
+  public Path tempDirectory() {
+    return tempDirectory;
   }
 
   /**
