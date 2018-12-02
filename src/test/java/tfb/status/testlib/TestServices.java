@@ -56,7 +56,8 @@ public final class TestServices {
   private final ServiceLocator serviceLocator;
 
   public TestServices() {
-    ApplicationConfig config = newApplicationConfig();
+    Path yamlFile = Path.of("src/test/resources/test_config.yml");
+    ApplicationConfig config = ApplicationConfig.readYamlFile(yamlFile);
     this.clock = MutableClock.epochUTC();
     this.ticker = new MutableTicker();
     this.serviceLocator = Services.newServiceLocator(config, clock, ticker);
@@ -277,14 +278,6 @@ public final class TestServices {
    */
   public String authorizationHeader() {
     return BasicAuthUtils.writeAuthorizationHeader("tester", "password");
-  }
-
-  /**
-   * Returns an {@link ApplicationConfig} suitable for use in testing.
-   */
-  private static ApplicationConfig newApplicationConfig() {
-    Path yamlFile = Path.of("src/test/resources/test_config.yml");
-    return ApplicationConfig.readYamlFile(yamlFile);
   }
 
   /**
