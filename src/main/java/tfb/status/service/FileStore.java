@@ -3,7 +3,6 @@ package tfb.status.service;
 import com.google.common.io.MoreFiles;
 import java.io.IOException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -19,7 +18,6 @@ import tfb.status.config.FileStoreConfig;
  */
 @Singleton
 public final class FileStore {
-  private final Path tempDirectory;
   private final Path resultsDirectory;
   private final Path accountsDirectory;
   private final Path attributesDirectory;
@@ -30,7 +28,6 @@ public final class FileStore {
    *
    * @param config the configuration for this file store
    * @param fileSystem the file system to be used
-   * @throws IllegalArgumentException if the configuration is invalid
    * @throws IOException if an I/O error occurs while creating the required
    *         directories and files
    */
@@ -41,11 +38,6 @@ public final class FileStore {
 
     Path root = fileSystem.getPath(config.root);
     createDirectoryIfNecessary(root);
-
-    if (fileSystem.equals(FileSystems.getDefault()))
-      tempDirectory = fileSystem.getPath(System.getProperty("java.io.tmpdir"));
-    else
-      tempDirectory = root.resolve("temp");
 
     resultsDirectory = root.resolve("results");
     createDirectoryIfNecessary(resultsDirectory);
@@ -74,13 +66,6 @@ public final class FileStore {
       MoreFiles.createParentDirectories(file);
       Files.createFile(file);
     }
-  }
-
-  /**
-   * The root directory for temporary files.
-   */
-  public Path tempDirectory() {
-    return tempDirectory;
   }
 
   /**

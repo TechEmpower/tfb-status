@@ -92,8 +92,7 @@ public final class SaveAttributesHandler implements HttpHandler {
         return;
       }
 
-      Path tempFile = Files.createTempFile(/* dir= */ fileStore.tempDirectory(),
-                                           /* prefix= */ "TFB_lookup_upload",
+      Path tempFile = Files.createTempFile(/* prefix= */ "TFB_lookup_upload",
                                            /* suffix= */ ".json");
 
       try (OutputStream outputStream = Files.newOutputStream(tempFile)) {

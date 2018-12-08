@@ -134,8 +134,7 @@ public final class UploadResultsHandler implements HttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-      Path tempFile = Files.createTempFile(/* dir= */ fileStore.tempDirectory(),
-                                           /* prefix= */ "TFB_Status_Upload",
+      Path tempFile = Files.createTempFile(/* prefix= */ "TFB_Status_Upload",
                                            /* suffix= */ "." + fileExtension);
 
       try (WritableByteChannel out =
