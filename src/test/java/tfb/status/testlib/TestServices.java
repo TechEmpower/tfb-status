@@ -6,17 +6,16 @@ import com.google.common.base.Ticker;
 import com.google.common.io.MoreFiles;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.icegreen.greenmail.store.FolderException;
-import com.icegreen.greenmail.util.GreenMail;
-import com.icegreen.greenmail.util.ServerSetup;
 import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -24,7 +23,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.mail.internet.MimeMessage;
 import javax.net.ssl.SSLContext;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.Filter;
@@ -36,8 +34,6 @@ import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.threeten.extra.MutableClock;
 import tfb.status.bootstrap.HttpServer;
 import tfb.status.bootstrap.Services;
-import tfb.status.config.ApplicationConfig;
-import tfb.status.config.EmailConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.handler.RootHandler;
 import tfb.status.service.EmailSender;
@@ -54,39 +50,35 @@ import tfb.status.util.KeyStores;
  * complete.
  */
 public final class TestServices {
-  private final MutableClock clock;
-  private final MutableTicker ticker;
   private final ServiceLocator serviceLocator;
 
   public TestServices() {
-    FileSystem fileSystem = Jimfs.newFileSystem(Configuration.unix());
-
-    copyDirectory(
-        /* sourceRoot= */ Path.of("src/test/resources"),
-        /* targetRoot= */ fileSystem.getPath(""));
-
-    Path configFile = fileSystem.getPath("test_config.yml");
-    ApplicationConfig config = ApplicationConfig.readYamlFile(configFile);
-
-    this.clock = MutableClock.epochUTC();
-    this.ticker = new MutableTicker();
-
-    this.serviceLocator =
-        Services.newServiceLocator(config, clock, ticker, fileSystem);
+    this.serviceLocator = Services.newServiceLocator("test_config.yml");
 
     var binder = new AbstractBinder() {
 
       @Override
       protected void configure() {
+        bindFactory(MutableClockFactory.class, Singleton.class)
+            .to(Clock.class)
+            .in(Singleton.class)
+            .ranked(1); // override the default clock
+
+        bindFactory(MutableTickerFactory.class, Singleton.class)
+            .to(Ticker.class)
+            .in(Singleton.class)
+            .ranked(1); // override the default ticker
+
+        bindFactory(InMemoryFileSystemFactory.class, Singleton.class)
+            .to(FileSystem.class)
+            .in(Singleton.class)
+            .ranked(1); // override the default file system
+
         bindFactory(HttpClientFactory.class, Singleton.class)
             .to(HttpClient.class)
             .in(Singleton.class);
 
-        if (config.email != null) {
-          bindFactory(MailServerFactory.class, Singleton.class)
-              .to(GreenMail.class)
-              .in(Singleton.class);
-        }
+        bindAsContract(MailServer.class).in(Singleton.class);
       }
     };
 
@@ -94,35 +86,13 @@ public final class TestServices {
 
     forceDependency(
         /* serviceLocator= */ serviceLocator,
-        /* fromClass= */ HttpClient.class,
-        /* toClass= */ HttpServer.class);
+        /* fromType= */ HttpClient.class,
+        /* toType= */ HttpServer.class);
 
     forceDependency(
         /* serviceLocator= */ serviceLocator,
-        /* fromClass= */ EmailSender.class,
-        /* toClass= */ GreenMail.class);
-  }
-
-  private static void copyDirectory(Path sourceRoot, Path targetRoot) {
-    try (Stream<Path> paths = Files.walk(sourceRoot)) {
-      paths.forEach(
-          (Path source) -> {
-            Path target = targetRoot;
-            for (Path part : sourceRoot.relativize(source))
-              target = target.resolve(part.toString());
-
-            if (Files.exists(target))
-              return;
-
-            try {
-              Files.copy(source, target);
-            } catch (IOException e) {
-              throw new UncheckedIOException(e);
-            }
-          });
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+        /* fromType= */ EmailSender.class,
+        /* toType= */ MailServer.class);
   }
 
   /**
@@ -137,7 +107,7 @@ public final class TestServices {
    * clock time.  This clock can be adjusted manually.
    */
   public MutableClock clock() {
-    return clock;
+    return (MutableClock) serviceLocator.getService(Clock.class);
   }
 
   /**
@@ -145,42 +115,24 @@ public final class TestServices {
    * time.  This ticker can be adjusted manually.
    */
   public MutableTicker ticker() {
-    return ticker;
+    return (MutableTicker) serviceLocator.getService(Ticker.class);
+  }
+
+  /**
+   * Provides access to email that was sent by the application during tests.
+   */
+  public MailServer mailServer() {
+    return serviceLocator.getService(MailServer.class);
   }
 
   /**
    * The {@link ServiceLocator} capable of producing all services in this
    * application.
    *
-   * @see Services#newServiceLocator(ApplicationConfig, Clock, Ticker, FileSystem)
+   * @see Services#newServiceLocator(String)
    */
   public ServiceLocator serviceLocator() {
     return serviceLocator;
-  }
-
-  /**
-   * Returns the only email message that has been received by the email server
-   * since the last time this method was invoked.
-   *
-   * @throws IllegalStateException if there is not exactly one email message
-   */
-  public synchronized MimeMessage onlyEmailMessage() {
-    GreenMail mailServer = serviceLocator.getService(GreenMail.class);
-    if (mailServer == null)
-      throw new IllegalStateException(
-          "Email was disabled in this application's config");
-
-    MimeMessage[] messages = mailServer.getReceivedMessages();
-    try {
-      mailServer.purgeEmailFromAllMailboxes();
-    } catch (FolderException e) {
-      throw new RuntimeException(e);
-    }
-
-    if (messages.length != 1)
-      throw new IllegalStateException("There is not exactly one email");
-
-    return messages[0];
   }
 
   /**
@@ -189,8 +141,8 @@ public final class TestServices {
    * @see RootHandler#addExactPath(String, HttpHandler)
    */
   public void addExactPath(String path, HttpHandler handler) {
-    RootHandler rootHandler = serviceLocator.getService(RootHandler.class);
-    rootHandler.addExactPath(path, handler);
+    serviceLocator.getService(RootHandler.class)
+                  .addExactPath(path, handler);
   }
 
   /**
@@ -199,8 +151,8 @@ public final class TestServices {
    * @see RootHandler#addPrefixPath(String, HttpHandler)
    */
   public void addPrefixPath(String pathPrefix, HttpHandler handler) {
-    RootHandler rootHandler = serviceLocator.getService(RootHandler.class);
-    rootHandler.addPrefixPath(pathPrefix, handler);
+    serviceLocator.getService(RootHandler.class)
+                  .addPrefixPath(pathPrefix, handler);
   }
 
   /**
@@ -315,23 +267,23 @@ public final class TestServices {
   }
 
   /**
-   * Tells the service locator that {@code toClass} must be initialized before
-   * {@code fromClass} even if {@code fromClass} does not explicitly declare
+   * Tells the service locator that {@code toType} must be initialized before
+   * {@code fromType} even if {@code fromType} does not explicitly declare
    * that dependency.
    */
   private static void forceDependency(ServiceLocator serviceLocator,
-                                      Class<?> fromClass,
-                                      Class<?> toClass) {
+                                      Type fromType,
+                                      Type toType) {
 
     Objects.requireNonNull(serviceLocator);
-    Objects.requireNonNull(fromClass);
-    Objects.requireNonNull(toClass);
+    Objects.requireNonNull(fromType);
+    Objects.requireNonNull(toType);
 
     var binder = new AbstractBinder() {
 
       @Override
       protected void configure() {
-        bind(new ForcedDependency(serviceLocator, fromClass, toClass))
+        bind(new ForcedDependency(serviceLocator, fromType, toType))
             .to(InstanceLifecycleListener.class);
       }
     };
@@ -344,29 +296,28 @@ public final class TestServices {
       implements InstanceLifecycleListener {
 
     private final ServiceLocator serviceLocator;
-    private final Class<?> fromClass;
-    private final Class<?> toClass;
+    private final Type fromType;
+    private final Type toType;
 
     ForcedDependency(ServiceLocator serviceLocator,
-                     Class<?> fromClass,
-                     Class<?> toClass) {
+                     Type fromType,
+                     Type toType) {
 
       this.serviceLocator = Objects.requireNonNull(serviceLocator);
-      this.fromClass = Objects.requireNonNull(fromClass);
-      this.toClass = Objects.requireNonNull(toClass);
+      this.fromType = Objects.requireNonNull(fromType);
+      this.toType = Objects.requireNonNull(toType);
     }
 
     @Override
     public Filter getFilter() {
       return descriptor -> descriptor.getAdvertisedContracts()
-                                     .contains(fromClass.getName());
+                                     .contains(fromType.getTypeName());
     }
 
     @Override
     public void lifecycleEvent(InstanceLifecycleEvent lifecycleEvent) {
-      if (lifecycleEvent.getEventType() == PRE_PRODUCTION) {
-        serviceLocator.getService(toClass);
-      }
+      if (lifecycleEvent.getEventType() == PRE_PRODUCTION)
+        serviceLocator.getService(toType);
     }
   }
 
@@ -402,37 +353,81 @@ public final class TestServices {
 
     @Override
     public void dispose(HttpClient instance) {
-      Objects.requireNonNull(instance);
       // No cleanup required.
     }
   }
 
   @Singleton
-  private static final class MailServerFactory implements Factory<GreenMail> {
-    private final EmailConfig config;
-
-    @Inject
-    public MailServerFactory(EmailConfig config) {
-      this.config = Objects.requireNonNull(config);
+  private static final class MutableClockFactory implements Factory<Clock> {
+    @Override
+    @Singleton
+    public Clock provide() {
+      return MutableClock.epochUTC();
     }
+
+    @Override
+    public void dispose(Clock instance) {
+      // No cleanup required.
+    }
+  }
+
+  @Singleton
+  private static final class MutableTickerFactory implements Factory<Ticker> {
+    @Override
+    @Singleton
+    public Ticker provide() {
+      return new MutableTicker();
+    }
+
+    @Override
+    public void dispose(Ticker instance) {
+      // No cleanup required.
+    }
+  }
+
+  @Singleton
+  private static final class InMemoryFileSystemFactory
+      implements Factory<FileSystem> {
 
     @Override
     @Singleton
-    public GreenMail provide() {
-      var mailServer =
-          new GreenMail(
-              new ServerSetup(
-                  /* port= */ config.port,
-                  /* bindAddress= */ "localhost",
-                  /* protocol= */ "smtp"));
+    public FileSystem provide() {
+      FileSystem realFileSystem = FileSystems.getDefault();
+      FileSystem fakeFileSystem = Jimfs.newFileSystem(Configuration.unix());
 
-      mailServer.start();
-      return mailServer;
+      Path sourceRoot = realFileSystem.getPath("src/test/resources");
+      Path targetRoot = fakeFileSystem.getPath("");
+
+      try (Stream<Path> sources = Files.walk(sourceRoot)) {
+        sources.forEach(
+            (Path source) -> {
+              Path target = targetRoot;
+              for (Path part : sourceRoot.relativize(source))
+                target = target.resolve(part.toString());
+
+              if (Files.exists(target))
+                return;
+
+              try {
+                Files.copy(source, target);
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            });
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+
+      return fakeFileSystem;
     }
 
     @Override
-    public void dispose(GreenMail instance) {
-      instance.stop();
+    public void dispose(FileSystem instance) {
+      try {
+        instance.close();
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
     }
   }
 }

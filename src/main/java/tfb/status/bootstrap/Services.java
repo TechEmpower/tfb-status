@@ -1,13 +1,24 @@
 package tfb.status.bootstrap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Ticker;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Objects;
+import java.util.Optional;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
+import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import tfb.status.config.ApplicationConfig;
@@ -31,15 +42,19 @@ import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
 import tfb.status.service.Authenticator;
+import tfb.status.service.FileStore;
+import tfb.status.service.StandardFileSystem;
 import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
-import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.service.StandardObjectMapper;
+import tfb.status.service.StandardClock;
+import tfb.status.service.StandardTicker;
 
 /**
- * Obtains instances of the service classes in this application.
+ * Obtains instances of the HTTP handlers and service classes in this
+ * application.
  */
 public final class Services {
   private Services() {
@@ -53,33 +68,45 @@ public final class Services {
    * <p>For example, to obtain the {@link HttpServer}:
    *
    * <pre>
-   *   ServiceLocator serviceLocator = newServiceLocator(config, clock, ticker);
+   *   ServiceLocator serviceLocator = newServiceLocator(configFilePath);
    *   HttpServer httpServer = serviceLocator.getService(HttpServer.class);
    * </pre>
    *
    * @see ServiceLocator#getService(Class, Annotation...)
    */
-  public static ServiceLocator newServiceLocator(ApplicationConfig config,
-                                                 Clock clock,
-                                                 Ticker ticker,
-                                                 FileSystem fileSystem) {
-    Objects.requireNonNull(config);
-    Objects.requireNonNull(clock);
-    Objects.requireNonNull(ticker);
-    Objects.requireNonNull(fileSystem);
+  public static ServiceLocator newServiceLocator(@Nullable String configFilePath) {
 
     var binder = new AbstractBinder() {
 
       @Override
       public void configure() {
-        bind(config).to(ApplicationConfig.class);
-        bind(config.assets).to(AssetsConfig.class);
-        bind(config.mustache).to(MustacheConfig.class);
-        bind(config.fileStore).to(FileStoreConfig.class);
-        bind(config.http).to(HttpServerConfig.class);
+        bind(Optional.ofNullable(configFilePath))
+            .to(new TypeLiteral<Optional<String>>() {})
+            .named(CONFIG_FILE_PATH);
 
-        if (config.email != null)
-          bind(config.email).to(EmailConfig.class);
+        bindFactory(ApplicationConfigFactory.class, Singleton.class)
+            .to(ApplicationConfig.class)
+            .in(Singleton.class);
+
+        bindFactory(AssetsConfigFactory.class, Singleton.class)
+            .to(AssetsConfig.class)
+            .in(Singleton.class);
+
+        bindFactory(MustacheConfigFactory.class, Singleton.class)
+            .to(MustacheConfig.class)
+            .in(Singleton.class);
+
+        bindFactory(FileStoreConfigFactory.class, Singleton.class)
+            .to(FileStoreConfig.class)
+            .in(Singleton.class);
+
+        bindFactory(HttpServerConfigFactory.class, Singleton.class)
+            .to(HttpServerConfig.class)
+            .in(Singleton.class);
+
+        bindFactory(EmailConfigFactory.class, Singleton.class)
+            .to(new TypeLiteral<Optional<EmailConfig>>() {})
+            .in(Singleton.class);
 
         bindAsContract(HttpServer.class).in(Singleton.class);
         bindAsContract(RootHandler.class).in(Singleton.class);
@@ -107,30 +134,17 @@ public final class Services {
             .to(ObjectMapper.class)
             .in(Singleton.class);
 
-        //
-        // To get the current date, time, or time-zone, or to measure elapsed
-        // time, use these injected Clock and Ticker instances.  Avoid using
-        // APIs that implicitly rely on the system clock or the default
-        // time-zone.
-        //
-        // Here are some APIs to avoid and their replacements:
-        //
-        //   |----------------------------|---------------------------------|
-        //   | Don't use this             | Use this instead                |
-        //   |----------------------------|---------------------------------|
-        //   | LocalDateTime.now()        | LocalDateTime.now(clock)        |
-        //   | Instant.now()              | clock.instant()                 |
-        //   | System.currentTimeMillis() | clock.millis()                  |
-        //   | System.nanoTime()          | ticker.read()                   |
-        //   | Stopwatch.createStarted()  | Stopwatch.createStarted(ticker) |
-        //   |----------------------------|---------------------------------|
-        //
-        bind(clock).to(Clock.class);
-        bind(ticker).to(Ticker.class);
+        bindFactory(StandardClock.class, Singleton.class)
+            .to(Clock.class)
+            .in(Singleton.class);
 
-        // TODO: Describe the file system APIs to avoid and which APIs to use
-        //       instead, like we already did for the date-time APIs.
-        bind(fileSystem).to(FileSystem.class);
+        bindFactory(StandardTicker.class, Singleton.class)
+            .to(Ticker.class)
+            .in(Singleton.class);
+
+        bindFactory(StandardFileSystem.class, Singleton.class)
+            .to(FileSystem.class)
+            .in(Singleton.class);
       }
     };
 
@@ -140,5 +154,163 @@ public final class Services {
     ServiceLocatorUtilities.bind(serviceLocator, binder);
 
     return serviceLocator;
+  }
+
+  private static final String CONFIG_FILE_PATH = "tfb.status.configFilePath";
+
+  @Singleton
+  private static final class ApplicationConfigFactory
+      implements Factory<ApplicationConfig> {
+
+    private final FileSystem fileSystem;
+    @Nullable private final String path;
+
+    @Inject
+    public ApplicationConfigFactory(
+        FileSystem fileSystem,
+        @Named(CONFIG_FILE_PATH) Optional<String> optionalPath) {
+
+      this.fileSystem = Objects.requireNonNull(fileSystem);
+      this.path = optionalPath.orElse(null);
+    }
+
+    @Override
+    @Singleton
+    public ApplicationConfig provide() {
+      if (path == null)
+        return new ApplicationConfig(null, null, null, null, null);
+
+      Path yamlFile = fileSystem.getPath(path);
+
+      var yamlMapper = new ObjectMapper(new YAMLFactory());
+
+      try (InputStream inputStream = Files.newInputStream(yamlFile)) {
+        return yamlMapper.readValue(inputStream, ApplicationConfig.class);
+      } catch (IOException e) {
+        throw new IllegalStateException(
+            "Unable to read configuration file \"" + yamlFile + "\"",
+            e);
+      }
+    }
+
+    @Override
+    public void dispose(ApplicationConfig instance) {
+      // No cleanup required.
+    }
+  }
+
+  @Singleton
+  private static final class AssetsConfigFactory
+      implements Factory<AssetsConfig> {
+
+    private final ApplicationConfig config;
+
+    @Inject
+    public AssetsConfigFactory(ApplicationConfig config) {
+      this.config = Objects.requireNonNull(config);
+    }
+
+    @Override
+    @Singleton
+    public AssetsConfig provide() {
+      return config.assets;
+    }
+
+    @Override
+    public void dispose(AssetsConfig instance) {
+      // No cleanup required.
+    }
+  }
+
+  @Singleton
+  private static final class MustacheConfigFactory
+      implements Factory<MustacheConfig> {
+
+    private final ApplicationConfig config;
+
+    @Inject
+    public MustacheConfigFactory(ApplicationConfig config) {
+      this.config = Objects.requireNonNull(config);
+    }
+
+    @Override
+    @Singleton
+    public MustacheConfig provide() {
+      return config.mustache;
+    }
+
+    @Override
+    public void dispose(MustacheConfig instance) {
+      // No cleanup required.
+    }
+  }
+
+  @Singleton
+  private static final class FileStoreConfigFactory
+      implements Factory<FileStoreConfig> {
+
+    private final ApplicationConfig config;
+
+    @Inject
+    public FileStoreConfigFactory(ApplicationConfig config) {
+      this.config = Objects.requireNonNull(config);
+    }
+
+    @Override
+    @Singleton
+    public FileStoreConfig provide() {
+      return config.fileStore;
+    }
+
+    @Override
+    public void dispose(FileStoreConfig instance) {
+      // No cleanup required.
+    }
+  }
+
+  @Singleton
+  private static final class HttpServerConfigFactory
+      implements Factory<HttpServerConfig> {
+
+    private final ApplicationConfig config;
+
+    @Inject
+    public HttpServerConfigFactory(ApplicationConfig config) {
+      this.config = Objects.requireNonNull(config);
+    }
+
+    @Override
+    @Singleton
+    public HttpServerConfig provide() {
+      return config.http;
+    }
+
+    @Override
+    public void dispose(HttpServerConfig instance) {
+      // No cleanup required.
+    }
+  }
+
+  @Singleton
+  private static final class EmailConfigFactory
+      implements Factory<Optional<EmailConfig>> {
+
+    private final ApplicationConfig config;
+
+    @Inject
+    public EmailConfigFactory(ApplicationConfig config) {
+      this.config = Objects.requireNonNull(config);
+    }
+
+    @Override
+    @Singleton
+    public Optional<EmailConfig> provide() {
+      return Optional.ofNullable(config.email);
+    }
+
+    @Override
+    public void dispose(Optional<EmailConfig> instance) {
+      // No cleanup required.
+    }
   }
 }

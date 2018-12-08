@@ -2,15 +2,13 @@ package tfb.status.service;
 
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static tfb.status.testlib.MoreAssertions.assertInstanceOf;
 import static tfb.status.testlib.MoreAssertions.assertLinesEqual;
 import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteSource;
+import com.google.common.io.CharSource;
 import com.google.common.net.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +21,7 @@ import javax.mail.internet.MimeMultipart;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import tfb.status.testlib.MailServer;
 import tfb.status.testlib.TestServices;
 
 /**
@@ -30,14 +29,14 @@ import tfb.status.testlib.TestServices;
  */
 public final class EmailSenderTest {
   private static TestServices services;
+  private static MailServer mailServer;
   private static EmailSender emailSender;
-  private static ObjectMapper objectMapper;
 
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
+    mailServer = services.mailServer();
     emailSender = services.serviceLocator().getService(EmailSender.class);
-    objectMapper = services.serviceLocator().getService(ObjectMapper.class);
   }
 
   @AfterAll
@@ -53,7 +52,7 @@ public final class EmailSenderTest {
   public void testSendEmailTextOnly() throws MessagingException, IOException {
     emailSender.sendEmail("subject", "textContent", List.of());
 
-    MimeMessage message = services.onlyEmailMessage();
+    MimeMessage message = mailServer.onlyEmailMessage();
 
     assertEquals("subject", message.getSubject());
 
@@ -77,19 +76,17 @@ public final class EmailSenderTest {
    */
   @Test
   public void testSendEmailWithAttachments() throws MessagingException, IOException {
-    var point = new Point(1, 2);
-
-    byte[] pointBytes = objectMapper.writeValueAsBytes(point);
+    String attachedJson = "{\"foo\":\"bar\"}";
 
     DataSource attachment =
         emailSender.createAttachment(
-            /* fileName= */ "point.json",
+            /* fileName= */ "foo.json",
             /* mediaType= */ JSON_UTF_8,
-            /* fileBytes= */ ByteSource.wrap(pointBytes));
+            /* fileBytes= */ CharSource.wrap(attachedJson).asByteSource(UTF_8));
 
     emailSender.sendEmail("subject", "textContent", List.of(attachment));
 
-    MimeMessage message = services.onlyEmailMessage();
+    MimeMessage message = mailServer.onlyEmailMessage();
 
     assertMediaType(
         MediaType.create("multipart", "mixed"),
@@ -129,41 +126,11 @@ public final class EmailSenderTest {
         JSON_UTF_8,
         secondPart.getContentType());
 
-    Point deserializedPoint;
+    String receivedJson;
     try (InputStream inputStream = secondPart.getInputStream()) {
-      deserializedPoint = objectMapper.readValue(inputStream, Point.class);
+      receivedJson = new String(inputStream.readAllBytes(), UTF_8);
     }
 
-    assertEquals(point, deserializedPoint);
-  }
-
-  public static final class Point {
-    public final int x;
-    public final int y;
-
-    @JsonCreator
-    public Point(@JsonProperty("x") int x,
-                 @JsonProperty("y") int y) {
-      this.x = x;
-      this.y = y;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-      if (object == this) {
-        return true;
-      } else if (!(object instanceof Point)) {
-        return false;
-      } else {
-        var that = (Point) object;
-        return this.x == that.x
-            && this.y == that.y;
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      return x ^ y;
-    }
+    assertEquals(attachedJson, receivedJson);
   }
 }

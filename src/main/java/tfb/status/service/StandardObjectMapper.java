@@ -3,7 +3,6 @@ package tfb.status.service;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import java.util.Objects;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.Factory;
 
@@ -24,7 +23,6 @@ public final class StandardObjectMapper implements Factory<ObjectMapper> {
 
   @Override
   public void dispose(ObjectMapper instance) {
-    Objects.requireNonNull(instance);
     // No cleanup required.
   }
 }

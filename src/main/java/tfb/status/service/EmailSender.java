@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -23,7 +24,6 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import org.jvnet.hk2.annotations.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.EmailConfig;
@@ -39,19 +39,19 @@ public final class EmailSender {
   /**
    * Constructs a new email sender with the provided configuration.
    *
-   * @param config the configuration for emails, or {@code null} if outbound
-   *        emails should be quietly discarded
+   * @param optionalConfig the configuration for emails, or an empty optional if
+   *        outbound emails should be quietly discarded
    * @throws IllegalArgumentException if the configuration is invalid
    */
   @Inject
-  public EmailSender(@Optional @Nullable EmailConfig config) {
+  public EmailSender(Optional<EmailConfig> optionalConfig) {
+    this.config = optionalConfig.orElse(null);
+
     if (config != null) {
       verifyHostAndPort(config.host, config.port);
       verifyEmailAddress(config.from);
       verifyEmailAddress(config.to);
     }
-
-    this.config = config;
   }
 
   private static void verifyHostAndPort(String host, int port) {
