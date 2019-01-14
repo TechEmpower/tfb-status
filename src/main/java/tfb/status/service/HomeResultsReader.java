@@ -362,8 +362,8 @@ public final class HomeResultsReader {
                          .minus(elapsedDuration);
 
     //
-    // TODO: Avoid using the last modified time of the file on disk (which may
-    //       change for reasons completely unrelated to the run itself), and use
+    // TODO: Avoid using the last modified time of the file on disk, which may
+    //       change for reasons completely unrelated to the run itself, and use
     //       something from the results.json file to give us a last modified
     //       time instead.  The datetime strings in the "completed" object are
     //       no good because they are local to the TFB server, and we don't know
@@ -690,7 +690,7 @@ public final class HomeResultsReader {
     //
     // In practice, the results files are named like this:
     //
-    //   results.{uploaded_at_date_time}.{json|zip}.
+    //   results.{uploaded_at_date_time}.{json|zip}
     //
     // where {uploaded_at_date_time} is in the format "yyyy-MM-dd-HH-mm-ss-SSS".
     //
