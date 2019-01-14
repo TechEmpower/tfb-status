@@ -11,8 +11,7 @@
   <version>1.0-SNAPSHOT</version>
 
   <properties>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.release>11</maven.compiler.release>
 
     <oldestCompatibleMavenVersion>3.5.0</oldestCompatibleMavenVersion>
 
@@ -26,12 +25,11 @@
     <git-commit-id-plugin.version>2.2.5</git-commit-id-plugin.version>
     <greenmail.version>1.5.9</greenmail.version>
     <guava.version>27.0.1-jre</guava.version>
-    <hk2.version>2.5.0-b62</hk2.version>
-    <jackson.version>2.9.7</jackson.version>
+    <hk2.version>2.5.0</hk2.version>
+    <jackson.version>2.9.8</jackson.version>
+    <jakarta-annotation-api.version>1.3.4</jakarta-annotation-api.version>
     <javamail.version>1.6.2</javamail.version>
     <javax-activation.version>1.1.1</javax-activation.version>
-    <javax-annotation-api.version>1.3.2</javax-annotation-api.version>
-    <javax-inject.version>1</javax-inject.version>
     <jimfs.version>1.1</jimfs.version>
     <jsr305.version>3.0.2</jsr305.version>
     <junit-jupiter.version>5.3.2</junit-jupiter.version>
@@ -42,13 +40,13 @@
     <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
     <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
     <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
-    <maven-jar-plugin.version>3.1.0</maven-jar-plugin.version>
+    <maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
     <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
     <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
     <maven-site-plugin.version>3.7.1</maven-site-plugin.version>
     <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
     <mustache.version>0.9.5</mustache.version>
-    <nullaway.version>0.6.0</nullaway.version>
+    <nullaway.version>0.6.4</nullaway.version>
     <slf4j.version>1.7.25</slf4j.version>
     <threeten-extra.version>1.4</threeten-extra.version>
     <undertow.version>2.0.16.Final</undertow.version>
@@ -132,14 +130,14 @@
       <version>${javax-activation.version}</version>
     </dependency>
     <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
-      <version>${javax-annotation-api.version}</version>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <version>${jakarta-annotation-api.version}</version>
     </dependency>
     <dependency>
-      <groupId>javax.inject</groupId>
-      <artifactId>javax.inject</artifactId>
-      <version>${javax-inject.version}</version>
+      <groupId>org.glassfish.hk2.external</groupId>
+      <artifactId>jakarta.inject</artifactId>
+      <version>${hk2.version}</version>
     </dependency>
     <dependency>
       <groupId>org.glassfish.hk2</groupId>
@@ -150,15 +148,6 @@
       <groupId>org.glassfish.hk2</groupId>
       <artifactId>hk2-locator</artifactId>
       <version>${hk2.version}</version>
-      <exclusions>
-        <!-- We would rather use the official javax.inject artifact than HK2's
-             redistribution of it.  It is not clear why the maintainers of HK2
-             decided to create this other javax.inject artifact.-->
-        <exclusion>
-          <groupId>org.glassfish.hk2.external</groupId>
-          <artifactId>javax.inject</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
@@ -239,6 +228,25 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>${maven-dependency-plugin.version}</version>
+          <!-- "mvn dependency:analyze" is broken under Java 11 in the current
+               release of maven-dependency-plugin.  A fix is contained in a
+               newer release of one of that plugin's dependencies.
+
+               See: https://issues.apache.org/jira/browse/MDEP-613
+          -->
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.maven.shared</groupId>
+              <artifactId>maven-dependency-analyzer</artifactId>
+              <version>1.11.1</version>
+              <exclusions>
+                <exclusion>
+                  <artifactId>maven-project</artifactId>
+                  <groupId>org.apache.maven</groupId>
+                </exclusion>
+              </exclusions>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -329,6 +337,16 @@
             <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter-engine</ignoredUnusedDeclaredDependency>
 
           </ignoredUnusedDeclaredDependencies>
+          <ignoredUsedUndeclaredDependencies>
+
+            <!-- We always want to use the version of xnio-api that is picked up
+                 from our dependency on undertow.  If we declared our own
+                 xnio-api dependency, then we would have to specify the version
+                 ourselves, and that would introduce the possibility of us
+                 specifying the wrong version. -->
+            <ignoredUsedUndeclaredDependency>org.jboss.xnio:xnio-api</ignoredUsedUndeclaredDependency>
+
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
 
@@ -359,7 +377,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <encoding>UTF-8</encoding>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
           <compilerArgs>
