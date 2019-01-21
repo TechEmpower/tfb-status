@@ -49,7 +49,7 @@
     <nullaway.version>0.6.4</nullaway.version>
     <slf4j.version>1.7.25</slf4j.version>
     <threeten-extra.version>1.4</threeten-extra.version>
-    <undertow.version>2.0.16.Final</undertow.version>
+    <undertow.version>2.0.17.Final</undertow.version>
     <versions-maven-plugin.version>2.7</versions-maven-plugin.version>
   </properties>
 

@@ -12,7 +12,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import tfb.status.testlib.TestServices;
 import tfb.status.view.Results;
@@ -20,9 +19,6 @@ import tfb.status.view.Results;
 /**
  * Tests for {@link DownloadResultsHandler}.
  */
-// FIXME: Use a version of Undertow where PathResourceManager supports
-//        non-default file systems, then re-enable this test.
-@Disabled
 public final class DownloadResultsHandlerTest {
   private static TestServices services;
   private static ObjectMapper objectMapper;
