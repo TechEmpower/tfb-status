@@ -442,7 +442,7 @@ public final class UploadResultsHandler implements HttpHandler {
               ? null
               : diffGenerator.diff(previousResults, results);
 
-      String subject = "Run complete: " + results.name;
+      String subject = "<tfb> <auto> Run complete: " + results.name;
 
       String textContent =
           prepareEmailBody(
