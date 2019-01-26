@@ -97,7 +97,7 @@ The HTML of the results detail page.
     <ul class="failures">
     {{#zip.failures}}
       <li>
-        [{{framework}}]
+        <a href="/unzip/{{zip.fileName}}/{{framework}}">[{{framework}}]</a>
         {{#hadSetupProblems}} had problems starting or stopping{{/hadSetupProblems}}
         {{^failedTestTypes.isEmpty}}{{#hadSetupProblems}},{{/hadSetupProblems}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}
     {{/zip.failures}}
