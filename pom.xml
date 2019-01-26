@@ -45,7 +45,7 @@
     <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
     <maven-site-plugin.version>3.7.1</maven-site-plugin.version>
     <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
-    <mustache.version>0.9.5</mustache.version>
+    <mustache.version>0.9.6</mustache.version>
     <nullaway.version>0.6.4</nullaway.version>
     <slf4j.version>1.7.25</slf4j.version>
     <threeten-extra.version>1.4</threeten-extra.version>
