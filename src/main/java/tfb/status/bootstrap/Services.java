@@ -43,6 +43,7 @@ import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
 import tfb.status.service.Authenticator;
 import tfb.status.service.FileStore;
+import tfb.status.service.RunProgressMonitor;
 import tfb.status.service.StandardFileSystem;
 import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
@@ -129,6 +130,7 @@ public final class Services {
         bindAsContract(EmailSender.class).in(Singleton.class);
         bindAsContract(DiffGenerator.class).in(Singleton.class);
         bindAsContract(FileStore.class).in(Singleton.class);
+        bindAsContract(RunProgressMonitor.class).in(Singleton.class);
 
         bindFactory(StandardObjectMapper.class, Singleton.class)
             .to(ObjectMapper.class)

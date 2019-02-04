@@ -46,6 +46,7 @@ import tfb.status.service.Authenticator;
 import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
+import tfb.status.service.RunProgressMonitor;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
@@ -70,7 +71,8 @@ public final class UploadResultsHandler implements HttpHandler {
                               EmailSender emailSender,
                               HomeUpdatesHandler homeUpdates,
                               DiffGenerator diffGenerator,
-                              Clock clock) {
+                              Clock clock,
+                              RunProgressMonitor runProgressMonitor) {
 
     var jsonHandler =
         new JsonHandler(
@@ -78,7 +80,8 @@ public final class UploadResultsHandler implements HttpHandler {
             /* authenticator= */ authenticator,
             /* homeUpdates=*/ homeUpdates,
             /* clock= */ clock,
-            /* objectMapper=*/ objectMapper);
+            /* objectMapper=*/ objectMapper,
+            /* runProgressMonitor= */ runProgressMonitor);
 
     var zipHandler =
         new ZipHandler(
@@ -88,7 +91,8 @@ public final class UploadResultsHandler implements HttpHandler {
             /* clock= */ clock,
             /* objectMapper=*/ objectMapper,
             /* emailSender=*/ emailSender,
-            /* diffGenerator=*/ diffGenerator);
+            /* diffGenerator=*/ diffGenerator,
+            /* runProgressMonitor= */ runProgressMonitor);
 
     HttpHandler handler =
         new MediaTypeHandler().addMediaType("application/json", jsonHandler)
@@ -207,6 +211,13 @@ public final class UploadResultsHandler implements HttpHandler {
     abstract String tryReadUuid(Path file);
 
     /**
+     * Returns the {@linkplain Results#environmentDescription environment} of
+     * the given file or {@code null} if the environment cannot be determined.
+     */
+    @Nullable
+    abstract String tryReadEnvironment(Path file);
+
+    /**
      * Returns {@code true} if the given newly-uploaded file is in the correct
      * format as required by this handler.
      */
@@ -222,12 +233,14 @@ public final class UploadResultsHandler implements HttpHandler {
   private static final class JsonHandler extends BaseHandler {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ObjectMapper objectMapper;
+    private final RunProgressMonitor runProgressMonitor;
 
     JsonHandler(FileStore fileStore,
                 Authenticator authenticator,
                 HomeUpdatesHandler homeUpdates,
                 Clock clock,
-                ObjectMapper objectMapper) {
+                ObjectMapper objectMapper,
+                RunProgressMonitor runProgressMonitor) {
 
       super(
           /* fileStore= */ fileStore,
@@ -237,6 +250,7 @@ public final class UploadResultsHandler implements HttpHandler {
           /* fileExtension= */ "json");
 
       this.objectMapper = Objects.requireNonNull(objectMapper);
+      this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
     }
 
     @Override
@@ -253,6 +267,19 @@ public final class UploadResultsHandler implements HttpHandler {
     }
 
     @Override
+    @Nullable
+    String tryReadEnvironment(Path jsonFile) {
+      Objects.requireNonNull(jsonFile);
+      Results results;
+      try (InputStream inputStream = Files.newInputStream(jsonFile)) {
+        results = objectMapper.readValue(inputStream, Results.class);
+      } catch (IOException ignored) {
+        return null;
+      }
+      return results.environmentDescription;
+    }
+
+    @Override
     boolean isValidNewFile(Path newJsonFile) {
       Objects.requireNonNull(newJsonFile);
       try (InputStream inputStream = Files.newInputStream(newJsonFile)) {
@@ -266,7 +293,12 @@ public final class UploadResultsHandler implements HttpHandler {
 
     @Override
     void runPostUploadActions(Path newJsonFile) {
-      // Do nothing.
+      String environment = tryReadEnvironment(newJsonFile);
+      if (environment != null) {
+        runProgressMonitor.recordProgress(
+            /* environment= */ environment,
+            /* expectMore= */ true);
+      }
     }
   }
 
@@ -277,6 +309,7 @@ public final class UploadResultsHandler implements HttpHandler {
     private final EmailSender emailSender;
     private final DiffGenerator diffGenerator;
     private final Clock clock;
+    private final RunProgressMonitor runProgressMonitor;
 
     ZipHandler(FileStore fileStore,
                Authenticator authenticator,
@@ -284,7 +317,8 @@ public final class UploadResultsHandler implements HttpHandler {
                Clock clock,
                ObjectMapper objectMapper,
                EmailSender emailSender,
-               DiffGenerator diffGenerator) {
+               DiffGenerator diffGenerator,
+               RunProgressMonitor runProgressMonitor) {
 
       super(
           /* fileStore= */ fileStore,
@@ -298,6 +332,7 @@ public final class UploadResultsHandler implements HttpHandler {
       this.clock = Objects.requireNonNull(clock);
       this.emailSender = Objects.requireNonNull(emailSender);
       this.diffGenerator = Objects.requireNonNull(diffGenerator);
+      this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
     }
 
     @Override
@@ -317,6 +352,25 @@ public final class UploadResultsHandler implements HttpHandler {
         return null;
       }
       return (parsed == null) ? null : parsed.uuid;
+    }
+
+    @Override
+    @Nullable
+    String tryReadEnvironment(Path zipFile) {
+      Objects.requireNonNull(zipFile);
+      Results results;
+      try {
+        results =
+            ZipFiles.readZipEntry(
+                /* zipFile= */ zipFile,
+                /* entryPath= */ "results.json",
+                /* entryReader= */ inputStream ->
+                                       objectMapper.readValue(inputStream,
+                                                              Results.class));
+      } catch (IOException ignored) {
+        return null;
+      }
+      return (results == null) ? null : results.environmentDescription;
     }
 
     @Override
@@ -353,6 +407,15 @@ public final class UploadResultsHandler implements HttpHandler {
       maybeSendEmail(
           /* newZipFile= */ newZipFile,
           /* rawResultsBytes= */ rawResultsBytes);
+
+      String environment = tryReadEnvironment(newZipFile);
+      if (environment != null) {
+        // TODO: It's not great to have "Citrine" hardcoded.  How else can we
+        //       detect that this is a continuous benchmarking environment?
+        runProgressMonitor.recordProgress(
+            /* environment= */ environment,
+            /* expectMore= */ "Citrine".equals(environment));
+      }
     }
 
     //
