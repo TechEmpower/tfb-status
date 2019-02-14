@@ -1,6 +1,7 @@
 package tfb.status.service;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,15 +18,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Complains over email when it appears that a benchmarking environment has
- * stopped sending updates.
+ * Complains over email when a benchmarking environment has stopped sending
+ * updates.
  */
 public final class RunProgressMonitor {
   private final EmailSender emailSender;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @GuardedBy("this") @Nullable private ScheduledThreadPoolExecutor taskScheduler;
-  @GuardedBy("this") private final Map<String, ScheduledFuture<?>> environmentToTask = new HashMap<>();
+  @GuardedBy("this")
+  @Nullable
+  private ScheduledThreadPoolExecutor taskScheduler;
+
+  @GuardedBy("this")
+  private final Map<String, ScheduledFuture<?>> environmentToTask = new HashMap<>();
 
   @Inject
   public RunProgressMonitor(EmailSender emailSender) {
@@ -89,7 +94,7 @@ public final class RunProgressMonitor {
 
     environmentToTask.compute(
         environment,
-        (env, oldTask) -> {
+        (String env, ScheduledFuture<?> oldTask) -> {
 
           if (oldTask != null)
             oldTask.cancel(false);
@@ -104,14 +109,14 @@ public final class RunProgressMonitor {
                   environmentToTask.remove(environment);
                 }
 
-                complain(env);
+                complain(environment);
               },
-              /* delay= */ COMPLAINT_DELAY_IN_HOURS,
-              /* unit= */ TimeUnit.HOURS);
+              /* delay= */ COMPLAINT_DELAY.toMillis(),
+              /* unit= */ TimeUnit.MILLISECONDS);
         });
   }
 
-  private static final long COMPLAINT_DELAY_IN_HOURS = 6;
+  private static final Duration COMPLAINT_DELAY = Duration.ofHours(6);
   private static final int MAX_ENVIRONMENTS = 5;
 
   private void complain(String environment) {
