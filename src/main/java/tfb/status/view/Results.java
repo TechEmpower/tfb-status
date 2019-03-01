@@ -480,7 +480,7 @@ public final class Results {
   @Immutable
   public static final class UuidOnly {
     /**
-     * @see Results#uuid
+     * See {@link Results#uuid}.
      */
     @Nullable
     public final String uuid;

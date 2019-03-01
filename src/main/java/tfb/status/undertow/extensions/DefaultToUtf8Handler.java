@@ -70,7 +70,7 @@ public final class DefaultToUtf8Handler implements HttpHandler {
       return false;
     }
 
-    private static ImmutableSet<MediaType> KNOWN_TEXT_TYPES =
+    private static final ImmutableSet<MediaType> KNOWN_TEXT_TYPES =
         ImmutableSet.of(
             ANY_TEXT_TYPE,
             MediaType.create("application", "javascript"));
