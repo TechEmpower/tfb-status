@@ -18,9 +18,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <bcrypt.version>0.4</bcrypt.version>
-    <caffeine.version>2.6.2</caffeine.version>
+    <caffeine.version>2.7.0</caffeine.version>
     <crawler-commons.version>0.10</crawler-commons.version>
-    <error-prone.version>2.3.2</error-prone.version>
+    <error-prone.version>2.3.3</error-prone.version>
     <extra-enforcer-rules.version>1.1</extra-enforcer-rules.version>
     <git-commit-id-plugin.version>2.2.5</git-commit-id-plugin.version>
     <greenmail.version>1.5.9</greenmail.version>
@@ -46,10 +46,10 @@
     <maven-site-plugin.version>3.7.1</maven-site-plugin.version>
     <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
     <mustache.version>0.9.6</mustache.version>
-    <nullaway.version>0.6.4</nullaway.version>
-    <slf4j.version>1.7.25</slf4j.version>
-    <threeten-extra.version>1.4</threeten-extra.version>
-    <undertow.version>2.0.17.Final</undertow.version>
+    <nullaway.version>0.6.6</nullaway.version>
+    <slf4j.version>1.7.26</slf4j.version>
+    <threeten-extra.version>1.5.0</threeten-extra.version>
+    <undertow.version>2.0.19.Final</undertow.version>
     <versions-maven-plugin.version>2.7</versions-maven-plugin.version>
   </properties>
 
@@ -419,11 +419,12 @@
               -Xep:Java7ApiChecker:OFF
               -Xep:AndroidJdkLibsChecker:OFF
 
-              <!-- This check is potentially interesting but it's broken in
-                   Error Prone 2.3.2.  It should be fixed in the next release.
+              <!-- These checks seem interesting but they either throw
+                   exceptions or report too many false positives.
 
-                   TODO: Re-enable this check when we next upgrade Error Prone.
-              -->
+                   We last tried these checks in Error Prone 2.3.3. -->
+              -Xep:FieldCanBeFinal:OFF
+              -Xep:FieldMissingNullable:OFF
               -Xep:NullableDereference:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
