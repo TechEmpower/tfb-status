@@ -11,7 +11,7 @@
   <version>1.0-SNAPSHOT</version>
 
   <properties>
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.release>12</maven.compiler.release>
 
     <oldestCompatibleMavenVersion>3.5.0</oldestCompatibleMavenVersion>
 
@@ -426,6 +426,7 @@
               -Xep:FieldCanBeFinal:OFF
               -Xep:FieldMissingNullable:OFF
               -Xep:NullableDereference:OFF
+              -Xep:Finally:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
