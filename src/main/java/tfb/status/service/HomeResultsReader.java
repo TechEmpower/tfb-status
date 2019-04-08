@@ -3,7 +3,6 @@ package tfb.status.service;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
-import static java.util.Comparator.nullsLast;
 import static java.util.Comparator.reverseOrder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -685,37 +684,28 @@ public final class HomeResultsReader {
   /**
    * The ordering of results displayed on the home page.
    */
-  private static final Comparator<ResultsView> RESULTS_COMPARATOR;
-  static {
-    //
-    // In practice, the results files are named like this:
-    //
-    //   results.{uploaded_at_date_time}.{json|zip}
-    //
-    // where {uploaded_at_date_time} is in the format "yyyy-MM-dd-HH-mm-ss-SSS".
-    //
-    // Therefore, sorting by file name effectively sorts the results by when
-    // they were uploaded, and this comparator puts the most recently uploaded
-    // results first.
-    //
+  //
+  // In practice, the results files are named like this:
+  //
+  //   results.{uploaded_at_date_time}.{json|zip}
+  //
+  // where {uploaded_at_date_time} is in the format "yyyy-MM-dd-HH-mm-ss-SSS".
+  //
+  // Therefore, sorting by file name effectively sorts the results by when they
+  // were uploaded, and this comparator puts the most recently uploaded results
+  // first.
+  //
+  private static final Comparator<ResultsView> RESULTS_COMPARATOR =
+      comparing(
+          results -> {
+            if (results.json != null)
+              return results.json.fileName;
 
-    Comparator<ResultsJsonView> jsonFilesOrderedByFileName =
-        comparing(json -> json.fileName,
-                  reverseOrder());
+            else if (results.zip != null)
+              return results.zip.fileName;
 
-    Comparator<ResultsZipView> zipFilesOrderedByFileName =
-        comparing(zip -> zip.fileName,
-                  reverseOrder());
-
-    Comparator<ResultsView> resultsOrderedByJsonFile =
-        comparing(results -> results.json,
-                  nullsLast(jsonFilesOrderedByFileName));
-
-    Comparator<ResultsView> resultsOrderedByZipFile =
-        comparing(results -> results.zip,
-                  nullsLast(zipFilesOrderedByFileName));
-
-    RESULTS_COMPARATOR =
-        resultsOrderedByJsonFile.thenComparing(resultsOrderedByZipFile);
-  }
+            else
+              return "";
+          },
+          reverseOrder());
 }
