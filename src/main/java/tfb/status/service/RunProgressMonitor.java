@@ -72,6 +72,7 @@ public final class RunProgressMonitor {
    * @param environment the name of the environment
    * @param expectMore {@code true} if this service should expect more progress
    *        to be made in this same environment
+   * @throws IllegalStateException if this service is not running
    */
   public synchronized void recordProgress(String environment,
                                           boolean expectMore) {

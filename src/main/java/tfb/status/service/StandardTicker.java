@@ -9,8 +9,8 @@ import org.glassfish.hk2.api.Factory;
  * Provides the standard {@link Ticker} used by this application.
  *
  * <p>Use this ticker to measure elapsed time.  Avoid using APIs that implicitly
- * rely on the system clock.  This usage pattern allows us to swap in a "fake"
- * ticker during tests and manipulate the apparent passage of time.
+ * rely on the system clock.  This usage pattern allows us to swap in a
+ * different ticker during tests and manipulate the apparent passage of time.
  *
  * <table>
  *   <caption>APIs to avoid and their replacements</caption>

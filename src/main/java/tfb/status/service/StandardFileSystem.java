@@ -14,9 +14,9 @@ import org.glassfish.hk2.api.Factory;
  * Provides the standard {@link FileSystem} used by this application.
  *
  * <p>Use this file system to resolve paths to files.  Avoid using APIs that
- * implicitly rely on the default file system.  This usage pattern allows us to
- * swap in a "fake" file system during tests, which we can throw away entirely
- * when the tests complete.
+ * implicitly rely on the platform's default file system.  This usage pattern
+ * allows us to swap in a different file system during tests, which we can
+ * discard when the tests complete.
  *
  * <table>
  *   <caption>APIs to avoid and their replacements</caption>
@@ -38,8 +38,8 @@ import org.glassfish.hk2.api.Factory;
  * </table>
  *
  * <p>It is not necessary to use the provided file system for temporary files.
- * These APIs are ok to use even though they always write to the default file
- * system:
+ * These APIs are ok to use even though they always write to the platform's
+ * default file system:
  *
  * <ul>
  * <li>{@link Files#createTempFile(String, String, FileAttribute[])}

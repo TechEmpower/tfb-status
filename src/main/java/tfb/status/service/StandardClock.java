@@ -13,8 +13,8 @@ import org.glassfish.hk2.api.Factory;
  *
  * <p>Use this clock to get the current date, time, or time-zone.  Avoid using
  * APIs that implicitly rely on the system clock or the default time-zone.  This
- * usage pattern allows us to swap in a "fake" clock during tests and manipulate
- * the apparent date and time.
+ * usage pattern allows us to swap in a different clock during tests and
+ * manipulate the apparent date and time.
  *
  * <table>
  *   <caption>APIs to avoid and their replacements</caption>

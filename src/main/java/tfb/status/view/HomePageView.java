@@ -47,6 +47,7 @@ public final class HomePageView {
     public ResultsView(@Nullable ResultsJsonView json,
                        @Nullable ResultsZipView zip) {
 
+      // TODO: Validate that one of these is not null?
       this.json = json;
       this.zip = zip;
 
