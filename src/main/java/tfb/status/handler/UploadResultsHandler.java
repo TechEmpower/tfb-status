@@ -46,12 +46,13 @@ import tfb.status.service.Authenticator;
 import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
+import tfb.status.service.HomeResultsReader;
 import tfb.status.service.RunProgressMonitor;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
+import tfb.status.view.HomePageView.ResultsView;
 import tfb.status.view.Results;
-import tfb.status.view.Results.UuidOnly;
 
 /**
  * Handles requests to upload a file containing results from a TFB run.  The
@@ -70,6 +71,7 @@ public final class UploadResultsHandler implements HttpHandler {
                               ObjectMapper objectMapper,
                               EmailSender emailSender,
                               HomeUpdatesHandler homeUpdates,
+                              HomeResultsReader homeResultsReader,
                               DiffGenerator diffGenerator,
                               Clock clock,
                               RunProgressMonitor runProgressMonitor) {
@@ -79,6 +81,7 @@ public final class UploadResultsHandler implements HttpHandler {
             /* fileStore= */ fileStore,
             /* authenticator= */ authenticator,
             /* homeUpdates=*/ homeUpdates,
+            /* homeResultsReader=*/ homeResultsReader,
             /* clock= */ clock,
             /* objectMapper=*/ objectMapper,
             /* runProgressMonitor= */ runProgressMonitor);
@@ -88,6 +91,7 @@ public final class UploadResultsHandler implements HttpHandler {
             /* fileStore= */ fileStore,
             /* authenticator= */ authenticator,
             /* homeUpdates=*/ homeUpdates,
+            /* homeResultsReader=*/ homeResultsReader,
             /* clock= */ clock,
             /* objectMapper=*/ objectMapper,
             /* emailSender=*/ emailSender,
@@ -115,6 +119,7 @@ public final class UploadResultsHandler implements HttpHandler {
    */
   private abstract static class BaseHandler implements HttpHandler {
     private final HomeUpdatesHandler homeUpdates;
+    private final HomeResultsReader homeResultsReader;
     private final Clock clock;
     private final FileStore fileStore;
     private final String fileExtension;
@@ -122,10 +127,12 @@ public final class UploadResultsHandler implements HttpHandler {
     BaseHandler(FileStore fileStore,
                 Authenticator authenticator,
                 HomeUpdatesHandler homeUpdates,
+                HomeResultsReader homeResultsReader,
                 Clock clock,
                 String fileExtension) {
 
       this.homeUpdates = Objects.requireNonNull(homeUpdates);
+      this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
       this.clock = Objects.requireNonNull(clock);
       this.fileStore = Objects.requireNonNull(fileStore);
       this.fileExtension = Objects.requireNonNull(fileExtension);
@@ -176,18 +183,17 @@ public final class UploadResultsHandler implements HttpHandler {
       if (incomingUuid == null)
         return newResultsFile();
 
-      try (DirectoryStream<Path> filesOfSameType =
-               Files.newDirectoryStream(fileStore.resultsDirectory(),
-                                        "*." + fileExtension)) {
+      ResultsView results = homeResultsReader.resultsByUuid(incomingUuid);
+      if (results == null)
+        return newResultsFile();
 
-        for (Path existingFile : filesOfSameType) {
-          String existingUuid = tryReadUuid(existingFile);
+      if (results.json != null
+          && results.json.fileName.endsWith("." + fileExtension))
+        return fileStore.resultsDirectory().resolve(results.json.fileName);
 
-          // TODO: Also check if the file was updated more recently than ours?
-          if (incomingUuid.equals(existingUuid))
-            return existingFile;
-        }
-      }
+      if (results.zip != null
+          && results.zip.fileName.endsWith("." + fileExtension))
+        return fileStore.resultsDirectory().resolve(results.zip.fileName);
 
       return newResultsFile();
     }
@@ -238,6 +244,7 @@ public final class UploadResultsHandler implements HttpHandler {
     JsonHandler(FileStore fileStore,
                 Authenticator authenticator,
                 HomeUpdatesHandler homeUpdates,
+                HomeResultsReader homeResultsReader,
                 Clock clock,
                 ObjectMapper objectMapper,
                 RunProgressMonitor runProgressMonitor) {
@@ -246,6 +253,7 @@ public final class UploadResultsHandler implements HttpHandler {
           /* fileStore= */ fileStore,
           /* authenticator= */ authenticator,
           /* homeUpdates= */ homeUpdates,
+          /* homeResultsReader= */ homeResultsReader,
           /* clock= */ clock,
           /* fileExtension= */ "json");
 
@@ -257,9 +265,9 @@ public final class UploadResultsHandler implements HttpHandler {
     @Nullable
     String tryReadUuid(Path jsonFile) {
       Objects.requireNonNull(jsonFile);
-      UuidOnly parsed;
+      Results parsed;
       try (InputStream inputStream = Files.newInputStream(jsonFile)) {
-        parsed = objectMapper.readValue(inputStream, UuidOnly.class);
+        parsed = objectMapper.readValue(inputStream, Results.class);
       } catch (IOException ignored) {
         return null;
       }
@@ -314,6 +322,7 @@ public final class UploadResultsHandler implements HttpHandler {
     ZipHandler(FileStore fileStore,
                Authenticator authenticator,
                HomeUpdatesHandler homeUpdates,
+               HomeResultsReader homeResultsReader,
                Clock clock,
                ObjectMapper objectMapper,
                EmailSender emailSender,
@@ -324,6 +333,7 @@ public final class UploadResultsHandler implements HttpHandler {
           /* fileStore= */ fileStore,
           /* authenticator= */ authenticator,
           /* homeUpdates= */ homeUpdates,
+          /* homeResultsReader= */ homeResultsReader,
           /* clock= */ clock,
           /* fileExtension= */ "zip");
 
@@ -339,7 +349,7 @@ public final class UploadResultsHandler implements HttpHandler {
     @Nullable
     String tryReadUuid(Path zipFile) {
       Objects.requireNonNull(zipFile);
-      UuidOnly parsed;
+      Results parsed;
       try {
         parsed =
             ZipFiles.readZipEntry(
@@ -347,7 +357,7 @@ public final class UploadResultsHandler implements HttpHandler {
                 /* entryPath= */ "results.json",
                 /* entryReader= */ inputStream ->
                                        objectMapper.readValue(inputStream,
-                                                              UuidOnly.class));
+                                                              Results.class));
       } catch (IOException ignored) {
         return null;
       }

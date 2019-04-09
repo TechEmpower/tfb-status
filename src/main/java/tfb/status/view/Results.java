@@ -474,24 +474,6 @@ public final class Results {
   }
 
   /**
-   * A slimmed-down view of a results.json file that only includes its
-   * (optional) {@link Results#uuid} field.
-   */
-  @Immutable
-  public static final class UuidOnly {
-    /**
-     * See {@link Results#uuid}.
-     */
-    @Nullable
-    public final String uuid;
-
-    @JsonCreator
-    public UuidOnly(@Nullable @JsonProperty("uuid") String uuid) {
-      this.uuid = uuid;
-    }
-  }
-
-  /**
    * The set of all known test types.
    */
   public static final ImmutableSet<String> TEST_TYPES =
