@@ -187,13 +187,13 @@ public final class UploadResultsHandler implements HttpHandler {
       if (results == null)
         return newResultsFile();
 
-      if (results.json != null
-          && results.json.fileName.endsWith("." + fileExtension))
-        return fileStore.resultsDirectory().resolve(results.json.fileName);
+      if (results.jsonFileName != null
+          && results.jsonFileName.endsWith("." + fileExtension))
+        return fileStore.resultsDirectory().resolve(results.jsonFileName);
 
-      if (results.zip != null
-          && results.zip.fileName.endsWith("." + fileExtension))
-        return fileStore.resultsDirectory().resolve(results.zip.fileName);
+      if (results.zipFileName != null
+          && results.zipFileName.endsWith("." + fileExtension))
+        return fileStore.resultsDirectory().resolve(results.zipFileName);
 
       return newResultsFile();
     }

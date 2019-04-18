@@ -1,28 +1,22 @@
 <tr {{#uuid}}data-uuid="{{uuid}}"{{/uuid}}>
 <td>
-  {{#json}}
-    {{json.environmentDescription}}<br>
-  {{/json}}
+  {{environmentDescription}}<br>
   {{#uuid}}
     Run ID: <code>{{uuid}}</code><br>
     <a href="/results/{{uuid}}">details</a><br>
-    {{#zip}}
+    {{#zipFileName}}
       <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">visualize</a><br>
-    {{/zip}}
+    {{/zipFileName}}
   {{/uuid}}
 <td>
-  {{#json}}
-    {{json.completedFrameworks}}/{{json.totalFrameworks}} frameworks tested<br>
-    {{json.frameworksWithCleanSetup}} frameworks started and stopped cleanly<br>
-    {{json.frameworksWithSetupProblems}} frameworks had problems starting or stopping<br>
-    {{json.successfulTests}} tests passed<br>
-    {{json.failedTests}} tests failed<br>
-  {{/json}}
+  {{completedFrameworks}}/{{totalFrameworks}} frameworks tested<br>
+  {{frameworksWithCleanSetup}} frameworks started and stopped cleanly<br>
+  {{frameworksWithSetupProblems}} frameworks had problems starting or stopping<br>
+  {{successfulTests}} tests passed<br>
+  {{failedTests}} tests failed<br>
 <td>
-  {{#json}}
-    {{#json.startTime}}started {{json.startTime}}<br>{{/json.startTime}}
-    {{#json.lastUpdated}}last updated {{json.lastUpdated}}<br>{{/json.lastUpdated}}
-    {{#json.completionTime}}completed {{json.completionTime}}<br>{{/json.completionTime}}
-    {{#json.elapsedDuration}}elapsed time {{json.elapsedDuration}}<br>{{/json.elapsedDuration}}
-    {{#json.estimatedRemainingDuration}}estimated remaining time {{json.estimatedRemainingDuration}}<br>{{/json.estimatedRemainingDuration}}
-  {{/json}}
+  {{#startTime}}started {{startTime}}<br>{{/startTime}}
+  {{#lastUpdated}}last updated {{lastUpdated}}<br>{{/lastUpdated}}
+  {{#completionTime}}completed {{completionTime}}<br>{{/completionTime}}
+  {{#elapsedDuration}}elapsed time {{elapsedDuration}}<br>{{/elapsedDuration}}
+  {{#estimatedRemainingDuration}}estimated remaining time {{estimatedRemainingDuration}}<br>{{/estimatedRemainingDuration}}

@@ -54,32 +54,29 @@ public final class HomeResultsReaderTest {
     assertNotNull(results);
     assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);
 
-    assertNotNull(results.git);
-    assertEquals("ef202bb6ef535086ccf94d0a4064548fe41b4ca8", results.git.commitId);
+    assertEquals("ef202bb6ef535086ccf94d0a4064548fe41b4ca8", results.commitId);
 
-    assertNotNull(results.json);
-    assertEquals("results.2017-12-26-05-07-14-321.json", results.json.fileName);
-    assertEquals(459, results.json.totalFrameworks);
-    assertEquals(1652, results.json.successfulTests);
-    assertEquals(117, results.json.failedTests);
-    assertEquals(373, results.json.frameworksWithCleanSetup);
-    assertEquals(45, results.json.frameworksWithSetupProblems);
+    assertEquals("results.2017-12-26-05-07-14-321.json", results.jsonFileName);
+    assertEquals(459, results.totalFrameworks);
+    assertEquals(1652, results.successfulTests);
+    assertEquals(117, results.failedTests);
+    assertEquals(373, results.frameworksWithCleanSetup);
+    assertEquals(45, results.frameworksWithSetupProblems);
 
-    assertNotNull(results.zip);
-    assertEquals("results.2017-12-29-23-04-02-541.zip", results.zip.fileName);
-    assertEquals(76, results.zip.failures.size());
+    assertEquals("results.2017-12-29-23-04-02-541.zip", results.zipFileName);
+    assertEquals(76, results.failures.size());
 
     assertEquals(
         45,
-        results.zip.failures.stream()
-                            .filter(failure -> failure.hadSetupProblems)
-                            .count());
+        results.failures.stream()
+                        .filter(failure -> failure.hadSetupProblems)
+                        .count());
 
     assertEquals(
         37,
-        results.zip.failures.stream()
-                            .filter(failure -> !failure.failedTestTypes.isEmpty())
-                            .count());
+        results.failures.stream()
+                        .filter(failure -> !failure.failedTestTypes.isEmpty())
+                        .count());
   }
 
   /**

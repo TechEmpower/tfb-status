@@ -14,18 +14,16 @@ The HTML of the results detail page.
 {{#result}}
 
 <p>
-{{#json}}
-  {{json.environmentDescription}}<br>
-{{/json}}
+{{environmentDescription}}<br>
 
 {{#uuid}}
   Run ID: <code>{{uuid}}</code><br>
-  {{#zip}}
+  {{#zipFileName}}
     <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
-  {{/zip}}
+  {{/zipFileName}}
 {{/uuid}}
 
-{{#git}}
+{{#commitId}}
   <p>
   commit:
   {{#browseCommitUrl}}
@@ -62,48 +60,44 @@ The HTML of the results detail page.
   {{^branchName}}
     (unknown, probably <code>master</code>)
   {{/branchName}}
-{{/git}}
-{{^git}}
+{{/commitId}}
+{{^commitId}}
   <p>We don't know what version of TFB was used for this run.
      That probably means it's an old version.
-{{/git}}
-
-{{#json}}
-  <p>
-  {{json.completedFrameworks}}/{{json.totalFrameworks}} frameworks tested<br>
-  {{json.frameworksWithCleanSetup}} frameworks started and stopped cleanly<br>
-  {{json.frameworksWithSetupProblems}} frameworks had problems starting or stopping<br>
-  {{json.successfulTests}} tests passed<br>
-  {{json.failedTests}} tests failed<br>
-{{/json}}
-
-{{#json}}
-  <p>
-  {{#json.startTime}}started {{json.startTime}}<br>{{/json.startTime}}
-  {{#json.lastUpdated}}last updated {{json.lastUpdated}}<br>{{/json.lastUpdated}}
-  {{#json.completionTime}}completed {{json.completionTime}}<br>{{/json.completionTime}}
-  {{#json.elapsedDuration}}elapsed time {{json.elapsedDuration}}<br>{{/json.elapsedDuration}}
-  {{#json.estimatedRemainingDuration}}estimated remaining time {{json.estimatedRemainingDuration}}<br>{{/json.estimatedRemainingDuration}}
-{{/json}}
+{{/commitId}}
 
 <p>
-{{#json}}<a href="/raw/{{json.fileName}}">results.json</a><br>{{/json}}
-{{#zip}}<a href="/raw/{{zip.fileName}}">results.zip</a> (<a href="/unzip/{{zip.fileName}}">browse</a>)<br>{{/zip}}
-{{#zip}}<a href="/attributes?zipFile={{zip.fileName}}">tfb-lookup.js update helper</a><br>{{/zip}}
-{{#zip}}{{#json}}<a href="/export/{{json.fileName}}">minified results.json</a><br>{{/json}}{{/zip}}
-{{#zip}}
-  {{^zip.failures.isEmpty}}
-    <p>Frameworks with test failures:<br>
-    <ul class="failures">
-    {{#zip.failures}}
-      <li>
-        <a href="/unzip/{{zip.fileName}}/{{framework}}">[{{framework}}]</a>
-        {{#hadSetupProblems}} had problems starting or stopping{{/hadSetupProblems}}
-        {{^failedTestTypes.isEmpty}}{{#hadSetupProblems}},{{/hadSetupProblems}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}
-    {{/zip.failures}}
-    </ul>
-  {{/zip.failures.isEmpty}}
-{{/zip}}
+{{completedFrameworks}}/{{totalFrameworks}} frameworks tested<br>
+{{frameworksWithCleanSetup}} frameworks started and stopped cleanly<br>
+{{frameworksWithSetupProblems}} frameworks had problems starting or stopping<br>
+{{successfulTests}} tests passed<br>
+{{failedTests}} tests failed<br>
+
+<p>
+{{#startTime}}started {{startTime}}<br>{{/startTime}}
+{{#lastUpdated}}last updated {{lastUpdated}}<br>{{/lastUpdated}}
+{{#completionTime}}completed {{completionTime}}<br>{{/completionTime}}
+{{#elapsedDuration}}elapsed time {{elapsedDuration}}<br>{{/elapsedDuration}}
+{{#estimatedRemainingDuration}}estimated remaining time {{estimatedRemainingDuration}}<br>{{/estimatedRemainingDuration}}
+
+<p>
+{{#jsonFileName}}<a href="/raw/{{jsonFileName}}">results.json</a><br>{{/jsonFileName}}
+{{#zipFileName}}<a href="/raw/{{zipFileName}}">results.zip</a> (<a href="/unzip/{{zipFileName}}">browse</a>)<br>{{/zipFileName}}
+{{#zipFileName}}<a href="/attributes?zipFile={{zipFileName}}">tfb-lookup.js update helper</a><br>{{/zipFileName}}
+{{#zipFileName}}{{#jsonFileName}}<a href="/export/{{jsonFileName}}">minified results.json</a><br>{{/jsonFileName}}{{/zipFileName}}
+
+{{^failures.isEmpty}}
+  <p>Frameworks with test failures:<br>
+  <ul class="failures">
+  {{#failures}}
+    <li>
+      {{#zipFileName}}<a href="/unzip/{{zipFileName}}/{{framework}}">[{{framework}}]</a>{{/zipFileName}}
+      {{^zipFileName}}[{{framework}}]{{/zipFileName}}
+      {{#hadSetupProblems}} had problems starting or stopping{{/hadSetupProblems}}
+      {{^failedTestTypes.isEmpty}}{{#hadSetupProblems}},{{/hadSetupProblems}} failed:{{#failedTestTypes}} {{.}}{{/failedTestTypes}}{{/failedTestTypes.isEmpty}}
+  {{/failures}}
+  </ul>
+{{/failures.isEmpty}}
 
 {{/result}}
 

@@ -1,12 +1,12 @@
 package tfb.status.service;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.reverseOrder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Joiner;
@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.Immutable;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.BufferedReader;
@@ -30,19 +31,21 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -52,11 +55,8 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.util.ZipFiles;
-import tfb.status.view.HomePageView.ResultsGitView;
-import tfb.status.view.HomePageView.ResultsJsonView;
 import tfb.status.view.HomePageView.ResultsView;
-import tfb.status.view.HomePageView.ResultsZipView;
-import tfb.status.view.HomePageView.ResultsZipView.Failure;
+import tfb.status.view.HomePageView.ResultsView.Failure;
 import tfb.status.view.Results;
 
 /**
@@ -69,19 +69,14 @@ public final class HomeResultsReader {
   private final Clock clock;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final LoadingCache<ViewCacheKey, ResultsJsonView> jsonCache =
+  private final LoadingCache<FileKey, FileSummary> fileCache =
       Caffeine.newBuilder()
-              .maximumSize(VIEW_CACHE_MAX_SIZE)
-              .build(key -> viewJsonFile(key.file));
-
-  private final LoadingCache<ViewCacheKey, ResultsZipView> zipCache =
-      Caffeine.newBuilder()
-              .maximumSize(VIEW_CACHE_MAX_SIZE)
-              .build(key -> viewZipFile(key.file));
+              .maximumSize(FILE_CACHE_MAX_SIZE)
+              .build(key -> readFile(key.file));
 
   // This number should be greater than the total number of results files we'll
   // ever have on disk at once.
-  private static final int VIEW_CACHE_MAX_SIZE = 10_000;
+  private static final int FILE_CACHE_MAX_SIZE = 10_000;
 
   @GuardedBy("this") @Nullable private ScheduledThreadPoolExecutor purgeScheduler;
   @GuardedBy("this") @Nullable private ScheduledFuture<?> purgeTask;
@@ -147,70 +142,25 @@ public final class HomeResultsReader {
    * @throws IOException if an I/O error occurs while reading the results
    */
   public ImmutableList<ResultsView> results() throws IOException {
-    var jsonByUuid = new HashMap<String, ResultsJsonView>();
-    var jsonWithoutUuid = new ArrayList<ResultsJsonView>();
+    var noUuid = new ArrayList<FileSummary>();
+    var byUuid = new HashMap<String, List<FileSummary>>();
 
-    viewAllJsonFiles().forEach(
-        (ResultsJsonView view) -> {
-          if (view.uuid == null)
-            jsonWithoutUuid.add(view);
-
+    readAllFiles().forEach(
+        (FileSummary summary) -> {
+          if (summary.uuid == null)
+            noUuid.add(summary);
           else
-            jsonByUuid.merge(
-                view.uuid,
-                view,
-                (v1, v2) -> {
-                  logger.warn(
-                      "Ignoring results.json file {}, which has the same "
-                          + "uuid ({}) as another results.json file.",
-                      view.fileName, view.uuid);
-                  return v1;
-                });
-        });
-
-    var zipByUuid = new HashMap<String, ResultsZipView>();
-    var zipWithoutUuid = new ArrayList<ResultsZipView>();
-
-    viewAllZipFiles().forEach(
-        (ResultsZipView view) -> {
-          if (view.uuid == null)
-            zipWithoutUuid.add(view);
-
-          else
-            zipByUuid.merge(
-                view.uuid,
-                view,
-                (v1, v2) -> {
-                  logger.warn(
-                      "Ignoring results.zip file {}, which has the same "
-                          + "uuid ({}) as another results.zip file.",
-                      view.fileName, view.uuid);
-                  return v1;
-                });
+            byUuid.computeIfAbsent(summary.uuid, uuid -> new ArrayList<>())
+                  .add(summary);
         });
 
     var results = new ArrayList<ResultsView>();
 
-    Set<String> uuids = Sets.union(jsonByUuid.keySet(),
-                                   zipByUuid.keySet());
+    for (FileSummary summary : noUuid)
+      results.add(newResultsView(List.of(summary)));
 
-    for (String uuid : uuids) {
-      ResultsJsonView json = jsonByUuid.get(uuid);
-      ResultsZipView zip = zipByUuid.get(uuid);
-      results.add(new ResultsView(json, zip));
-    }
-
-    for (ResultsJsonView json : jsonWithoutUuid)
-      results.add(
-          new ResultsView(
-              /* json= */ json,
-              /* zip= */ null));
-
-    for (ResultsZipView zip : zipWithoutUuid)
-      results.add(
-          new ResultsView(
-              /* json= */ null,
-              /* zip= */ zip));
+    for (List<FileSummary> summaries : byUuid.values())
+      results.add(newResultsView(summaries));
 
     return ImmutableList.sortedCopyOf(RESULTS_COMPARATOR, results);
   }
@@ -229,64 +179,147 @@ public final class HomeResultsReader {
   public ResultsView resultsByUuid(String uuid) throws IOException {
     Objects.requireNonNull(uuid);
 
-    ResultsJsonView json =
-        viewAllJsonFiles()
-            .filter(view -> uuid.equals(view.uuid))
-            .findAny()
-            .orElse(null);
+    ImmutableList<FileSummary> summaries =
+        readAllFiles()
+            .filter(summary -> uuid.equals(summary.uuid))
+            .collect(toImmutableList());
 
-    ResultsZipView zip =
-        viewAllZipFiles()
-            .filter(view -> uuid.equals(view.uuid))
-            .findAny()
-            .orElse(null);
-
-    return (json == null && zip == null)
+    return summaries.isEmpty()
         ? null
-        : new ResultsView(json, zip);
+        : newResultsView(summaries);
   }
 
-  private Stream<ResultsJsonView> viewAllJsonFiles() throws IOException {
-    Stream.Builder<ViewCacheKey> keys = Stream.builder();
+  private Stream<FileSummary> readAllFiles() throws IOException {
+    Stream.Builder<FileKey> keys = Stream.builder();
 
-    try (DirectoryStream<Path> jsonFiles =
-             Files.newDirectoryStream(fileStore.resultsDirectory(), "*.json")) {
+    try (DirectoryStream<Path> files =
+             Files.newDirectoryStream(fileStore.resultsDirectory(),
+                                      "*.{json,zip}")) {
 
-      for (Path file : jsonFiles)
-        keys.add(new ViewCacheKey(file));
+      for (Path file : files)
+        keys.add(new FileKey(file));
     }
 
     return keys.build()
-               .map(key -> jsonCache.get(key))
-               .filter(view -> view != null);
-  }
-
-  private Stream<ResultsZipView> viewAllZipFiles() throws IOException {
-    Stream.Builder<ViewCacheKey> keys = Stream.builder();
-
-    try (DirectoryStream<Path> zipFiles =
-             Files.newDirectoryStream(fileStore.resultsDirectory(), "*.zip")) {
-
-      for (Path file : zipFiles)
-        keys.add(new ViewCacheKey(file));
-    }
-
-    return keys.build()
-               .map(key -> zipCache.get(key))
-               .filter(view -> view != null);
+               .map(key -> fileCache.get(key))
+               .filter(summary -> summary != null);
   }
 
   @Nullable
-  private ResultsJsonView viewJsonFile(Path jsonFile) {
+  private FileSummary readFile(Path file) {
+    Objects.requireNonNull(file);
+    switch (MoreFiles.getFileExtension(file)) {
+      case "json":
+        try {
+          return readJsonFile(file);
+        } catch (IOException e) {
+          logger.warn("Exception reading results.json file {}", file, e);
+          return null;
+        }
+      case "zip":
+        try {
+          return readZipFile(file);
+        } catch (IOException e) {
+          logger.warn("Exception reading results.zip file {}", file, e);
+          return null;
+        }
+      default:
+        logger.warn("Unknown format for results file {}", file);
+        return null;
+    }
+  }
+
+  private FileSummary readJsonFile(Path jsonFile) throws IOException {
     Objects.requireNonNull(jsonFile);
 
     Results results;
     try (InputStream inputStream = Files.newInputStream(jsonFile)) {
       results = objectMapper.readValue(inputStream, Results.class);
-    } catch (IOException e) {
-      logger.warn("Exception reading json file {}", jsonFile, e);
+    }
+
+    // TODO: Avoid using the last modified time of the file on disk, which may
+    //       change for reasons completely unrelated to the run itself, and use
+    //       something from the results.json file to give us a last modified
+    //       time instead.
+    FileTime lastModifiedTime  = Files.getLastModifiedTime(jsonFile);
+
+    Path relativePath = fileStore.resultsDirectory().relativize(jsonFile);
+    String fileName = Joiner.on('/').join(relativePath);
+
+    return summarizeResults(
+        /* results= */ results,
+        /* fileName= */ fileName,
+        /* lastUpdated= */ lastModifiedTime.toInstant(),
+        /* backupCommitId= */ null);
+  }
+
+  @Nullable
+  private FileSummary readZipFile(Path zipFile) throws IOException {
+    Objects.requireNonNull(zipFile);
+
+    Results results =
+        ZipFiles.readZipEntry(
+            /* zipFile= */ zipFile,
+            /* entryPath= */ "results.json",
+            /* entryReader= */ inputStream ->
+                                   objectMapper.readValue(inputStream,
+                                                          Results.class));
+
+    if (results == null) {
+      logger.warn(
+          "results.zip file {} does not contain a results.json file",
+          zipFile);
+
+      // If the zip doesn't contain a results.json at all, then we have nothing
+      // useful to say to users about it, and we want to pretend it doesn't
+      // exist.
       return null;
     }
+
+    // TODO: Avoid using the last modified time of the file on disk, which may
+    //       change for reasons completely unrelated to the run itself, and use
+    //       something from the results.json file to give us a last modified
+    //       time instead.
+    FileTime lastModifiedTime = Files.getLastModifiedTime(zipFile);
+
+    Path relativePath = fileStore.resultsDirectory().relativize(zipFile);
+    String fileName = Joiner.on('/').join(relativePath);
+
+    // If the results.json doesn't tell us the commit id, then search for a
+    // commit_id.txt file.  We used to capture the git commit id in its own file
+    // before we added it to results.json.
+    String backupCommitId;
+    if (results.git != null)
+      backupCommitId = null;
+    else {
+      backupCommitId =
+          ZipFiles.readZipEntry(
+              /* zipFile= */ zipFile,
+              /* entryPath= */ "commit_id.txt",
+              /* entryReader= */
+              inputStream -> {
+                try (var isr = new InputStreamReader(inputStream, UTF_8);
+                     var br = new BufferedReader(isr)) {
+                  return br.readLine();
+                }
+              });
+    }
+
+    return summarizeResults(
+        /* results= */ results,
+        /* fileName= */ fileName,
+        /* lastUpdated= */ lastModifiedTime.toInstant(),
+        /* backupCommitId= */ backupCommitId);
+  }
+
+  private FileSummary summarizeResults(Results results,
+                                       String fileName,
+                                       Instant lastUpdated,
+                                       @Nullable String backupCommitId) {
+
+    Objects.requireNonNull(results);
+    Objects.requireNonNull(fileName);
+    Objects.requireNonNull(lastUpdated);
 
     String uuid = results.uuid;
     String name = results.name;
@@ -324,149 +357,29 @@ public final class HomeResultsReader {
       }
     }
 
-    LocalDateTime startTime =
+    Instant startTime =
         (results.startTime == null)
             ? null
-            : epochMillisToDateTime(results.startTime, clock.getZone());
+            : Instant.ofEpochMilli(results.startTime);
 
-    LocalDateTime completionTime =
+    Instant completionTime =
         (results.completionTime == null)
             ? null
-            : epochMillisToDateTime(results.completionTime, clock.getZone());
+            : Instant.ofEpochMilli(results.completionTime);
 
-    Duration elapsedDuration;
-    Duration estimatedRemainingDuration;
+    String commitId;
+    String repositoryUrl;
+    String branchName;
 
-    if (startTime == null)
-      elapsedDuration = null;
-
-    else {
-      LocalDateTime endTime =
-          (completionTime == null)
-              ? LocalDateTime.now(clock)
-              : completionTime;
-      elapsedDuration = Duration.between(startTime, endTime);
-    }
-
-    if (completionTime != null
-        || startTime == null
-        || elapsedDuration == null
-        || completedFrameworks == 0)
-      estimatedRemainingDuration = null;
-
-    else
-      estimatedRemainingDuration =
-          elapsedDuration.multipliedBy(totalFrameworks)
-                         .dividedBy(completedFrameworks)
-                         .minus(elapsedDuration);
-
-    //
-    // TODO: Avoid using the last modified time of the file on disk, which may
-    //       change for reasons completely unrelated to the run itself, and use
-    //       something from the results.json file to give us a last modified
-    //       time instead.  The datetime strings in the "completed" object are
-    //       no good because they are local to the TFB server, and we don't know
-    //       that server's time zone.
-    //
-    FileTime lastUpdatedTime;
-    try {
-      lastUpdatedTime = Files.getLastModifiedTime(jsonFile);
-    } catch (IOException e) {
-      logger.warn("Exception reading last modified time of file {}", jsonFile, e);
-      return null;
-    }
-
-    DateTimeFormatter displayedTimeFormatter =
-        DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd 'at' h:mm a",
-            Locale.ROOT);
-
-    String startTimeString =
-        (startTime == null)
-            ? null
-            : displayedTimeFormatter.format(startTime);
-
-    String completionTimeString =
-        (completionTime == null)
-            ? null
-            : displayedTimeFormatter.format(completionTime);
-
-    String lastUpdatedString =
-        lastUpdatedTime.toInstant()
-                       .atZone(clock.getZone())
-                       .toLocalDateTime()
-                       .format(displayedTimeFormatter);
-
-    String elapsedDurationString =
-        (elapsedDuration == null)
-            ? null
-            : formatDuration(elapsedDuration);
-
-    String estimatedRemainingDurationString =
-        (estimatedRemainingDuration == null)
-            ? null
-            : formatDuration(estimatedRemainingDuration);
-
-    Path relativePath = fileStore.resultsDirectory().relativize(jsonFile);
-    String fileName = Joiner.on('/').join(relativePath);
-
-    ResultsGitView git;
     if (results.git == null) {
-      git = null;
+      commitId = backupCommitId;
+      repositoryUrl = null;
+      branchName = null;
     } else {
-      git = new ResultsGitView(
-          /* commitId= */ results.git.commitId,
-          /* repositoryUrl= */ results.git.repositoryUrl,
-          /* branchName= */ results.git.branchName);
+      commitId = results.git.commitId;
+      repositoryUrl = results.git.repositoryUrl;
+      branchName = results.git.branchName;
     }
-
-    return new ResultsJsonView(
-        /* uuid= */ uuid,
-        /* git= */ git,
-        /* fileName= */ fileName,
-        /* name= */ name,
-        /* environmentDescription= */ environmentDescription,
-        /* startTime= */ startTimeString,
-        /* completionTime= */ completionTimeString,
-        /* completedFrameworks= */ completedFrameworks,
-        /* frameworksWithCleanSetup= */ frameworksWithCleanSetup,
-        /* frameworksWithSetupProblems= */ frameworksWithSetupProblems,
-        /* totalFrameworks= */ totalFrameworks,
-        /* successfulTests= */ successfulTests,
-        /* failedTests= */ failedTests,
-        /* lastUpdated= */ lastUpdatedString,
-        /* elapsedDuration= */ elapsedDurationString,
-        /* estimatedRemainingDuration= */ estimatedRemainingDurationString);
-  }
-
-  @Nullable
-  private ResultsZipView viewZipFile(Path zipFile) {
-    Objects.requireNonNull(zipFile);
-
-    Results results;
-    try {
-      results =
-          ZipFiles.readZipEntry(
-              /* zipFile= */ zipFile,
-              /* entryPath= */ "results.json",
-              /* entryReader= */ inputStream ->
-                                     objectMapper.readValue(inputStream,
-                                                            Results.class));
-    } catch (IOException e) {
-      logger.warn("Exception reading zip file {}", zipFile, e);
-      return null;
-    }
-
-    //
-    // If the zip doesn't contain a results.json at all, then we have nothing
-    // useful to say to users about it, and we want to pretend it doesn't exist.
-    //
-    if (results == null)
-      return null;
-
-    String uuid = results.uuid;
-    Path relativePath = fileStore.resultsDirectory().relativize(zipFile);
-    String fileName = Joiner.on('/').join(relativePath);
 
     var failures = new ArrayList<Failure>();
 
@@ -507,81 +420,229 @@ public final class HomeResultsReader {
     failures.sort(comparing(failure -> failure.framework,
                             String.CASE_INSENSITIVE_ORDER));
 
-    ResultsGitView git;
-    if (results.git == null) {
+    return new FileSummary(
+        /* fileName= */ fileName,
+        /* uuid= */ uuid,
+        /* commitId= */ commitId,
+        /* repositoryUrl= */ repositoryUrl,
+        /* branchName= */ branchName,
+        /* name= */ name,
+        /* environmentDescription= */ environmentDescription,
+        /* startTime= */ startTime,
+        /* completionTime= */ completionTime,
+        /* lastUpdated= */ lastUpdated,
+        /* completedFrameworks= */ completedFrameworks,
+        /* frameworksWithCleanSetup= */ frameworksWithCleanSetup,
+        /* frameworksWithSetupProblems= */ frameworksWithSetupProblems,
+        /* totalFrameworks= */ totalFrameworks,
+        /* successfulTests= */ successfulTests,
+        /* failedTests= */ failedTests,
+        /* failures= */ ImmutableList.copyOf(failures));
+  }
 
-      // We used to collect the git commit id as a separate "commit_id.txt" file.
-      String gitCommitId;
-      try {
-        gitCommitId =
-            ZipFiles.readZipEntry(
-                /* zipFile= */ zipFile,
-                /* entryPath= */ "commit_id.txt",
-                /* entryReader= */
-                inputStream -> {
-                  try (var isr = new InputStreamReader(inputStream, UTF_8);
-                       var br = new BufferedReader(isr)) {
-                    return br.readLine();
-                  }
-                });
-      } catch (IOException e) {
-        logger.warn(
-            "Exception reading git commit id from zip file {}",
-            zipFile, e);
-        gitCommitId = null;
+  private ResultsView newResultsView(Iterable<FileSummary> summaries) {
+    Objects.requireNonNull(summaries);
+
+    FileSummary mostRecentJson = null;
+    FileSummary mostRecentZip = null;
+
+    for (FileSummary summary : summaries) {
+      if (summary.fileName.endsWith(".json")) {
+        if (mostRecentJson == null
+            || summary.lastUpdated.isAfter(mostRecentJson.lastUpdated)) {
+          mostRecentJson = summary;
+        }
+      } else if (summary.fileName.endsWith(".zip")) {
+        if (mostRecentZip == null
+            || summary.lastUpdated.isAfter(mostRecentZip.lastUpdated)) {
+          mostRecentZip = summary;
+        }
       }
-
-      if (gitCommitId == null) {
-        git = null;
-      } else {
-        git = new ResultsGitView(
-            /* commitId= */ gitCommitId,
-            /* repositoryUrl= */ null,
-            /* branchName= */ null);
-      }
-
-    } else {
-      git = new ResultsGitView(
-          /* commitId= */ results.git.commitId,
-          /* repositoryUrl= */ results.git.repositoryUrl,
-          /* branchName= */ results.git.branchName);
     }
 
-    return new ResultsZipView(
+    FileSummary summary;
+    // Prefer the results.zip file.  The zip file is uploaded at the end of the
+    // run and should contain the complete, final results.json.
+    if (mostRecentZip != null)
+      summary = mostRecentZip;
+    else if (mostRecentJson != null)
+      summary = mostRecentJson;
+    else
+      throw new IllegalArgumentException(
+          "There must be at least one results file");
+
+    String uuid = summary.uuid;
+    String name = summary.name;
+    String environmentDescription = summary.environmentDescription;
+    int frameworksWithCleanSetup = summary.frameworksWithCleanSetup;
+    int frameworksWithSetupProblems = summary.frameworksWithSetupProblems;
+    int successfulTests = summary.successfulTests;
+    int failedTests = summary.failedTests;
+    ImmutableList<Failure> failures = summary.failures;
+    int completedFrameworks = summary.completedFrameworks;
+    int totalFrameworks = summary.totalFrameworks;
+    Instant startTime = summary.startTime;
+    Instant completionTime = summary.completionTime;
+    Instant lastUpdated = summary.lastUpdated;
+    String commitId = summary.commitId;
+    String repositoryUrl = summary.repositoryUrl;
+    String branchName = summary.branchName;
+
+    Duration elapsedDuration;
+    Duration estimatedRemainingDuration;
+
+    if (startTime == null)
+      elapsedDuration = null;
+
+    else {
+      Instant endTime =
+          (completionTime == null)
+              // TODO: Use lastUpdated here instead of now?
+              ? clock.instant()
+              : completionTime;
+      elapsedDuration = Duration.between(startTime, endTime);
+    }
+
+    if (completionTime != null
+        || startTime == null
+        || elapsedDuration == null
+        || completedFrameworks == 0)
+      estimatedRemainingDuration = null;
+
+    else
+      estimatedRemainingDuration =
+          elapsedDuration.multipliedBy(totalFrameworks)
+                         .dividedBy(completedFrameworks)
+                         .minus(elapsedDuration);
+
+    DateTimeFormatter displayedTimeFormatter =
+        DateTimeFormatter.ofPattern(
+            "yyyy-MM-dd 'at' h:mm a",
+            Locale.ROOT);
+
+    String startTimeString =
+        (startTime == null)
+            ? null
+            : startTime.atZone(clock.getZone())
+                       .toLocalDateTime()
+                       .format(displayedTimeFormatter);
+
+    String completionTimeString =
+        (completionTime == null)
+            ? null
+            : completionTime.atZone(clock.getZone())
+                            .toLocalDateTime()
+                            .format(displayedTimeFormatter);
+
+    String lastUpdatedString =
+        lastUpdated.atZone(clock.getZone())
+                   .toLocalDateTime()
+                   .format(displayedTimeFormatter);
+
+    // TODO: Don't display huge durations when it looks like the run is defunct.
+
+    String elapsedDurationString =
+        (elapsedDuration == null)
+            ? null
+            : formatDuration(elapsedDuration);
+
+    String estimatedRemainingDurationString =
+        (estimatedRemainingDuration == null)
+            ? null
+            : formatDuration(estimatedRemainingDuration);
+
+    String browseRepositoryUrl;
+    String browseCommitUrl;
+    String browseBranchUrl;
+
+    if (repositoryUrl == null) {
+      browseRepositoryUrl = null;
+      browseCommitUrl = null;
+      browseBranchUrl = null;
+    } else {
+      Matcher githubMatcher = GITHUB_REPOSITORY_PATTERN.matcher(repositoryUrl);
+      if (githubMatcher.matches()) {
+
+        browseRepositoryUrl =
+            "https://github.com" + githubMatcher.group("path");
+
+        browseCommitUrl =
+            browseRepositoryUrl + "/tree/" + commitId;
+
+        browseBranchUrl =
+            (branchName == null)
+                ? null
+                : browseRepositoryUrl + "/tree/" + branchName;
+
+      } else {
+        browseRepositoryUrl = null;
+        browseCommitUrl = null;
+        browseBranchUrl = null;
+      }
+    }
+
+    String jsonFileName =
+        (mostRecentJson == null)
+            ? null
+            : mostRecentJson.fileName;
+
+    String zipFileName =
+        (mostRecentZip == null)
+            ? null
+            : mostRecentZip.fileName;
+
+    return new ResultsView(
         /* uuid= */ uuid,
-        /* git= */ git,
-        /* fileName= */ fileName,
-        /* failures= */ ImmutableList.copyOf(failures));
+        /* name= */ name,
+        /* environmentDescription= */ environmentDescription,
+        /* completedFrameworks= */ completedFrameworks,
+        /* frameworksWithCleanSetup= */ frameworksWithCleanSetup,
+        /* frameworksWithSetupProblems= */ frameworksWithSetupProblems,
+        /* totalFrameworks= */ totalFrameworks,
+        /* successfulTests= */ successfulTests,
+        /* failedTests= */ failedTests,
+        /* startTime= */ startTimeString,
+        /* completionTime= */ completionTimeString,
+        /* lastUpdated= */ lastUpdatedString,
+        /* elapsedDuration= */ elapsedDurationString,
+        /* estimatedRemainingDuration= */ estimatedRemainingDurationString,
+        /* commitId= */ commitId,
+        /* repositoryUrl= */ repositoryUrl,
+        /* branchName= */ branchName,
+        /* browseRepositoryUrl= */ browseRepositoryUrl,
+        /* browseCommitUrl= */ browseCommitUrl,
+        /* browseBranchUrl= */ browseBranchUrl,
+        /* failures= */ failures,
+        /* jsonFileName= */ jsonFileName,
+        /* zipFileName= */ zipFileName);
   }
 
   /**
    * Trims the internal cache, removing entries that are "dead" because they
-   * have {@linkplain ViewCacheKey#isUnreachable() unreachable} keys.
+   * have {@linkplain FileKey#isUnreachable() unreachable} keys.
    */
   private void purgeUnreachableCacheKeys() {
-    purgeUnreachableCacheKeys(jsonCache);
-    purgeUnreachableCacheKeys(zipCache);
+    ImmutableSet<FileKey> unreachableKeys =
+        fileCache.asMap()
+                 .keySet()
+                 .stream()
+                 .filter(key -> key.isUnreachable())
+                 .collect(toImmutableSet());
+
+    fileCache.invalidateAll(unreachableKeys);
   }
 
-  private static void purgeUnreachableCacheKeys(Cache<ViewCacheKey, ?> cache) {
-    ImmutableSet<ViewCacheKey> unreachableKeys =
-        cache.asMap()
-             .keySet()
-             .stream()
-             .filter(key -> key.isUnreachable())
-             .collect(toImmutableSet());
-
-    cache.invalidateAll(unreachableKeys);
-  }
-
+  /**
+   * A cache key pointing to a results.json or results.zip file on disk.
+   */
   @Immutable
-  private static final class ViewCacheKey {
+  private static final class FileKey {
     final Path file;
 
     // When the file is modified, this cache key becomes unreachable.
     final FileTime lastModifiedTime;
 
-    ViewCacheKey(Path file) throws IOException {
+    FileKey(Path file) throws IOException {
       this.file = Objects.requireNonNull(file);
       this.lastModifiedTime = Files.getLastModifiedTime(file);
     }
@@ -591,10 +652,10 @@ public final class HomeResultsReader {
       if (object == this)
         return true;
 
-      if (!(object instanceof ViewCacheKey))
+      if (!(object instanceof FileKey))
         return false;
 
-      var that = (ViewCacheKey) object;
+      var that = (FileKey) object;
       return this.file.equals(that.file)
           && this.lastModifiedTime.equals(that.lastModifiedTime);
     }
@@ -623,11 +684,66 @@ public final class HomeResultsReader {
     }
   }
 
-  private static LocalDateTime epochMillisToDateTime(long epochMillis,
-                                                     ZoneId zone) {
-    Objects.requireNonNull(zone);
-    Instant instant = Instant.ofEpochMilli(epochMillis);
-    return LocalDateTime.ofInstant(instant, zone);
+  /**
+   * Information extracted from a results.json or results.zip file.
+   */
+  @Immutable
+  private static final class FileSummary {
+    final String fileName;
+    @Nullable final String uuid;
+    @Nullable final String commitId;
+    @Nullable final String repositoryUrl;
+    @Nullable final String branchName;
+    @Nullable final String name;
+    @Nullable final String environmentDescription;
+    @Nullable final Instant startTime;
+    @Nullable final Instant completionTime;
+    final Instant lastUpdated;
+    final int completedFrameworks;
+    final int frameworksWithCleanSetup;
+    final int frameworksWithSetupProblems;
+    final int totalFrameworks;
+    final int successfulTests;
+    final int failedTests;
+    // TODO: Avoid sharing the Failure data type with HomePageView?
+    final ImmutableList<Failure> failures;
+
+    FileSummary(String fileName,
+                @Nullable String uuid,
+                @Nullable String commitId,
+                @Nullable String repositoryUrl,
+                @Nullable String branchName,
+                @Nullable String name,
+                @Nullable String environmentDescription,
+                @Nullable Instant startTime,
+                @Nullable Instant completionTime,
+                Instant lastUpdated,
+                int completedFrameworks,
+                int frameworksWithCleanSetup,
+                int frameworksWithSetupProblems,
+                int totalFrameworks,
+                int successfulTests,
+                int failedTests,
+                ImmutableList<Failure> failures) {
+
+      this.fileName = Objects.requireNonNull(fileName);
+      this.uuid = uuid;
+      this.commitId = commitId;
+      this.repositoryUrl = repositoryUrl;
+      this.branchName = branchName;
+      this.name = name;
+      this.environmentDescription = environmentDescription;
+      this.startTime = startTime;
+      this.completionTime = completionTime;
+      this.lastUpdated = Objects.requireNonNull(lastUpdated);
+      this.completedFrameworks = completedFrameworks;
+      this.frameworksWithCleanSetup = frameworksWithCleanSetup;
+      this.frameworksWithSetupProblems = frameworksWithSetupProblems;
+      this.totalFrameworks = totalFrameworks;
+      this.successfulTests = successfulTests;
+      this.failedTests = failedTests;
+      this.failures = Objects.requireNonNull(failures);
+    }
   }
 
   private static String formatDuration(Duration duration) {
@@ -698,14 +814,20 @@ public final class HomeResultsReader {
   private static final Comparator<ResultsView> RESULTS_COMPARATOR =
       comparing(
           results -> {
-            if (results.json != null)
-              return results.json.fileName;
+            // The JSON file name is a better sort key because it should remain
+            // constant throughout the whole run, whereas the zip file name is
+            // expected to change at the end of the run (from null to non-null).
+            if (results.jsonFileName != null)
+              return results.jsonFileName;
 
-            else if (results.zip != null)
-              return results.zip.fileName;
+            else if (results.zipFileName != null)
+              return results.zipFileName;
 
             else
               return "";
           },
           reverseOrder());
+
+  private static final Pattern GITHUB_REPOSITORY_PATTERN =
+      Pattern.compile("^(https|git)://github\\.com(?<path>/.*)\\.git$");
 }
