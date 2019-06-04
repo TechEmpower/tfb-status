@@ -21,6 +21,8 @@ import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tfb.status.config.ApplicationConfig;
 import tfb.status.config.AssetsConfig;
 import tfb.status.config.EmailConfig;
@@ -166,6 +168,7 @@ public final class Services {
 
     private final FileSystem fileSystem;
     @Nullable private final String path;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Inject
     public ApplicationConfigFactory(
@@ -179,10 +182,13 @@ public final class Services {
     @Override
     @Singleton
     public ApplicationConfig provide() {
-      if (path == null)
+      if (path == null) {
+        logger.info("Using default configuration");
         return new ApplicationConfig(null, null, null, null, null);
+      }
 
       Path yamlFile = fileSystem.getPath(path);
+      logger.info("Using custom configuration file \"" + yamlFile + "\"");
 
       var yamlMapper = new ObjectMapper(new YAMLFactory());
 
