@@ -24,4 +24,4 @@ RUN mvn package --batch-mode
 FROM openjdk:12-jdk
 WORKDIR /tfbstatus
 COPY --from=build /tfbstatus/target/tfb-status.jar tfb-status.jar
-CMD [ "java", "-jar", "tfb-status.jar" ]
+ENTRYPOINT [ "java", "-jar", "tfb-status.jar" ]

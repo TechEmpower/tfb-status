@@ -6,3 +6,5 @@ services:
       - "80:80"
     volumes:
       - ./managed_files:/tfbstatus/managed_files
+      - ./example-config.yml:/tfbstatus/config.yml
+    command: config.yml
