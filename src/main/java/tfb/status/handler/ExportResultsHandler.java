@@ -3,7 +3,6 @@ package tfb.status.handler;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
-import static io.undertow.util.StatusCodes.INTERNAL_SERVER_ERROR;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,7 +10,6 @@ import com.google.common.io.MoreFiles;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -19,8 +17,6 @@ import java.nio.file.Path;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
@@ -54,7 +50,6 @@ public final class ExportResultsHandler implements HttpHandler {
   private static final class CoreHandler implements HttpHandler {
     private final ObjectMapper objectMapper;
     private final FileStore fileStore;
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     CoreHandler(FileStore fileStore, ObjectMapper objectMapper) {
       this.objectMapper = Objects.requireNonNull(objectMapper);
@@ -91,39 +86,27 @@ public final class ExportResultsHandler implements HttpHandler {
         case "json":
           try (InputStream inputStream = Files.newInputStream(requestedFile)) {
             results = objectMapper.readValue(inputStream, Results.class);
-          } catch (IOException e) {
-            logger.warn("Exception reading json file {}", requestedFile, e);
-            exchange.setStatusCode(INTERNAL_SERVER_ERROR);
-            return;
           }
           break;
 
         case "zip":
-          try {
-            results =
-                ZipFiles.readZipEntry(
-                    /* zipFile= */ requestedFile,
-                    /* entryPath= */ "results.json",
-                    /* entryReader= */ inputStream ->
-                                           objectMapper.readValue(inputStream,
-                                                                  Results.class));
-
-          } catch (IOException e) {
-            logger.warn("Error reading zip file {}", requestedFile, e);
-            exchange.setStatusCode(INTERNAL_SERVER_ERROR);
-            return;
-          }
-          if (results == null) {
-            logger.warn("No results.json in zip file {}", requestedFile);
-            exchange.setStatusCode(NOT_FOUND);
-            return;
-          }
+          results =
+              ZipFiles.readZipEntry(
+                  /* zipFile= */ requestedFile,
+                  /* entryPath= */ "results.json",
+                  /* entryReader= */ inputStream ->
+                                         objectMapper.readValue(inputStream,
+                                                                Results.class));
           break;
 
         default:
-          logger.warn("Unable to handle file {}", requestedFile);
-          exchange.setStatusCode(NOT_FOUND);
-          return;
+          results = null;
+          break;
+      }
+
+      if (results == null) {
+        exchange.setStatusCode(NOT_FOUND);
+        return;
       }
 
       var exportedView =
