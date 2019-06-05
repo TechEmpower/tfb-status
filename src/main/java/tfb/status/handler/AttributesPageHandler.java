@@ -8,6 +8,7 @@ import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
+import static io.undertow.util.StatusCodes.INTERNAL_SERVER_ERROR;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.SERVICE_UNAVAILABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -143,7 +144,7 @@ public final class AttributesPageHandler implements HttpHandler {
         lookup = objectMapper.readValue(inputStream, AttributeLookup.class);
       } catch (IOException e) {
         logger.warn("Exception thrown while reading tfb_lookup.json", e);
-        exchange.setStatusCode(BAD_REQUEST);
+        exchange.setStatusCode(INTERNAL_SERVER_ERROR);
         return;
       }
 
@@ -187,16 +188,8 @@ public final class AttributesPageHandler implements HttpHandler {
 
       } else { // HTML format
 
-        String attributes;
-        String tests;
-        try {
-          attributes = objectMapper.writeValueAsString(updatedAttributes);
-          tests = objectMapper.writeValueAsString(updatedTestMetadata);
-        } catch (IOException e) {
-          logger.warn("Error thrown while mapping attributes to string", e);
-          exchange.setStatusCode(BAD_REQUEST);
-          return;
-        }
+        String attributes = objectMapper.writeValueAsString(updatedAttributes);
+        String tests = objectMapper.writeValueAsString(updatedTestMetadata);
 
         var attributesPageView =
             new AttributesPageView(

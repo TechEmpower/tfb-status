@@ -3,7 +3,7 @@ package tfb.status.handler;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
-import static io.undertow.util.StatusCodes.BAD_REQUEST;
+import static io.undertow.util.StatusCodes.INTERNAL_SERVER_ERROR;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -93,7 +93,7 @@ public final class ExportResultsHandler implements HttpHandler {
             results = objectMapper.readValue(inputStream, Results.class);
           } catch (IOException e) {
             logger.warn("Exception reading json file {}", requestedFile, e);
-            exchange.setStatusCode(BAD_REQUEST);
+            exchange.setStatusCode(INTERNAL_SERVER_ERROR);
             return;
           }
           break;
@@ -110,19 +110,19 @@ public final class ExportResultsHandler implements HttpHandler {
 
           } catch (IOException e) {
             logger.warn("Error reading zip file {}", requestedFile, e);
-            exchange.setStatusCode(BAD_REQUEST);
+            exchange.setStatusCode(INTERNAL_SERVER_ERROR);
             return;
           }
           if (results == null) {
             logger.warn("No results.json in zip file {}", requestedFile);
-            exchange.setStatusCode(BAD_REQUEST);
+            exchange.setStatusCode(NOT_FOUND);
             return;
           }
           break;
 
         default:
           logger.warn("Unable to handle file {}", requestedFile);
-          exchange.setStatusCode(BAD_REQUEST);
+          exchange.setStatusCode(NOT_FOUND);
           return;
       }
 

@@ -5,7 +5,6 @@ import static com.google.common.net.MediaType.HTML_UTF_8;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
-import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,7 +70,7 @@ public final class DetailPageHandler implements HttpHandler {
       Matcher matcher = REQUEST_PATH_PATTERN.matcher(exchange.getRelativePath());
 
       if (!matcher.matches()) {
-        exchange.setStatusCode(BAD_REQUEST);
+        exchange.setStatusCode(NOT_FOUND);
         return;
       }
 

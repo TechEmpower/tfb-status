@@ -4,7 +4,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
-import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
@@ -85,7 +84,7 @@ public final class TimelinePageHandler implements HttpHandler {
       Matcher matcher = REQUEST_PATH_PATTERN.matcher(relativePath);
 
       if (!matcher.matches()) {
-        exchange.setStatusCode(BAD_REQUEST);
+        exchange.setStatusCode(NOT_FOUND);
         return;
       }
 
