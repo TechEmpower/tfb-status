@@ -1,5 +1,8 @@
 # https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
 
+stages:
+  - build
+
 build:
   stage: build
   image:
