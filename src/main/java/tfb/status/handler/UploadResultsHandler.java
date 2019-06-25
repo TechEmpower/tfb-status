@@ -150,6 +150,7 @@ public final class UploadResultsHandler implements HttpHandler {
 
       try (WritableByteChannel out =
                Files.newByteChannel(tempFile, WRITE, APPEND)) {
+        // TODO: Is this safe?
         ReadableByteChannel in = exchange.getRequestChannel();
         ByteStreams.copy(in, out);
       }
