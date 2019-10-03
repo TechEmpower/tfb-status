@@ -137,7 +137,7 @@ public final class ZipFiles {
 
     FileSystem zipFileSystem;
     try {
-      zipFileSystem = FileSystems.newFileSystem(zipFile, null);
+      zipFileSystem = FileSystems.newFileSystem(zipFile);
     } catch (ProviderNotFoundException | FileSystemNotFoundException e) {
       throw new IOException(e);
     }
