@@ -13,6 +13,10 @@ RUN mvn package --batch-mode
 FROM maven:3.6.2-jdk-13 AS build
 WORKDIR /tfbstatus
 COPY --from=download_dependencies /root/.m2 /root/.m2
+
+# The .git directory is used by git-commit-id-plugin, see pom.xml for details.
+COPY .git .git
+
 COPY pom.xml pom.xml
 COPY src src
 
