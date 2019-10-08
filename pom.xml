@@ -22,7 +22,7 @@
     <crawler-commons.version>1.0</crawler-commons.version>
     <error-prone.version>2.3.3</error-prone.version>
     <extra-enforcer-rules.version>1.2</extra-enforcer-rules.version>
-    <git-commit-id-plugin.version>2.2.6</git-commit-id-plugin.version>
+    <git-commit-id-plugin.version>3.0.1</git-commit-id-plugin.version>
     <greenmail.version>1.5.10</greenmail.version>
     <guava.version>28.1-jre</guava.version>
     <hk2.version>2.6.1</hk2.version>
@@ -46,7 +46,7 @@
     <maven-site-plugin.version>3.7.1</maven-site-plugin.version>
     <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
     <mustache.version>0.9.6</mustache.version>
-    <nullaway.version>0.7.2</nullaway.version>
+    <nullaway.version>0.7.8</nullaway.version>
     <slf4j.version>1.7.28</slf4j.version>
     <threeten-extra.version>1.5.0</threeten-extra.version>
     <undertow.version>2.0.26.Final</undertow.version>
@@ -233,6 +233,10 @@
                newer release of one of that plugin's dependencies.
 
                See: https://issues.apache.org/jira/browse/MDEP-613
+
+               TODO: This is broken again in Java 13.  It seems to break on
+                     every new version of Java, so perhaps it is time to give up
+                     on this plugin.
           -->
           <dependencies>
             <dependency>
@@ -357,6 +361,7 @@
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
         <configuration>
+          <offline>true</offline>
           <failOnNoGitDirectory>false</failOnNoGitDirectory>
           <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>
