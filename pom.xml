@@ -23,7 +23,7 @@
     <error-prone.version>2.3.3</error-prone.version>
     <extra-enforcer-rules.version>1.2</extra-enforcer-rules.version>
     <git-commit-id-plugin.version>3.0.1</git-commit-id-plugin.version>
-    <greenmail.version>1.5.10</greenmail.version>
+    <greenmail.version>1.5.11</greenmail.version>
     <guava.version>28.1-jre</guava.version>
     <hk2.version>2.6.1</hk2.version>
     <jackson.version>2.10.0</jackson.version>
