@@ -361,6 +361,10 @@
         <configuration>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
+
+          <!-- https://issues.apache.org/jira/browse/MCOMPILER-209 -->
+          <useIncrementalCompilation>false</useIncrementalCompilation>
+
           <compilerArgs>
             <arg>-Xlint:all</arg>
             <arg>-Xdoclint:all,-missing</arg>
