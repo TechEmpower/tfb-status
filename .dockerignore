@@ -1,0 +1,14 @@
+# Maven output
+target/
+
+# Eclipse project files
+.settings/
+.classpath
+.project
+
+# IntelliJ project files
+.idea/
+*.iml
+
+# Default directory for application-managed files
+managed_files/
