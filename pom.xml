@@ -47,7 +47,7 @@
     <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
     <mustache.version>0.9.6</mustache.version>
     <nullaway.version>0.7.8</nullaway.version>
-    <slf4j.version>1.7.28</slf4j.version>
+    <slf4j.version>1.7.29</slf4j.version>
     <threeten-extra.version>1.5.0</threeten-extra.version>
     <undertow.version>2.0.27.Final</undertow.version>
     <versions-maven-plugin.version>2.7</versions-maven-plugin.version>
