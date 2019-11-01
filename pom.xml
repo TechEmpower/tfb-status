@@ -295,6 +295,14 @@
         </configuration>
       </plugin>
 
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>${env.SKIP_TESTS}</skipTests>
+        </configuration>
+      </plugin>
+
       <!-- Ignore false flags from "mvn dependency:analyze" for a few specific
            dependencies. -->
       <plugin>

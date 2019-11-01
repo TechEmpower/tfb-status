@@ -22,8 +22,6 @@ COPY src src
 
 # If we did everything right, this won't download any new dependencies.
 RUN mvn package --batch-mode
-# TODO: Consider -DskipTests for faster startup.
-# TODO: Consider "mvn compile; java path/to/main.class" for even faster startup.
 
 FROM openjdk:13-jdk
 WORKDIR /tfbstatus

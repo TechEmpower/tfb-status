@@ -1,7 +1,10 @@
-version: "3"
+version: "3.7"
 services:
   tfbstatus:
-    build: .
+    build:
+      context: .
+      args:
+        SKIP_TESTS: "true"
     ports:
       - "80:80"
     volumes:
