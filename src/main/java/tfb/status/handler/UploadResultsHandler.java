@@ -669,8 +669,8 @@ public final class UploadResultsHandler implements HttpHandler {
       sb.append("\n");
       sb.append("The results.json file is attached.\n");
       sb.append("\n");
-      
-      if (results.uuid) {
+
+      if (results.uuid != null) {
         sb.append("Details: ");
         sb.append("https://tfb-status.techempower.com/results/");
         sb.append(results.uuid);
