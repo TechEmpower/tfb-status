@@ -4,13 +4,14 @@
   {{#uuid}}
     Run ID: <code>{{uuid}}</code><br>
     {{#commitId}}
-      Commit:&nbsp;
+      commit:
       {{#browseCommitUrl}}
         <a href="{{browseCommitUrl}}"><code>{{commitId}}</code></a>
       {{/browseCommitUrl}}
       {{^browseCommitUrl}}
         <code>{{commitId}}</code>
       {{/browseCommitUrl}}
+      <br>
     {{/commitId}}
     <a href="/results/{{uuid}}">details</a><br>
     {{#zipFileName}}
