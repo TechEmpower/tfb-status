@@ -3,6 +3,15 @@
   {{environmentDescription}}<br>
   {{#uuid}}
     Run ID: <code>{{uuid}}</code><br>
+    {{#commitId}}
+      Commit:&nbsp;
+      {{#browseCommitUrl}}
+        <a href="{{browseCommitUrl}}"><code>{{commitId}}</code></a>
+      {{/browseCommitUrl}}
+      {{^browseCommitUrl}}
+        <code>{{commitId}}</code>
+      {{/browseCommitUrl}}
+    {{/commitId}}
     <a href="/results/{{uuid}}">details</a><br>
     {{#zipFileName}}
       <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">visualize</a><br>
