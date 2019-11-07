@@ -40,60 +40,60 @@
 
   <rules>
 
-    <rule groupId="io.undertow" artifactId="undertow-core">
+    <rule groupId="io.undertow" artifactId="undertow-core" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\.Alpha[\d]+</ignoreVersion>
         <ignoreVersion type="regex">.+\.Beta[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
-    <rule groupId="com.fasterxml.jackson.*">
+    <rule groupId="com.fasterxml.jackson.*" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\.pr[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
-    <rule groupId="com.google.guava" artifactId="guava">
+    <rule groupId="com.google.guava" artifactId="guava" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+-android</ignoreVersion>
         <ignoreVersion type="regex">.+-rc[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
-    <rule groupId="org.slf4j" artifactId="slf4j-api">
+    <rule groupId="org.slf4j" artifactId="slf4j-api" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-alpha[\d]+</ignoreVersion>
         <ignoreVersion type="regex">.+\-beta[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
-    <rule groupId="com.sun.mail" artifactId="javax.mail">
+    <rule groupId="com.sun.mail" artifactId="javax.mail" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-rc[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
-    <rule groupId="org.junit.jupiter">
+    <rule groupId="org.junit.jupiter" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-M[\d]+</ignoreVersion>
         <ignoreVersion type="regex">.+\-RC[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
-    <rule groupId="org.junit.platform">
+    <rule groupId="org.junit.platform" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-M[\d]+</ignoreVersion>
         <ignoreVersion type="regex">.+\-RC[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
-    <rule groupId="ch.qos.logback" artifactId="logback-classic">
+    <rule groupId="ch.qos.logback" artifactId="logback-classic" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-alpha[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
-    <rule groupId="javax.xml.bind" artifactId="jaxb-api">
+    <rule groupId="javax.xml.bind" artifactId="jaxb-api" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-b[\d\.]+</ignoreVersion>
       </ignoreVersions>
