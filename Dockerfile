@@ -17,15 +17,12 @@ COPY --from=download_dependencies /root/.m2 /root/.m2
 # The .git directory is used by git-commit-id-plugin for Maven.  It collects
 # useful information about the local Git repository that our application
 # displays on its /about page.
-#
-# TODO: Rethink this dependency on the .git directory.
-#       Copying the .git directory into Docker's build context takes about 20
-#       seconds, meaning that much time is added to every application restart in
-#       development even when there were no code changes.
 COPY .git .git
 
 COPY pom.xml pom.xml
 COPY src src
+
+ARG SKIP_TESTS=false
 
 # If we did everything right, this won't download any new dependencies.
 RUN mvn package --batch-mode
