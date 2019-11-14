@@ -6,7 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * An entry in the attribute definition for tfb_lookup.json.
@@ -33,17 +33,14 @@ public final class AttributeInfo {
   @JsonCreator
   public AttributeInfo(
 
-      @Nullable
       @JsonProperty(value="code", required = true)
-      String code,
+      @Nullable String code,
 
-      @Nullable
       @JsonProperty(value="list", required = true)
-      ImmutableList<String> list,
+      @Nullable ImmutableList<String> list,
 
-      @Nullable
       @JsonProperty(value="v", required = true)
-      ImmutableSet<String> v) {
+      @Nullable ImmutableSet<String> v) {
 
     this.code = Objects.requireNonNull(code);
     this.list = Objects.requireNonNull(list);

@@ -17,7 +17,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.Principal;
 import java.util.Set;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -60,14 +60,12 @@ public final class BasicAuthenticationHandlerTest {
     INSTANCE;
 
     @Override
-    @Nullable
-    public Account verify(Account account) {
+    public @Nullable Account verify(Account account) {
       return (account == OnlyAccount.INSTANCE) ? account : null;
     }
 
     @Override
-    @Nullable
-    public Account verify(String id, Credential credential) {
+    public @Nullable Account verify(String id, Credential credential) {
       if (!id.equals(CORRECT_USERNAME))
         return null;
 
@@ -84,8 +82,7 @@ public final class BasicAuthenticationHandlerTest {
     }
 
     @Override
-    @Nullable
-    public Account verify(Credential credential) {
+    public @Nullable Account verify(Credential credential) {
       return null;
     }
   }

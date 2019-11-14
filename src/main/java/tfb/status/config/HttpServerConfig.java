@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The configuration for the HTTP server.
@@ -29,23 +29,19 @@ public final class HttpServerConfig {
    * The key store having the certificate for the server, enabling HTTPS, or
    * {@code null} if the server is using unencrypted HTTP.
    */
-  @Nullable
-  public final KeyStore keyStore;
+  public final @Nullable KeyStore keyStore;
 
   @JsonCreator
   public HttpServerConfig(
 
-      @Nullable
       @JsonProperty(value = "host", required = false)
-      String host,
+      @Nullable String host,
 
-      @Nullable
       @JsonProperty(value = "port", required = false)
-      Integer port,
+      @Nullable Integer port,
 
-      @Nullable
       @JsonProperty(value = "keyStore", required = false)
-      KeyStore keyStore) {
+      @Nullable KeyStore keyStore) {
 
     this.host = Objects.requireNonNullElse(host, DEFAULT_HOST);
     this.port = Objects.requireNonNullElse(port, DEFAULT_PORT);

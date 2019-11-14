@@ -12,7 +12,7 @@ import java.nio.file.ProviderNotFoundException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Utility methods for working with zip files.
@@ -46,10 +46,9 @@ public final class ZipFiles {
    *         the entry is not found
    * @throws IOException if an I/O error occurs
    */
-  @Nullable
-  public static <T> T readZipEntry(Path zipFile,
-                                   String entryPath,
-                                   ZipEntryReader<T> entryReader)
+  public static <T> @Nullable T readZipEntry(Path zipFile,
+                                             String entryPath,
+                                             ZipEntryReader<T> entryReader)
       throws IOException {
 
     Objects.requireNonNull(zipFile, "zipFile");

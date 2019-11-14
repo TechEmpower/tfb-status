@@ -47,11 +47,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.util.ZipFiles;
@@ -78,8 +78,11 @@ public final class HomeResultsReader {
   // ever have on disk at once.
   private static final int FILE_CACHE_MAX_SIZE = 10_000;
 
-  @GuardedBy("this") @Nullable private ScheduledThreadPoolExecutor purgeScheduler;
-  @GuardedBy("this") @Nullable private ScheduledFuture<?> purgeTask;
+  @GuardedBy("this")
+  private @Nullable ScheduledThreadPoolExecutor purgeScheduler;
+
+  @GuardedBy("this")
+  private @Nullable ScheduledFuture<?> purgeTask;
 
   @Inject
   public HomeResultsReader(FileStore fileStore,
@@ -175,8 +178,7 @@ public final class HomeResultsReader {
    *         results
    * @throws IOException if an I/O error occurs while reading the results
    */
-  @Nullable
-  public ResultsView resultsByUuid(String uuid) throws IOException {
+  public @Nullable ResultsView resultsByUuid(String uuid) throws IOException {
     Objects.requireNonNull(uuid);
 
     ImmutableList<FileSummary> summaries =
@@ -205,8 +207,7 @@ public final class HomeResultsReader {
                .filter(summary -> summary != null);
   }
 
-  @Nullable
-  private FileSummary readFile(Path file) {
+  private @Nullable FileSummary readFile(Path file) {
     Objects.requireNonNull(file);
     switch (MoreFiles.getFileExtension(file)) {
       case "json":
@@ -253,8 +254,7 @@ public final class HomeResultsReader {
         /* backupCommitId= */ null);
   }
 
-  @Nullable
-  private FileSummary readZipFile(Path zipFile) throws IOException {
+  private @Nullable FileSummary readZipFile(Path zipFile) throws IOException {
     Objects.requireNonNull(zipFile);
 
     Results results =
@@ -690,14 +690,14 @@ public final class HomeResultsReader {
   @Immutable
   private static final class FileSummary {
     final String fileName;
-    @Nullable final String uuid;
-    @Nullable final String commitId;
-    @Nullable final String repositoryUrl;
-    @Nullable final String branchName;
-    @Nullable final String name;
-    @Nullable final String environmentDescription;
-    @Nullable final Instant startTime;
-    @Nullable final Instant completionTime;
+    final @Nullable String uuid;
+    final @Nullable String commitId;
+    final @Nullable String repositoryUrl;
+    final @Nullable String branchName;
+    final @Nullable String name;
+    final @Nullable String environmentDescription;
+    final @Nullable Instant startTime;
+    final @Nullable Instant completionTime;
     final Instant lastUpdated;
     final int completedFrameworks;
     final int frameworksWithCleanSetup;

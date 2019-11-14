@@ -5,11 +5,11 @@ import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.mail.internet.MimeMessage;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import tfb.status.config.EmailConfig;
 import tfb.status.service.EmailSender;
 
@@ -18,7 +18,8 @@ import tfb.status.service.EmailSender;
  * during tests.
  */
 public final class MailServer {
-  @GuardedBy("this") @Nullable private final GreenMail server;
+  @GuardedBy("this")
+  private final @Nullable GreenMail server;
 
   @Inject
   public MailServer(Optional<EmailConfig> optionalConfig) {

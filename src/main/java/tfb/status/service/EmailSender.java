@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.Properties;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.Message;
@@ -24,6 +23,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.EmailConfig;
@@ -33,7 +33,7 @@ import tfb.status.config.EmailConfig;
  */
 @Singleton
 public final class EmailSender {
-  @Nullable private final EmailConfig config;
+  private final @Nullable EmailConfig config;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   /**

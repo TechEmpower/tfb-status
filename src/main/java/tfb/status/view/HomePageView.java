@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A view of the home page.
@@ -16,7 +16,7 @@ public final class HomePageView {
   public final int limit;
   public final int next;
   public final boolean hasNext;
-  @Nullable public final String announcement;
+  public final @Nullable String announcement;
 
   public HomePageView(ImmutableList<ResultsView> results,
                       int skip,
@@ -38,29 +38,29 @@ public final class HomePageView {
    */
   @Immutable
   public static final class ResultsView {
-    @Nullable public final String uuid;
-    @Nullable public final String name;
-    @Nullable public final String environmentDescription;
+    public final @Nullable String uuid;
+    public final @Nullable String name;
+    public final @Nullable String environmentDescription;
     public final int completedFrameworks;
     public final int frameworksWithCleanSetup;
     public final int frameworksWithSetupProblems;
     public final int totalFrameworks;
     public final int successfulTests;
     public final int failedTests;
-    @Nullable public final String startTime;
-    @Nullable public final String completionTime;
-    @Nullable public final String lastUpdated;
-    @Nullable public final String elapsedDuration;
-    @Nullable public final String estimatedRemainingDuration;
-    @Nullable public final String commitId;
-    @Nullable public final String repositoryUrl;
-    @Nullable public final String branchName;
-    @Nullable public final String browseRepositoryUrl;
-    @Nullable public final String browseCommitUrl;
-    @Nullable public final String browseBranchUrl;
+    public final @Nullable String startTime;
+    public final @Nullable String completionTime;
+    public final @Nullable String lastUpdated;
+    public final @Nullable String elapsedDuration;
+    public final @Nullable String estimatedRemainingDuration;
+    public final @Nullable String commitId;
+    public final @Nullable String repositoryUrl;
+    public final @Nullable String branchName;
+    public final @Nullable String browseRepositoryUrl;
+    public final @Nullable String browseCommitUrl;
+    public final @Nullable String browseBranchUrl;
     public final ImmutableList<Failure> failures;
-    @Nullable public final String jsonFileName;
-    @Nullable public final String zipFileName;
+    public final @Nullable String jsonFileName;
+    public final @Nullable String zipFileName;
 
     public ResultsView(@Nullable String uuid,
                        @Nullable String name,
@@ -116,18 +116,16 @@ public final class HomePageView {
     // and zip.fileName properties.
 
     /** @deprecated use {@link #jsonFileName} instead */
-    @Deprecated
-    @Nullable
     @JsonProperty("json")
-    public FileName json() {
+    @Deprecated
+    public @Nullable FileName json() {
       return (jsonFileName == null) ? null : new FileName(jsonFileName);
     }
 
     /** @deprecated use {@link #zipFileName} instead */
-    @Deprecated
-    @Nullable
     @JsonProperty("zip")
-    public FileName zip() {
+    @Deprecated
+    public @Nullable FileName zip() {
       return (zipFileName == null) ? null : new FileName(zipFileName);
     }
 

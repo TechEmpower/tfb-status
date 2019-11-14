@@ -31,9 +31,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.service.FileStore;
@@ -225,8 +225,7 @@ public final class UnzipResultsHandler implements HttpHandler {
      * Guesses the media type of the given file.  Returns {@code null} if there
      * is not a good guess.
      */
-    @Nullable
-    private static MediaType guessMediaType(Path file) {
+    private static @Nullable MediaType guessMediaType(Path file) {
       String extension = MoreFiles.getFileExtension(file);
 
       String mediaTypeString =

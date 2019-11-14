@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A framework permutation that is a top-level entry in test_metadata.json.
@@ -29,7 +29,7 @@ public final class TestDefinition {
   public final String displayName;
   public final String name;
   public final String notes;
-  @Nullable public final String versus;
+  public final @Nullable String versus;
   public final String webserver;
 
   @JsonCreator
@@ -71,9 +71,8 @@ public final class TestDefinition {
       @JsonProperty(value = "notes", required = true)
       String notes,
 
-      @Nullable
       @JsonProperty(value = "versus", required = false)
-      String versus,
+      @Nullable String versus,
 
       @JsonProperty(value = "webserver", required = true)
       String webserver) {

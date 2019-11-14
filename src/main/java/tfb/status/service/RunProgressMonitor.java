@@ -9,11 +9,11 @@ import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.mail.MessagingException;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +26,7 @@ public final class RunProgressMonitor {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @GuardedBy("this")
-  @Nullable
-  private ScheduledThreadPoolExecutor taskScheduler;
+  private @Nullable ScheduledThreadPoolExecutor taskScheduler;
 
   @GuardedBy("this")
   private final Map<String, ScheduledFuture<?>> environmentToTask = new HashMap<>();

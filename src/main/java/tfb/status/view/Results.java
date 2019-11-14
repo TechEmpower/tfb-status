@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A representation of the results.json file from a TFB run.
@@ -25,8 +25,7 @@ public final class Results {
    * <p>This field was added in March 2017 and was not present in results
    * gathered prior to that date.
    */
-  @Nullable
-  public final String uuid;
+  public final @Nullable String uuid;
 
   /**
    * The informal name for this set of results, or {@code null} if that
@@ -35,8 +34,7 @@ public final class Results {
    * <p>This field was added in March 2017 and was not present in results
    * gathered prior to that date.
    */
-  @Nullable
-  public final String name;
+  public final @Nullable String name;
 
   /**
    * The informal description of the environment that produced this set of
@@ -45,8 +43,7 @@ public final class Results {
    * <p>This field was added in March 2017 and was not present in results
    * gathered prior to that date.
    */
-  @Nullable
-  public final String environmentDescription;
+  public final @Nullable String environmentDescription;
 
   /**
    * The epoch millisecond timestamp of when this run started, or {@code null}
@@ -55,8 +52,7 @@ public final class Results {
    * <p>This field was added in March 2017 and was not present in results
    * gathered prior to that date.
    */
-  @Nullable
-  public final Long startTime;
+  public final @Nullable Long startTime;
 
   /**
    * The epoch millisecond timestamp of when this run completed, or {@code null}
@@ -65,8 +61,7 @@ public final class Results {
    * <p>This field was added in March 2017 and was not present in results
    * gathered prior to that date.
    */
-  @Nullable
-  public final Long completionTime;
+  public final @Nullable Long completionTime;
 
   /**
    * The duration in seconds of each test.
@@ -120,31 +115,25 @@ public final class Results {
    * <p>This field was added in February 2018 and was not present in results
    * gathered prior to that date.
    */
-  @Nullable
-  public final GitInfo git;
+  public final @Nullable GitInfo git;
 
   @JsonCreator
   public Results(
 
-      @Nullable
       @JsonProperty(value = "uuid", required = false)
-      String uuid,
+      @Nullable String uuid,
 
-      @Nullable
       @JsonProperty(value = "name", required = false)
-      String name,
+      @Nullable String name,
 
-      @Nullable
       @JsonProperty(value = "environmentDescription", required = false)
-      String environmentDescription,
+      @Nullable String environmentDescription,
 
-      @Nullable
       @JsonProperty(value = "startTime", required = false)
-      Long startTime,
+      @Nullable Long startTime,
 
-      @Nullable
       @JsonProperty(value = "completionTime", required = false)
-      Long completionTime,
+      @Nullable Long completionTime,
 
       @JsonProperty(value = "duration", required = true)
       long duration,
@@ -170,9 +159,8 @@ public final class Results {
       @JsonProperty(value = "concurrencyLevels", required = true)
       ImmutableList<Integer> concurrencyLevels,
 
-      @Nullable
       @JsonProperty(value = "git", required = false)
-      GitInfo git) {
+      @Nullable GitInfo git) {
 
     this.uuid = uuid;
     this.name = name;
@@ -280,33 +268,26 @@ public final class Results {
     @JsonCreator
     public RawData(
 
-        @Nullable
         @JsonProperty(value = "json", required = false)
-        ImmutableListMultimap<String, SingleWrkExecution> json,
+        @Nullable ImmutableListMultimap<String, SingleWrkExecution> json,
 
-        @Nullable
         @JsonProperty(value = "plaintext", required = false)
-        ImmutableListMultimap<String, SingleWrkExecution> plaintext,
+        @Nullable ImmutableListMultimap<String, SingleWrkExecution> plaintext,
 
-        @Nullable
         @JsonProperty(value = "db", required = false)
-        ImmutableListMultimap<String, SingleWrkExecution> db,
+        @Nullable ImmutableListMultimap<String, SingleWrkExecution> db,
 
-        @Nullable
         @JsonProperty(value = "query", required = false)
-        ImmutableListMultimap<String, SingleWrkExecution> query,
+        @Nullable ImmutableListMultimap<String, SingleWrkExecution> query,
 
-        @Nullable
         @JsonProperty(value = "update", required = false)
-        ImmutableListMultimap<String, SingleWrkExecution> update,
+        @Nullable ImmutableListMultimap<String, SingleWrkExecution> update,
 
-        @Nullable
         @JsonProperty(value = "fortune", required = false)
-        ImmutableListMultimap<String, SingleWrkExecution> fortune,
+        @Nullable ImmutableListMultimap<String, SingleWrkExecution> fortune,
 
-        @Nullable
         @JsonProperty(value = "cached_query", required = false)
-        ImmutableListMultimap<String, SingleWrkExecution> cachedQuery) {
+        @Nullable ImmutableListMultimap<String, SingleWrkExecution> cachedQuery) {
 
       this.json =
           Objects.requireNonNullElseGet(
@@ -349,9 +330,9 @@ public final class Results {
   @JsonInclude(NON_DEFAULT)
   public static final class SingleWrkExecution {
     public final long totalRequests;
-    @Nullable public final String latencyAvg;
-    @Nullable public final String latencyMax;
-    @Nullable public final String latencyStdev;
+    public final @Nullable String latencyAvg;
+    public final @Nullable String latencyMax;
+    public final @Nullable String latencyStdev;
     @JsonProperty("5xx") public final int status5xx;
     public final int write;
     public final int read;
@@ -363,17 +344,14 @@ public final class Results {
         @JsonProperty(value = "totalRequests", required = false)
         long totalRequests,
 
-        @Nullable
         @JsonProperty(value = "latencyAvg", required = false)
-        String latencyAvg,
+        @Nullable String latencyAvg,
 
-        @Nullable
         @JsonProperty(value = "latencyMax", required = false)
-        String latencyMax,
+        @Nullable String latencyMax,
 
-        @Nullable
         @JsonProperty(value = "latencyStdev", required = false)
-        String latencyStdev,
+        @Nullable String latencyStdev,
 
         @JsonProperty(value = "5xx", required = false)
         int status5xx,
@@ -402,7 +380,7 @@ public final class Results {
   public static final class GitInfo {
     public final String commitId;
     public final String repositoryUrl;
-    @Nullable public final String branchName;
+    public final @Nullable String branchName;
 
     @JsonCreator
     public GitInfo(
@@ -413,9 +391,8 @@ public final class Results {
         @JsonProperty(value = "repositoryUrl", required = true)
         String repositoryUrl,
 
-        @Nullable
         @JsonProperty(value = "branchName", required = false)
-        String branchName) {
+        @Nullable String branchName) {
 
       this.commitId = Objects.requireNonNull(commitId);
       this.repositoryUrl = Objects.requireNonNull(repositoryUrl);
@@ -429,8 +406,8 @@ public final class Results {
    */
   @Immutable
   public static final class TfbWebsiteView {
-    @Nullable public final String name;
-    @Nullable public final Long completionTime;
+    public final @Nullable String name;
+    public final @Nullable Long completionTime;
     public final long duration;
     public final ImmutableList<Integer> queryIntervals;
     public final ImmutableList<Integer> concurrencyLevels;
@@ -440,13 +417,11 @@ public final class Results {
     @JsonCreator
     public TfbWebsiteView(
 
-        @Nullable
         @JsonProperty(value = "name", required = false)
-        String name,
+        @Nullable String name,
 
-        @Nullable
         @JsonProperty(value = "completionTime", required = false)
-        Long completionTime,
+        @Nullable Long completionTime,
 
         @JsonProperty(value = "duration", required = true)
         long duration,

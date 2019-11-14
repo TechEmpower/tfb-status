@@ -3,7 +3,7 @@ package tfb.status.view;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A view of one directory within a zip file.
@@ -50,7 +50,7 @@ public final class UnzippedDirectoryView {
      * The size of this file as a human-readable string, such as "4.5 kB", or
      * {@code null} if this is a directory.
      */
-    @Nullable public final String size;
+    public final @Nullable String size;
 
     /**
      * {@code true} if this is a directory.

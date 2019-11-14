@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A minified view of a {@link TestDefinition} for consumption by the TFB
@@ -59,9 +59,8 @@ public final class MinifiedTestDefinition {
   @JsonProperty("i")
   public final String name;
 
-  @Nullable
   @JsonProperty("t")
-  public final String displayName;
+  public final @Nullable String displayName;
   // ------------------------
 
   @JsonCreator

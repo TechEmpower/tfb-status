@@ -4,7 +4,7 @@ import com.google.common.collect.Iterables;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Utility methods for reading request values from an {@link HttpServerExchange}
@@ -23,9 +23,8 @@ public final class RequestValues {
    * @return either the value of the query parameter or {@code null} if the
    *         request contains zero values or multiple values for the parameter
    */
-  @Nullable
-  public static String queryParameter(HttpServerExchange exchange,
-                                      String parameterName) {
+  public static @Nullable String queryParameter(HttpServerExchange exchange,
+                                                String parameterName) {
     Objects.requireNonNull(exchange);
     Objects.requireNonNull(parameterName);
 

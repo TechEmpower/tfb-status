@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The configuration for static assets served by this application.
@@ -19,13 +19,11 @@ public final class AssetsConfig {
   @JsonCreator
   public AssetsConfig(
 
-      @Nullable
       @JsonProperty(value = "mode", required = false)
-      ResourceMode mode,
+      @Nullable ResourceMode mode,
 
-      @Nullable
       @JsonProperty(value = "root", required = false)
-      String root) {
+      @Nullable String root) {
 
     this.mode = Objects.requireNonNullElseGet(mode, () -> ResourceMode.defaultMode());
     this.root = Objects.requireNonNullElseGet(root, () -> defaultRoot(this.mode));

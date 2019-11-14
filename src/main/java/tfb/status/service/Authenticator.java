@@ -20,9 +20,9 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,15 +144,13 @@ public final class Authenticator {
 
   private final class ThisAsIdentityManager implements IdentityManager {
     @Override
-    @Nullable
-    public Account verify(Account account) {
+    public @Nullable Account verify(Account account) {
       String accountId = accountToId(account);
       return accountExists(accountId) ? account : null;
     }
 
     @Override
-    @Nullable
-    public Account verify(String accountId, Credential credential) {
+    public @Nullable Account verify(String accountId, Credential credential) {
       Objects.requireNonNull(accountId);
       Objects.requireNonNull(credential);
 
@@ -177,8 +175,7 @@ public final class Authenticator {
     }
 
     @Override
-    @Nullable
-    public Account verify(Credential credential) {
+    public @Nullable Account verify(Credential credential) {
       Objects.requireNonNull(credential);
       return null;
     }
@@ -311,13 +308,12 @@ public final class Authenticator {
    * @return the file containing the password hash, or {@code null} if the
    *         account id is invalid
    */
-  @Nullable
-  private Path getPasswordFile(String accountId) {
+  private @Nullable Path getPasswordFile(String accountId) {
     return resolveChildPath(fileStore.accountsDirectory(), accountId);
   }
 
-  @Nullable
-  private static Path resolveChildPath(Path directory, String fileName) {
+  private static @Nullable Path resolveChildPath(Path directory,
+                                                 String fileName) {
     Objects.requireNonNull(directory);
     Objects.requireNonNull(fileName);
 

@@ -12,10 +12,10 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.TypeLiteral;
@@ -167,7 +167,7 @@ public final class Services {
       implements Factory<ApplicationConfig> {
 
     private final FileSystem fileSystem;
-    @Nullable private final String path;
+    private final @Nullable String path;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Inject

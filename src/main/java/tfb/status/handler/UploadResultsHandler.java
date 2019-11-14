@@ -36,10 +36,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Objects;
 import javax.activation.DataSource;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.MessagingException;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.service.Authenticator;
@@ -214,15 +214,13 @@ public final class UploadResultsHandler implements HttpHandler {
      * Returns the {@linkplain Results#uuid uuid} of the given file or {@code
      * null} if the uuid cannot be determined.
      */
-    @Nullable
-    abstract String tryReadUuid(Path file);
+    abstract @Nullable String tryReadUuid(Path file);
 
     /**
      * Returns the {@linkplain Results#environmentDescription environment} of
      * the given file or {@code null} if the environment cannot be determined.
      */
-    @Nullable
-    abstract String tryReadEnvironment(Path file);
+    abstract @Nullable String tryReadEnvironment(Path file);
 
     /**
      * Returns {@code true} if the given newly-uploaded file is in the correct
@@ -263,8 +261,7 @@ public final class UploadResultsHandler implements HttpHandler {
     }
 
     @Override
-    @Nullable
-    String tryReadUuid(Path jsonFile) {
+    @Nullable String tryReadUuid(Path jsonFile) {
       Objects.requireNonNull(jsonFile);
       Results parsed;
       try (InputStream inputStream = Files.newInputStream(jsonFile)) {
@@ -276,8 +273,7 @@ public final class UploadResultsHandler implements HttpHandler {
     }
 
     @Override
-    @Nullable
-    String tryReadEnvironment(Path jsonFile) {
+    @Nullable String tryReadEnvironment(Path jsonFile) {
       Objects.requireNonNull(jsonFile);
       Results results;
       try (InputStream inputStream = Files.newInputStream(jsonFile)) {
@@ -347,8 +343,7 @@ public final class UploadResultsHandler implements HttpHandler {
     }
 
     @Override
-    @Nullable
-    String tryReadUuid(Path zipFile) {
+    @Nullable String tryReadUuid(Path zipFile) {
       Objects.requireNonNull(zipFile);
       Results parsed;
       try {
@@ -366,8 +361,7 @@ public final class UploadResultsHandler implements HttpHandler {
     }
 
     @Override
-    @Nullable
-    String tryReadEnvironment(Path zipFile) {
+    @Nullable String tryReadEnvironment(Path zipFile) {
       Objects.requireNonNull(zipFile);
       Results results;
       try {
@@ -438,7 +432,7 @@ public final class UploadResultsHandler implements HttpHandler {
     //
 
     @GuardedBy("emailTimeLock")
-    @Nullable private volatile Instant previousEmailTime;
+    private volatile @Nullable Instant previousEmailTime;
     private final Object emailTimeLock = new Object();
     private static final Duration MIN_TIME_BETWEEN_EMAILS = Duration.ofHours(24);
 
@@ -548,8 +542,7 @@ public final class UploadResultsHandler implements HttpHandler {
       }
     }
 
-    @Nullable
-    private Path findPreviousZipFile(Path newZipFile) {
+    private @Nullable Path findPreviousZipFile(Path newZipFile) {
       Path previousZipFile = null;
       FileTime previousTime = null;
 
@@ -593,24 +586,21 @@ public final class UploadResultsHandler implements HttpHandler {
           && a.git.repositoryUrl.equals(b.git.repositoryUrl);
     }
 
-    @Nullable
-    private byte[] findResultsBytes(Path zipFile) {
+    private byte@Nullable[] findResultsBytes(Path zipFile) {
       return tryReadZipEntry(
           /* zipFile= */ zipFile,
           /* entryPath= */ "results.json",
           /* entryReader= */ entry -> entry.readAllBytes());
     }
 
-    @Nullable
-    private byte[] findTestMetadataBytes(Path zipFile) {
+    private byte@Nullable[] findTestMetadataBytes(Path zipFile) {
       return tryReadZipEntry(
           /* zipFile= */ zipFile,
           /* entryPath= */ "test_metadata.json",
           /* entryReader= */ entry -> entry.readAllBytes());
     }
 
-    @Nullable
-    private Results findResults(Path zipFile) {
+    private @Nullable Results findResults(Path zipFile) {
       return tryReadZipEntry(
           /* zipFile= */ zipFile,
           /* entryPath= */ "results.json",
@@ -619,10 +609,9 @@ public final class UploadResultsHandler implements HttpHandler {
                                                         Results.class));
     }
 
-    @Nullable
-    private <T> T tryReadZipEntry(Path zipFile,
-                                  String entryPath,
-                                  ZipFiles.ZipEntryReader<T> entryReader) {
+    private <T> @Nullable T tryReadZipEntry(Path zipFile,
+                                            String entryPath,
+                                            ZipFiles.ZipEntryReader<T> entryReader) {
       T value;
       try {
         value = ZipFiles.readZipEntry(zipFile, entryPath, entryReader);
@@ -723,7 +712,7 @@ public final class UploadResultsHandler implements HttpHandler {
     private ImmutableList<DataSource> prepareEmailAttachments(
         byte[] rawResultsBytes,
         byte[] minifiedResultsBytes,
-        @Nullable byte[] testMetadataBytes,
+        byte@Nullable[] testMetadataBytes,
         @Nullable String diff) {
 
       var attachments = new ImmutableList.Builder<DataSource>();

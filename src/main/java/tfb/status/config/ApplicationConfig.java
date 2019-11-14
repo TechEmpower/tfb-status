@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The parent configuration object for this entire application, containing all
@@ -23,30 +23,25 @@ public final class ApplicationConfig {
    * The configuration for outbound emails, or {@code null} if outbound emails
    * are disabled.
    */
-  @Nullable public final EmailConfig email;
+  public final @Nullable EmailConfig email;
 
   @JsonCreator
   public ApplicationConfig(
 
-      @Nullable
       @JsonProperty(value = "http", required = false)
-      HttpServerConfig http,
+      @Nullable HttpServerConfig http,
 
-      @Nullable
       @JsonProperty(value = "assets", required = false)
-      AssetsConfig assets,
+      @Nullable AssetsConfig assets,
 
-      @Nullable
       @JsonProperty(value = "mustache", required = false)
-      MustacheConfig mustache,
+      @Nullable MustacheConfig mustache,
 
-      @Nullable
       @JsonProperty(value = "fileStore", required = false)
-      FileStoreConfig fileStore,
+      @Nullable FileStoreConfig fileStore,
 
-      @Nullable
       @JsonProperty(value = "email", required = false)
-      EmailConfig email) {
+      @Nullable EmailConfig email) {
 
     this.http =
         Objects.requireNonNullElseGet(

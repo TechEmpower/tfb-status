@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The configuration for miscellaneous files managed by this application.
@@ -21,9 +21,8 @@ public final class FileStoreConfig {
   @JsonCreator
   public FileStoreConfig(
 
-      @Nullable
       @JsonProperty(value = "root", required = false)
-      String root) {
+      @Nullable String root) {
 
     this.root =
         Objects.requireNonNullElse(

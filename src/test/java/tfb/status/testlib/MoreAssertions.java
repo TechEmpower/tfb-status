@@ -7,7 +7,7 @@ import com.google.common.net.MediaType;
 import java.io.BufferedReader;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Utility methods for making assertions in tests.

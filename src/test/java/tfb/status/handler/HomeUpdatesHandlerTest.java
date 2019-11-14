@@ -22,7 +22,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -112,10 +112,9 @@ public final class HomeUpdatesHandlerTest {
     var listener =
         new WebSocket.Listener() {
           @Override
-          @Nullable
-          public CompletionStage<?> onText(WebSocket webSocket,
-                                           CharSequence data,
-                                           boolean last) {
+          public @Nullable CompletionStage<?> onText(WebSocket webSocket,
+                                                     CharSequence data,
+                                                     boolean last) {
             future.complete(data.toString());
             return null;
           }
