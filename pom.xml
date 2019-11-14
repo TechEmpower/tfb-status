@@ -42,7 +42,6 @@
     <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
     <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
     <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
-    <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
     <maven-site-plugin.version>3.8.2</maven-site-plugin.version>
     <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
     <mustache.version>0.9.6</mustache.version>
@@ -204,9 +203,6 @@
   </dependencies>
 
   <build>
-    <!-- Omit the version number from the name of the jar file we build. -->
-    <finalName>tfb-status</finalName>
-
     <pluginManagement>
       <plugins>
         <plugin>
@@ -263,11 +259,6 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>${maven-shade-plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
           <version>${maven-site-plugin.version}</version>
         </plugin>
@@ -305,7 +296,8 @@
       </plugin>
 
       <!-- Ignore false flags from "mvn dependency:analyze" for a few specific
-           dependencies. -->
+           dependencies.  Also, copy our dependency jar files out of the local
+           Maven repository and into a "lib" directory. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -338,6 +330,17 @@
 
           </ignoredUsedUndeclaredDependencies>
         </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- When we build this project, we generate a git.properties file that
@@ -504,43 +507,23 @@
         </executions>
       </plugin>
 
-      <!-- We package this application into a fat jar file containing both our
-           application and all of its dependencies.  This jar file can be
-           produced by running the command "mvn clean package" from the root
-           directory of the project. -->
+      <!-- Omit the version number from the name of the jar file we build.  Make
+           that jar file executable.  Automatically add classpath entries for
+           dependencies, which must live in a "lib" directory next to the jar
+           file. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
+        <artifactId>maven-jar-plugin</artifactId>
         <configuration>
-          <createDependencyReducedPom>false</createDependencyReducedPom>
-          <filters>
-            <filter>
-              <artifact>*:*</artifact>
-              <excludes>
-                <exclude>module-info.class</exclude>
-                <exclude>META-INF/*.SF</exclude>
-                <exclude>META-INF/*.DSA</exclude>
-                <exclude>META-INF/*.RSA</exclude>
-              </excludes>
-            </filter>
-          </filters>
+          <finalName>tfb-status</finalName>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+              <mainClass>tfb.status.bootstrap.Main</mainClass>
+            </manifest>
+          </archive>
         </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>tfb.status.bootstrap.Main</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
     </plugins>

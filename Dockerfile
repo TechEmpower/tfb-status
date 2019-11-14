@@ -30,4 +30,5 @@ RUN mvn package --batch-mode --offline
 FROM openjdk:13-jdk
 WORKDIR /tfbstatus
 COPY --from=build /tfbstatus/target/tfb-status.jar tfb-status.jar
+COPY --from=build /tfbstatus/target/lib lib
 ENTRYPOINT [ "java", "-jar", "tfb-status.jar" ]
