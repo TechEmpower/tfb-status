@@ -25,7 +25,7 @@ COPY src src
 ARG SKIP_TESTS=false
 
 # If we did everything right, this won't download any new dependencies.
-RUN mvn package --batch-mode
+RUN mvn package --batch-mode --offline
 
 FROM openjdk:13-jdk
 WORKDIR /tfbstatus
