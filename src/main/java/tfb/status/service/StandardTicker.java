@@ -1,7 +1,7 @@
 package tfb.status.service;
 
-import com.google.common.base.Ticker;
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Ticker;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.Factory;
 

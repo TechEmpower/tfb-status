@@ -44,15 +44,15 @@ import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
 import tfb.status.service.Authenticator;
-import tfb.status.service.FileStore;
-import tfb.status.service.RunProgressMonitor;
-import tfb.status.service.StandardFileSystem;
 import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
+import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
-import tfb.status.service.StandardObjectMapper;
+import tfb.status.service.RunProgressMonitor;
 import tfb.status.service.StandardClock;
+import tfb.status.service.StandardFileSystem;
+import tfb.status.service.StandardObjectMapper;
 import tfb.status.service.StandardTicker;
 
 /**
