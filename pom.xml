@@ -66,6 +66,17 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>${guava.version}</version>
+      <exclusions>
+        <!-- The jsr305 jar causes problems when trying to use Java modules
+             because it defines classes in the javax.annotation package, which
+             it doesn't own.  We're not using modules yet, but we're not using
+             jsr305 either, so we can remove this roadblock to modules right
+             now without harm. -->
+        <exclusion>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.undertow</groupId>
@@ -484,6 +495,10 @@
                      Having both on our classpath at once would be unacceptably
                      confusing. -->
                 <exclude>junit:junit</exclude>
+
+                <!-- jsr305 cannot be allowed if we ever want to use Java
+                     modules. -->
+                <exclude>com.google.code.findbugs:jsr305</exclude>
               </excludes>
             </bannedDependencies>
           </rules>
