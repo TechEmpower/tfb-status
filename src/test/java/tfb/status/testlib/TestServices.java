@@ -9,7 +9,6 @@ import com.google.common.jimfs.Jimfs;
 import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,19 +18,16 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.net.ssl.SSLContext;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.InstanceLifecycleEvent;
 import org.glassfish.hk2.api.InstanceLifecycleListener;
-import org.glassfish.hk2.api.ServiceLocator;
-import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.threeten.extra.MutableClock;
 import tfb.status.bootstrap.HttpServer;
 import tfb.status.bootstrap.Services;
@@ -41,25 +37,30 @@ import tfb.status.service.EmailSender;
 import tfb.status.util.KeyStores;
 
 /**
- * Creates instances of our HTTP handlers and service classes for testing.
+ * Manages the instances of HTTP handlers and service classes within this
+ * application during tests.
  *
  * <p>Use {@link #getService(Class)} to retrieve instances of service classes.
- * For example, <code>getService(EmailSender.class)</code> returns an instance
- * of {@link EmailSender}.
+ * For example, <code>getService(HttpServer.class)</code> returns an instance
+ * of {@link HttpServer}.
  *
  * <p><strong>Important:</strong> Call {@link #shutdown()} once the tests are
  * complete.
+ *
+ * @see #getService(Class)
+ * @see #shutdown()
  */
-public final class TestServices {
-  private final ServiceLocator serviceLocator;
-
+public final class TestServices extends Services {
+  /**
+   * Constructs the interface for managing this application's services during
+   * tests.
+   */
   public TestServices() {
-    this.serviceLocator = Services.newServiceLocator("test_config.yml");
-
-    var binder = new AbstractBinder() {
-
+    super(new ServiceBinder("test_config.yml") {
       @Override
       protected void configure() {
+        super.configure(); // register the default services
+
         bindFactory(MutableClockFactory.class, Singleton.class)
             .to(Clock.class)
             .in(Singleton.class)
@@ -80,40 +81,12 @@ public final class TestServices {
             .in(Singleton.class);
 
         bindAsContract(MailServer.class).in(Singleton.class);
+
+        bind(MailServerDependency.class)
+            .to(InstanceLifecycleListener.class)
+            .in(Singleton.class);
       }
-    };
-
-    ServiceLocatorUtilities.bind(serviceLocator, binder);
-
-    forceDependency(
-        /* serviceLocator= */ serviceLocator,
-        /* fromType= */ HttpClient.class,
-        /* toType= */ HttpServer.class);
-
-    forceDependency(
-        /* serviceLocator= */ serviceLocator,
-        /* fromType= */ EmailSender.class,
-        /* toType= */ MailServer.class);
-  }
-
-  /**
-   * Shuts down all services.
-   */
-  public void shutdown() {
-    serviceLocator.shutdown();
-  }
-
-  /**
-   * Returns the service of the specified type.
-   *
-   * @throws NoSuchElementException if there is no service of that type
-   */
-  public <T> T getService(Class<T> type) {
-    T service = serviceLocator.getService(type);
-    if (service == null)
-      throw new NoSuchElementException("There is no service of type " + type);
-
-    return service;
+    });
   }
 
   /**
@@ -133,7 +106,7 @@ public final class TestServices {
   }
 
   /**
-   * Provides access to email that was sent by the application during tests.
+   * Provides access to email that was sent by this application during tests.
    */
   public MailServer mailServer() {
     return getService(MailServer.class);
@@ -271,57 +244,31 @@ public final class TestServices {
   }
 
   /**
-   * Tells the service locator that {@code toType} must be initialized before
-   * {@code fromType} even if {@code fromType} does not explicitly declare
-   * that dependency.
+   * Ensures that {@link MailServer} is initialized before {@link EmailSender}
+   * even though {@link EmailSender} does not explicitly declare that
+   * dependency.
    */
-  private static void forceDependency(ServiceLocator serviceLocator,
-                                      Type fromType,
-                                      Type toType) {
-
-    Objects.requireNonNull(serviceLocator);
-    Objects.requireNonNull(fromType);
-    Objects.requireNonNull(toType);
-
-    var binder = new AbstractBinder() {
-
-      @Override
-      protected void configure() {
-        bind(new ForcedDependency(serviceLocator, fromType, toType))
-            .to(InstanceLifecycleListener.class);
-      }
-    };
-
-    ServiceLocatorUtilities.bind(serviceLocator, binder);
-  }
-
   @Singleton
-  private static final class ForcedDependency
+  private static final class MailServerDependency
       implements InstanceLifecycleListener {
 
-    private final ServiceLocator serviceLocator;
-    private final Type fromType;
-    private final Type toType;
+    private final Provider<MailServer> mailServerProvider;
 
-    ForcedDependency(ServiceLocator serviceLocator,
-                     Type fromType,
-                     Type toType) {
-
-      this.serviceLocator = Objects.requireNonNull(serviceLocator);
-      this.fromType = Objects.requireNonNull(fromType);
-      this.toType = Objects.requireNonNull(toType);
+    @Inject
+    public MailServerDependency(Provider<MailServer> mailServerProvider) {
+      this.mailServerProvider = Objects.requireNonNull(mailServerProvider);
     }
 
     @Override
     public Filter getFilter() {
       return descriptor -> descriptor.getAdvertisedContracts()
-                                     .contains(fromType.getTypeName());
+                                     .contains(EmailSender.class.getTypeName());
     }
 
     @Override
     public void lifecycleEvent(InstanceLifecycleEvent lifecycleEvent) {
       if (lifecycleEvent.getEventType() == PRE_PRODUCTION)
-        serviceLocator.getService(toType);
+        mailServerProvider.get();
     }
   }
 
@@ -329,11 +276,16 @@ public final class TestServices {
   private static final class HttpClientFactory implements Factory<HttpClient> {
     private final HttpServerConfig config;
     private final FileSystem fileSystem;
+    private final Provider<HttpServer> httpServerProvider;
 
     @Inject
-    public HttpClientFactory(HttpServerConfig config, FileSystem fileSystem) {
+    public HttpClientFactory(HttpServerConfig config,
+                             FileSystem fileSystem,
+                             Provider<HttpServer> httpServerProvider) {
+
       this.config = Objects.requireNonNull(config);
       this.fileSystem = Objects.requireNonNull(fileSystem);
+      this.httpServerProvider = Objects.requireNonNull(httpServerProvider);
     }
 
     @Override
@@ -352,7 +304,12 @@ public final class TestServices {
         builder.sslContext(sslContext);
       }
 
-      return builder.build();
+      HttpClient client = builder.build();
+
+      // Ensure that the HTTP server is initialized before the client is used.
+      httpServerProvider.get();
+
+      return client;
     }
 
     @Override

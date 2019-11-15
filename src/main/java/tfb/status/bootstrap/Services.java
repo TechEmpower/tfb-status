@@ -5,11 +5,11 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Ticker;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Annotation;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -19,6 +19,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.TypeLiteral;
+import org.glassfish.hk2.utilities.Binder;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.slf4j.Logger;
@@ -56,108 +57,151 @@ import tfb.status.service.StandardObjectMapper;
 import tfb.status.service.StandardTicker;
 
 /**
- * Obtains instances of the HTTP handlers and service classes in this
+ * Manages the instances of HTTP handlers and service classes within this
  * application.
+ *
+ * <p>Use {@link #getService(Class)} to retrieve instances of service classes.
+ * For example, <code>getService(HttpServer.class)</code> returns an instance
+ * of {@link HttpServer}.
+ *
+ * @see #getService(Class)
+ * @see #shutdown()
  */
-public final class Services {
-  private Services() {
-    throw new AssertionError("This class cannot be instantiated");
+public class Services {
+  private final ServiceLocator serviceLocator;
+
+  /**
+   * Constructs the interface for managing this application's services.
+   *
+   * @param configFilePath the path to this application's YAML configuration
+   *        file, or {@code null} if a default configuration should be used
+   */
+  public Services(@Nullable String configFilePath) {
+    this(new ServiceBinder(configFilePath));
   }
 
   /**
-   * Returns a new {@link ServiceLocator} that is capable of producing all of
-   * the services in this application.
+   * Initializes services using an HK2 binder.
    *
-   * <p>For example, to obtain the {@link HttpServer}:
-   *
-   * <pre>
-   *   ServiceLocator serviceLocator = newServiceLocator(configFilePath);
-   *   HttpServer httpServer = serviceLocator.getService(HttpServer.class);
-   * </pre>
-   *
-   * @see ServiceLocator#getService(Class, Annotation...)
+   * @param binder the HK2 binder that registers all of this application's
+   *        service classes
    */
-  public static ServiceLocator newServiceLocator(@Nullable String configFilePath) {
-
-    var binder = new AbstractBinder() {
-
-      @Override
-      public void configure() {
-        bind(Optional.ofNullable(configFilePath))
-            .to(new TypeLiteral<Optional<String>>() {})
-            .named(CONFIG_FILE_PATH);
-
-        bindFactory(ApplicationConfigFactory.class, Singleton.class)
-            .to(ApplicationConfig.class)
-            .in(Singleton.class);
-
-        bindFactory(AssetsConfigFactory.class, Singleton.class)
-            .to(AssetsConfig.class)
-            .in(Singleton.class);
-
-        bindFactory(MustacheConfigFactory.class, Singleton.class)
-            .to(MustacheConfig.class)
-            .in(Singleton.class);
-
-        bindFactory(FileStoreConfigFactory.class, Singleton.class)
-            .to(FileStoreConfig.class)
-            .in(Singleton.class);
-
-        bindFactory(HttpServerConfigFactory.class, Singleton.class)
-            .to(HttpServerConfig.class)
-            .in(Singleton.class);
-
-        bindFactory(EmailConfigFactory.class, Singleton.class)
-            .to(new TypeLiteral<Optional<EmailConfig>>() {})
-            .in(Singleton.class);
-
-        bindAsContract(HttpServer.class).in(Singleton.class);
-        bindAsContract(RootHandler.class).in(Singleton.class);
-        bindAsContract(HomePageHandler.class).in(Singleton.class);
-        bindAsContract(HomeUpdatesHandler.class).in(Singleton.class);
-        bindAsContract(UploadResultsHandler.class).in(Singleton.class);
-        bindAsContract(RobotsHandler.class).in(Singleton.class);
-        bindAsContract(DownloadResultsHandler.class).in(Singleton.class);
-        bindAsContract(ExportResultsHandler.class).in(Singleton.class);
-        bindAsContract(UnzipResultsHandler.class).in(Singleton.class);
-        bindAsContract(TimelinePageHandler.class).in(Singleton.class);
-        bindAsContract(DetailPageHandler.class).in(Singleton.class);
-        bindAsContract(AboutPageHandler.class).in(Singleton.class);
-        bindAsContract(AssetsHandler.class).in(Singleton.class);
-        bindAsContract(AttributesPageHandler.class).in(Singleton.class);
-        bindAsContract(SaveAttributesHandler.class).in(Singleton.class);
-        bindAsContract(Authenticator.class).in(Singleton.class);
-        bindAsContract(MustacheRenderer.class).in(Singleton.class);
-        bindAsContract(HomeResultsReader.class).in(Singleton.class);
-        bindAsContract(EmailSender.class).in(Singleton.class);
-        bindAsContract(DiffGenerator.class).in(Singleton.class);
-        bindAsContract(FileStore.class).in(Singleton.class);
-        bindAsContract(RunProgressMonitor.class).in(Singleton.class);
-
-        bindFactory(StandardObjectMapper.class, Singleton.class)
-            .to(ObjectMapper.class)
-            .in(Singleton.class);
-
-        bindFactory(StandardClock.class, Singleton.class)
-            .to(Clock.class)
-            .in(Singleton.class);
-
-        bindFactory(StandardTicker.class, Singleton.class)
-            .to(Ticker.class)
-            .in(Singleton.class);
-
-        bindFactory(StandardFileSystem.class, Singleton.class)
-            .to(FileSystem.class)
-            .in(Singleton.class);
-      }
-    };
+  protected Services(Binder binder) {
+    Objects.requireNonNull(binder);
 
     ServiceLocator serviceLocator =
         ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
     ServiceLocatorUtilities.bind(serviceLocator, binder);
 
-    return serviceLocator;
+    this.serviceLocator = serviceLocator;
+  }
+
+  /**
+   * Shuts down all services.
+   */
+  public void shutdown() {
+    serviceLocator.shutdown();
+  }
+
+  /**
+   * Returns the service of the specified type.
+   *
+   * @throws NoSuchElementException if there is no service of that type
+   */
+  public <T> T getService(Class<T> type) {
+    T service = serviceLocator.getService(type);
+    if (service == null)
+      throw new NoSuchElementException("There is no service of type " + type);
+
+    return service;
+  }
+
+  /**
+   * An HK2 binder that registers all of this application's service classes.
+   */
+  protected static class ServiceBinder extends AbstractBinder {
+    private final @Nullable String configFilePath;
+
+    /**
+     * Constructs an HK2 binder for this application.
+     *
+     * @param configFilePath the path to this application's YAML configuration
+     *        file, or {@code null} if a default configuration should be used
+     */
+    public ServiceBinder(@Nullable String configFilePath) {
+      this.configFilePath = configFilePath;
+    }
+
+    @Override
+    protected void configure() {
+      bind(Optional.ofNullable(configFilePath))
+          .to(new TypeLiteral<Optional<String>>() {})
+          .named(CONFIG_FILE_PATH);
+
+      bindFactory(ApplicationConfigFactory.class, Singleton.class)
+          .to(ApplicationConfig.class)
+          .in(Singleton.class);
+
+      bindFactory(AssetsConfigFactory.class, Singleton.class)
+          .to(AssetsConfig.class)
+          .in(Singleton.class);
+
+      bindFactory(MustacheConfigFactory.class, Singleton.class)
+          .to(MustacheConfig.class)
+          .in(Singleton.class);
+
+      bindFactory(FileStoreConfigFactory.class, Singleton.class)
+          .to(FileStoreConfig.class)
+          .in(Singleton.class);
+
+      bindFactory(HttpServerConfigFactory.class, Singleton.class)
+          .to(HttpServerConfig.class)
+          .in(Singleton.class);
+
+      bindFactory(EmailConfigFactory.class, Singleton.class)
+          .to(new TypeLiteral<Optional<EmailConfig>>() {})
+          .in(Singleton.class);
+
+      bindAsContract(HttpServer.class).in(Singleton.class);
+      bindAsContract(RootHandler.class).in(Singleton.class);
+      bindAsContract(HomePageHandler.class).in(Singleton.class);
+      bindAsContract(HomeUpdatesHandler.class).in(Singleton.class);
+      bindAsContract(UploadResultsHandler.class).in(Singleton.class);
+      bindAsContract(RobotsHandler.class).in(Singleton.class);
+      bindAsContract(DownloadResultsHandler.class).in(Singleton.class);
+      bindAsContract(ExportResultsHandler.class).in(Singleton.class);
+      bindAsContract(UnzipResultsHandler.class).in(Singleton.class);
+      bindAsContract(TimelinePageHandler.class).in(Singleton.class);
+      bindAsContract(DetailPageHandler.class).in(Singleton.class);
+      bindAsContract(AboutPageHandler.class).in(Singleton.class);
+      bindAsContract(AssetsHandler.class).in(Singleton.class);
+      bindAsContract(AttributesPageHandler.class).in(Singleton.class);
+      bindAsContract(SaveAttributesHandler.class).in(Singleton.class);
+      bindAsContract(Authenticator.class).in(Singleton.class);
+      bindAsContract(MustacheRenderer.class).in(Singleton.class);
+      bindAsContract(HomeResultsReader.class).in(Singleton.class);
+      bindAsContract(EmailSender.class).in(Singleton.class);
+      bindAsContract(DiffGenerator.class).in(Singleton.class);
+      bindAsContract(FileStore.class).in(Singleton.class);
+      bindAsContract(RunProgressMonitor.class).in(Singleton.class);
+
+      bindFactory(StandardObjectMapper.class, Singleton.class)
+          .to(ObjectMapper.class)
+          .in(Singleton.class);
+
+      bindFactory(StandardClock.class, Singleton.class)
+          .to(Clock.class)
+          .in(Singleton.class);
+
+      bindFactory(StandardTicker.class, Singleton.class)
+          .to(Ticker.class)
+          .in(Singleton.class);
+
+      bindFactory(StandardFileSystem.class, Singleton.class)
+          .to(FileSystem.class)
+          .in(Singleton.class);
+    }
   }
 
   private static final String CONFIG_FILE_PATH = "tfb.status.configFilePath";

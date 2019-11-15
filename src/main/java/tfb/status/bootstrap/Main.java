@@ -1,7 +1,5 @@
 package tfb.status.bootstrap;
 
-import org.glassfish.hk2.api.ServiceLocator;
-
 /**
  * Provides the {@code main} method for starting this application.
  */
@@ -38,8 +36,8 @@ public final class Main {
                 + " arguments instead");
     }
 
-    ServiceLocator serviceLocator = Services.newServiceLocator(configFilePath);
-    HttpServer httpServer = serviceLocator.getService(HttpServer.class);
+    var services = new Services(configFilePath);
+    HttpServer httpServer = services.getService(HttpServer.class);
     httpServer.start();
   }
 }
