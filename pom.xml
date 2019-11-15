@@ -420,6 +420,7 @@
               -Xep:NullableDereference:OFF
               -Xep:Finally:OFF
               -Xep:TypeParameterUnusedInFormals:OFF
+              -Xep:UnusedNestedClass:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
