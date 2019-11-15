@@ -46,7 +46,8 @@ RUN jlink --add-modules java.base,java.logging,java.naming,java.xml,jdk.unsuppor
 FROM debian:buster-slim
 WORKDIR /tfbstatus
 COPY --from=build_runtime /tfbstatus/runtime runtime
+ENV PATH "/tfbstatus/runtime/bin:${PATH}"
 COPY --from=build_app /tfbstatus/target/lib lib
 COPY --from=build_app /tfbstatus/target/tfb-status.jar tfb-status.jar
 
-ENTRYPOINT [ "/tfbstatus/runtime/bin/java", "-jar", "tfb-status.jar" ]
+ENTRYPOINT [ "java", "-jar", "tfb-status.jar" ]
