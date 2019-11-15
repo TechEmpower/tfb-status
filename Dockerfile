@@ -29,7 +29,7 @@ RUN mvn package --batch-mode --offline -DskipTests="${SKIP_TESTS}"
 
 # Produce a slimmed-down version of the Java runtime that contains only what we
 # need.
-FROM openjdk:13-jdk AS build_runtime
+FROM openjdk:13-alpine AS build_runtime
 WORKDIR /tfbstatus
 # ------------------------------------------------------------------------------
 # Module           Class from module                    Used by
@@ -43,7 +43,7 @@ WORKDIR /tfbstatus
 # ------------------------------------------------------------------------------
 RUN jlink --add-modules java.base,java.logging,java.naming,java.xml,jdk.unsupported,jdk.zipfs --output runtime
 
-FROM debian:buster-slim
+FROM alpine
 WORKDIR /tfbstatus
 COPY --from=build_runtime /tfbstatus/runtime runtime
 ENV PATH "/tfbstatus/runtime/bin:${PATH}"
