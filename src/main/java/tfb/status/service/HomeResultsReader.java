@@ -47,11 +47,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.PostConstruct;
+import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.util.ZipFiles;
@@ -63,7 +63,7 @@ import tfb.status.view.Results;
  * Loads previously-uploaded results for display on the home page.
  */
 @Singleton
-public final class HomeResultsReader {
+public final class HomeResultsReader implements PostConstruct, PreDestroy {
   private final FileStore fileStore;
   private final ObjectMapper objectMapper;
   private final Clock clock;
@@ -94,10 +94,19 @@ public final class HomeResultsReader {
     this.clock = Objects.requireNonNull(clock);
   }
 
+  @Override
+  public void postConstruct() {
+    start();
+  }
+
+  @Override
+  public void preDestroy() {
+    stop();
+  }
+
   /**
    * Initializes resources used by this service.
    */
-  @PostConstruct
   public synchronized void start() {
     purgeScheduler = new ScheduledThreadPoolExecutor(1);
     purgeScheduler.setRemoveOnCancelPolicy(true);
@@ -122,7 +131,6 @@ public final class HomeResultsReader {
   /**
    * Cleans up resources used by this service.
    */
-  @PreDestroy
   public synchronized void stop() {
     ScheduledFuture<?> task = this.purgeTask;
     if (task != null) {

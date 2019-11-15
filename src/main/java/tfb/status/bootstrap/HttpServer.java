@@ -7,11 +7,11 @@ import io.undertow.UndertowOptions;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Objects;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.net.ssl.SSLContext;
+import org.glassfish.hk2.api.PostConstruct;
+import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.HttpServerConfig;
@@ -22,7 +22,7 @@ import tfb.status.util.KeyStores;
  * The HTTP server for this application.
  */
 @Singleton
-public final class HttpServer {
+public final class HttpServer implements PostConstruct, PreDestroy {
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String serverInfo;
 
@@ -65,10 +65,19 @@ public final class HttpServer {
     server = builder.build();
   }
 
+  @Override
+  public void postConstruct() {
+    start();
+  }
+
+  @Override
+  public void preDestroy() {
+    stop();
+  }
+
   /**
    * Starts this server if it is currently stopped.
    */
-  @PostConstruct
   public synchronized void start() {
     if (isRunning) return;
 
@@ -80,7 +89,6 @@ public final class HttpServer {
   /**
    * Stops this server if it is currently running.
    */
-  @PreDestroy
   public synchronized void stop() {
     if (!isRunning) return;
 

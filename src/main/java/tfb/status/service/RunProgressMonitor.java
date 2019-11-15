@@ -9,11 +9,11 @@ import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.mail.MessagingException;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.PostConstruct;
+import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * Complains over email when a benchmarking environment has stopped sending
  * updates.
  */
-public final class RunProgressMonitor {
+public final class RunProgressMonitor implements PostConstruct, PreDestroy {
   private final EmailSender emailSender;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -36,10 +36,19 @@ public final class RunProgressMonitor {
     this.emailSender = Objects.requireNonNull(emailSender);
   }
 
+  @Override
+  public void postConstruct() {
+    start();
+  }
+
+  @Override
+  public void preDestroy() {
+    stop();
+  }
+
   /**
    * Initializes resources used by this service.
    */
-  @PostConstruct
   public synchronized void start() {
     taskScheduler = new ScheduledThreadPoolExecutor(1);
     taskScheduler.setRemoveOnCancelPolicy(true);
@@ -50,7 +59,6 @@ public final class RunProgressMonitor {
   /**
    * Cleans up resources used by this service.
    */
-  @PreDestroy
   public synchronized void stop() {
     for (ScheduledFuture<?> task : environmentToTask.values())
       task.cancel(false);
