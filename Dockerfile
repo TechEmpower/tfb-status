@@ -25,7 +25,7 @@ COPY src src
 ARG SKIP_TESTS=false
 
 # If we did everything right, this won't download any new dependencies.
-RUN mvn package --batch-mode --offline
+RUN mvn package --batch-mode --offline -DskipTests="${SKIP_TESTS}"
 
 # Produce a slimmed-down version of the Java runtime that contains only what we
 # need.
