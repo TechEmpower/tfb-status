@@ -10,7 +10,7 @@ RUN echo "package fake; public class Test { @org.junit.jupiter.api.Test public v
 COPY pom.xml pom.xml
 RUN mvn package --batch-mode
 
-FROM maven:3.6.2-jdk-13 AS build
+FROM maven:3.6.2-jdk-13 AS build_app
 WORKDIR /tfbstatus
 COPY --from=download_dependencies /root/.m2 /root/.m2
 
@@ -27,8 +27,26 @@ ARG SKIP_TESTS=false
 # If we did everything right, this won't download any new dependencies.
 RUN mvn package --batch-mode --offline
 
-FROM openjdk:13-jdk
+# Produce a slimmed-down version of the Java runtime that contains only what we
+# need.
+FROM openjdk:13-jdk AS build_runtime
 WORKDIR /tfbstatus
-COPY --from=build /tfbstatus/target/tfb-status.jar tfb-status.jar
-COPY --from=build /tfbstatus/target/lib lib
-ENTRYPOINT [ "java", "-jar", "tfb-status.jar" ]
+# ------------------------------------------------------------------------------
+# Module           Class from module                    Used by
+# ------------------------------------------------------------------------------
+# java.base        *                                    *
+# java.logging     java.util.logging.Logger             org.glassfish.hk2.utilities.reflection.Logger
+# java.naming      javax.naming.NamingException         ch.qos.logback.classic.joran.JoranConfigurator
+# java.xml         org.xml.sax.InputSource              ch.qos.logback.core.joran.GenericConfigurator
+# jdk.unsupported  sun.misc.Unsafe                      com.github.benmanes.caffeine.base.UnsafeAccess
+# jdk.zipfs        jdk.nio.zipfs.ZipFileSystemProvider  tfb.status.util.ZipFiles (implicit)
+# ------------------------------------------------------------------------------
+RUN jlink --add-modules java.base,java.logging,java.naming,java.xml,jdk.unsupported,jdk.zipfs --output runtime
+
+FROM debian:buster-slim
+WORKDIR /tfbstatus
+COPY --from=build_runtime /tfbstatus/runtime runtime
+COPY --from=build_app /tfbstatus/target/lib lib
+COPY --from=build_app /tfbstatus/target/tfb-status.jar tfb-status.jar
+
+ENTRYPOINT [ "/tfbstatus/runtime/bin/java", "-jar", "tfb-status.jar" ]
