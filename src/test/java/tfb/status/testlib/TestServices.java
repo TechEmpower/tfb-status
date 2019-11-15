@@ -19,6 +19,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -42,9 +43,9 @@ import tfb.status.util.KeyStores;
 /**
  * Creates instances of our HTTP handlers and service classes for testing.
  *
- * <p>Use {@link #serviceLocator()} to retrieve instances of service classes.
- * For example, <code>serviceLocator().getService(EmailSender.class)</code>
- * returns an instance of {@link EmailSender}.
+ * <p>Use {@link #getService(Class)} to retrieve instances of service classes.
+ * For example, <code>getService(EmailSender.class)</code> returns an instance
+ * of {@link EmailSender}.
  *
  * <p><strong>Important:</strong> Call {@link #shutdown()} once the tests are
  * complete.
@@ -103,11 +104,24 @@ public final class TestServices {
   }
 
   /**
+   * Returns the service of the specified type.
+   *
+   * @throws NoSuchElementException if there is no service of that type
+   */
+  public <T> T getService(Class<T> type) {
+    T service = serviceLocator.getService(type);
+    if (service == null)
+      throw new NoSuchElementException("There is no service of type " + type);
+
+    return service;
+  }
+
+  /**
    * The {@link Clock} used by every service that needs to read the current wall
    * clock time.  This clock can be adjusted manually.
    */
   public MutableClock clock() {
-    return (MutableClock) serviceLocator.getService(Clock.class);
+    return (MutableClock) getService(Clock.class);
   }
 
   /**
@@ -115,24 +129,14 @@ public final class TestServices {
    * time.  This ticker can be adjusted manually.
    */
   public MutableTicker ticker() {
-    return (MutableTicker) serviceLocator.getService(Ticker.class);
+    return (MutableTicker) getService(Ticker.class);
   }
 
   /**
    * Provides access to email that was sent by the application during tests.
    */
   public MailServer mailServer() {
-    return serviceLocator.getService(MailServer.class);
-  }
-
-  /**
-   * The {@link ServiceLocator} capable of producing all services in this
-   * application.
-   *
-   * @see Services#newServiceLocator(String)
-   */
-  public ServiceLocator serviceLocator() {
-    return serviceLocator;
+    return getService(MailServer.class);
   }
 
   /**
@@ -141,8 +145,8 @@ public final class TestServices {
    * @see RootHandler#addExactPath(String, HttpHandler)
    */
   public void addExactPath(String path, HttpHandler handler) {
-    serviceLocator.getService(RootHandler.class)
-                  .addExactPath(path, handler);
+    var rootHandler = getService(RootHandler.class);
+    rootHandler.addExactPath(path, handler);
   }
 
   /**
@@ -151,8 +155,8 @@ public final class TestServices {
    * @see RootHandler#addPrefixPath(String, HttpHandler)
    */
   public void addPrefixPath(String pathPrefix, HttpHandler handler) {
-    serviceLocator.getService(RootHandler.class)
-                  .addPrefixPath(pathPrefix, handler);
+    var rootHandler = getService(RootHandler.class);
+    rootHandler.addPrefixPath(pathPrefix, handler);
   }
 
   /**
@@ -161,7 +165,7 @@ public final class TestServices {
    * application.
    */
   public HttpClient httpClient() {
-    return serviceLocator.getService(HttpClient.class);
+    return getService(HttpClient.class);
   }
 
   /**
@@ -186,7 +190,7 @@ public final class TestServices {
     if (!path.startsWith("/"))
       throw new IllegalArgumentException("The path must start with '/'");
 
-    HttpServerConfig config = serviceLocator.getService(HttpServerConfig.class);
+    HttpServerConfig config = getService(HttpServerConfig.class);
     boolean encrypted = config.keyStore != null;
     int port = config.port;
 

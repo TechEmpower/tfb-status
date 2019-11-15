@@ -26,7 +26,7 @@ public final class DownloadResultsHandlerTest {
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-    objectMapper = services.serviceLocator().getService(ObjectMapper.class);
+    objectMapper = services.getService(ObjectMapper.class);
   }
 
   @AfterAll

@@ -19,7 +19,7 @@ public final class MustacheRendererTest {
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-    mustacheRenderer = services.serviceLocator().getService(MustacheRenderer.class);
+    mustacheRenderer = services.getService(MustacheRenderer.class);
   }
 
   @AfterAll

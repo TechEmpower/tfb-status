@@ -36,7 +36,7 @@ public final class EmailSenderTest {
   public static void beforeAll() {
     services = new TestServices();
     mailServer = services.mailServer();
-    emailSender = services.serviceLocator().getService(EmailSender.class);
+    emailSender = services.getService(EmailSender.class);
   }
 
   @AfterAll

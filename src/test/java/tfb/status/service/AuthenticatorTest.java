@@ -24,7 +24,7 @@ public final class AuthenticatorTest {
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-    authenticator = services.serviceLocator().getService(Authenticator.class);
+    authenticator = services.getService(Authenticator.class);
   }
 
   @AfterAll

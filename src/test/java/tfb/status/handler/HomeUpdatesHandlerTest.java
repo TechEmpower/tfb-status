@@ -38,7 +38,7 @@ public final class HomeUpdatesHandlerTest {
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-    updates = services.serviceLocator().getService(HomeUpdatesHandler.class);
+    updates = services.getService(HomeUpdatesHandler.class);
   }
 
   @AfterAll

@@ -23,7 +23,7 @@ public final class RootHandlerTest {
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-    rootHandler = services.serviceLocator().getService(RootHandler.class);
+    rootHandler = services.getService(RootHandler.class);
   }
 
   @AfterAll

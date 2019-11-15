@@ -22,7 +22,7 @@ public final class HomeResultsReaderTest {
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-    homeResultsReader = services.serviceLocator().getService(HomeResultsReader.class);
+    homeResultsReader = services.getService(HomeResultsReader.class);
   }
 
   @AfterAll

@@ -24,7 +24,7 @@ public final class DiffGeneratorTest {
   @BeforeAll
   public static void beforeAll() {
     services = new TestServices();
-    diffGenerator = services.serviceLocator().getService(DiffGenerator.class);
+    diffGenerator = services.getService(DiffGenerator.class);
   }
 
   @AfterAll
