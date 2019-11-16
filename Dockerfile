@@ -34,14 +34,13 @@ WORKDIR /tfbstatus
 # ------------------------------------------------------------------------------
 # Module           Class from module                    Used by
 # ------------------------------------------------------------------------------
-# java.base        *                                    *
 # java.logging     java.util.logging.Logger             org.glassfish.hk2.utilities.reflection.Logger
 # java.naming      javax.naming.NamingException         ch.qos.logback.classic.joran.JoranConfigurator
 # java.xml         org.xml.sax.InputSource              ch.qos.logback.core.joran.GenericConfigurator
 # jdk.unsupported  sun.misc.Unsafe                      com.github.benmanes.caffeine.base.UnsafeAccess
 # jdk.zipfs        jdk.nio.zipfs.ZipFileSystemProvider  tfb.status.util.ZipFiles (implicit)
 # ------------------------------------------------------------------------------
-RUN jlink --add-modules java.base,java.logging,java.naming,java.xml,jdk.unsupported,jdk.zipfs --output runtime
+RUN jlink --add-modules java.logging,java.naming,java.xml,jdk.unsupported,jdk.zipfs --output runtime
 
 FROM alpine
 WORKDIR /tfbstatus
