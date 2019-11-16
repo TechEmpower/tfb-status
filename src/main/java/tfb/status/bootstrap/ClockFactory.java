@@ -1,4 +1,4 @@
-package tfb.status.service;
+package tfb.status.bootstrap;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -9,7 +9,7 @@ import javax.inject.Singleton;
 import org.glassfish.hk2.api.Factory;
 
 /**
- * Provides the standard {@link Clock} used by this application.
+ * Provides the {@link Clock} used by this application.
  *
  * <p>Use this clock to get the current date, time, or time-zone.  Avoid using
  * APIs that implicitly rely on the system clock or the default time-zone.  This
@@ -36,7 +36,7 @@ import org.glassfish.hk2.api.Factory;
  * </table>
  */
 @Singleton
-public final class StandardClock implements Factory<Clock> {
+final class ClockFactory implements Factory<Clock> {
   @Override
   @Singleton
   public Clock provide() {

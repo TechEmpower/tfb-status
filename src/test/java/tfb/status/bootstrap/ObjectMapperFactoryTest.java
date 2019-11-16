@@ -1,4 +1,4 @@
-package tfb.status.service;
+package tfb.status.bootstrap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -14,9 +14,9 @@ import org.junit.jupiter.api.Test;
 import tfb.status.testlib.TestServices;
 
 /**
- * Tests for {@link StandardObjectMapper}.
+ * Tests for {@link ObjectMapperFactory}.
  */
-public final class StandardObjectMapperTest {
+public final class ObjectMapperFactoryTest {
   private static TestServices services;
   private static ObjectMapper objectMapper;
 

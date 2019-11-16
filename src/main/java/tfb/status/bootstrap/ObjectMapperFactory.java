@@ -1,4 +1,4 @@
-package tfb.status.service;
+package tfb.status.bootstrap;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,10 +7,10 @@ import javax.inject.Singleton;
 import org.glassfish.hk2.api.Factory;
 
 /**
- * Provides the standard {@link ObjectMapper} used by this application.
+ * Provides the {@link ObjectMapper} used by this application.
  */
 @Singleton
-public final class StandardObjectMapper implements Factory<ObjectMapper> {
+final class ObjectMapperFactory implements Factory<ObjectMapper> {
   @Override
   @Singleton
   public ObjectMapper provide() {

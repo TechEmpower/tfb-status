@@ -1,4 +1,4 @@
-package tfb.status.service;
+package tfb.status.bootstrap;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
@@ -6,7 +6,7 @@ import javax.inject.Singleton;
 import org.glassfish.hk2.api.Factory;
 
 /**
- * Provides the standard {@link Ticker} used by this application.
+ * Provides the {@link Ticker} used by this application.
  *
  * <p>Use this ticker to measure elapsed time.  Avoid using APIs that implicitly
  * rely on the system clock.  This usage pattern allows us to swap in a
@@ -26,7 +26,7 @@ import org.glassfish.hk2.api.Factory;
  * </table>
  */
 @Singleton
-public final class StandardTicker implements Factory<Ticker> {
+final class TickerFactory implements Factory<Ticker> {
   @Override
   @Singleton
   public Ticker provide() {

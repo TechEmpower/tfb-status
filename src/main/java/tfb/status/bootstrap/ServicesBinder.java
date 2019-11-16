@@ -36,10 +36,6 @@ import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.service.RunProgressMonitor;
-import tfb.status.service.StandardClock;
-import tfb.status.service.StandardFileSystem;
-import tfb.status.service.StandardObjectMapper;
-import tfb.status.service.StandardTicker;
 
 /**
  * Registers all of this application's service classes.
@@ -110,19 +106,19 @@ public final class ServicesBinder extends AbstractBinder {
     bindAsContract(FileStore.class).in(Singleton.class);
     bindAsContract(RunProgressMonitor.class).in(Singleton.class);
 
-    bindFactory(StandardObjectMapper.class, Singleton.class)
+    bindFactory(ObjectMapperFactory.class, Singleton.class)
         .to(ObjectMapper.class)
         .in(Singleton.class);
 
-    bindFactory(StandardClock.class, Singleton.class)
+    bindFactory(ClockFactory.class, Singleton.class)
         .to(Clock.class)
         .in(Singleton.class);
 
-    bindFactory(StandardTicker.class, Singleton.class)
+    bindFactory(TickerFactory.class, Singleton.class)
         .to(Ticker.class)
         .in(Singleton.class);
 
-    bindFactory(StandardFileSystem.class, Singleton.class)
+    bindFactory(FileSystemFactory.class, Singleton.class)
         .to(FileSystem.class)
         .in(Singleton.class);
   }

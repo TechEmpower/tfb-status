@@ -1,4 +1,4 @@
-package tfb.status.service;
+package tfb.status.bootstrap;
 
 import java.io.File;
 import java.nio.file.FileSystem;
@@ -11,7 +11,7 @@ import javax.inject.Singleton;
 import org.glassfish.hk2.api.Factory;
 
 /**
- * Provides the standard {@link FileSystem} used by this application.
+ * Provides the {@link FileSystem} used by this application.
  *
  * <p>Use this file system to resolve paths to files.  Avoid using APIs that
  * implicitly rely on the platform's default file system.  This usage pattern
@@ -47,7 +47,7 @@ import org.glassfish.hk2.api.Factory;
  * </ul>
  */
 @Singleton
-public final class StandardFileSystem implements Factory<FileSystem> {
+final class FileSystemFactory implements Factory<FileSystem> {
   @Override
   @Singleton
   public FileSystem provide() {
