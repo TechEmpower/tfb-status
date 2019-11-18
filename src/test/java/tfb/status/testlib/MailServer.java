@@ -5,19 +5,23 @@ import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import java.util.Optional;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.mail.internet.MimeMessage;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.PreDestroy;
 import tfb.status.config.EmailConfig;
 import tfb.status.service.EmailSender;
 
 /**
  * A locally-hosted mail server that receives emails from {@link EmailSender}
  * during tests.
+ *
+ * <p>This server does not start automatically.  Call {@link #start()} to begin
+ * listening for incoming mail.
  */
-public final class MailServer {
+@Singleton
+public final class MailServer implements PreDestroy {
   @GuardedBy("this")
   private final @Nullable GreenMail server;
 
@@ -37,10 +41,14 @@ public final class MailServer {
                   /* protocol= */ "smtp"));
   }
 
+  @Override
+  public void preDestroy() {
+    stop();
+  }
+
   /**
    * Starts this server.
    */
-  @PostConstruct
   public synchronized void start() {
     if (server != null)
       server.start();
@@ -49,7 +57,6 @@ public final class MailServer {
   /**
    * Stops this server.
    */
-  @PreDestroy
   public synchronized void stop() {
     if (server != null)
       server.stop();

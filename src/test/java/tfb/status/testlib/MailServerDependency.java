@@ -12,9 +12,8 @@ import org.glassfish.hk2.api.InstanceLifecycleListener;
 import tfb.status.service.EmailSender;
 
 /**
- * Ensures that {@link MailServer} is initialized before {@link EmailSender}
- * even though {@link EmailSender} does not explicitly declare that
- * dependency.
+ * Ensures that the {@link MailServer} is running before the {@link EmailSender}
+ * is used.
  */
 @Singleton
 final class MailServerDependency implements InstanceLifecycleListener {
@@ -33,7 +32,9 @@ final class MailServerDependency implements InstanceLifecycleListener {
 
   @Override
   public void lifecycleEvent(InstanceLifecycleEvent lifecycleEvent) {
-    if (lifecycleEvent.getEventType() == PRE_PRODUCTION)
-      mailServerProvider.get();
+    if (lifecycleEvent.getEventType() == PRE_PRODUCTION) {
+      MailServer server = mailServerProvider.get();
+      server.start();
+    }
   }
 }

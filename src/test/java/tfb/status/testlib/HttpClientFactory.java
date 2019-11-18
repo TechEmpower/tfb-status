@@ -51,8 +51,9 @@ final class HttpClientFactory implements Factory<HttpClient> {
 
     HttpClient client = builder.build();
 
-    // Ensure that the HTTP server is initialized before the client is used.
-    httpServerProvider.get();
+    // Ensure that the HTTP server is running before the client is used.
+    HttpServer server = httpServerProvider.get();
+    server.start();
 
     return client;
   }

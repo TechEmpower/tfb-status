@@ -10,7 +10,6 @@ import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.net.ssl.SSLContext;
-import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +19,12 @@ import tfb.status.util.KeyStores;
 
 /**
  * The HTTP server for this application.
+ *
+ * <p>This server does not start automatically.  Call {@link #start()} to begin
+ * listening for incoming HTTP requests.
  */
 @Singleton
-public final class HttpServer implements PostConstruct, PreDestroy {
+public final class HttpServer implements PreDestroy {
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String serverInfo;
 
@@ -63,11 +65,6 @@ public final class HttpServer implements PostConstruct, PreDestroy {
             + ", encrypted=" + (config.keyStore != null);
 
     server = builder.build();
-  }
-
-  @Override
-  public void postConstruct() {
-    start();
   }
 
   @Override
