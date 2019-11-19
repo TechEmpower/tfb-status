@@ -10,6 +10,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.mail.MessagingException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PostConstruct;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
  * Complains over email when a benchmarking environment has stopped sending
  * updates.
  */
+@Singleton
 public final class RunProgressMonitor implements PostConstruct, PreDestroy {
   private final EmailSender emailSender;
   private final Logger logger = LoggerFactory.getLogger(getClass());
