@@ -12,3 +12,14 @@ target/
 
 # Default directory for application-managed files
 managed_files/
+
+# The .git/index and .git/logs/* files change each time the project is cloned,
+# even when no changes have been made in the main git repository, defeating
+# Docker's ability to cache the `COPY .git .git` build step.  By excluding these
+# files, we allow that step to be cached in environments that (a) have a
+# persistent build cache and (b) clone the project on each build.  Excluding
+# these files does not seem to have an impact on the git-commit-id-plugin for
+# Maven, which is the only component of our build process that reads the .git
+# directory.
+.git/index
+.git/logs
