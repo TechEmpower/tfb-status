@@ -28,8 +28,8 @@
     <guava.version>28.1-jre</guava.version>
     <hk2.version>2.6.1</hk2.version>
     <jackson.version>2.10.1</jackson.version>
-    <javamail.version>1.6.2</javamail.version>
-    <javax-activation.version>1.1.1</javax-activation.version>
+    <javamail.version>1.6.4</javamail.version>
+    <javax-activation.version>1.2.1</javax-activation.version>
     <jimfs.version>1.1</jimfs.version>
     <junit-jupiter.version>5.5.2</junit-jupiter.version>
     <logback.version>1.2.3</logback.version>
@@ -120,7 +120,7 @@
     </dependency>
     <dependency>
       <groupId>com.sun.mail</groupId>
-      <artifactId>javax.mail</artifactId>
+      <artifactId>jakarta.mail</artifactId>
       <version>${javamail.version}</version>
     </dependency>
     <dependency>
@@ -134,8 +134,8 @@
       <version>${logback.version}</version>
     </dependency>
     <dependency>
-      <groupId>javax.activation</groupId>
-      <artifactId>activation</artifactId>
+      <groupId>com.sun.activation</groupId>
+      <artifactId>jakarta.activation</artifactId>
       <version>${javax-activation.version}</version>
     </dependency>
     <dependency>
@@ -190,6 +190,13 @@
         <exclusion>
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
+        </exclusion>
+        <!-- The javax.mail package is now maintained in the jakarta.mail
+             artifact, which we include as a dependency.  This other javax.mail
+             artifact is obsolete. -->
+        <exclusion>
+          <groupId>com.sun.mail</groupId>
+          <artifactId>javax.mail</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
