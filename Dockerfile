@@ -32,15 +32,17 @@ RUN mvn package --batch-mode --offline -DskipTests="${SKIP_TESTS}"
 FROM openjdk:13-alpine AS build_runtime
 WORKDIR /tfbstatus
 # ------------------------------------------------------------------------------
-# Module           Class from module                    Used by
+# Module             Class from module                    Used by
 # ------------------------------------------------------------------------------
-# java.logging     java.util.logging.Logger             org.glassfish.hk2.utilities.reflection.Logger
-# java.naming      javax.naming.NamingException         ch.qos.logback.classic.joran.JoranConfigurator
-# java.xml         org.xml.sax.InputSource              ch.qos.logback.core.joran.GenericConfigurator
-# jdk.unsupported  sun.misc.Unsafe                      com.github.benmanes.caffeine.base.UnsafeAccess
-# jdk.zipfs        jdk.nio.zipfs.ZipFileSystemProvider  tfb.status.util.ZipFiles (implicit)
+# java.datatransfer  java.awt.datatransfer.Transferrable  tfb.status.service.EmailSender
+# java.logging       java.util.logging.Logger             org.glassfish.hk2.utilities.reflection.Logger
+# java.naming        javax.naming.NamingException         ch.qos.logback.classic.joran.JoranConfigurator
+# java.xml           org.xml.sax.InputSource              ch.qos.logback.core.joran.GenericConfigurator
+# jdk.crypto.ec      ???                                  tfb.status.service.EmailSender (implicit)
+# jdk.unsupported    sun.misc.Unsafe                      com.github.benmanes.caffeine.base.UnsafeAccess
+# jdk.zipfs          jdk.nio.zipfs.ZipFileSystemProvider  tfb.status.util.ZipFiles (implicit)
 # ------------------------------------------------------------------------------
-RUN jlink --add-modules java.logging,java.naming,java.xml,jdk.unsupported,jdk.zipfs --output runtime
+RUN jlink --add-modules java.datatransfer,java.logging,java.naming,java.xml,jdk.crypto.ec,jdk.unsupported,jdk.zipfs --output runtime
 
 FROM alpine
 WORKDIR /tfbstatus
