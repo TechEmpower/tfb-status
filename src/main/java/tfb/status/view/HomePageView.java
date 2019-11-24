@@ -1,5 +1,6 @@
 package tfb.status.view;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
@@ -62,29 +63,77 @@ public final class HomePageView {
     public final @Nullable String jsonFileName;
     public final @Nullable String zipFileName;
 
-    public ResultsView(@Nullable String uuid,
-                       @Nullable String name,
-                       @Nullable String environmentDescription,
-                       int completedFrameworks,
-                       int frameworksWithCleanSetup,
-                       int frameworksWithSetupProblems,
-                       int totalFrameworks,
-                       int successfulTests,
-                       int failedTests,
-                       @Nullable String startTime,
-                       @Nullable String completionTime,
-                       @Nullable String lastUpdated,
-                       @Nullable String elapsedDuration,
-                       @Nullable String estimatedRemainingDuration,
-                       @Nullable String commitId,
-                       @Nullable String repositoryUrl,
-                       @Nullable String branchName,
-                       @Nullable String browseRepositoryUrl,
-                       @Nullable String browseCommitUrl,
-                       @Nullable String browseBranchUrl,
-                       ImmutableList<Failure> failures,
-                       @Nullable String jsonFileName,
-                       @Nullable String zipFileName) {
+    @JsonCreator
+    public ResultsView(
+
+        @JsonProperty(value = "uuid", required = true)
+        @Nullable String uuid,
+
+        @JsonProperty(value = "name", required = true)
+        @Nullable String name,
+
+        @JsonProperty(value = "environmentDescription", required = true)
+        @Nullable String environmentDescription,
+
+        @JsonProperty(value = "completedFrameworks", required = true)
+        int completedFrameworks,
+
+        @JsonProperty(value = "frameworksWithCleanSetup", required = true)
+        int frameworksWithCleanSetup,
+
+        @JsonProperty(value = "frameworksWithSetupProblems", required = true)
+        int frameworksWithSetupProblems,
+
+        @JsonProperty(value = "totalFrameworks", required = true)
+        int totalFrameworks,
+
+        @JsonProperty(value = "successfulTests", required = true)
+        int successfulTests,
+
+        @JsonProperty(value = "failedTests", required = true)
+        int failedTests,
+
+        @JsonProperty(value = "startTime", required = true)
+        @Nullable String startTime,
+
+        @JsonProperty(value = "completionTime", required = true)
+        @Nullable String completionTime,
+
+        @JsonProperty(value = "lastUpdated", required = true)
+        @Nullable String lastUpdated,
+
+        @JsonProperty(value = "elapsedDuration", required = true)
+        @Nullable String elapsedDuration,
+
+        @JsonProperty(value = "estimatedRemainingDuration", required = true)
+        @Nullable String estimatedRemainingDuration,
+
+        @JsonProperty(value = "commitId", required = true)
+        @Nullable String commitId,
+
+        @JsonProperty(value = "repositoryUrl", required = true)
+        @Nullable String repositoryUrl,
+
+        @JsonProperty(value = "branchName", required = true)
+        @Nullable String branchName,
+
+        @JsonProperty(value = "browseRepositoryUrl", required = true)
+        @Nullable String browseRepositoryUrl,
+
+        @JsonProperty(value = "browseCommitUrl", required = true)
+        @Nullable String browseCommitUrl,
+
+        @JsonProperty(value = "browseBranchUrl", required = true)
+        @Nullable String browseBranchUrl,
+
+        @JsonProperty(value = "failures", required = true)
+        ImmutableList<Failure> failures,
+
+        @JsonProperty(value = "jsonFileName", required = true)
+        @Nullable String jsonFileName,
+
+        @JsonProperty(value = "zipFileName", required = true)
+        @Nullable String zipFileName) {
 
       this.uuid = uuid;
       this.name = name;
@@ -148,9 +197,17 @@ public final class HomePageView {
       public final ImmutableList<String> failedTestTypes;
       public final boolean hadSetupProblems;
 
-      public Failure(String framework,
-                     ImmutableList<String> failedTestTypes,
-                     boolean hadSetupProblems) {
+      @JsonCreator
+      public Failure(
+
+          @JsonProperty(value = "framework", required = true)
+          String framework,
+
+          @JsonProperty(value = "failedTestTypes", required = true)
+          ImmutableList<String> failedTestTypes,
+
+          @JsonProperty(value = "hadSetupProblems", required = true)
+          boolean hadSetupProblems) {
 
         this.framework = Objects.requireNonNull(framework);
         this.failedTestTypes = Objects.requireNonNull(failedTestTypes);

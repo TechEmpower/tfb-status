@@ -11,6 +11,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.stream.Collectors.joining;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteSource;
 import com.google.common.io.ByteStreams;
@@ -510,7 +511,7 @@ public final class UploadResultsHandler implements HttpHandler {
               ? null
               : diffGenerator.diff(previousResults, results);
 
-      String subject = "<tfb> <auto> Run complete: " + results.name;
+      String subject = runCompleteEmailSubject(results);
 
       String textContent =
           prepareEmailBody(
@@ -745,5 +746,10 @@ public final class UploadResultsHandler implements HttpHandler {
 
       return attachments.build();
     }
+  }
+
+  @VisibleForTesting
+  static String runCompleteEmailSubject(Results results) {
+    return "<tfb> <auto> Run complete: " + results.name;
   }
 }

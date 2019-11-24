@@ -116,6 +116,7 @@ public final class HomeUpdatesHandlerTest {
                                                      CharSequence data,
                                                      boolean last) {
             future.complete(data.toString());
+            webSocket.request(1);
             return null;
           }
         };
