@@ -61,14 +61,6 @@ public final class TestServices extends Services {
   }
 
   /**
-   * Provides access to email that was sent by this application during tests.
-   */
-  public MailServer mailServer() {
-    // TODO: Either use this method or remove it.
-    return getService(MailServer.class);
-  }
-
-  /**
    * Adds a new exact route to the root handler of the HTTP server.
    *
    * @see RootHandler#addExactPath(String, HttpHandler)
