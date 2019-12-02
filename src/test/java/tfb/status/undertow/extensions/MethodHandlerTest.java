@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.handler.RootHandler;
 import tfb.status.testlib.TestServices;
 import tfb.status.testlib.TestServicesInjector;
 
@@ -32,10 +33,11 @@ public final class MethodHandlerTest {
    * OPTIONS requests.
    */
   @Test
-  public void testNoMethodsAllowed(TestServices services)
+  public void testNoMethodsAllowed(TestServices services,
+                                   RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/none",
         new MethodHandler());
 
@@ -86,10 +88,11 @@ public final class MethodHandlerTest {
    * allows GET, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetOnly(TestServices services)
+  public void testGetOnly(TestServices services,
+                          RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/getOnly",
         new MethodHandler()
             .addMethod(GET, new FixedResponseBodyHandler("getHandler")));
@@ -143,10 +146,11 @@ public final class MethodHandlerTest {
    * allows POST and OPTIONS requests.
    */
   @Test
-  public void testPostOnly(TestServices services)
+  public void testPostOnly(TestServices services,
+                           RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/postOnly",
         new MethodHandler()
             .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
@@ -199,10 +203,11 @@ public final class MethodHandlerTest {
    * allows GET, POST, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetAndPost(TestServices services)
+  public void testGetAndPost(TestServices services,
+                             RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/getAndPost",
         new MethodHandler()
             .addMethod(GET, new FixedResponseBodyHandler("getHandler"))
@@ -258,10 +263,11 @@ public final class MethodHandlerTest {
    * {@link MethodHandler}.
    */
   @Test
-  public void testOverrideOptions(TestServices services)
+  public void testOverrideOptions(TestServices services,
+                                  RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/overrideOptions",
         new MethodHandler()
             .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler")));

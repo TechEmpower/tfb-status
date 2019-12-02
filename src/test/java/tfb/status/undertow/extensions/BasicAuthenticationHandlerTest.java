@@ -20,6 +20,7 @@ import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.handler.RootHandler;
 import tfb.status.testlib.BasicAuthUtils;
 import tfb.status.testlib.TestServices;
 import tfb.status.testlib.TestServicesInjector;
@@ -91,10 +92,11 @@ public final class BasicAuthenticationHandlerTest {
    * not specify any credentials.
    */
   @Test
-  public void testMissingCredentials(TestServices services)
+  public void testMissingCredentials(TestServices services,
+                                     RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/basicAuth",
         new BasicAuthenticationHandler(
             "testRealm",
@@ -122,10 +124,11 @@ public final class BasicAuthenticationHandlerTest {
    * specify invalid credentials.
    */
   @Test
-  public void testInvalidCredentials(TestServices services)
+  public void testInvalidCredentials(TestServices services,
+                                     RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/basicAuth",
         new BasicAuthenticationHandler(
             "testRealm",
@@ -160,10 +163,11 @@ public final class BasicAuthenticationHandlerTest {
    * specify valid credentials.
    */
   @Test
-  public void testValidCredentials(TestServices services)
+  public void testValidCredentials(TestServices services,
+                                   RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/basicAuth",
         new BasicAuthenticationHandler(
             "testRealm",

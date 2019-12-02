@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.handler.RootHandler;
 import tfb.status.testlib.TestServices;
 import tfb.status.testlib.TestServicesInjector;
 
@@ -23,12 +24,13 @@ public final class FixedResponseBodyHandlerTest {
    * Verifies that a {@link FixedResponseBodyHandler} can send a byte array.
    */
   @Test
-  public void testBytes(TestServices services)
+  public void testBytes(TestServices services,
+                        RootHandler rootHandler)
       throws IOException, InterruptedException {
 
     byte[] expectedBytes = "hello".getBytes(UTF_8);
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/bytes",
         new FixedResponseBodyHandler(expectedBytes));
 
@@ -45,12 +47,13 @@ public final class FixedResponseBodyHandlerTest {
    * Verifies that a {@link FixedResponseBodyHandler} can send a UTF-8 string.
    */
   @Test
-  public void testUtf8(TestServices services)
+  public void testUtf8(TestServices services,
+                       RootHandler rootHandler)
       throws IOException, InterruptedException {
 
     String expectedString = "hi";
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/utf8",
         new FixedResponseBodyHandler(expectedString));
 
@@ -68,12 +71,13 @@ public final class FixedResponseBodyHandlerTest {
    * charset other than UTF-8.
    */
   @Test
-  public void testNotUtf8(TestServices services)
+  public void testNotUtf8(TestServices services,
+                          RootHandler rootHandler)
       throws IOException, InterruptedException {
 
     String expectedString = "hey";
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/utf16",
         new FixedResponseBodyHandler(expectedString, UTF_16));
 
@@ -91,12 +95,13 @@ public final class FixedResponseBodyHandlerTest {
    * FixedResponseBodyHandler} each have the same response.
    */
   @Test
-  public void testMultipleRequests(TestServices services)
+  public void testMultipleRequests(TestServices services,
+                                   RootHandler rootHandler)
       throws IOException, InterruptedException {
 
     String expectedString = "greetings";
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/multiple",
         new FixedResponseBodyHandler(expectedString));
 

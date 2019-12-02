@@ -1,7 +1,6 @@
 package tfb.status.testlib;
 
 import com.google.common.base.Ticker;
-import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -14,7 +13,6 @@ import tfb.status.bootstrap.HttpServer;
 import tfb.status.bootstrap.Services;
 import tfb.status.bootstrap.ServicesBinder;
 import tfb.status.config.HttpServerConfig;
-import tfb.status.handler.RootHandler;
 
 /**
  * Manages the instances of HTTP handlers and service classes within this
@@ -58,28 +56,6 @@ public final class TestServices extends Services {
     // TODO: Make `getService(MutableTicker.class)` return this same ticker,
     //       meaning this method would be unnecessary.
     return (MutableTicker) getService(Ticker.class);
-  }
-
-  /**
-   * Adds a new exact route to the root handler of the HTTP server.
-   *
-   * @see RootHandler#addExactPath(String, HttpHandler)
-   */
-  public void addExactPath(String path, HttpHandler handler) {
-    // TODO: Use RootHandler in tests directly and remove this method?
-    var rootHandler = getService(RootHandler.class);
-    rootHandler.addExactPath(path, handler);
-  }
-
-  /**
-   * Adds a new prefix route to the root handler of the HTTP server.
-   *
-   * @see RootHandler#addPrefixPath(String, HttpHandler)
-   */
-  public void addPrefixPath(String pathPrefix, HttpHandler handler) {
-    // TODO: Use RootHandler in tests directly and remove this method?
-    var rootHandler = getService(RootHandler.class);
-    rootHandler.addPrefixPath(pathPrefix, handler);
   }
 
   // TODO: Consider moving all HTTP-related methods into their own class.

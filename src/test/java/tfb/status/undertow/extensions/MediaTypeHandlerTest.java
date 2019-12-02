@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.handler.RootHandler;
 import tfb.status.testlib.TestServices;
 import tfb.status.testlib.TestServicesInjector;
 
@@ -26,10 +27,11 @@ public final class MediaTypeHandlerTest {
    * requests.
    */
   @Test
-  public void testNoMediaTypesAllowed(TestServices services)
+  public void testNoMediaTypesAllowed(TestServices services,
+                                      RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/none",
         new MediaTypeHandler());
 
@@ -60,10 +62,11 @@ public final class MediaTypeHandlerTest {
    * handler when the media types for each handler are unrelated.
    */
   @Test
-  public void testUnrelatedMediaTypes(TestServices services)
+  public void testUnrelatedMediaTypes(TestServices services,
+                                      RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/plaintextOrJson",
         new MediaTypeHandler()
             .addMediaType(
@@ -123,10 +126,11 @@ public final class MediaTypeHandlerTest {
    * and overlapping.
    */
   @Test
-  public void testMostSpecificMediaType(TestServices services)
+  public void testMostSpecificMediaType(TestServices services,
+                                        RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/text",
         new MediaTypeHandler()
             .addMediaType(
@@ -226,10 +230,11 @@ public final class MediaTypeHandlerTest {
    * including requests with no {@code Content-Type} header at all.
    */
   @Test
-  public void testAnyMediaType(TestServices services)
+  public void testAnyMediaType(TestServices services,
+                               RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/wildcard",
         new MediaTypeHandler().addMediaType(
             "*/*",

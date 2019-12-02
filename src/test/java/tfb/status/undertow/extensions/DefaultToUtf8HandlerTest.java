@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.handler.RootHandler;
 import tfb.status.testlib.TestServices;
 import tfb.status.testlib.TestServicesInjector;
 
@@ -25,10 +26,11 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of text responses that already specify UTF-8 as the charset.
    */
   @Test
-  public void testAlreadyUtf8(TestServices services)
+  public void testAlreadyUtf8(TestServices services,
+                              RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/utf8",
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
@@ -53,10 +55,11 @@ public final class DefaultToUtf8HandlerTest {
    * UTF-8.
    */
   @Test
-  public void testOtherCharset(TestServices services)
+  public void testOtherCharset(TestServices services,
+                               RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/otherCharset",
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
@@ -80,10 +83,11 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of text responses that do not specify a charset.
    */
   @Test
-  public void testMissingCharset(TestServices services)
+  public void testMissingCharset(TestServices services,
+                                 RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/missingCharset",
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
@@ -107,10 +111,11 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of JavaScript responses that do not specify a charset.
    */
   @Test
-  public void testMissingCharset_js(TestServices services)
+  public void testMissingCharset_js(TestServices services,
+                                    RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/missingCharset.js",
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
@@ -134,10 +139,11 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of non-text responses.
    */
   @Test
-  public void testNonText(TestServices services)
+  public void testNonText(TestServices services,
+                          RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/nonText",
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
@@ -162,10 +168,11 @@ public final class DefaultToUtf8HandlerTest {
    * all.
    */
   @Test
-  public void testMissingContentType(TestServices services)
+  public void testMissingContentType(TestServices services,
+                                     RootHandler rootHandler)
       throws IOException, InterruptedException {
 
-    services.addExactPath(
+    rootHandler.addExactPath(
         "/missingContentType",
         new DefaultToUtf8Handler(exchange -> {}));
 
