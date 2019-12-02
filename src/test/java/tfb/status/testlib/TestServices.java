@@ -1,8 +1,5 @@
 package tfb.status.testlib;
 
-import com.google.common.base.Ticker;
-import java.time.Clock;
-import org.threeten.extra.MutableClock;
 import tfb.status.bootstrap.HttpServer;
 import tfb.status.bootstrap.Services;
 import tfb.status.bootstrap.ServicesBinder;
@@ -29,25 +26,5 @@ public final class TestServices extends Services {
   public TestServices() {
     super(new ServicesBinder("test_config.yml"),
           new TestServicesBinder());
-  }
-
-  /**
-   * The {@link Clock} used by every service that needs to read the current wall
-   * clock time.  This clock can be adjusted manually.
-   */
-  public MutableClock clock() {
-    // TODO: Make `getService(MutableClock.class)` return this same clock,
-    //       meaning this method would be unnecessary.
-    return (MutableClock) getService(Clock.class);
-  }
-
-  /**
-   * The {@link Ticker} used by every service that needs to measure elapsed
-   * time.  This ticker can be adjusted manually.
-   */
-  public MutableTicker ticker() {
-    // TODO: Make `getService(MutableTicker.class)` return this same ticker,
-    //       meaning this method would be unnecessary.
-    return (MutableTicker) getService(Ticker.class);
   }
 }

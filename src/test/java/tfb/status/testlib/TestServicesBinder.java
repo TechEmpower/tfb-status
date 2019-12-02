@@ -7,6 +7,7 @@ import java.time.Clock;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.InstanceLifecycleListener;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.threeten.extra.MutableClock;
 
 /**
  * Registers additional service classes during tests.
@@ -16,11 +17,13 @@ final class TestServicesBinder extends AbstractBinder {
   protected void configure() {
     bindFactory(MutableClockFactory.class, Singleton.class)
         .to(Clock.class)
+        .to(MutableClock.class)
         .in(Singleton.class)
         .ranked(1); // override the default clock
 
     bindFactory(MutableTickerFactory.class, Singleton.class)
         .to(Ticker.class)
+        .to(MutableTicker.class)
         .in(Singleton.class)
         .ranked(1); // override the default ticker
 
