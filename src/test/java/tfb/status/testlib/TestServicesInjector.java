@@ -5,11 +5,12 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
+import tfb.status.bootstrap.Services;
+import tfb.status.bootstrap.ServicesBinder;
 
 /**
- * Allows {@link TestServices} and all the services it provides by way of
- * {@link TestServices#getService(Class)} to be injected as parameters of test
- * methods.
+ * Allows the HTTP handlers and service classes of this application to be
+ * injected into tests as parameters.
  *
  * <p>Example usage:
  *
@@ -24,10 +25,6 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  *     }
  *   }
  * </pre>
- *
- * Individual tests should never need to construct their own instances of
- * {@link TestServices}.  Instead, they should rely on this class to do that for
- * them.
  */
 public final class TestServicesInjector implements ParameterResolver {
   @Override
@@ -36,10 +33,7 @@ public final class TestServicesInjector implements ParameterResolver {
       throws ParameterResolutionException {
 
     Class<?> type = parameterContext.getParameter().getType();
-    if (type == TestServices.class)
-      return true;
-
-    TestServices services = getTestServices(extensionContext);
+    Services services = getServices(extensionContext);
     return services.hasService(type);
   }
 
@@ -49,13 +43,11 @@ public final class TestServicesInjector implements ParameterResolver {
       throws ParameterResolutionException {
 
     Class<?> type = parameterContext.getParameter().getType();
-    TestServices services = getTestServices(extensionContext);
-    return (type == TestServices.class)
-        ? services
-        : services.getService(type);
+    Services services = getServices(extensionContext);
+    return services.getService(type);
   }
 
-  private TestServices getTestServices(ExtensionContext extensionContext) {
+  private Services getServices(ExtensionContext extensionContext) {
     //
     // We're expecting that extensionContext is one of these:
     //
@@ -89,20 +81,24 @@ public final class TestServicesInjector implements ParameterResolver {
     ExtensionContext.Store store =
         testClassContext.getStore(ExtensionContext.Namespace.GLOBAL);
 
-    TestServicesWrapper wrapper =
-        store.getOrComputeIfAbsent(TestServicesWrapper.class);
-
-    return wrapper.services;
+    return store.getOrComputeIfAbsent(
+        Services.class,
+        key -> new TestServices(),
+        Services.class);
   }
 
-  private static final class TestServicesWrapper
+  private static final class TestServices
+      extends Services
       implements ExtensionContext.Store.CloseableResource {
 
-    private final TestServices services = new TestServices();
+    TestServices() {
+      super(new ServicesBinder("test_config.yml"),
+            new TestServicesBinder());
+    }
 
     @Override
     public void close() {
-      services.shutdown();
+      shutdown();
     }
   }
 }
