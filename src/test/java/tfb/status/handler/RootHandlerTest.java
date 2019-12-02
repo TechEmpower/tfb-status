@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 import tfb.status.undertow.extensions.FixedResponseBodyHandler;
 
@@ -23,7 +23,7 @@ public final class RootHandlerTest {
    * with paths that have a single part.
    */
   @Test
-  public void testAddExactPath_singlePart(TestServices services,
+  public void testAddExactPath_singlePart(HttpTester http,
                                           RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -32,13 +32,13 @@ public final class RootHandlerTest {
         new FixedResponseBodyHandler("exactSingle"));
 
     HttpResponse<String> response1 =
-        services.httpGetString("/exact");
+        http.getString("/exact");
 
     assertEquals(OK, response1.statusCode());
     assertEquals("exactSingle", response1.body());
 
     HttpResponse<String> response2 =
-        services.httpGetString("/exact/sub/path");
+        http.getString("/exact/sub/path");
 
     assertEquals(NOT_FOUND, response2.statusCode());
   }
@@ -48,7 +48,7 @@ public final class RootHandlerTest {
    * with paths that have multiple parts.
    */
   @Test
-  public void testAddExactPath_multiPart(TestServices services,
+  public void testAddExactPath_multiPart(HttpTester http,
                                          RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -57,13 +57,13 @@ public final class RootHandlerTest {
         new FixedResponseBodyHandler("exactMulti"));
 
     HttpResponse<String> response1 =
-        services.httpGetString("/complex/exact/path");
+        http.getString("/complex/exact/path");
 
     assertEquals(OK, response1.statusCode());
     assertEquals("exactMulti", response1.body());
 
     HttpResponse<String> response2 =
-        services.httpGetString("/complex/exact/path/sub/path");
+        http.getString("/complex/exact/path/sub/path");
 
     assertEquals(NOT_FOUND, response2.statusCode());
   }
@@ -73,7 +73,7 @@ public final class RootHandlerTest {
    * with paths that have a single part.
    */
   @Test
-  public void testAddPrefixPath_singlePart(TestServices services,
+  public void testAddPrefixPath_singlePart(HttpTester http,
                                            RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -82,13 +82,13 @@ public final class RootHandlerTest {
         new FixedResponseBodyHandler("prefixSingle"));
 
     HttpResponse<String> response1 =
-        services.httpGetString("/prefix");
+        http.getString("/prefix");
 
     assertEquals(OK, response1.statusCode());
     assertEquals("prefixSingle", response1.body());
 
     HttpResponse<String> response2 =
-        services.httpGetString("/prefix/sub/path");
+        http.getString("/prefix/sub/path");
 
     assertEquals(OK, response2.statusCode());
     assertEquals("prefixSingle", response2.body());
@@ -99,7 +99,7 @@ public final class RootHandlerTest {
    * with paths that have multiple parts.
    */
   @Test
-  public void testAddPrefixPath_multiPart(TestServices services,
+  public void testAddPrefixPath_multiPart(HttpTester http,
                                           RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -108,13 +108,13 @@ public final class RootHandlerTest {
         new FixedResponseBodyHandler("prefixMulti"));
 
     HttpResponse<String> response1 =
-        services.httpGetString("/complex/prefix/path");
+        http.getString("/complex/prefix/path");
 
     assertEquals(OK, response1.statusCode());
     assertEquals("prefixMulti", response1.body());
 
     HttpResponse<String> response2 =
-        services.httpGetString("/complex/prefix/path/sub/path");
+        http.getString("/complex/prefix/path/sub/path");
 
     assertEquals(OK, response2.statusCode());
     assertEquals("prefixMulti", response2.body());

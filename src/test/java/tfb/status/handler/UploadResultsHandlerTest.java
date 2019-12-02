@@ -35,8 +35,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.BasicAuthUtils;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.MailServer;
-import tfb.status.testlib.TestServices;
 import tfb.status.testlib.TestServicesInjector;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.DetailPageView;
@@ -52,7 +52,7 @@ public final class UploadResultsHandlerTest {
    * during a full run.
    */
   @Test
-  public void testUpload(TestServices services,
+  public void testUpload(HttpTester http,
                          FileSystem fileSystem,
                          ObjectMapper objectMapper,
                          MailServer mailServer)
@@ -69,18 +69,18 @@ public final class UploadResultsHandlerTest {
     Path jsonFile = fileSystem.getPath("results_to_upload.json");
     Path zipFile = fileSystem.getPath("results_to_upload.zip");
 
-    URI jsonUri = services.httpUri("/raw/results.2017-12-26-05-07-14-321.json");
-    URI zipUri = services.httpUri("/raw/results.2017-12-29-23-04-02-541.zip");
+    URI jsonUri = http.uri("/raw/results.2017-12-26-05-07-14-321.json");
+    URI zipUri = http.uri("/raw/results.2017-12-29-23-04-02-541.zip");
 
     HttpResponse<Path> responseToOriginalJson =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(jsonUri).build(),
             HttpResponse.BodyHandlers.ofFile(jsonFile));
 
     assertEquals(OK, responseToOriginalJson.statusCode());
 
     HttpResponse<Path> responseToOriginalZip =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(zipUri).build(),
             HttpResponse.BodyHandlers.ofFile(zipFile));
 
@@ -123,7 +123,7 @@ public final class UploadResultsHandlerTest {
     //
 
     HttpResponse<byte[]> responseBeforeUpload =
-        services.httpGetBytes("/results/" + uuid + ".json");
+        http.getBytes("/results/" + uuid + ".json");
 
     assertEquals(NOT_FOUND, responseBeforeUpload.statusCode());
 
@@ -137,8 +137,8 @@ public final class UploadResultsHandlerTest {
             "wrong_password");
 
     HttpResponse<Void> responseToInvalidCredentials =
-        services.httpClient().send(
-            HttpRequest.newBuilder(services.httpUri("/upload"))
+        http.client().send(
+            HttpRequest.newBuilder(http.uri("/upload"))
                        .POST(filePublisher(jsonFile))
                        .header(AUTHORIZATION, invalidCredentials)
                        .header(CONTENT_TYPE, JSON_UTF_8.toString())
@@ -153,7 +153,7 @@ public final class UploadResultsHandlerTest {
 
     var updates = new ConcurrentLinkedQueue<String>();
 
-    URI updatesUri = services.webSocketUri("/updates");
+    URI updatesUri = http.webSocketUri("/updates");
 
     var updatesListener =
         new WebSocket.Listener() {
@@ -168,10 +168,10 @@ public final class UploadResultsHandlerTest {
         };
 
     WebSocket updatesWebSocket =
-        services.httpClient()
-                .newWebSocketBuilder()
-                .buildAsync(updatesUri, updatesListener)
-                .get(1, TimeUnit.SECONDS);
+        http.client()
+            .newWebSocketBuilder()
+            .buildAsync(updatesUri, updatesListener)
+            .get(1, TimeUnit.SECONDS);
 
     try {
 
@@ -180,10 +180,10 @@ public final class UploadResultsHandlerTest {
       //
 
       HttpResponse<Void> responseToNewJson =
-          services.httpClient().send(
-              HttpRequest.newBuilder(services.httpUri("/upload"))
+          http.client().send(
+              HttpRequest.newBuilder(http.uri("/upload"))
                          .POST(filePublisher(jsonFile))
-                         .header(AUTHORIZATION, services.authorizationHeader())
+                         .header(AUTHORIZATION, http.authorizationHeader())
                          .header(CONTENT_TYPE, JSON_UTF_8.toString())
                          .build(),
               HttpResponse.BodyHandlers.discarding());
@@ -195,7 +195,7 @@ public final class UploadResultsHandlerTest {
       //
 
       HttpResponse<byte[]> newDetailsResponse =
-          services.httpGetBytes("/results/" + uuid + ".json");
+          http.getBytes("/results/" + uuid + ".json");
 
       assertEquals(OK, newDetailsResponse.statusCode());
 
@@ -246,10 +246,10 @@ public final class UploadResultsHandlerTest {
       //
 
       HttpResponse<Void> responseToUpdatedJson =
-          services.httpClient().send(
-              HttpRequest.newBuilder(services.httpUri("/upload"))
+          http.client().send(
+              HttpRequest.newBuilder(http.uri("/upload"))
                          .POST(filePublisher(jsonFile))
-                         .header(AUTHORIZATION, services.authorizationHeader())
+                         .header(AUTHORIZATION, http.authorizationHeader())
                          .header(CONTENT_TYPE, JSON_UTF_8.toString())
                          .build(),
               HttpResponse.BodyHandlers.discarding());
@@ -261,7 +261,7 @@ public final class UploadResultsHandlerTest {
       //
 
       HttpResponse<byte[]> updatedDetailsResponse =
-          services.httpGetBytes("/results/" + uuid + ".json");
+          http.getBytes("/results/" + uuid + ".json");
 
       assertEquals(OK, updatedDetailsResponse.statusCode());
 
@@ -324,10 +324,10 @@ public final class UploadResultsHandlerTest {
       //
 
       HttpResponse<Void> responseToZip =
-          services.httpClient().send(
-              HttpRequest.newBuilder(services.httpUri("/upload"))
+          http.client().send(
+              HttpRequest.newBuilder(http.uri("/upload"))
                          .POST(filePublisher(zipFile))
-                         .header(AUTHORIZATION, services.authorizationHeader())
+                         .header(AUTHORIZATION, http.authorizationHeader())
                          .header(CONTENT_TYPE, ZIP.toString())
                          .build(),
               HttpResponse.BodyHandlers.discarding());
@@ -339,7 +339,7 @@ public final class UploadResultsHandlerTest {
       //
 
       HttpResponse<byte[]> finalDetailsResponse =
-          services.httpGetBytes("/results/" + uuid + ".json");
+          http.getBytes("/results/" + uuid + ".json");
 
       assertEquals(OK, finalDetailsResponse.statusCode());
 

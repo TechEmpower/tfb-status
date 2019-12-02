@@ -33,6 +33,8 @@ final class TestServicesBinder extends AbstractBinder {
         .to(HttpClient.class)
         .in(Singleton.class);
 
+    bindAsContract(HttpTester.class).in(Singleton.class);
+
     bindAsContract(MailServer.class).in(Singleton.class);
 
     bind(MailServerDependency.class)

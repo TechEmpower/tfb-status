@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -23,11 +23,11 @@ public final class AboutPageHandlerTest {
    * Verifies that {@code GET /about} produces an HTML response.
    */
   @Test
-  public void testGet(TestServices services)
+  public void testGet(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<String> response =
-        services.httpGetString("/about");
+        http.getString("/about");
 
     assertEquals(OK, response.statusCode());
 

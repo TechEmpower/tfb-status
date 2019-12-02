@@ -16,7 +16,7 @@ import java.net.http.HttpResponse;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -29,11 +29,11 @@ public final class RobotsHandlerTest {
    * expected rules for robots.
    */
   @Test
-  public void testRobotRules(TestServices services)
+  public void testRobotRules(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<byte[]> response =
-        services.httpGetBytes("/robots.txt");
+        http.getBytes("/robots.txt");
 
     assertEquals(OK, response.statusCode());
 
@@ -47,7 +47,7 @@ public final class RobotsHandlerTest {
 
     BaseRobotRules robotRules =
         new SimpleRobotRulesParser().parseContent(
-            /* url= */ services.httpUri("/robots.txt").toString(),
+            /* url= */ http.uri("/robots.txt").toString(),
             /* content = */ responseBytes,
             /* contentType= */ response.headers()
                                        .firstValue(CONTENT_TYPE)
@@ -67,10 +67,10 @@ public final class RobotsHandlerTest {
     assertAll(
         Stream.concat(
             allowedPaths
-                .map(path -> services.httpUri(path).toString())
+                .map(path -> http.uri(path).toString())
                 .map(url -> () -> assertAllowed(robotRules, url)),
             disallowedPaths
-                .map(path -> services.httpUri(path).toString())
+                .map(path -> http.uri(path).toString())
                 .map(url -> () -> assertDisallowed(robotRules, url))));
   }
 

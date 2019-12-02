@@ -15,7 +15,7 @@ import java.net.URL;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -27,11 +27,11 @@ public final class AssetsHandlerTest {
    * Verifies that a GET request for an asset file that exists is successful.
    */
   @Test
-  public void testGet(TestServices services)
+  public void testGet(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<String> response =
-        services.httpGetString("/assets/js/home.js");
+        http.getString("/assets/js/home.js");
 
     assertEquals(OK, response.statusCode());
 
@@ -53,11 +53,11 @@ public final class AssetsHandlerTest {
    * in {@code 404 Not Found}.
    */
   @Test
-  public void testNotFound(TestServices services)
+  public void testNotFound(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<String> response =
-        services.httpGetString("/assets/does_not_exist.txt");
+        http.getString("/assets/does_not_exist.txt");
 
     assertEquals(NOT_FOUND, response.statusCode());
   }

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -39,13 +39,13 @@ public final class HomeUpdatesHandlerTest {
    * HomeUpdatesHandler#sendUpdate(String)}.
    */
   @Test
-  public void testSseGet(TestServices services, HomeUpdatesHandler updates)
+  public void testSseGet(HttpTester http, HomeUpdatesHandler updates)
       throws IOException, InterruptedException {
 
-    URI uri = services.httpUri("/updates");
+    URI uri = http.uri("/updates");
 
     HttpResponse<InputStream> response =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofInputStream());
 
@@ -89,11 +89,11 @@ public final class HomeUpdatesHandlerTest {
    * HomeUpdatesHandler#sendUpdate(String)}.
    */
   @Test
-  public void testWebSocketGet(TestServices services,
+  public void testWebSocketGet(HttpTester http,
                                HomeUpdatesHandler updates)
       throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
-    URI uri = services.webSocketUri("/updates");
+    URI uri = http.webSocketUri("/updates");
 
     var future = new CompletableFuture<String>();
 
@@ -110,10 +110,10 @@ public final class HomeUpdatesHandlerTest {
         };
 
     WebSocket webSocket =
-        services.httpClient()
-                .newWebSocketBuilder()
-                .buildAsync(uri, listener)
-                .get(1, TimeUnit.SECONDS);
+        http.client()
+            .newWebSocketBuilder()
+            .buildAsync(uri, listener)
+            .get(1, TimeUnit.SECONDS);
 
     try {
 

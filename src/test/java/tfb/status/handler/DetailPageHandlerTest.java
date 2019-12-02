@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -25,11 +25,11 @@ public final class DetailPageHandlerTest {
    * produces an HTML response.
    */
   @Test
-  public void testGet(TestServices services)
+  public void testGet(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<String> response =
-        services.httpGetString("/results/03da6340-d56c-4584-9ef2-702106203809");
+        http.getString("/results/03da6340-d56c-4584-9ef2-702106203809");
 
     assertEquals(OK, response.statusCode());
 
@@ -46,11 +46,11 @@ public final class DetailPageHandlerTest {
    * Verifies that a GET request for the results detail page with an unknown
    * uuid produces a {@code 404 Not Found} response.
    */
-  public void testUnknownUuid(TestServices services)
+  public void testUnknownUuid(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<String> response =
-        services.httpGetString("/results/notarealuuid");
+        http.getString("/results/notarealuuid");
 
     assertEquals(NOT_FOUND, response.statusCode());
   }

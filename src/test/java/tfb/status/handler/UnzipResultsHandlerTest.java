@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -23,11 +23,11 @@ public final class UnzipResultsHandlerTest {
    * exists is successful.
    */
   @Test
-  public void testGet(TestServices services)
+  public void testGet(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<byte[]> response =
-        services.httpGetBytes("/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt");
+        http.getBytes("/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt");
 
     assertEquals(OK, response.statusCode());
 

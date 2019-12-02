@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.handler.RootHandler;
 import tfb.status.testlib.BasicAuthUtils;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -92,7 +92,7 @@ public final class BasicAuthenticationHandlerTest {
    * not specify any credentials.
    */
   @Test
-  public void testMissingCredentials(TestServices services,
+  public void testMissingCredentials(HttpTester http,
                                      RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -103,10 +103,10 @@ public final class BasicAuthenticationHandlerTest {
             OnlyIdentityManager.INSTANCE,
             exchange -> {}));
 
-    URI uri = services.httpUri("/basicAuth");
+    URI uri = http.uri("/basicAuth");
 
     HttpResponse<String> response =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
@@ -124,7 +124,7 @@ public final class BasicAuthenticationHandlerTest {
    * specify invalid credentials.
    */
   @Test
-  public void testInvalidCredentials(TestServices services,
+  public void testInvalidCredentials(HttpTester http,
                                      RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -135,7 +135,7 @@ public final class BasicAuthenticationHandlerTest {
             OnlyIdentityManager.INSTANCE,
             exchange -> {}));
 
-    URI uri = services.httpUri("/basicAuth");
+    URI uri = http.uri("/basicAuth");
 
     String invalidCredentials =
         BasicAuthUtils.writeAuthorizationHeader(
@@ -143,7 +143,7 @@ public final class BasicAuthenticationHandlerTest {
             "wrong_password");
 
     HttpResponse<String> response =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(AUTHORIZATION, invalidCredentials)
                        .build(),
@@ -163,7 +163,7 @@ public final class BasicAuthenticationHandlerTest {
    * specify valid credentials.
    */
   @Test
-  public void testValidCredentials(TestServices services,
+  public void testValidCredentials(HttpTester http,
                                    RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -174,7 +174,7 @@ public final class BasicAuthenticationHandlerTest {
             OnlyIdentityManager.INSTANCE,
             exchange -> {}));
 
-    URI uri = services.httpUri("/basicAuth");
+    URI uri = http.uri("/basicAuth");
 
     String validCredentials =
         BasicAuthUtils.writeAuthorizationHeader(
@@ -182,7 +182,7 @@ public final class BasicAuthenticationHandlerTest {
             CORRECT_PASSWORD);
 
     HttpResponse<String> response =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(AUTHORIZATION, validCredentials)
                        .build(),

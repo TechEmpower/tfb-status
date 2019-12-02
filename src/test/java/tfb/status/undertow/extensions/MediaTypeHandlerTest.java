@@ -14,7 +14,7 @@ import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.handler.RootHandler;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -27,7 +27,7 @@ public final class MediaTypeHandlerTest {
    * requests.
    */
   @Test
-  public void testNoMediaTypesAllowed(TestServices services,
+  public void testNoMediaTypesAllowed(HttpTester http,
                                       RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -35,10 +35,10 @@ public final class MediaTypeHandlerTest {
         "/none",
         new MediaTypeHandler());
 
-    URI uri = services.httpUri("/none");
+    URI uri = http.uri("/none");
 
     HttpResponse<String> response1 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/plain")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -48,7 +48,7 @@ public final class MediaTypeHandlerTest {
     assertEquals(UNSUPPORTED_MEDIA_TYPE, response1.statusCode());
 
     HttpResponse<String> response2 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .POST(HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -62,7 +62,7 @@ public final class MediaTypeHandlerTest {
    * handler when the media types for each handler are unrelated.
    */
   @Test
-  public void testUnrelatedMediaTypes(TestServices services,
+  public void testUnrelatedMediaTypes(HttpTester http,
                                       RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -76,10 +76,10 @@ public final class MediaTypeHandlerTest {
                 "application/json",
                 new FixedResponseBodyHandler("jsonHandler")));
 
-    URI uri = services.httpUri("/plaintextOrJson");
+    URI uri = http.uri("/plaintextOrJson");
 
     HttpResponse<String> response1 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/plain")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -90,7 +90,7 @@ public final class MediaTypeHandlerTest {
     assertEquals("plaintextHandler", response1.body());
 
     HttpResponse<String> response2 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "application/json")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -101,7 +101,7 @@ public final class MediaTypeHandlerTest {
     assertEquals("jsonHandler", response2.body());
 
     HttpResponse<String> response3 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "foo/bar")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -111,7 +111,7 @@ public final class MediaTypeHandlerTest {
     assertEquals(UNSUPPORTED_MEDIA_TYPE, response3.statusCode());
 
     HttpResponse<String> response4 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .POST(HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -126,7 +126,7 @@ public final class MediaTypeHandlerTest {
    * and overlapping.
    */
   @Test
-  public void testMostSpecificMediaType(TestServices services,
+  public void testMostSpecificMediaType(HttpTester http,
                                         RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -143,10 +143,10 @@ public final class MediaTypeHandlerTest {
                 "text/*",
                 new FixedResponseBodyHandler("otherHandler")));
 
-    URI uri = services.httpUri("/text");
+    URI uri = http.uri("/text");
 
     HttpResponse<String> response1 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/plain;charset=utf-8")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -157,7 +157,7 @@ public final class MediaTypeHandlerTest {
     assertEquals("utf8Handler", response1.body());
 
     HttpResponse<String> response2 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/plain;charset=us-ascii")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -168,7 +168,7 @@ public final class MediaTypeHandlerTest {
     assertEquals("plainHandler", response2.body());
 
     HttpResponse<String> response3 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/plain")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -179,7 +179,7 @@ public final class MediaTypeHandlerTest {
     assertEquals("plainHandler", response3.body());
 
     HttpResponse<String> response4 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/css")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -190,7 +190,7 @@ public final class MediaTypeHandlerTest {
     assertEquals("otherHandler", response4.body());
 
     HttpResponse<String> response5 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "foo/bar")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -200,7 +200,7 @@ public final class MediaTypeHandlerTest {
     assertEquals(UNSUPPORTED_MEDIA_TYPE, response5.statusCode());
 
     HttpResponse<String> response6 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .POST(HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -230,7 +230,7 @@ public final class MediaTypeHandlerTest {
    * including requests with no {@code Content-Type} header at all.
    */
   @Test
-  public void testAnyMediaType(TestServices services,
+  public void testAnyMediaType(HttpTester http,
                                RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -240,10 +240,10 @@ public final class MediaTypeHandlerTest {
             "*/*",
             new FixedResponseBodyHandler("wildcardHandler")));
 
-    URI uri = services.httpUri("/wildcard");
+    URI uri = http.uri("/wildcard");
 
     HttpResponse<String> response1 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "foo/bar")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -254,7 +254,7 @@ public final class MediaTypeHandlerTest {
     assertEquals("wildcardHandler", response1.body());
 
     HttpResponse<String> response2 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .POST(HttpRequest.BodyPublishers.noBody())
                        .build(),

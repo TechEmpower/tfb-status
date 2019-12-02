@@ -11,7 +11,7 @@ import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.handler.RootHandler;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -24,7 +24,7 @@ public final class FixedResponseBodyHandlerTest {
    * Verifies that a {@link FixedResponseBodyHandler} can send a byte array.
    */
   @Test
-  public void testBytes(TestServices services,
+  public void testBytes(HttpTester http,
                         RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -34,7 +34,7 @@ public final class FixedResponseBodyHandlerTest {
         "/bytes",
         new FixedResponseBodyHandler(expectedBytes));
 
-    HttpResponse<byte[]> response = services.httpGetBytes("/bytes");
+    HttpResponse<byte[]> response = http.getBytes("/bytes");
 
     assertEquals(OK, response.statusCode());
 
@@ -47,7 +47,7 @@ public final class FixedResponseBodyHandlerTest {
    * Verifies that a {@link FixedResponseBodyHandler} can send a UTF-8 string.
    */
   @Test
-  public void testUtf8(TestServices services,
+  public void testUtf8(HttpTester http,
                        RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -57,7 +57,7 @@ public final class FixedResponseBodyHandlerTest {
         "/utf8",
         new FixedResponseBodyHandler(expectedString));
 
-    HttpResponse<byte[]> response = services.httpGetBytes("/utf8");
+    HttpResponse<byte[]> response = http.getBytes("/utf8");
 
     assertEquals(OK, response.statusCode());
 
@@ -71,7 +71,7 @@ public final class FixedResponseBodyHandlerTest {
    * charset other than UTF-8.
    */
   @Test
-  public void testNotUtf8(TestServices services,
+  public void testNotUtf8(HttpTester http,
                           RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -81,7 +81,7 @@ public final class FixedResponseBodyHandlerTest {
         "/utf16",
         new FixedResponseBodyHandler(expectedString, UTF_16));
 
-    HttpResponse<byte[]> response = services.httpGetBytes("/utf16");
+    HttpResponse<byte[]> response = http.getBytes("/utf16");
 
     assertEquals(OK, response.statusCode());
 
@@ -95,7 +95,7 @@ public final class FixedResponseBodyHandlerTest {
    * FixedResponseBodyHandler} each have the same response.
    */
   @Test
-  public void testMultipleRequests(TestServices services,
+  public void testMultipleRequests(HttpTester http,
                                    RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -105,8 +105,8 @@ public final class FixedResponseBodyHandlerTest {
         "/multiple",
         new FixedResponseBodyHandler(expectedString));
 
-    HttpResponse<String> response1 = services.httpGetString("/multiple");
-    HttpResponse<String> response2 = services.httpGetString("/multiple");
+    HttpResponse<String> response1 = http.getString("/multiple");
+    HttpResponse<String> response2 = http.getString("/multiple");
 
     assertEquals(OK, response1.statusCode());
     assertEquals(OK, response2.statusCode());

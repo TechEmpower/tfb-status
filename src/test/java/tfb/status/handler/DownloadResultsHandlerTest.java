@@ -12,7 +12,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 import tfb.status.view.Results;
 
@@ -26,11 +26,11 @@ public final class DownloadResultsHandlerTest {
    * successful.
    */
   @Test
-  public void testGetJson(TestServices services, ObjectMapper objectMapper)
+  public void testGetJson(HttpTester http, ObjectMapper objectMapper)
       throws IOException, InterruptedException {
 
     HttpResponse<byte[]> response =
-        services.httpGetBytes("/raw/results.2017-12-26-05-07-14-321.json");
+        http.getBytes("/raw/results.2017-12-26-05-07-14-321.json");
 
     assertEquals(OK, response.statusCode());
 
@@ -46,11 +46,11 @@ public final class DownloadResultsHandlerTest {
    * successful.
    */
   @Test
-  public void testGetZip(TestServices services, ObjectMapper objectMapper)
+  public void testGetZip(HttpTester http, ObjectMapper objectMapper)
       throws IOException, InterruptedException {
 
     HttpResponse<byte[]> response =
-        services.httpGetBytes("/raw/results.2017-12-29-23-04-02-541.zip");
+        http.getBytes("/raw/results.2017-12-29-23-04-02-541.zip");
 
     assertEquals(OK, response.statusCode());
 

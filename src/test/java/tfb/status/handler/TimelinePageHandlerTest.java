@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -25,11 +25,11 @@ public final class TimelinePageHandlerTest {
    * an HTML response.
    */
   @Test
-  public void testGet(TestServices services)
+  public void testGet(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<String> response =
-        services.httpGetString("/timeline/gemini/json");
+        http.getString("/timeline/gemini/json");
 
     assertEquals(OK, response.statusCode());
 
@@ -47,11 +47,11 @@ public final class TimelinePageHandlerTest {
    * specified produces a {@code 404 Not Found} response.
    */
   @Test
-  public void testUnknownTestType(TestServices services)
+  public void testUnknownTestType(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<String> response =
-        services.httpGetString("/timeline/gemini/notarealtesttypename");
+        http.getString("/timeline/gemini/notarealtesttypename");
 
     assertEquals(NOT_FOUND, response.statusCode());
   }
@@ -61,11 +61,11 @@ public final class TimelinePageHandlerTest {
    * specified produces a {@code 404 Not Found} response.
    */
   @Test
-  public void testUnknownFramework(TestServices services)
+  public void testUnknownFramework(HttpTester http)
       throws IOException, InterruptedException {
 
     HttpResponse<String> response =
-        services.httpGetString("/timeline/notarealframeworkname/json");
+        http.getString("/timeline/notarealframeworkname/json");
 
     assertEquals(NOT_FOUND, response.statusCode());
   }

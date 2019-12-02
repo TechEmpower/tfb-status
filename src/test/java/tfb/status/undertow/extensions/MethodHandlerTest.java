@@ -20,7 +20,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.handler.RootHandler;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -33,7 +33,7 @@ public final class MethodHandlerTest {
    * OPTIONS requests.
    */
   @Test
-  public void testNoMethodsAllowed(TestServices services,
+  public void testNoMethodsAllowed(HttpTester http,
                                    RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -41,17 +41,17 @@ public final class MethodHandlerTest {
         "/none",
         new MethodHandler());
 
-    URI uri = services.httpUri("/none");
+    URI uri = http.uri("/none");
 
     HttpResponse<String> response1 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response1.statusCode());
 
     HttpResponse<String> response2 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/plain")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -61,7 +61,7 @@ public final class MethodHandlerTest {
     assertEquals(METHOD_NOT_ALLOWED, response2.statusCode());
 
     HttpResponse<String> response3 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .method("HEAD", HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -70,7 +70,7 @@ public final class MethodHandlerTest {
     assertEquals(METHOD_NOT_ALLOWED, response3.statusCode());
 
     HttpResponse<String> response4 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -88,7 +88,7 @@ public final class MethodHandlerTest {
    * allows GET, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetOnly(TestServices services,
+  public void testGetOnly(HttpTester http,
                           RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -97,10 +97,10 @@ public final class MethodHandlerTest {
         new MethodHandler()
             .addMethod(GET, new FixedResponseBodyHandler("getHandler")));
 
-    URI uri = services.httpUri("/getOnly");
+    URI uri = http.uri("/getOnly");
 
     HttpResponse<String> response1 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
@@ -108,7 +108,7 @@ public final class MethodHandlerTest {
     assertEquals("getHandler", response1.body());
 
     HttpResponse<String> response2 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/plain")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -118,7 +118,7 @@ public final class MethodHandlerTest {
     assertEquals(METHOD_NOT_ALLOWED, response2.statusCode());
 
     HttpResponse<String> response3 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .method("HEAD", HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -128,7 +128,7 @@ public final class MethodHandlerTest {
     assertEquals("", response3.body());
 
     HttpResponse<String> response4 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -146,7 +146,7 @@ public final class MethodHandlerTest {
    * allows POST and OPTIONS requests.
    */
   @Test
-  public void testPostOnly(TestServices services,
+  public void testPostOnly(HttpTester http,
                            RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -155,17 +155,17 @@ public final class MethodHandlerTest {
         new MethodHandler()
             .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
 
-    URI uri = services.httpUri("/postOnly");
+    URI uri = http.uri("/postOnly");
 
     HttpResponse<String> response1 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response1.statusCode());
 
     HttpResponse<String> response2 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/plain")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -176,7 +176,7 @@ public final class MethodHandlerTest {
     assertEquals("postHandler", response2.body());
 
     HttpResponse<String> response3 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .method("HEAD", HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -185,7 +185,7 @@ public final class MethodHandlerTest {
     assertEquals(METHOD_NOT_ALLOWED, response3.statusCode());
 
     HttpResponse<String> response4 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -203,7 +203,7 @@ public final class MethodHandlerTest {
    * allows GET, POST, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetAndPost(TestServices services,
+  public void testGetAndPost(HttpTester http,
                              RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -213,10 +213,10 @@ public final class MethodHandlerTest {
             .addMethod(GET, new FixedResponseBodyHandler("getHandler"))
             .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
 
-    URI uri = services.httpUri("/getAndPost");
+    URI uri = http.uri("/getAndPost");
 
     HttpResponse<String> response1 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri).build(),
             HttpResponse.BodyHandlers.ofString());
 
@@ -224,7 +224,7 @@ public final class MethodHandlerTest {
     assertEquals("getHandler", response1.body());
 
     HttpResponse<String> response2 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .header(CONTENT_TYPE, "text/plain")
                        .POST(HttpRequest.BodyPublishers.ofString("hi"))
@@ -235,7 +235,7 @@ public final class MethodHandlerTest {
     assertEquals("postHandler", response2.body());
 
     HttpResponse<String> response3 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .method("HEAD", HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -245,7 +245,7 @@ public final class MethodHandlerTest {
     assertEquals("", response3.body());
 
     HttpResponse<String> response4 =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
                        .build(),
@@ -263,7 +263,7 @@ public final class MethodHandlerTest {
    * {@link MethodHandler}.
    */
   @Test
-  public void testOverrideOptions(TestServices services,
+  public void testOverrideOptions(HttpTester http,
                                   RootHandler rootHandler)
       throws IOException, InterruptedException {
 
@@ -272,10 +272,10 @@ public final class MethodHandlerTest {
         new MethodHandler()
             .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler")));
 
-    URI uri = services.httpUri("/overrideOptions");
+    URI uri = http.uri("/overrideOptions");
 
     HttpResponse<String> response =
-        services.httpClient().send(
+        http.client().send(
             HttpRequest.newBuilder(uri)
                        .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
                        .build(),
