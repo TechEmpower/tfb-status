@@ -23,36 +23,25 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link HomeUpdatesHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class HomeUpdatesHandlerTest {
-  private static TestServices services;
-  private static HomeUpdatesHandler updates;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-    updates = services.getService(HomeUpdatesHandler.class);
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that an SSE client can use {@code GET /updates} to listen for
    * updates to the home page, which are broadcast via {@link
    * HomeUpdatesHandler#sendUpdate(String)}.
    */
   @Test
-  public void testSseGet() throws IOException, InterruptedException {
+  public void testSseGet(TestServices services, HomeUpdatesHandler updates)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/updates");
 
     HttpResponse<InputStream> response =
@@ -100,10 +89,9 @@ public final class HomeUpdatesHandlerTest {
    * HomeUpdatesHandler#sendUpdate(String)}.
    */
   @Test
-  public void testWebSocketGet() throws IOException,
-                                        InterruptedException,
-                                        ExecutionException,
-                                        TimeoutException {
+  public void testWebSocketGet(TestServices services,
+                               HomeUpdatesHandler updates)
+      throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
     URI uri = services.webSocketUri("/updates");
 

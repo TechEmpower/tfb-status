@@ -18,18 +18,18 @@ import java.net.http.HttpResponse;
 import java.security.Principal;
 import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.BasicAuthUtils;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link BasicAuthenticationHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class BasicAuthenticationHandlerTest {
-  private static TestServices services;
-
   private static final String CORRECT_USERNAME = "correct_username";
   private static final String CORRECT_PASSWORD = "correct_password";
 
@@ -88,8 +88,9 @@ public final class BasicAuthenticationHandlerTest {
   }
 
   @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
+  public static void beforeAll(TestServices services) {
+    // TODO: Declare handlers within the test methods that use them, avoid using
+    //       @BeforeAll.
 
     services.addExactPath(
         "/basicAuth",
@@ -99,17 +100,14 @@ public final class BasicAuthenticationHandlerTest {
             exchange -> {}));
   }
 
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that {@link BasicAuthenticationHandler} rejects requests that do
    * not specify any credentials.
    */
   @Test
-  public void testMissingCredentials() throws IOException, InterruptedException {
+  public void testMissingCredentials(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/basicAuth");
 
     HttpResponse<String> response =
@@ -131,7 +129,9 @@ public final class BasicAuthenticationHandlerTest {
    * specify invalid credentials.
    */
   @Test
-  public void testInvalidCredentials() throws IOException, InterruptedException {
+  public void testInvalidCredentials(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/basicAuth");
 
     String invalidCredentials =
@@ -160,7 +160,9 @@ public final class BasicAuthenticationHandlerTest {
    * specify valid credentials.
    */
   @Test
-  public void testValidCredentials() throws IOException, InterruptedException {
+  public void testValidCredentials(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/basicAuth");
 
     String validCredentials =

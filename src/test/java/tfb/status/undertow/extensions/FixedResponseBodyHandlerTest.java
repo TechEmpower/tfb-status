@@ -8,32 +8,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link FixedResponseBodyHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class FixedResponseBodyHandlerTest {
-  private static TestServices services;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
 
   /**
    * Verifies that a {@link FixedResponseBodyHandler} can send a byte array.
    */
   @Test
-  public void testBytes() throws IOException, InterruptedException {
+  public void testBytes(TestServices services)
+      throws IOException, InterruptedException {
+
     byte[] expectedBytes = "hello".getBytes(UTF_8);
 
     services.addExactPath(
@@ -53,7 +45,9 @@ public final class FixedResponseBodyHandlerTest {
    * Verifies that a {@link FixedResponseBodyHandler} can send a UTF-8 string.
    */
   @Test
-  public void testUtf8() throws IOException, InterruptedException {
+  public void testUtf8(TestServices services)
+      throws IOException, InterruptedException {
+
     String expectedString = "hi";
 
     services.addExactPath(
@@ -74,7 +68,9 @@ public final class FixedResponseBodyHandlerTest {
    * charset other than UTF-8.
    */
   @Test
-  public void testNotUtf8() throws IOException, InterruptedException {
+  public void testNotUtf8(TestServices services)
+      throws IOException, InterruptedException {
+
     String expectedString = "hey";
 
     services.addExactPath(
@@ -95,7 +91,9 @@ public final class FixedResponseBodyHandlerTest {
    * FixedResponseBodyHandler} each have the same response.
    */
   @Test
-  public void testMultipleRequests() throws IOException, InterruptedException {
+  public void testMultipleRequests(TestServices services)
+      throws IOException, InterruptedException {
+
     String expectedString = "greetings";
 
     services.addExactPath(

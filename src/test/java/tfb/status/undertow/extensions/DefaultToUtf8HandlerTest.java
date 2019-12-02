@@ -10,20 +10,21 @@ import com.google.common.net.MediaType;
 import io.undertow.server.handlers.SetHeaderHandler;
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link DefaultToUtf8Handler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class DefaultToUtf8HandlerTest {
-  private static TestServices services;
-
   @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
+  public static void beforeAll(TestServices services) {
+    // TODO: Declare handlers within the test methods that use them, avoid using
+    //       @BeforeAll.
 
     services.addExactPath(
         "/utf8",
@@ -65,17 +66,14 @@ public final class DefaultToUtf8HandlerTest {
         new DefaultToUtf8Handler(exchange -> {}));
   }
 
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that {@link DefaultToUtf8Handler} does not modify the {@code
    * Content-Type} of text responses that already specify UTF-8 as the charset.
    */
   @Test
-  public void testAlreadyUtf8() throws IOException, InterruptedException {
+  public void testAlreadyUtf8(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/utf8");
 
@@ -94,7 +92,9 @@ public final class DefaultToUtf8HandlerTest {
    * UTF-8.
    */
   @Test
-  public void testOtherCharset() throws IOException, InterruptedException {
+  public void testOtherCharset(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/otherCharset");
 
@@ -112,7 +112,9 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of text responses that do not specify a charset.
    */
   @Test
-  public void testMissingCharset() throws IOException, InterruptedException {
+  public void testMissingCharset(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/missingCharset");
 
@@ -130,7 +132,9 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of JavaScript responses that do not specify a charset.
    */
   @Test
-  public void testMissingCharset_js() throws IOException, InterruptedException {
+  public void testMissingCharset_js(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/missingCharset.js");
 
@@ -148,7 +152,9 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of non-text responses.
    */
   @Test
-  public void testNonText() throws IOException, InterruptedException {
+  public void testNonText(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/nonText");
 
@@ -167,7 +173,9 @@ public final class DefaultToUtf8HandlerTest {
    * all.
    */
   @Test
-  public void testMissingContentType() throws IOException, InterruptedException {
+  public void testMissingContentType(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/missingContentType");
 

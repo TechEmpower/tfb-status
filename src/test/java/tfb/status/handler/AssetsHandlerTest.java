@@ -13,32 +13,23 @@ import com.google.common.io.Resources;
 import java.io.IOException;
 import java.net.URL;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link AssetsHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class AssetsHandlerTest {
-  private static TestServices services;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that a GET request for an asset file that exists is successful.
    */
   @Test
-  public void testGet() throws IOException, InterruptedException {
+  public void testGet(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/assets/js/home.js");
 
@@ -62,7 +53,9 @@ public final class AssetsHandlerTest {
    * in {@code 404 Not Found}.
    */
   @Test
-  public void testNotFound() throws IOException, InterruptedException {
+  public void testNotFound(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/assets/does_not_exist.txt");
 

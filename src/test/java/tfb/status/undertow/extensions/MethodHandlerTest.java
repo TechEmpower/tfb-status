@@ -17,20 +17,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link MethodHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class MethodHandlerTest {
-  private static TestServices services;
-
   @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
+  public static void beforeAll(TestServices services) {
+    // TODO: Declare handlers within the test methods that use them, avoid using
+    //       @BeforeAll.
 
     services.addExactPath(
         "/none",
@@ -58,17 +59,14 @@ public final class MethodHandlerTest {
             .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler")));
   }
 
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that a {@link MethodHandler} with no handlers added only allows
    * OPTIONS requests.
    */
   @Test
-  public void testNoMethodsAllowed() throws IOException, InterruptedException {
+  public void testNoMethodsAllowed(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/none");
 
     HttpResponse<String> response1 =
@@ -116,7 +114,9 @@ public final class MethodHandlerTest {
    * allows GET, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetOnly() throws IOException, InterruptedException {
+  public void testGetOnly(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/getOnly");
 
     HttpResponse<String> response1 =
@@ -166,7 +166,9 @@ public final class MethodHandlerTest {
    * allows POST and OPTIONS requests.
    */
   @Test
-  public void testPostOnly() throws IOException, InterruptedException {
+  public void testPostOnly(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/postOnly");
 
     HttpResponse<String> response1 =
@@ -215,7 +217,9 @@ public final class MethodHandlerTest {
    * allows GET, POST, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetAndPost() throws IOException, InterruptedException {
+  public void testGetAndPost(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/getAndPost");
 
     HttpResponse<String> response1 =
@@ -266,7 +270,9 @@ public final class MethodHandlerTest {
    * {@link MethodHandler}.
    */
   @Test
-  public void testOverrideOptions() throws IOException, InterruptedException {
+  public void testOverrideOptions(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/overrideOptions");
 
     HttpResponse<String> response =

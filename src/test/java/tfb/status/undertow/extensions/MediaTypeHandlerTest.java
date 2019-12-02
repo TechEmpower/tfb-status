@@ -11,20 +11,21 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link MediaTypeHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class MediaTypeHandlerTest {
-  private static TestServices services;
-
   @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
+  public static void beforeAll(TestServices services) {
+    // TODO: Declare handlers within the test methods that use them, avoid using
+    //       @BeforeAll.
 
     services.addExactPath(
         "/none",
@@ -60,17 +61,14 @@ public final class MediaTypeHandlerTest {
             new FixedResponseBodyHandler("wildcardHandler")));
   }
 
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that a {@link MediaTypeHandler} with no handlers added rejects all
    * requests.
    */
   @Test
-  public void testNoMediaTypesAllowed() throws IOException, InterruptedException {
+  public void testNoMediaTypesAllowed(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/none");
 
     HttpResponse<String> response1 =
@@ -98,7 +96,9 @@ public final class MediaTypeHandlerTest {
    * handler when the media types for each handler are unrelated.
    */
   @Test
-  public void testUnrelatedMediaTypes() throws IOException, InterruptedException {
+  public void testUnrelatedMediaTypes(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/plaintextOrJson");
 
     HttpResponse<String> response1 =
@@ -149,7 +149,9 @@ public final class MediaTypeHandlerTest {
    * and overlapping.
    */
   @Test
-  public void testMostSpecificMediaType() throws IOException, InterruptedException {
+  public void testMostSpecificMediaType(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/text");
 
     HttpResponse<String> response1 =
@@ -237,7 +239,9 @@ public final class MediaTypeHandlerTest {
    * including requests with no {@code Content-Type} header at all.
    */
   @Test
-  public void testAnyMediaType() throws IOException, InterruptedException {
+  public void testAnyMediaType(TestServices services)
+      throws IOException, InterruptedException {
+
     URI uri = services.httpUri("/wildcard");
 
     HttpResponse<String> response1 =

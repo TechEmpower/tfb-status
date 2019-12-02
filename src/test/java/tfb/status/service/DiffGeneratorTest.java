@@ -6,10 +6,9 @@ import static tfb.status.testlib.MoreAssertions.assertHtmlDocument;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.testlib.TestServices;
+import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.testlib.TestServicesInjector;
 import tfb.status.view.Results;
 import tfb.status.view.Results.RawData;
 import tfb.status.view.Results.SingleWrkExecution;
@@ -17,27 +16,14 @@ import tfb.status.view.Results.SingleWrkExecution;
 /**
  * Tests for {@link DiffGenerator}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class DiffGeneratorTest {
-  private static TestServices services;
-  private static DiffGenerator diffGenerator;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-    diffGenerator = services.getService(DiffGenerator.class);
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that the {@link DiffGenerator#diff(Results, Results)} method
    * produces HTML output that reflects the input results.
    */
   @Test
-  public void testDiff()  {
+  public void testDiff(DiffGenerator diffGenerator)  {
     String framework = "not_a_real_framework";
     String expectedRps = "789";
 

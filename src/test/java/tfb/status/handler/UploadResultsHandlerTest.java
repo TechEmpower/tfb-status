@@ -32,12 +32,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import javax.mail.internet.MimeMessage;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.BasicAuthUtils;
 import tfb.status.testlib.MailServer;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.DetailPageView;
 import tfb.status.view.Results;
@@ -45,31 +45,18 @@ import tfb.status.view.Results;
 /**
  * Tests for {@link UploadResultsHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class UploadResultsHandlerTest {
-  private static TestServices services;
-  private static FileSystem fileSystem;
-  private static ObjectMapper objectMapper;
-  private static MailServer mailServer;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-    fileSystem = services.getService(FileSystem.class);
-    objectMapper = services.getService(ObjectMapper.class);
-    mailServer = services.mailServer();
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies the process of uploading results, simulating what would occur
    * during a full run.
    */
   @Test
-  public void testUpload() throws Exception {
+  public void testUpload(TestServices services,
+                         FileSystem fileSystem,
+                         ObjectMapper objectMapper,
+                         MailServer mailServer)
+      throws Exception {
 
     //
     // Download the original results.

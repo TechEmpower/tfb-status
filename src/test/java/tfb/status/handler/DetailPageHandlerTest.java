@@ -10,33 +10,24 @@ import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link DetailPageHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class DetailPageHandlerTest {
-  private static TestServices services;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that a GET request for the results detail page with a valid uuid
    * produces an HTML response.
    */
   @Test
-  public void testGet() throws IOException, InterruptedException {
+  public void testGet(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/results/03da6340-d56c-4584-9ef2-702106203809");
 
@@ -55,7 +46,9 @@ public final class DetailPageHandlerTest {
    * Verifies that a GET request for the results detail page with an unknown
    * uuid produces a {@code 404 Not Found} response.
    */
-  public void testUnknownUuid() throws IOException, InterruptedException {
+  public void testUnknownUuid(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/results/notarealuuid");
 

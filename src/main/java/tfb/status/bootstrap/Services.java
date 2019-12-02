@@ -62,4 +62,14 @@ public class Services {
 
     return service;
   }
+
+  /**
+   * Returns {@code true} if a service of the specified type exists.  In other
+   * words, this method returns {@code true} when {@link #getService(Class)}
+   * would succeed and {@code false} when that method would throw {@link
+   * NoSuchElementException}.
+   */
+  public boolean hasService(Class<?> type) {
+    return serviceLocator.getServiceHandle(type) != null;
+  }
 }

@@ -8,35 +8,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableListMultimap;
 import java.io.IOException;
 import java.util.Objects;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tfb.status.testlib.TestServices;
+import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link ObjectMapperFactory}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class ObjectMapperFactoryTest {
-  private static TestServices services;
-  private static ObjectMapper objectMapper;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-    objectMapper = services.getService(ObjectMapper.class);
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that the object mapper is compatible with certain important types
    * from the Guava library, especially during deserialization.
    */
   @Test
-  public void testGuavaTypesEnabled() throws IOException {
+  public void testGuavaTypesEnabled(ObjectMapper objectMapper)
+      throws IOException {
+
     ImmutableListMultimap<String, Integer> multimap =
         ImmutableListMultimap.of(
             "odd", 1,
@@ -69,7 +57,9 @@ public final class ObjectMapperFactoryTest {
    * deserializing JSON that contains unrecognized properties
    */
   @Test
-  public void testUnknownPropertiesIgnored() throws IOException {
+  public void testUnknownPropertiesIgnored(ObjectMapper objectMapper)
+      throws IOException {
+
     String json = "{\"value\":50,\"somethingElse\":2}";
     IntBox box = objectMapper.readValue(json, IntBox.class);
     assertEquals(50, box.value);

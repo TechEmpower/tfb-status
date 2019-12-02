@@ -7,36 +7,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 import tfb.status.undertow.extensions.FixedResponseBodyHandler;
 
 /**
  * Tests for {@link RootHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class RootHandlerTest {
-  private static TestServices services;
-  private static RootHandler rootHandler;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-    rootHandler = services.getService(RootHandler.class);
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that {@link RootHandler#addExactPath(String, HttpHandler)} works
    * with paths that have a single part.
    */
   @Test
-  public void testAddExactPath_singlePart() throws IOException, InterruptedException {
+  public void testAddExactPath_singlePart(TestServices services,
+                                          RootHandler rootHandler)
+      throws IOException, InterruptedException {
+
     rootHandler.addExactPath(
         "/exact",
         new FixedResponseBodyHandler("exactSingle"));
@@ -58,7 +48,10 @@ public final class RootHandlerTest {
    * with paths that have multiple parts.
    */
   @Test
-  public void testAddExactPath_multiPart() throws IOException, InterruptedException {
+  public void testAddExactPath_multiPart(TestServices services,
+                                         RootHandler rootHandler)
+      throws IOException, InterruptedException {
+
     rootHandler.addExactPath(
         "/complex/exact/path",
         new FixedResponseBodyHandler("exactMulti"));
@@ -80,7 +73,10 @@ public final class RootHandlerTest {
    * with paths that have a single part.
    */
   @Test
-  public void testAddPrefixPath_singlePart() throws IOException, InterruptedException {
+  public void testAddPrefixPath_singlePart(TestServices services,
+                                           RootHandler rootHandler)
+      throws IOException, InterruptedException {
+
     rootHandler.addPrefixPath(
         "/prefix",
         new FixedResponseBodyHandler("prefixSingle"));
@@ -103,7 +99,10 @@ public final class RootHandlerTest {
    * with paths that have multiple parts.
    */
   @Test
-  public void testAddPrefixPath_multiPart() throws IOException, InterruptedException {
+  public void testAddPrefixPath_multiPart(TestServices services,
+                                          RootHandler rootHandler)
+      throws IOException, InterruptedException {
+
     rootHandler.addPrefixPath(
         "/complex/prefix/path",
         new FixedResponseBodyHandler("prefixMulti"));

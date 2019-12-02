@@ -45,6 +45,8 @@ public final class TestServices extends Services {
    * clock time.  This clock can be adjusted manually.
    */
   public MutableClock clock() {
+    // TODO: Make `getService(MutableClock.class)` return this same clock,
+    //       meaning this method would be unnecessary.
     return (MutableClock) getService(Clock.class);
   }
 
@@ -53,6 +55,8 @@ public final class TestServices extends Services {
    * time.  This ticker can be adjusted manually.
    */
   public MutableTicker ticker() {
+    // TODO: Make `getService(MutableTicker.class)` return this same ticker,
+    //       meaning this method would be unnecessary.
     return (MutableTicker) getService(Ticker.class);
   }
 
@@ -60,6 +64,7 @@ public final class TestServices extends Services {
    * Provides access to email that was sent by this application during tests.
    */
   public MailServer mailServer() {
+    // TODO: Either use this method or remove it.
     return getService(MailServer.class);
   }
 
@@ -69,6 +74,7 @@ public final class TestServices extends Services {
    * @see RootHandler#addExactPath(String, HttpHandler)
    */
   public void addExactPath(String path, HttpHandler handler) {
+    // TODO: Use RootHandler in tests directly and remove this method?
     var rootHandler = getService(RootHandler.class);
     rootHandler.addExactPath(path, handler);
   }
@@ -79,9 +85,12 @@ public final class TestServices extends Services {
    * @see RootHandler#addPrefixPath(String, HttpHandler)
    */
   public void addPrefixPath(String pathPrefix, HttpHandler handler) {
+    // TODO: Use RootHandler in tests directly and remove this method?
     var rootHandler = getService(RootHandler.class);
     rootHandler.addPrefixPath(pathPrefix, handler);
   }
+
+  // TODO: Consider moving all HTTP-related methods into their own class.
 
   /**
    * The {@linkplain HttpClient HTTP client} that should be used for making

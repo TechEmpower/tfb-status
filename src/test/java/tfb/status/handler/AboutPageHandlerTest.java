@@ -9,32 +9,23 @@ import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link AboutPageHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class AboutPageHandlerTest {
-  private static TestServices services;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that {@code GET /about} produces an HTML response.
    */
   @Test
-  public void testGet() throws IOException, InterruptedException {
+  public void testGet(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<String> response =
         services.httpGetString("/about");
 

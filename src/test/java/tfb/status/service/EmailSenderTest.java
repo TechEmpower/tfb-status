@@ -18,38 +18,25 @@ import javax.mail.BodyPart;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.MailServer;
-import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link EmailSender}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class EmailSenderTest {
-  private static TestServices services;
-  private static MailServer mailServer;
-  private static EmailSender emailSender;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-    mailServer = services.mailServer();
-    emailSender = services.getService(EmailSender.class);
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that {@link EmailSender#sendEmail(String, String, List)} sends the
    * expected email when there are no attachments.
    */
   @Test
-  public void testSendEmailTextOnly() throws MessagingException, IOException {
+  public void testSendEmailTextOnly(EmailSender emailSender,
+                                    MailServer mailServer)
+      throws MessagingException, IOException {
+
     emailSender.sendEmail("subject", "textContent", List.of());
 
     MimeMessage message = mailServer.onlyEmailMessage();
@@ -75,7 +62,10 @@ public final class EmailSenderTest {
    * expected email when there is at least one attachment.
    */
   @Test
-  public void testSendEmailWithAttachments() throws MessagingException, IOException {
+  public void testSendEmailWithAttachments(EmailSender emailSender,
+                                           MailServer mailServer)
+      throws MessagingException, IOException {
+
     String attachedJson = "{\"foo\":\"bar\"}";
 
     DataSource attachment =

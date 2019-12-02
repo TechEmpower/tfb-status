@@ -14,33 +14,24 @@ import crawlercommons.robots.SimpleRobotRulesParser;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link RobotsHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class RobotsHandlerTest {
-  private static TestServices services;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that {@code GET /robots.txt} produces a response that defines the
    * expected rules for robots.
    */
   @Test
-  public void testRobotRules() throws IOException, InterruptedException {
+  public void testRobotRules(TestServices services)
+      throws IOException, InterruptedException {
+
     HttpResponse<byte[]> response =
         services.httpGetBytes("/robots.txt");
 

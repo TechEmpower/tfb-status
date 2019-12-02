@@ -10,36 +10,25 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
+import tfb.status.testlib.TestServicesInjector;
 import tfb.status.view.Results;
 
 /**
  * Tests for {@link DownloadResultsHandler}.
  */
+@ExtendWith(TestServicesInjector.class)
 public final class DownloadResultsHandlerTest {
-  private static TestServices services;
-  private static ObjectMapper objectMapper;
-
-  @BeforeAll
-  public static void beforeAll() {
-    services = new TestServices();
-    objectMapper = services.getService(ObjectMapper.class);
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    services.shutdown();
-  }
-
   /**
    * Verifies that a GET request for a results.json file that exists is
    * successful.
    */
   @Test
-  public void testGetJson() throws IOException, InterruptedException {
+  public void testGetJson(TestServices services, ObjectMapper objectMapper)
+      throws IOException, InterruptedException {
+
     HttpResponse<byte[]> response =
         services.httpGetBytes("/raw/results.2017-12-26-05-07-14-321.json");
 
@@ -57,7 +46,9 @@ public final class DownloadResultsHandlerTest {
    * successful.
    */
   @Test
-  public void testGetZip() throws IOException, InterruptedException {
+  public void testGetZip(TestServices services, ObjectMapper objectMapper)
+      throws IOException, InterruptedException {
+
     HttpResponse<byte[]> response =
         services.httpGetBytes("/raw/results.2017-12-29-23-04-02-541.zip");
 
