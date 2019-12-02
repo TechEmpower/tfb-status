@@ -18,7 +18,6 @@ import java.net.http.HttpResponse;
 import java.security.Principal;
 import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.BasicAuthUtils;
@@ -87,19 +86,6 @@ public final class BasicAuthenticationHandlerTest {
     }
   }
 
-  @BeforeAll
-  public static void beforeAll(TestServices services) {
-    // TODO: Declare handlers within the test methods that use them, avoid using
-    //       @BeforeAll.
-
-    services.addExactPath(
-        "/basicAuth",
-        new BasicAuthenticationHandler(
-            "testRealm",
-            OnlyIdentityManager.INSTANCE,
-            exchange -> {}));
-  }
-
   /**
    * Verifies that {@link BasicAuthenticationHandler} rejects requests that do
    * not specify any credentials.
@@ -107,6 +93,13 @@ public final class BasicAuthenticationHandlerTest {
   @Test
   public void testMissingCredentials(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/basicAuth",
+        new BasicAuthenticationHandler(
+            "testRealm",
+            OnlyIdentityManager.INSTANCE,
+            exchange -> {}));
 
     URI uri = services.httpUri("/basicAuth");
 
@@ -131,6 +124,13 @@ public final class BasicAuthenticationHandlerTest {
   @Test
   public void testInvalidCredentials(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/basicAuth",
+        new BasicAuthenticationHandler(
+            "testRealm",
+            OnlyIdentityManager.INSTANCE,
+            exchange -> {}));
 
     URI uri = services.httpUri("/basicAuth");
 
@@ -162,6 +162,13 @@ public final class BasicAuthenticationHandlerTest {
   @Test
   public void testValidCredentials(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/basicAuth",
+        new BasicAuthenticationHandler(
+            "testRealm",
+            OnlyIdentityManager.INSTANCE,
+            exchange -> {}));
 
     URI uri = services.httpUri("/basicAuth");
 

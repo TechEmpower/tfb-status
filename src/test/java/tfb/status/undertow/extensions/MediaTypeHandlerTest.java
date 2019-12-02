@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
@@ -22,45 +21,6 @@ import tfb.status.testlib.TestServicesInjector;
  */
 @ExtendWith(TestServicesInjector.class)
 public final class MediaTypeHandlerTest {
-  @BeforeAll
-  public static void beforeAll(TestServices services) {
-    // TODO: Declare handlers within the test methods that use them, avoid using
-    //       @BeforeAll.
-
-    services.addExactPath(
-        "/none",
-        new MediaTypeHandler());
-
-    services.addExactPath(
-        "/plaintextOrJson",
-        new MediaTypeHandler()
-            .addMediaType(
-                "text/plain",
-                new FixedResponseBodyHandler("plaintextHandler"))
-            .addMediaType(
-                "application/json",
-                new FixedResponseBodyHandler("jsonHandler")));
-
-    services.addExactPath(
-        "/text",
-        new MediaTypeHandler()
-            .addMediaType(
-                "text/plain;charset=utf-8",
-                new FixedResponseBodyHandler("utf8Handler"))
-            .addMediaType(
-                "text/plain",
-                new FixedResponseBodyHandler("plainHandler"))
-            .addMediaType(
-                "text/*",
-                new FixedResponseBodyHandler("otherHandler")));
-
-    services.addExactPath(
-        "/wildcard",
-        new MediaTypeHandler().addMediaType(
-            "*/*",
-            new FixedResponseBodyHandler("wildcardHandler")));
-  }
-
   /**
    * Verifies that a {@link MediaTypeHandler} with no handlers added rejects all
    * requests.
@@ -68,6 +28,10 @@ public final class MediaTypeHandlerTest {
   @Test
   public void testNoMediaTypesAllowed(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/none",
+        new MediaTypeHandler());
 
     URI uri = services.httpUri("/none");
 
@@ -98,6 +62,16 @@ public final class MediaTypeHandlerTest {
   @Test
   public void testUnrelatedMediaTypes(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/plaintextOrJson",
+        new MediaTypeHandler()
+            .addMediaType(
+                "text/plain",
+                new FixedResponseBodyHandler("plaintextHandler"))
+            .addMediaType(
+                "application/json",
+                new FixedResponseBodyHandler("jsonHandler")));
 
     URI uri = services.httpUri("/plaintextOrJson");
 
@@ -151,6 +125,19 @@ public final class MediaTypeHandlerTest {
   @Test
   public void testMostSpecificMediaType(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/text",
+        new MediaTypeHandler()
+            .addMediaType(
+                "text/plain;charset=utf-8",
+                new FixedResponseBodyHandler("utf8Handler"))
+            .addMediaType(
+                "text/plain",
+                new FixedResponseBodyHandler("plainHandler"))
+            .addMediaType(
+                "text/*",
+                new FixedResponseBodyHandler("otherHandler")));
 
     URI uri = services.httpUri("/text");
 
@@ -241,6 +228,12 @@ public final class MediaTypeHandlerTest {
   @Test
   public void testAnyMediaType(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/wildcard",
+        new MediaTypeHandler().addMediaType(
+            "*/*",
+            new FixedResponseBodyHandler("wildcardHandler")));
 
     URI uri = services.httpUri("/wildcard");
 

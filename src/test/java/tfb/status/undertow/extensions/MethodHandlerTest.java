@@ -17,7 +17,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
@@ -28,37 +27,6 @@ import tfb.status.testlib.TestServicesInjector;
  */
 @ExtendWith(TestServicesInjector.class)
 public final class MethodHandlerTest {
-  @BeforeAll
-  public static void beforeAll(TestServices services) {
-    // TODO: Declare handlers within the test methods that use them, avoid using
-    //       @BeforeAll.
-
-    services.addExactPath(
-        "/none",
-        new MethodHandler());
-
-    services.addExactPath(
-        "/getOnly",
-        new MethodHandler()
-            .addMethod(GET, new FixedResponseBodyHandler("getHandler")));
-
-    services.addExactPath(
-        "/postOnly",
-        new MethodHandler()
-            .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
-
-    services.addExactPath(
-        "/getAndPost",
-        new MethodHandler()
-            .addMethod(GET, new FixedResponseBodyHandler("getHandler"))
-            .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
-
-    services.addExactPath(
-        "/overrideOptions",
-        new MethodHandler()
-            .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler")));
-  }
-
   /**
    * Verifies that a {@link MethodHandler} with no handlers added only allows
    * OPTIONS requests.
@@ -66,6 +34,10 @@ public final class MethodHandlerTest {
   @Test
   public void testNoMethodsAllowed(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/none",
+        new MethodHandler());
 
     URI uri = services.httpUri("/none");
 
@@ -116,6 +88,11 @@ public final class MethodHandlerTest {
   @Test
   public void testGetOnly(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/getOnly",
+        new MethodHandler()
+            .addMethod(GET, new FixedResponseBodyHandler("getHandler")));
 
     URI uri = services.httpUri("/getOnly");
 
@@ -169,6 +146,11 @@ public final class MethodHandlerTest {
   public void testPostOnly(TestServices services)
       throws IOException, InterruptedException {
 
+    services.addExactPath(
+        "/postOnly",
+        new MethodHandler()
+            .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
+
     URI uri = services.httpUri("/postOnly");
 
     HttpResponse<String> response1 =
@@ -219,6 +201,12 @@ public final class MethodHandlerTest {
   @Test
   public void testGetAndPost(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/getAndPost",
+        new MethodHandler()
+            .addMethod(GET, new FixedResponseBodyHandler("getHandler"))
+            .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
 
     URI uri = services.httpUri("/getAndPost");
 
@@ -272,6 +260,11 @@ public final class MethodHandlerTest {
   @Test
   public void testOverrideOptions(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/overrideOptions",
+        new MethodHandler()
+            .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler")));
 
     URI uri = services.httpUri("/overrideOptions");
 

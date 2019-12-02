@@ -10,7 +10,6 @@ import com.google.common.net.MediaType;
 import io.undertow.server.handlers.SetHeaderHandler;
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServices;
@@ -21,51 +20,6 @@ import tfb.status.testlib.TestServicesInjector;
  */
 @ExtendWith(TestServicesInjector.class)
 public final class DefaultToUtf8HandlerTest {
-  @BeforeAll
-  public static void beforeAll(TestServices services) {
-    // TODO: Declare handlers within the test methods that use them, avoid using
-    //       @BeforeAll.
-
-    services.addExactPath(
-        "/utf8",
-        new DefaultToUtf8Handler(
-            new SetHeaderHandler(exchange -> {},
-                                 CONTENT_TYPE,
-                                 "text/plain;charset=utf-8")));
-
-    services.addExactPath(
-        "/otherCharset",
-        new DefaultToUtf8Handler(
-            new SetHeaderHandler(exchange -> {},
-                                 CONTENT_TYPE,
-                                 "text/plain;charset=us-ascii")));
-
-    services.addExactPath(
-        "/missingCharset",
-        new DefaultToUtf8Handler(
-            new SetHeaderHandler(exchange -> {},
-                                 CONTENT_TYPE,
-                                 "text/plain")));
-
-    services.addExactPath(
-        "/missingCharset.js",
-        new DefaultToUtf8Handler(
-            new SetHeaderHandler(exchange -> {},
-                                 CONTENT_TYPE,
-                                 "application/javascript")));
-
-    services.addExactPath(
-        "/nonText",
-        new DefaultToUtf8Handler(
-            new SetHeaderHandler(exchange -> {},
-                                 CONTENT_TYPE,
-                                 "application/octet-stream")));
-
-    services.addExactPath(
-        "/missingContentType",
-        new DefaultToUtf8Handler(exchange -> {}));
-  }
-
   /**
    * Verifies that {@link DefaultToUtf8Handler} does not modify the {@code
    * Content-Type} of text responses that already specify UTF-8 as the charset.
@@ -73,6 +27,13 @@ public final class DefaultToUtf8HandlerTest {
   @Test
   public void testAlreadyUtf8(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/utf8",
+        new DefaultToUtf8Handler(
+            new SetHeaderHandler(exchange -> {},
+                                 CONTENT_TYPE,
+                                 "text/plain;charset=utf-8")));
 
     HttpResponse<String> response =
         services.httpGetString("/utf8");
@@ -95,6 +56,13 @@ public final class DefaultToUtf8HandlerTest {
   public void testOtherCharset(TestServices services)
       throws IOException, InterruptedException {
 
+    services.addExactPath(
+        "/otherCharset",
+        new DefaultToUtf8Handler(
+            new SetHeaderHandler(exchange -> {},
+                                 CONTENT_TYPE,
+                                 "text/plain;charset=us-ascii")));
+
     HttpResponse<String> response =
         services.httpGetString("/otherCharset");
 
@@ -114,6 +82,13 @@ public final class DefaultToUtf8HandlerTest {
   @Test
   public void testMissingCharset(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/missingCharset",
+        new DefaultToUtf8Handler(
+            new SetHeaderHandler(exchange -> {},
+                                 CONTENT_TYPE,
+                                 "text/plain")));
 
     HttpResponse<String> response =
         services.httpGetString("/missingCharset");
@@ -135,6 +110,13 @@ public final class DefaultToUtf8HandlerTest {
   public void testMissingCharset_js(TestServices services)
       throws IOException, InterruptedException {
 
+    services.addExactPath(
+        "/missingCharset.js",
+        new DefaultToUtf8Handler(
+            new SetHeaderHandler(exchange -> {},
+                                 CONTENT_TYPE,
+                                 "application/javascript")));
+
     HttpResponse<String> response =
         services.httpGetString("/missingCharset.js");
 
@@ -154,6 +136,13 @@ public final class DefaultToUtf8HandlerTest {
   @Test
   public void testNonText(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/nonText",
+        new DefaultToUtf8Handler(
+            new SetHeaderHandler(exchange -> {},
+                                 CONTENT_TYPE,
+                                 "application/octet-stream")));
 
     HttpResponse<String> response =
         services.httpGetString("/nonText");
@@ -175,6 +164,10 @@ public final class DefaultToUtf8HandlerTest {
   @Test
   public void testMissingContentType(TestServices services)
       throws IOException, InterruptedException {
+
+    services.addExactPath(
+        "/missingContentType",
+        new DefaultToUtf8Handler(exchange -> {}));
 
     HttpResponse<String> response =
         services.httpGetString("/missingContentType");
