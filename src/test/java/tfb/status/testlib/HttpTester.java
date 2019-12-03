@@ -1,16 +1,19 @@
 package tfb.status.testlib;
 
+import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Objects;
+import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import tfb.status.bootstrap.HttpServer;
 import tfb.status.config.HttpServerConfig;
+import tfb.status.handler.RootHandler;
 
 /**
  * Provides an API for making requests to the local HTTP server during tests.
@@ -19,13 +22,31 @@ import tfb.status.config.HttpServerConfig;
 public final class HttpTester {
   private final Provider<HttpClient> clientProvider;
   private final Provider<HttpServerConfig> configProvider;
+  private final Provider<RootHandler> rootHandlerProvider;
 
   @Inject
   public HttpTester(Provider<HttpClient> clientProvider,
-                    Provider<HttpServerConfig> configProvider) {
+                    Provider<HttpServerConfig> configProvider,
+                    Provider<RootHandler> rootHandlerProvider) {
 
     this.clientProvider = Objects.requireNonNull(clientProvider);
     this.configProvider = Objects.requireNonNull(configProvider);
+    this.rootHandlerProvider = Objects.requireNonNull(rootHandlerProvider);
+  }
+
+  /**
+   * Adds the specified HTTP handler at a new and distinct path, then returns
+   * that path.
+   *
+   * @param handler the HTTP handler
+   * @return the path
+   */
+  public String addHandler(HttpHandler handler) {
+    Objects.requireNonNull(handler);
+    String path = "/test/" + UUID.randomUUID().toString();
+    RootHandler rootHandler = rootHandlerProvider.get();
+    rootHandler.addExactPath(path, handler);
+    return path;
   }
 
   /**

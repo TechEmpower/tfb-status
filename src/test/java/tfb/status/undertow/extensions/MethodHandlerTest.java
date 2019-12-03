@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.base.Splitter;
+import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -19,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.handler.RootHandler;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
@@ -33,15 +33,12 @@ public final class MethodHandlerTest {
    * OPTIONS requests.
    */
   @Test
-  public void testNoMethodsAllowed(HttpTester http,
-                                   RootHandler rootHandler)
+  public void testNoMethodsAllowed(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/none" + getClass().getName();
+    HttpHandler handler = new MethodHandler();
 
-    rootHandler.addExactPath(
-        path,
-        new MethodHandler());
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 
@@ -90,16 +87,14 @@ public final class MethodHandlerTest {
    * allows GET, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetOnly(HttpTester http,
-                          RootHandler rootHandler)
+  public void testGetOnly(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/getOnly" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new MethodHandler()
-            .addMethod(GET, new FixedResponseBodyHandler("getHandler")));
+            .addMethod(GET, new FixedResponseBodyHandler("getHandler"));
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 
@@ -150,16 +145,14 @@ public final class MethodHandlerTest {
    * allows POST and OPTIONS requests.
    */
   @Test
-  public void testPostOnly(HttpTester http,
-                           RootHandler rootHandler)
+  public void testPostOnly(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/postOnly" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new MethodHandler()
-            .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
+            .addMethod(POST, new FixedResponseBodyHandler("postHandler"));
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 
@@ -209,17 +202,15 @@ public final class MethodHandlerTest {
    * allows GET, POST, HEAD, and OPTIONS requests.
    */
   @Test
-  public void testGetAndPost(HttpTester http,
-                             RootHandler rootHandler)
+  public void testGetAndPost(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/getAndPost" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new MethodHandler()
             .addMethod(GET, new FixedResponseBodyHandler("getHandler"))
-            .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
+            .addMethod(POST, new FixedResponseBodyHandler("postHandler"));
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 
@@ -271,16 +262,14 @@ public final class MethodHandlerTest {
    * {@link MethodHandler}.
    */
   @Test
-  public void testOverrideOptions(HttpTester http,
-                                  RootHandler rootHandler)
+  public void testOverrideOptions(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/overrideOptions" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new MethodHandler()
-            .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler")));
+            .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler"));
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 

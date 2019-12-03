@@ -11,6 +11,7 @@ import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
+import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -20,7 +21,6 @@ import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.handler.RootHandler;
 import tfb.status.testlib.BasicAuthUtils;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
@@ -92,18 +92,16 @@ public final class BasicAuthenticationHandlerTest {
    * not specify any credentials.
    */
   @Test
-  public void testMissingCredentials(HttpTester http,
-                                     RootHandler rootHandler)
+  public void testMissingCredentials(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/basicAuth" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new BasicAuthenticationHandler(
             "testRealm",
             OnlyIdentityManager.INSTANCE,
-            exchange -> {}));
+            exchange -> {});
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 
@@ -126,18 +124,16 @@ public final class BasicAuthenticationHandlerTest {
    * specify invalid credentials.
    */
   @Test
-  public void testInvalidCredentials(HttpTester http,
-                                     RootHandler rootHandler)
+  public void testInvalidCredentials(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/basicAuth" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new BasicAuthenticationHandler(
             "testRealm",
             OnlyIdentityManager.INSTANCE,
-            exchange -> {}));
+            exchange -> {});
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 
@@ -167,18 +163,16 @@ public final class BasicAuthenticationHandlerTest {
    * specify valid credentials.
    */
   @Test
-  public void testValidCredentials(HttpTester http,
-                                   RootHandler rootHandler)
+  public void testValidCredentials(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/basicAuth" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new BasicAuthenticationHandler(
             "testRealm",
             OnlyIdentityManager.INSTANCE,
-            exchange -> {}));
+            exchange -> {});
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 

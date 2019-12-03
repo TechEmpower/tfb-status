@@ -6,11 +6,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.handler.RootHandler;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
@@ -24,17 +24,14 @@ public final class FixedResponseBodyHandlerTest {
    * Verifies that a {@link FixedResponseBodyHandler} can send a byte array.
    */
   @Test
-  public void testBytes(HttpTester http,
-                        RootHandler rootHandler)
+  public void testBytes(HttpTester http)
       throws IOException, InterruptedException {
 
     byte[] expectedBytes = "hello".getBytes(UTF_8);
 
-    String path = "/bytes" + getClass().getName();
+    HttpHandler handler = new FixedResponseBodyHandler(expectedBytes);
 
-    rootHandler.addExactPath(
-        path,
-        new FixedResponseBodyHandler(expectedBytes));
+    String path = http.addHandler(handler);
 
     HttpResponse<byte[]> response = http.getBytes(path);
 
@@ -49,17 +46,14 @@ public final class FixedResponseBodyHandlerTest {
    * Verifies that a {@link FixedResponseBodyHandler} can send a UTF-8 string.
    */
   @Test
-  public void testUtf8(HttpTester http,
-                       RootHandler rootHandler)
+  public void testUtf8(HttpTester http)
       throws IOException, InterruptedException {
 
     String expectedString = "hi";
 
-    String path = "/utf8" + getClass().getName();
+    HttpHandler handler = new FixedResponseBodyHandler(expectedString);
 
-    rootHandler.addExactPath(
-        path,
-        new FixedResponseBodyHandler(expectedString));
+    String path = http.addHandler(handler);
 
     HttpResponse<byte[]> response = http.getBytes(path);
 
@@ -75,17 +69,14 @@ public final class FixedResponseBodyHandlerTest {
    * charset other than UTF-8.
    */
   @Test
-  public void testNotUtf8(HttpTester http,
-                          RootHandler rootHandler)
+  public void testNotUtf8(HttpTester http)
       throws IOException, InterruptedException {
 
     String expectedString = "hey";
 
-    String path = "/utf16" + getClass().getName();
+    HttpHandler handler = new FixedResponseBodyHandler(expectedString, UTF_16);
 
-    rootHandler.addExactPath(
-        path,
-        new FixedResponseBodyHandler(expectedString, UTF_16));
+    String path = http.addHandler(handler);
 
     HttpResponse<byte[]> response = http.getBytes(path);
 
@@ -101,17 +92,14 @@ public final class FixedResponseBodyHandlerTest {
    * FixedResponseBodyHandler} each have the same response.
    */
   @Test
-  public void testMultipleRequests(HttpTester http,
-                                   RootHandler rootHandler)
+  public void testMultipleRequests(HttpTester http)
       throws IOException, InterruptedException {
 
     String expectedString = "greetings";
 
-    String path = "/multiple" + getClass().getName();
+    HttpHandler handler = new FixedResponseBodyHandler(expectedString);
 
-    rootHandler.addExactPath(
-        path,
-        new FixedResponseBodyHandler(expectedString));
+    String path = http.addHandler(handler);
 
     HttpResponse<String> response1 = http.getString(path);
     HttpResponse<String> response2 = http.getString(path);

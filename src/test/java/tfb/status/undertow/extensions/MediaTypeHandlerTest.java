@@ -7,13 +7,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.net.MediaType;
+import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.handler.RootHandler;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
@@ -27,15 +27,12 @@ public final class MediaTypeHandlerTest {
    * requests.
    */
   @Test
-  public void testNoMediaTypesAllowed(HttpTester http,
-                                      RootHandler rootHandler)
+  public void testNoMediaTypesAllowed(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/none" + getClass().getName();
+    HttpHandler handler = new MediaTypeHandler();
 
-    rootHandler.addExactPath(
-        path,
-        new MediaTypeHandler());
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 
@@ -64,21 +61,19 @@ public final class MediaTypeHandlerTest {
    * handler when the media types for each handler are unrelated.
    */
   @Test
-  public void testUnrelatedMediaTypes(HttpTester http,
-                                      RootHandler rootHandler)
+  public void testUnrelatedMediaTypes(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/plaintextOrJson" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new MediaTypeHandler()
             .addMediaType(
                 "text/plain",
                 new FixedResponseBodyHandler("plaintextHandler"))
             .addMediaType(
                 "application/json",
-                new FixedResponseBodyHandler("jsonHandler")));
+                new FixedResponseBodyHandler("jsonHandler"));
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 
@@ -130,14 +125,10 @@ public final class MediaTypeHandlerTest {
    * and overlapping.
    */
   @Test
-  public void testMostSpecificMediaType(HttpTester http,
-                                        RootHandler rootHandler)
+  public void testMostSpecificMediaType(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/text" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new MediaTypeHandler()
             .addMediaType(
                 "text/plain;charset=utf-8",
@@ -147,7 +138,9 @@ public final class MediaTypeHandlerTest {
                 new FixedResponseBodyHandler("plainHandler"))
             .addMediaType(
                 "text/*",
-                new FixedResponseBodyHandler("otherHandler")));
+                new FixedResponseBodyHandler("otherHandler"));
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 
@@ -222,8 +215,9 @@ public final class MediaTypeHandlerTest {
    */
   @Test
   public void testUnusableHandlerRejected() {
-    var handler = new MediaTypeHandler();
-    handler.addMediaType("text/*", exchange -> {});
+    MediaTypeHandler handler =
+        new MediaTypeHandler()
+            .addMediaType("text/*", exchange -> {});
 
     assertThrows(
         IllegalStateException.class,
@@ -236,17 +230,15 @@ public final class MediaTypeHandlerTest {
    * including requests with no {@code Content-Type} header at all.
    */
   @Test
-  public void testAnyMediaType(HttpTester http,
-                               RootHandler rootHandler)
+  public void testAnyMediaType(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/wildcard" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new MediaTypeHandler().addMediaType(
             "*/*",
-            new FixedResponseBodyHandler("wildcardHandler")));
+            new FixedResponseBodyHandler("wildcardHandler"));
+
+    String path = http.addHandler(handler);
 
     URI uri = http.uri(path);
 

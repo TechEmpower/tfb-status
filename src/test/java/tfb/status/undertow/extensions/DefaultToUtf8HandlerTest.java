@@ -7,12 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import com.google.common.net.MediaType;
+import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.handler.RootHandler;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
@@ -26,18 +26,16 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of text responses that already specify UTF-8 as the charset.
    */
   @Test
-  public void testAlreadyUtf8(HttpTester http,
-                              RootHandler rootHandler)
+  public void testAlreadyUtf8(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/utf8" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
-                                 "text/plain;charset=utf-8")));
+                                 "text/plain;charset=utf-8"));
+
+    String path = http.addHandler(handler);
 
     HttpResponse<String> response =
         http.getString(path);
@@ -57,18 +55,16 @@ public final class DefaultToUtf8HandlerTest {
    * UTF-8.
    */
   @Test
-  public void testOtherCharset(HttpTester http,
-                               RootHandler rootHandler)
+  public void testOtherCharset(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/otherCharset" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
-                                 "text/plain;charset=us-ascii")));
+                                 "text/plain;charset=us-ascii"));
+
+    String path = http.addHandler(handler);
 
     HttpResponse<String> response =
         http.getString(path);
@@ -87,18 +83,16 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of text responses that do not specify a charset.
    */
   @Test
-  public void testMissingCharset(HttpTester http,
-                                 RootHandler rootHandler)
+  public void testMissingCharset(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/missingCharset" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
-                                 "text/plain")));
+                                 "text/plain"));
+
+    String path = http.addHandler(handler);
 
     HttpResponse<String> response =
         http.getString(path);
@@ -117,18 +111,16 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of JavaScript responses that do not specify a charset.
    */
   @Test
-  public void testMissingCharset_js(HttpTester http,
-                                    RootHandler rootHandler)
+  public void testMissingCharset_js(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/missingCharset.js" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
-                                 "application/javascript")));
+                                 "application/javascript"));
+
+    String path = http.addHandler(handler);
 
     HttpResponse<String> response =
         http.getString(path);
@@ -147,18 +139,16 @@ public final class DefaultToUtf8HandlerTest {
    * Content-Type} of non-text responses.
    */
   @Test
-  public void testNonText(HttpTester http,
-                          RootHandler rootHandler)
+  public void testNonText(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/nonText" + getClass().getName();
-
-    rootHandler.addExactPath(
-        path,
+    HttpHandler handler =
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
-                                 "application/octet-stream")));
+                                 "application/octet-stream"));
+
+    String path = http.addHandler(handler);
 
     HttpResponse<String> response =
         http.getString(path);
@@ -178,15 +168,12 @@ public final class DefaultToUtf8HandlerTest {
    * all.
    */
   @Test
-  public void testMissingContentType(HttpTester http,
-                                     RootHandler rootHandler)
+  public void testMissingContentType(HttpTester http)
       throws IOException, InterruptedException {
 
-    String path = "/missingContentType" + getClass().getName();
+    HttpHandler handler = new DefaultToUtf8Handler(exchange -> {});
 
-    rootHandler.addExactPath(
-        path,
-        new DefaultToUtf8Handler(exchange -> {}));
+    String path = http.addHandler(handler);
 
     HttpResponse<String> response =
         http.getString(path);
