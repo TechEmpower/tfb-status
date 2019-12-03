@@ -2,6 +2,7 @@ package tfb.status.bootstrap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Ticker;
+import io.undertow.server.HttpHandler;
 import java.nio.file.FileSystem;
 import java.time.Clock;
 import java.util.Optional;
@@ -25,6 +26,7 @@ import tfb.status.handler.HomePageHandler;
 import tfb.status.handler.HomeUpdatesHandler;
 import tfb.status.handler.RobotsHandler;
 import tfb.status.handler.RootHandler;
+import tfb.status.handler.Router;
 import tfb.status.handler.SaveAttributesHandler;
 import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
@@ -81,6 +83,11 @@ public final class ServicesBinder extends AbstractBinder {
 
     bindFactory(EmailConfigFactory.class, Singleton.class)
         .to(new TypeLiteral<Optional<EmailConfig>>() {})
+        .in(Singleton.class);
+
+    bind(Router.class)
+        .to(HttpHandler.class)
+        .to(Router.class)
         .in(Singleton.class);
 
     bindAsContract(HttpServer.class).in(Singleton.class);

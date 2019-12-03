@@ -1,6 +1,7 @@
 package tfb.status.testlib;
 
 import com.google.common.base.Ticker;
+import io.undertow.server.HttpHandler;
 import java.net.http.HttpClient;
 import java.nio.file.FileSystem;
 import java.time.Clock;
@@ -35,6 +36,12 @@ final class TestServicesBinder extends AbstractBinder {
     bindFactory(HttpClientFactory.class, Singleton.class)
         .to(HttpClient.class)
         .in(Singleton.class);
+
+    bind(TestRouter.class)
+        .to(HttpHandler.class)
+        .to(TestRouter.class)
+        .in(Singleton.class)
+        .ranked(1); // override the default router
 
     bindAsContract(HttpTester.class).in(Singleton.class);
 
