@@ -96,9 +96,8 @@ public final class MinifiedTestDefinition {
       @JsonProperty(value = "i", required = true)
       String name,
 
-      @Nullable
       @JsonProperty(value = "t", required = false)
-      String displayName,
+      @Nullable String displayName,
 
       @JsonProperty(value = "w", required = true)
       String webServer,

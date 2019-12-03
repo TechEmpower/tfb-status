@@ -45,13 +45,15 @@ public final class EmailSender {
    */
   @Inject
   public EmailSender(Optional<EmailConfig> optionalConfig) {
-    this.config = optionalConfig.orElse(null);
+    EmailConfig config = optionalConfig.orElse(null);
 
     if (config != null) {
       verifyHostAndPort(config.host, config.port);
       verifyEmailAddress(config.from);
       verifyEmailAddress(config.to);
     }
+
+    this.config = config;
   }
 
   private static void verifyHostAndPort(String host, int port) {
