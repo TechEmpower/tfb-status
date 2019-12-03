@@ -30,11 +30,13 @@ public final class FixedResponseBodyHandlerTest {
 
     byte[] expectedBytes = "hello".getBytes(UTF_8);
 
+    String path = "/bytes" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/bytes",
+        path,
         new FixedResponseBodyHandler(expectedBytes));
 
-    HttpResponse<byte[]> response = http.getBytes("/bytes");
+    HttpResponse<byte[]> response = http.getBytes(path);
 
     assertEquals(OK, response.statusCode());
 
@@ -53,11 +55,13 @@ public final class FixedResponseBodyHandlerTest {
 
     String expectedString = "hi";
 
+    String path = "/utf8" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/utf8",
+        path,
         new FixedResponseBodyHandler(expectedString));
 
-    HttpResponse<byte[]> response = http.getBytes("/utf8");
+    HttpResponse<byte[]> response = http.getBytes(path);
 
     assertEquals(OK, response.statusCode());
 
@@ -77,11 +81,13 @@ public final class FixedResponseBodyHandlerTest {
 
     String expectedString = "hey";
 
+    String path = "/utf16" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/utf16",
+        path,
         new FixedResponseBodyHandler(expectedString, UTF_16));
 
-    HttpResponse<byte[]> response = http.getBytes("/utf16");
+    HttpResponse<byte[]> response = http.getBytes(path);
 
     assertEquals(OK, response.statusCode());
 
@@ -101,12 +107,14 @@ public final class FixedResponseBodyHandlerTest {
 
     String expectedString = "greetings";
 
+    String path = "/multiple" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/multiple",
+        path,
         new FixedResponseBodyHandler(expectedString));
 
-    HttpResponse<String> response1 = http.getString("/multiple");
-    HttpResponse<String> response2 = http.getString("/multiple");
+    HttpResponse<String> response1 = http.getString(path);
+    HttpResponse<String> response2 = http.getString(path);
 
     assertEquals(OK, response1.statusCode());
     assertEquals(OK, response2.statusCode());

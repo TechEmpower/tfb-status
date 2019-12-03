@@ -30,15 +30,17 @@ public final class DefaultToUtf8HandlerTest {
                               RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/utf8" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/utf8",
+        path,
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
                                  "text/plain;charset=utf-8")));
 
     HttpResponse<String> response =
-        http.getString("/utf8");
+        http.getString(path);
 
     assertEquals(OK, response.statusCode());
 
@@ -59,15 +61,17 @@ public final class DefaultToUtf8HandlerTest {
                                RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/otherCharset" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/otherCharset",
+        path,
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
                                  "text/plain;charset=us-ascii")));
 
     HttpResponse<String> response =
-        http.getString("/otherCharset");
+        http.getString(path);
 
     assertEquals(OK, response.statusCode());
 
@@ -87,15 +91,17 @@ public final class DefaultToUtf8HandlerTest {
                                  RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/missingCharset" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/missingCharset",
+        path,
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
                                  "text/plain")));
 
     HttpResponse<String> response =
-        http.getString("/missingCharset");
+        http.getString(path);
 
     assertEquals(OK, response.statusCode());
 
@@ -115,15 +121,17 @@ public final class DefaultToUtf8HandlerTest {
                                     RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/missingCharset.js" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/missingCharset.js",
+        path,
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
                                  "application/javascript")));
 
     HttpResponse<String> response =
-        http.getString("/missingCharset.js");
+        http.getString(path);
 
     assertEquals(OK, response.statusCode());
 
@@ -143,15 +151,17 @@ public final class DefaultToUtf8HandlerTest {
                           RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/nonText" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/nonText",
+        path,
         new DefaultToUtf8Handler(
             new SetHeaderHandler(exchange -> {},
                                  CONTENT_TYPE,
                                  "application/octet-stream")));
 
     HttpResponse<String> response =
-        http.getString("/nonText");
+        http.getString(path);
 
     assertEquals(OK, response.statusCode());
 
@@ -172,12 +182,14 @@ public final class DefaultToUtf8HandlerTest {
                                      RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/missingContentType" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/missingContentType",
+        path,
         new DefaultToUtf8Handler(exchange -> {}));
 
     HttpResponse<String> response =
-        http.getString("/missingContentType");
+        http.getString(path);
 
     assertEquals(OK, response.statusCode());
 

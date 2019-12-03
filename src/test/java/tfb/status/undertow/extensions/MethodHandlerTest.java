@@ -37,11 +37,13 @@ public final class MethodHandlerTest {
                                    RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/none" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/none",
+        path,
         new MethodHandler());
 
-    URI uri = http.uri("/none");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response1 =
         http.client().send(
@@ -92,12 +94,14 @@ public final class MethodHandlerTest {
                           RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/getOnly" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/getOnly",
+        path,
         new MethodHandler()
             .addMethod(GET, new FixedResponseBodyHandler("getHandler")));
 
-    URI uri = http.uri("/getOnly");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response1 =
         http.client().send(
@@ -150,12 +154,14 @@ public final class MethodHandlerTest {
                            RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/postOnly" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/postOnly",
+        path,
         new MethodHandler()
             .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
 
-    URI uri = http.uri("/postOnly");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response1 =
         http.client().send(
@@ -207,13 +213,15 @@ public final class MethodHandlerTest {
                              RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/getAndPost" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/getAndPost",
+        path,
         new MethodHandler()
             .addMethod(GET, new FixedResponseBodyHandler("getHandler"))
             .addMethod(POST, new FixedResponseBodyHandler("postHandler")));
 
-    URI uri = http.uri("/getAndPost");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response1 =
         http.client().send(
@@ -267,12 +275,14 @@ public final class MethodHandlerTest {
                                   RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/overrideOptions" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/overrideOptions",
+        path,
         new MethodHandler()
             .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler")));
 
-    URI uri = http.uri("/overrideOptions");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response =
         http.client().send(

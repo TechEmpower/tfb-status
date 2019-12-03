@@ -31,11 +31,13 @@ public final class MediaTypeHandlerTest {
                                       RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/none" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/none",
+        path,
         new MediaTypeHandler());
 
-    URI uri = http.uri("/none");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response1 =
         http.client().send(
@@ -66,8 +68,10 @@ public final class MediaTypeHandlerTest {
                                       RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/plaintextOrJson" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/plaintextOrJson",
+        path,
         new MediaTypeHandler()
             .addMediaType(
                 "text/plain",
@@ -76,7 +80,7 @@ public final class MediaTypeHandlerTest {
                 "application/json",
                 new FixedResponseBodyHandler("jsonHandler")));
 
-    URI uri = http.uri("/plaintextOrJson");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response1 =
         http.client().send(
@@ -130,8 +134,10 @@ public final class MediaTypeHandlerTest {
                                         RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/text" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/text",
+        path,
         new MediaTypeHandler()
             .addMediaType(
                 "text/plain;charset=utf-8",
@@ -143,7 +149,7 @@ public final class MediaTypeHandlerTest {
                 "text/*",
                 new FixedResponseBodyHandler("otherHandler")));
 
-    URI uri = http.uri("/text");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response1 =
         http.client().send(
@@ -234,13 +240,15 @@ public final class MediaTypeHandlerTest {
                                RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/wildcard" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/wildcard",
+        path,
         new MediaTypeHandler().addMediaType(
             "*/*",
             new FixedResponseBodyHandler("wildcardHandler")));
 
-    URI uri = http.uri("/wildcard");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response1 =
         http.client().send(

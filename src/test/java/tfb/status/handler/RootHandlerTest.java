@@ -27,18 +27,20 @@ public final class RootHandlerTest {
                                           RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/exact" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/exact",
+        path,
         new FixedResponseBodyHandler("exactSingle"));
 
     HttpResponse<String> response1 =
-        http.getString("/exact");
+        http.getString(path);
 
     assertEquals(OK, response1.statusCode());
     assertEquals("exactSingle", response1.body());
 
     HttpResponse<String> response2 =
-        http.getString("/exact/sub/path");
+        http.getString(path + "/sub/path");
 
     assertEquals(NOT_FOUND, response2.statusCode());
   }
@@ -52,18 +54,20 @@ public final class RootHandlerTest {
                                          RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/complex/exact/path" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/complex/exact/path",
+        path,
         new FixedResponseBodyHandler("exactMulti"));
 
     HttpResponse<String> response1 =
-        http.getString("/complex/exact/path");
+        http.getString(path);
 
     assertEquals(OK, response1.statusCode());
     assertEquals("exactMulti", response1.body());
 
     HttpResponse<String> response2 =
-        http.getString("/complex/exact/path/sub/path");
+        http.getString(path + "/sub/path");
 
     assertEquals(NOT_FOUND, response2.statusCode());
   }
@@ -77,18 +81,20 @@ public final class RootHandlerTest {
                                            RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/prefix" + getClass().getName();
+
     rootHandler.addPrefixPath(
-        "/prefix",
+        path,
         new FixedResponseBodyHandler("prefixSingle"));
 
     HttpResponse<String> response1 =
-        http.getString("/prefix");
+        http.getString(path);
 
     assertEquals(OK, response1.statusCode());
     assertEquals("prefixSingle", response1.body());
 
     HttpResponse<String> response2 =
-        http.getString("/prefix/sub/path");
+        http.getString(path + "/sub/path");
 
     assertEquals(OK, response2.statusCode());
     assertEquals("prefixSingle", response2.body());
@@ -103,18 +109,20 @@ public final class RootHandlerTest {
                                           RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/complex/prefix/path" + getClass().getName();
+
     rootHandler.addPrefixPath(
-        "/complex/prefix/path",
+        path,
         new FixedResponseBodyHandler("prefixMulti"));
 
     HttpResponse<String> response1 =
-        http.getString("/complex/prefix/path");
+        http.getString(path);
 
     assertEquals(OK, response1.statusCode());
     assertEquals("prefixMulti", response1.body());
 
     HttpResponse<String> response2 =
-        http.getString("/complex/prefix/path/sub/path");
+        http.getString(path + "/sub/path");
 
     assertEquals(OK, response2.statusCode());
     assertEquals("prefixMulti", response2.body());

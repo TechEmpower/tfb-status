@@ -96,14 +96,16 @@ public final class BasicAuthenticationHandlerTest {
                                      RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/basicAuth" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/basicAuth",
+        path,
         new BasicAuthenticationHandler(
             "testRealm",
             OnlyIdentityManager.INSTANCE,
             exchange -> {}));
 
-    URI uri = http.uri("/basicAuth");
+    URI uri = http.uri(path);
 
     HttpResponse<String> response =
         http.client().send(
@@ -128,14 +130,16 @@ public final class BasicAuthenticationHandlerTest {
                                      RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/basicAuth" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/basicAuth",
+        path,
         new BasicAuthenticationHandler(
             "testRealm",
             OnlyIdentityManager.INSTANCE,
             exchange -> {}));
 
-    URI uri = http.uri("/basicAuth");
+    URI uri = http.uri(path);
 
     String invalidCredentials =
         BasicAuthUtils.writeAuthorizationHeader(
@@ -167,14 +171,16 @@ public final class BasicAuthenticationHandlerTest {
                                    RootHandler rootHandler)
       throws IOException, InterruptedException {
 
+    String path = "/basicAuth" + getClass().getName();
+
     rootHandler.addExactPath(
-        "/basicAuth",
+        path,
         new BasicAuthenticationHandler(
             "testRealm",
             OnlyIdentityManager.INSTANCE,
             exchange -> {}));
 
-    URI uri = http.uri("/basicAuth");
+    URI uri = http.uri(path);
 
     String validCredentials =
         BasicAuthUtils.writeAuthorizationHeader(
