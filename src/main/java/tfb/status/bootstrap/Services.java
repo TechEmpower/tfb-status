@@ -18,7 +18,7 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
  * @see #getService(Class)
  * @see #shutdown()
  */
-public class Services {
+public final class Services {
   private final ServiceLocator serviceLocator =
       ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
@@ -38,7 +38,7 @@ public class Services {
    * @param binders the binders that register all of this application's service
    *        classes
    */
-  protected Services(Binder... binders) {
+  public Services(Binder... binders) {
     Objects.requireNonNull(binders);
     ServiceLocatorUtilities.bind(serviceLocator, binders);
   }

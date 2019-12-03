@@ -49,27 +49,32 @@ public final class TestServicesInjector implements ParameterResolver {
     ExtensionContext.Store store =
         extensionContext.getRoot().getStore(NAMESPACE);
 
-    return store.getOrComputeIfAbsent(
-        /* key= */ Services.class,
-        /* defaultCreator= */ key -> new TestServices(),
-        /* requiredType= */ Services.class);
+    StoredServices stored =
+        store.getOrComputeIfAbsent(
+            /* key= */ StoredServices.class,
+            /* defaultCreator= */ key -> new StoredServices(),
+            /* requiredType= */ StoredServices.class);
+
+    return stored.services;
   }
 
   private static final ExtensionContext.Namespace NAMESPACE =
       ExtensionContext.Namespace.create(TestServicesInjector.class);
 
-  private static final class TestServices
-      extends Services
+  /**
+   * Wraps {@link Services} in {@link ExtensionContext.Store.CloseableResource},
+   * ensuring that the services are shut down when the store is closed.
+   */
+  private static final class StoredServices
       implements ExtensionContext.Store.CloseableResource {
 
-    TestServices() {
-      super(new ServicesBinder("test_config.yml"),
-            new TestServicesBinder());
-    }
+    final Services services =
+        new Services(new ServicesBinder("test_config.yml"),
+                     new TestServicesBinder());
 
     @Override
     public void close() {
-      shutdown();
+      services.shutdown();
     }
   }
 }
