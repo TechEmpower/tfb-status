@@ -1,16 +1,14 @@
 package tfb.status.testlib;
 
-import java.util.Optional;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
-import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import tfb.status.bootstrap.Services;
 import tfb.status.bootstrap.ServicesBinder;
 
 /**
- * Allows the HTTP handlers and service classes of this application to be
- * injected into tests as parameters.
+ * Allows instances of service classes to be injected into test methods as
+ * parameters.
  *
  * <p>Example usage:
  *
@@ -29,8 +27,7 @@ import tfb.status.bootstrap.ServicesBinder;
 public final class TestServicesInjector implements ParameterResolver {
   @Override
   public boolean supportsParameter(ParameterContext parameterContext,
-                                   ExtensionContext extensionContext)
-      throws ParameterResolutionException {
+                                   ExtensionContext extensionContext) {
 
     Class<?> type = parameterContext.getParameter().getType();
     Services services = getServices(extensionContext);
@@ -39,8 +36,7 @@ public final class TestServicesInjector implements ParameterResolver {
 
   @Override
   public Object resolveParameter(ParameterContext parameterContext,
-                                 ExtensionContext extensionContext)
-      throws ParameterResolutionException {
+                                 ExtensionContext extensionContext) {
 
     Class<?> type = parameterContext.getParameter().getType();
     Services services = getServices(extensionContext);
@@ -48,44 +44,19 @@ public final class TestServicesInjector implements ParameterResolver {
   }
 
   private Services getServices(ExtensionContext extensionContext) {
-    //
-    // We're expecting that extensionContext is one of these:
-    //
-    //   a) The context for a test class, as in a static @BeforeAll method.
-    //   b) The context for a test method, as in a non-static @Test method.
-    //
-    // In any other unanticipated case we'd like to fail loudly so that we know
-    // to investigate further.
-    //
-
-    Class<?> testClass = extensionContext.getRequiredTestClass();
-
-    ExtensionContext testClassContext = extensionContext;
-    while (testClassContext.getElement().orElse(null) != testClass) {
-      Optional<ExtensionContext> parent = testClassContext.getParent();
-      testClassContext = parent.orElseThrow(
-          () -> new ParameterResolutionException(
-              "Unexpected extension context "
-                  + extensionContext
-                  + " that does not have a test class context as a parent"));
-    }
-
-    //
-    // Since the store we used is scoped to the test class, each test class will
-    // construct its own TestServices instance.
-    //
-    // TODO: Consider using the root context instead.  That would mean all tests
-    //       classes share a single TestServices instance, which would speed up
-    //       the execution of the full test suite.
-    //
+    // Since we use the root context's store, a single set of services is shared
+    // between all tests.
     ExtensionContext.Store store =
-        testClassContext.getStore(ExtensionContext.Namespace.GLOBAL);
+        extensionContext.getRoot().getStore(NAMESPACE);
 
     return store.getOrComputeIfAbsent(
-        Services.class,
-        key -> new TestServices(),
-        Services.class);
+        /* key= */ Services.class,
+        /* defaultCreator= */ key -> new TestServices(),
+        /* requiredType= */ Services.class);
   }
+
+  private static final ExtensionContext.Namespace NAMESPACE =
+      ExtensionContext.Namespace.create(TestServicesInjector.class);
 
   private static final class TestServices
       extends Services
