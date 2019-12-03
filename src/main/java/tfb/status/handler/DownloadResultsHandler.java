@@ -17,6 +17,7 @@ import tfb.status.undertow.extensions.MethodHandler;
  * Handles requests to download full, raw, previously-uploaded results files.
  */
 @Singleton
+@PrefixPath("/raw")
 public final class DownloadResultsHandler implements HttpHandler {
   private final HttpHandler delegate;
 

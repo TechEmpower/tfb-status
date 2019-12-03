@@ -32,6 +32,7 @@ import tfb.status.view.AttributeLookup;
  * Handles requests to replace the content of the tfb_lookup.json file on disk.
  */
 @Singleton
+@ExactPath("/saveAttributes")
 public final class SaveAttributesHandler implements HttpHandler {
   private final HttpHandler delegate;
 

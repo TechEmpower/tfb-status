@@ -27,6 +27,7 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests for the home page.
  */
 @Singleton
+@ExactPath("/")
 public final class HomePageHandler implements HttpHandler {
   private final HttpHandler delegate;
 

@@ -22,6 +22,7 @@ import tfb.status.undertow.extensions.MethodHandler;
  * on this application's {@linkplain AssetsConfig assets configuration}.
  */
 @Singleton
+@PrefixPath("/assets")
 public final class AssetsHandler implements HttpHandler {
   private final HttpHandler delegate;
 

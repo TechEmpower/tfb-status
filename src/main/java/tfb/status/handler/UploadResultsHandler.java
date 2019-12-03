@@ -63,6 +63,7 @@ import tfb.status.view.Results;
  * {@code Content-Type} must be {@code application/zip}.
  */
 @Singleton
+@ExactPath("/upload")
 public final class UploadResultsHandler implements HttpHandler {
   private final HttpHandler delegate;
 

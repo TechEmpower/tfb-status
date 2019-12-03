@@ -33,6 +33,7 @@ import tfb.status.view.HomePageView.ResultsView;
  * supports both server-sent events (SSE) and web sockets.
  */
 @Singleton
+@ExactPath("/updates")
 public final class HomeUpdatesHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;
   private final HomeResultsReader homeResultsReader;

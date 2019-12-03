@@ -48,6 +48,7 @@ import tfb.status.view.UnzippedDirectoryView.FileView;
  * Handles requests to extract files from within results.zip files.
  */
 @Singleton
+@PrefixPath("/unzip")
 public final class UnzipResultsHandler implements HttpHandler {
   private final HttpHandler delegate;
 

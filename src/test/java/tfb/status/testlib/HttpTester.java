@@ -20,16 +20,16 @@ import tfb.status.config.HttpServerConfig;
 public final class HttpTester {
   private final Provider<HttpClient> clientProvider;
   private final Provider<HttpServerConfig> configProvider;
-  private final Provider<TestRouter> testRouterProvider;
+  private final Provider<TestHandler> testHandlerProvider;
 
   @Inject
   public HttpTester(Provider<HttpClient> clientProvider,
                     Provider<HttpServerConfig> configProvider,
-                    Provider<TestRouter> testRouterProvider) {
+                    Provider<TestHandler> testHandlerProvider) {
 
     this.clientProvider = Objects.requireNonNull(clientProvider);
     this.configProvider = Objects.requireNonNull(configProvider);
-    this.testRouterProvider = Objects.requireNonNull(testRouterProvider);
+    this.testHandlerProvider = Objects.requireNonNull(testHandlerProvider);
   }
 
   /**
@@ -39,8 +39,8 @@ public final class HttpTester {
    * @return the path assigned to the HTTP handler
    */
   public String addHandler(HttpHandler handler) {
-    TestRouter testRouter = testRouterProvider.get();
-    return testRouter.addHandler(handler);
+    TestHandler testHandler = testHandlerProvider.get();
+    return testHandler.addHandler(handler);
   }
 
   /**

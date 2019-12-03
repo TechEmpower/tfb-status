@@ -40,6 +40,7 @@ import tfb.status.view.TimelinePageView.TestTypeOptionView;
  * Handles requests for the timeline page.
  */
 @Singleton
+@PrefixPath("/timeline")
 public final class TimelinePageHandler implements HttpHandler {
   private final HttpHandler delegate;
 

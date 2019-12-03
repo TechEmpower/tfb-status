@@ -37,11 +37,9 @@ final class TestServicesBinder extends AbstractBinder {
         .to(HttpClient.class)
         .in(Singleton.class);
 
-    bind(TestRouter.class)
+    bindAsContract(TestHandler.class)
         .to(HttpHandler.class)
-        .to(TestRouter.class)
-        .in(Singleton.class)
-        .ranked(1); // override the default router
+        .in(Singleton.class);
 
     bindAsContract(HttpTester.class).in(Singleton.class);
 

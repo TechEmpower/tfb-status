@@ -60,6 +60,7 @@ import tfb.status.view.TestDefinition;
  * test metadata for a run.
  */
 @Singleton
+@ExactPath("/attributes")
 public final class AttributesPageHandler implements HttpHandler {
   private final HttpHandler delegate;
 

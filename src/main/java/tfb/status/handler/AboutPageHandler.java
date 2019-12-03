@@ -26,6 +26,7 @@ import tfb.status.view.AboutPageView.GitPropertyView;
  * Handles requests for the about page.
  */
 @Singleton
+@ExactPath("/about")
 public final class AboutPageHandler implements HttpHandler {
   private final HttpHandler delegate;
 

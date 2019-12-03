@@ -15,6 +15,7 @@ import tfb.status.undertow.extensions.MethodHandler;
  * Handles requests for robots.txt.
  */
 @Singleton
+@ExactPath("/robots.txt")
 public final class RobotsHandler implements HttpHandler {
   private final HttpHandler delegate;
 

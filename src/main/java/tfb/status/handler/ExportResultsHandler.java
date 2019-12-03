@@ -27,6 +27,7 @@ import tfb.status.view.Results;
  * website.
  */
 @Singleton
+@PrefixPath("/export")
 public final class ExportResultsHandler implements HttpHandler {
   private final HttpHandler delegate;
 

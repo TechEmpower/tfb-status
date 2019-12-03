@@ -26,7 +26,6 @@ import tfb.status.handler.HomePageHandler;
 import tfb.status.handler.HomeUpdatesHandler;
 import tfb.status.handler.RobotsHandler;
 import tfb.status.handler.RootHandler;
-import tfb.status.handler.Router;
 import tfb.status.handler.SaveAttributesHandler;
 import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
@@ -85,26 +84,61 @@ public final class ServicesBinder extends AbstractBinder {
         .to(new TypeLiteral<Optional<EmailConfig>>() {})
         .in(Singleton.class);
 
-    bind(Router.class)
-        .to(HttpHandler.class)
-        .to(Router.class)
-        .in(Singleton.class);
-
     bindAsContract(HttpServer.class).in(Singleton.class);
     bindAsContract(RootHandler.class).in(Singleton.class);
-    bindAsContract(HomePageHandler.class).in(Singleton.class);
-    bindAsContract(HomeUpdatesHandler.class).in(Singleton.class);
-    bindAsContract(UploadResultsHandler.class).in(Singleton.class);
-    bindAsContract(RobotsHandler.class).in(Singleton.class);
-    bindAsContract(DownloadResultsHandler.class).in(Singleton.class);
-    bindAsContract(ExportResultsHandler.class).in(Singleton.class);
-    bindAsContract(UnzipResultsHandler.class).in(Singleton.class);
-    bindAsContract(TimelinePageHandler.class).in(Singleton.class);
-    bindAsContract(DetailPageHandler.class).in(Singleton.class);
-    bindAsContract(AboutPageHandler.class).in(Singleton.class);
-    bindAsContract(AssetsHandler.class).in(Singleton.class);
-    bindAsContract(AttributesPageHandler.class).in(Singleton.class);
-    bindAsContract(SaveAttributesHandler.class).in(Singleton.class);
+
+    bindAsContract(HomePageHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(HomeUpdatesHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(UploadResultsHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(RobotsHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(DownloadResultsHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(ExportResultsHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(UnzipResultsHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(TimelinePageHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(DetailPageHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(AboutPageHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(AssetsHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(AttributesPageHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(SaveAttributesHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
     bindAsContract(Authenticator.class).in(Singleton.class);
     bindAsContract(MustacheRenderer.class).in(Singleton.class);
     bindAsContract(HomeResultsReader.class).in(Singleton.class);

@@ -27,6 +27,7 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests for the results detail page.
  */
 @Singleton
+@PrefixPath("/results")
 public final class DetailPageHandler implements HttpHandler {
   private final HttpHandler delegate;
 
