@@ -1,4 +1,4 @@
-FROM maven:3.6.2-jdk-13 AS base_build_image
+FROM maven:3.6.3-jdk-13 AS base_build_image
 
 # Produce a small Java runtime that contains only what we need.
 # ------------------------------------------------------------------------------
