@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,7 +53,7 @@ final class ApplicationConfigFactory implements Factory<ApplicationConfig> {
     try (InputStream inputStream = Files.newInputStream(yamlFile)) {
       return yamlMapper.readValue(inputStream, ApplicationConfig.class);
     } catch (IOException e) {
-      throw new IllegalStateException(
+      throw new UncheckedIOException(
           "Unable to read configuration file \"" + yamlFile + "\"",
           e);
     }

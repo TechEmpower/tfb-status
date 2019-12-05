@@ -205,7 +205,7 @@ public final class ZipFilesTest {
    */
   @Test
   public void testReadZipEntry_runtimeExceptionFromReaderIsUncaught() {
-    RuntimeException e1 = new RuntimeException();
+    RuntimeException e1 = new UnsupportedOperationException();
 
     RuntimeException e2 =
         assertThrows(
