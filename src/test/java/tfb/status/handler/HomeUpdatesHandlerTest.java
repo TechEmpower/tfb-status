@@ -25,12 +25,15 @@ import java.util.concurrent.TimeoutException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link HomeUpdatesHandler}.
  */
+@Execution(ExecutionMode.SAME_THREAD) // currently not parallelizable
 @ExtendWith(TestServicesInjector.class)
 public final class HomeUpdatesHandlerTest {
   /**
@@ -70,6 +73,7 @@ public final class HomeUpdatesHandlerTest {
 
       var message = new StringJoiner("\n");
 
+      // TODO: Read home updates in a parallel-friendly way.
       for (String line = br.readLine();
            line != null && line.startsWith("data:");
            line = br.readLine()) {
@@ -95,6 +99,7 @@ public final class HomeUpdatesHandlerTest {
 
     URI uri = http.webSocketUri("/updates");
 
+    // TODO: Read home updates in a parallel-friendly way.
     var future = new CompletableFuture<String>();
 
     var listener =

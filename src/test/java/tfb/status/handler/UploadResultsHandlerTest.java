@@ -39,6 +39,8 @@ import javax.mail.internet.MimeMessage;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import tfb.status.testlib.BasicAuthUtils;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.MailServer;
@@ -50,6 +52,7 @@ import tfb.status.view.Results;
 /**
  * Tests for {@link UploadResultsHandler}.
  */
+@Execution(ExecutionMode.SAME_THREAD) // currently not parallelizable
 @ExtendWith(TestServicesInjector.class)
 public final class UploadResultsHandlerTest {
   /**
@@ -221,6 +224,7 @@ public final class UploadResultsHandlerTest {
       // Confirm that we received a notification about the new results.
       //
 
+      // TODO: Read home updates in a parallel-friendly way.
       String updateAboutNewResults = updates.poll();
       assertContains(uuid, updateAboutNewResults);
       assertTrue(updates.isEmpty());
@@ -288,6 +292,7 @@ public final class UploadResultsHandlerTest {
       // Confirm that we received a notification about the updated results.
       //
 
+      // TODO: Read home updates in a parallel-friendly way.
       String updateAboutUpdatedResults = updates.poll();
       assertContains(uuid, updateAboutUpdatedResults);
       assertTrue(updates.isEmpty());
@@ -366,6 +371,7 @@ public final class UploadResultsHandlerTest {
       // Confirm that we received a notification about the final results.
       //
 
+      // TODO: Read home updates in a parallel-friendly way.
       String updateAboutFinalResults = updates.poll();
       assertContains(uuid, updateAboutFinalResults);
       assertTrue(updates.isEmpty());
