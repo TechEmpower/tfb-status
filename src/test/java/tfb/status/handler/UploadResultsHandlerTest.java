@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.testlib.MoreAssertions.assertContains;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +31,10 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
@@ -56,7 +61,11 @@ public final class UploadResultsHandlerTest {
                          FileSystem fileSystem,
                          ObjectMapper objectMapper,
                          MailServer mailServer)
-      throws Exception {
+      throws ExecutionException,
+             InterruptedException,
+             IOException,
+             MessagingException,
+             TimeoutException {
 
     //
     // Download the original results.
@@ -365,11 +374,17 @@ public final class UploadResultsHandlerTest {
       // Confirm the "Run complete" email was sent.
       //
 
-      MimeMessage emailMessage = mailServer.onlyEmailMessage();
+      String subject =
+          UploadResultsHandler.runCompleteEmailSubject(finalResults);
 
-      assertEquals(
-          UploadResultsHandler.runCompleteEmailSubject(finalResults),
-          emailMessage.getSubject());
+      ImmutableList<MimeMessage> messages =
+          mailServer.getMessages(m -> m.getSubject().equals(subject));
+
+      assertEquals(1, messages.size());
+
+      MimeMessage message = Iterables.getOnlyElement(messages);
+
+      assertEquals(subject, message.getSubject());
 
     } finally {
       updatesWebSocket.abort();

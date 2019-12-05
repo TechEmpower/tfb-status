@@ -1,12 +1,14 @@
 package tfb.status.testlib;
 
+import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
+import java.io.IOException;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PreDestroy;
@@ -63,26 +65,44 @@ public final class MailServer implements PreDestroy {
   }
 
   /**
-   * Returns the only email message that has been received by the email server
-   * since the last time this method was invoked.
+   * Returns all email messages that have been received by this mail server
+   * matching the specified filter.
    *
-   * @throws IllegalStateException if there is not exactly one email message
+   * @param filter the filter to apply to the messages
+   * @throws IllegalStateException if email is disabled
+   * @throws IOException if the filter throws an {@link IOException}
+   * @throws MessagingException if the filter throws a {@link MessagingException}
    */
-  public synchronized MimeMessage onlyEmailMessage() {
+  public synchronized ImmutableList<MimeMessage> getMessages(MessageFilter filter)
+      throws IOException, MessagingException {
+
     if (server == null)
       throw new IllegalStateException(
-          "Email was disabled in this application's config");
+          "Email is disabled in this application's config");
 
-    MimeMessage[] messages = server.getReceivedMessages();
-    try {
-      server.purgeEmailFromAllMailboxes();
-    } catch (FolderException e) {
-      throw new RuntimeException(e);
+    var messages = new ImmutableList.Builder<MimeMessage>();
+
+    for (MimeMessage message : server.getReceivedMessages()) {
+      if (filter.test(message)) {
+        messages.add(message);
+      }
     }
 
-    if (messages.length != 1)
-      throw new IllegalStateException("There is not exactly one email");
+    return messages.build();
+  }
 
-    return messages[0];
+  /**
+   * A function that accepts an email message and returns {@code true} if that
+   * message satisfies some condition.
+   *
+   * <p>This interface should only be used by callers of {@link
+   * #getMessages(MailServer.MessageFilter)}.
+   */
+  @FunctionalInterface
+  public interface MessageFilter {
+    /**
+     * Returns {@code true} if the specified message matches this filter.
+     */
+    boolean test(MimeMessage message) throws IOException, MessagingException;
   }
 }

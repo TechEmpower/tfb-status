@@ -8,11 +8,14 @@ import static tfb.status.testlib.MoreAssertions.assertInstanceOf;
 import static tfb.status.testlib.MoreAssertions.assertLinesEqual;
 import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
 import com.google.common.net.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.UUID;
 import javax.activation.DataSource;
 import javax.mail.BodyPart;
 import javax.mail.MessagingException;
@@ -37,11 +40,18 @@ public final class EmailSenderTest {
                                     MailServer mailServer)
       throws MessagingException, IOException {
 
-    emailSender.sendEmail("subject", "textContent", List.of());
+    String subject = getClass().getName() + " " + UUID.randomUUID().toString();
 
-    MimeMessage message = mailServer.onlyEmailMessage();
+    emailSender.sendEmail(subject, "textContent", List.of());
 
-    assertEquals("subject", message.getSubject());
+    ImmutableList<MimeMessage> messages =
+        mailServer.getMessages(m -> m.getSubject().equals(subject));
+
+    assertEquals(1, messages.size());
+
+    MimeMessage message = Iterables.getOnlyElement(messages);
+
+    assertEquals(subject, message.getSubject());
 
     assertMediaType(
         PLAIN_TEXT_UTF_8,
@@ -66,6 +76,8 @@ public final class EmailSenderTest {
                                            MailServer mailServer)
       throws MessagingException, IOException {
 
+    String subject = getClass().getName() + " " + UUID.randomUUID().toString();
+
     String attachedJson = "{\"foo\":\"bar\"}";
 
     DataSource attachment =
@@ -74,15 +86,20 @@ public final class EmailSenderTest {
             /* mediaType= */ JSON_UTF_8,
             /* fileBytes= */ CharSource.wrap(attachedJson).asByteSource(UTF_8));
 
-    emailSender.sendEmail("subject", "textContent", List.of(attachment));
+    emailSender.sendEmail(subject, "textContent", List.of(attachment));
 
-    MimeMessage message = mailServer.onlyEmailMessage();
+    ImmutableList<MimeMessage> messages =
+        mailServer.getMessages(m -> m.getSubject().equals(subject));
+
+    assertEquals(1, messages.size());
+
+    MimeMessage message = Iterables.getOnlyElement(messages);
+
+    assertEquals(subject, message.getSubject());
 
     assertMediaType(
         MediaType.create("multipart", "mixed"),
         message.getContentType());
-
-    assertEquals("subject", message.getSubject());
 
     MimeMultipart multipart =
         assertInstanceOf(
