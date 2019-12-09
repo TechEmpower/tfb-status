@@ -2,22 +2,23 @@ package tfb.status.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
+import java.nio.file.ProviderNotFoundException;
+import java.nio.file.spi.FileSystemProvider;
+import java.util.Map;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import tfb.status.util.ZipFiles.ZipEntryReader;
@@ -26,43 +27,61 @@ import tfb.status.util.ZipFiles.ZipEntryReader;
  * Tests for {@link ZipFiles}.
  */
 public final class ZipFilesTest {
-  private static final String PRESENT_ENTRY_PATH = "hello.txt";
+  private static final String PRESENT_ENTRY_PATH = "file_inside_zip.txt";
   private static final String PRESENT_ENTRY_ABSOLUTE_PATH = "/" + PRESENT_ENTRY_PATH;
-  private static final byte[] PRESENT_ENTRY_BYTES = "Hello!".getBytes(UTF_8);
-  private static final String DIR_ENTRY_PATH = "dir/";
+  private static final String PRESENT_ENTRY_CONTENTS = "Hello!";
+  private static final String DIRECTORY_ENTRY_PATH = "directory_inside_zip/";
 
-  private static final ZipEntryReader<Void> UNUSED_READER =
-      inputStream -> {
-        throw new AssertionError("This reader should not have been used");
-      };
-
+  private static FileSystem inMemoryFs;
   private static Path zipFile;
   private static Path textFile;
-  private static Path dir;
   private static Path missingFile;
+  private static Path directory;
 
   @BeforeAll
-  public static void beforeAll() throws Exception {
-    FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
-    zipFile = fs.getPath("/archive.zip");
+  public static void beforeAll() throws IOException {
+    inMemoryFs = Jimfs.newFileSystem(Configuration.unix());
+    zipFile = inMemoryFs.getPath("/zip_file.zip");
 
-    try (var fos = Files.newOutputStream(zipFile, CREATE_NEW);
-         var bos = new BufferedOutputStream(fos);
-         var zos = new ZipOutputStream(bos)) {
+    FileSystemProvider zipFsProvider =
+        FileSystemProvider
+            .installedProviders()
+            .stream()
+            .filter(provider -> provider.getScheme().equals("jar"))
+            .findAny()
+            .orElseThrow(() -> new ProviderNotFoundException(
+                "Could not find the zip file system provider; "
+                    + "verify that the jdk.zipfs module is installed"));
 
-      zos.putNextEntry(new ZipEntry(PRESENT_ENTRY_PATH));
-      zos.write(PRESENT_ENTRY_BYTES);
-      zos.closeEntry();
+    try (FileSystem zipFs =
+             zipFsProvider.newFileSystem(
+                 zipFile,
+                 Map.of("create", "true"))) {
 
-      zos.putNextEntry(new ZipEntry(DIR_ENTRY_PATH));
-      zos.closeEntry();
+      Files.writeString(
+          zipFs.getPath(PRESENT_ENTRY_PATH),
+          PRESENT_ENTRY_CONTENTS,
+          CREATE_NEW);
+
+      Files.createDirectory(
+          zipFs.getPath(DIRECTORY_ENTRY_PATH));
     }
 
-    textFile = fs.getPath("/file.txt");
-    Files.write(textFile, List.of("This is not a zip file"), CREATE_NEW);
-    dir = fs.getPath("/dir");
-    Files.createDirectory(dir);
-    missingFile = fs.getPath("/missing");
+    textFile = inMemoryFs.getPath("/file_outside_zip.txt");
+    Files.writeString(
+        textFile,
+        "This is not a zip file",
+        CREATE_NEW);
+
+    directory = inMemoryFs.getPath("/directory_outside_zip");
+    Files.createDirectory(directory);
+
+    missingFile = inMemoryFs.getPath("/no_file_here");
+  }
+
+  @AfterAll
+  public static void afterAll() throws IOException {
+    inMemoryFs.close();
   }
 
   /**
@@ -72,11 +91,12 @@ public final class ZipFilesTest {
    */
   @Test
   public void testReadZipEntry_relativePath() throws IOException {
-    assertArrayEquals(
-        PRESENT_ENTRY_BYTES,
-        ZipFiles.readZipEntry(zipFile,
-                              PRESENT_ENTRY_PATH,
-                              entry -> entry.readAllBytes()));
+    assertEquals(
+        PRESENT_ENTRY_CONTENTS,
+        ZipFiles.readZipEntry(
+            zipFile,
+            PRESENT_ENTRY_PATH,
+            entry -> new String(entry.readAllBytes(), UTF_8)));
   }
 
   /**
@@ -86,11 +106,12 @@ public final class ZipFilesTest {
    */
   @Test
   public void testReadZipEntry_absolutePath() throws IOException {
-    assertArrayEquals(
-        PRESENT_ENTRY_BYTES,
-        ZipFiles.readZipEntry(zipFile,
-                              PRESENT_ENTRY_ABSOLUTE_PATH,
-                              entry -> entry.readAllBytes()));
+    assertEquals(
+        PRESENT_ENTRY_CONTENTS,
+        ZipFiles.readZipEntry(
+            zipFile,
+            PRESENT_ENTRY_ABSOLUTE_PATH,
+            entry -> new String(entry.readAllBytes(), UTF_8)));
   }
 
   /**
@@ -101,9 +122,10 @@ public final class ZipFilesTest {
   public void testReadZipEntry_rejectMissingFile() {
     assertThrows(
         IOException.class,
-        () -> ZipFiles.readZipEntry(missingFile,
-                                    PRESENT_ENTRY_PATH,
-                                    UNUSED_READER));
+        () -> ZipFiles.readZipEntry(
+            missingFile,
+            PRESENT_ENTRY_PATH,
+            entry -> fail("This reader should not have been used")));
   }
 
   /**
@@ -114,9 +136,10 @@ public final class ZipFilesTest {
   public void testReadZipEntry_rejectWrongFileFormat() {
     assertThrows(
         IOException.class,
-        () -> ZipFiles.readZipEntry(textFile,
-                                    PRESENT_ENTRY_PATH,
-                                    UNUSED_READER));
+        () -> ZipFiles.readZipEntry(
+            textFile,
+            PRESENT_ENTRY_PATH,
+            entry -> fail("This reader should not have been used")));
   }
 
   /**
@@ -127,9 +150,10 @@ public final class ZipFilesTest {
   public void testReadZipEntry_rejectDirectory() {
     assertThrows(
         IOException.class,
-        () -> ZipFiles.readZipEntry(dir,
-                                    PRESENT_ENTRY_PATH,
-                                    UNUSED_READER));
+        () -> ZipFiles.readZipEntry(
+            directory,
+            PRESENT_ENTRY_PATH,
+            entry -> fail("This reader should not have been used")));
   }
 
   /**
@@ -144,9 +168,10 @@ public final class ZipFilesTest {
   public void testReadZipEntry_rejectInvalidPath() {
     assertThrows(
         IOException.class,
-        () -> ZipFiles.readZipEntry(zipFile,
-                                    "\0",
-                                    UNUSED_READER));
+        () -> ZipFiles.readZipEntry(
+            zipFile,
+            "\0",
+            entry -> fail("This reader should not have been used")));
   }
 
   /**
@@ -156,9 +181,11 @@ public final class ZipFilesTest {
    */
   @Test
   public void testReadZipEntry_skipDirectoryEntry() throws IOException {
-    assertNull(ZipFiles.readZipEntry(zipFile,
-                                     DIR_ENTRY_PATH,
-                                     UNUSED_READER));
+    assertNull(
+        ZipFiles.readZipEntry(
+            zipFile,
+            DIRECTORY_ENTRY_PATH,
+            entry -> fail("This reader should not have been used")));
   }
 
   /**
@@ -173,13 +200,14 @@ public final class ZipFilesTest {
         "NullAway" /* for the NullAway Maven plugin */,
         "ConstantConditions" /* for IntelliJ */
     })
-    ZipEntryReader<Void> entryReader = inputStream -> null;
+    ZipEntryReader<Void> entryReader = entry -> null;
 
     assertThrows(
         NullPointerException.class,
-        () -> ZipFiles.readZipEntry(zipFile,
-                                    PRESENT_ENTRY_PATH,
-                                    entryReader));
+        () -> ZipFiles.readZipEntry(
+            zipFile,
+            PRESENT_ENTRY_PATH,
+            entryReader));
   }
 
   /**
@@ -193,9 +221,11 @@ public final class ZipFilesTest {
     IOException e2 =
         assertThrows(
             IOException.class,
-            () -> ZipFiles.readZipEntry(zipFile,
-                                        PRESENT_ENTRY_PATH,
-                                        inputStream -> { throw e1; }));
+            () -> ZipFiles.readZipEntry(
+                zipFile,
+                PRESENT_ENTRY_PATH,
+                entry -> { throw e1; }));
+
     assertSame(e1, e2);
   }
 
@@ -210,9 +240,11 @@ public final class ZipFilesTest {
     RuntimeException e2 =
         assertThrows(
             RuntimeException.class,
-            () -> ZipFiles.readZipEntry(zipFile,
-                                        PRESENT_ENTRY_PATH,
-                                        inputStream -> { throw e1; }));
+            () -> ZipFiles.readZipEntry(
+                zipFile,
+                PRESENT_ENTRY_PATH,
+                entry -> { throw e1; }));
+
     assertSame(e1, e2);
   }
 }
