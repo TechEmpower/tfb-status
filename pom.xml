@@ -440,11 +440,7 @@
                    We last tried these checks in Error Prone 2.3.4. -->
               -Xep:FieldMissingNullable:OFF
               -Xep:NullableDereference:OFF
-              -Xep:UnnecessaryLambda:OFF
               -Xep:PreferJavaTimeOverload:OFF
-              -Xep:InterruptedExceptionSwallowed:OFF
-              -Xep:ThrowSpecificExceptions:OFF
-              -Xep:DeduplicateConstants:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
