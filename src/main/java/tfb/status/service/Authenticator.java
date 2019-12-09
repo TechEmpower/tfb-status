@@ -262,6 +262,29 @@ public final class Authenticator {
   }
 
   /**
+   * Deletes the account with the given id.
+   *
+   * @param accountId the id of the account
+   *
+   * @throws IllegalArgumentException if there is no account with that id or if
+   *         the id cannot possibly be the id of an account
+   * @throws IOException if an I/O error occurs while deleting the account
+   */
+  public void deleteAccount(String accountId) throws IOException {
+    Objects.requireNonNull(accountId);
+
+    Path passwordFile = getPasswordFile(accountId);
+    if (passwordFile == null)
+      throw new IllegalArgumentException("Invalid account id: " + accountId);
+
+    if (!Files.isRegularFile(passwordFile))
+      throw new IllegalArgumentException(
+          "Account with id " + accountId + " does not exist");
+
+    Files.delete(passwordFile);
+  }
+
+  /**
    * Returns {@code true} if an account with the given id exists and its
    * password matches the given password.
    *
