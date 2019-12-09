@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static tfb.status.testlib.MoreAssertions.assertContains;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -328,10 +329,7 @@ public final class UploadResultsHandlerTest {
             }
           },
           /* ifAbsent= */
-          () -> {
-            throw new AssertionError(
-                "The results.zip file should include a results.json");
-          });
+          () -> fail("The results.zip file should include a results.json"));
 
       //
       // Upload the final results zip.
