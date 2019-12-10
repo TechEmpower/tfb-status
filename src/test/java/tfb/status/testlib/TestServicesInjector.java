@@ -32,6 +32,7 @@ public final class TestServicesInjector implements ParameterResolver {
     Class<?> type = parameterContext.getParameter().getType();
     Services services = getServices(extensionContext);
     return services.hasService(type);
+    // TODO: Support javax.inject.Provider<KnownServiceType>
   }
 
   @Override
