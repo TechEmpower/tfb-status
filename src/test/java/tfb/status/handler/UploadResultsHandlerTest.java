@@ -1,6 +1,5 @@
 package tfb.status.handler;
 
-import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.ZIP;
@@ -42,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import tfb.status.testlib.BasicAuthUtils;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.MailServer;
 import tfb.status.testlib.TestServicesInjector;
@@ -64,6 +62,7 @@ public final class UploadResultsHandlerTest {
   public void testUpload(HttpTester http,
                          FileSystem fileSystem,
                          ObjectMapper objectMapper,
+
                          MailServer mailServer)
       throws ExecutionException,
              InterruptedException,
@@ -144,21 +143,15 @@ public final class UploadResultsHandlerTest {
     // Confirm that authorization is required for uploads.
     //
 
-    String invalidCredentials =
-        BasicAuthUtils.writeAuthorizationHeader(
-            "wrong_username",
-            "wrong_password");
-
-    HttpResponse<Void> responseToInvalidCredentials =
+    HttpResponse<Void> responseToUnauthorized =
         http.client().send(
             HttpRequest.newBuilder(http.uri("/upload"))
                        .POST(filePublisher(jsonFile))
-                       .header(AUTHORIZATION, invalidCredentials)
                        .header(CONTENT_TYPE, JSON_UTF_8.toString())
                        .build(),
             HttpResponse.BodyHandlers.discarding());
 
-    assertEquals(UNAUTHORIZED, responseToInvalidCredentials.statusCode());
+    assertEquals(UNAUTHORIZED, responseToUnauthorized.statusCode());
 
     //
     // Begin listening for updates to the home page.
@@ -192,13 +185,14 @@ public final class UploadResultsHandlerTest {
       // Upload the new results JSON.
       //
 
+      HttpRequest.Builder requestWithNewJson =
+          HttpRequest.newBuilder(http.uri("/upload"))
+                     .POST(filePublisher(jsonFile))
+                     .header(CONTENT_TYPE, JSON_UTF_8.toString());
+
       HttpResponse<Void> responseToNewJson =
           http.client().send(
-              HttpRequest.newBuilder(http.uri("/upload"))
-                         .POST(filePublisher(jsonFile))
-                         .header(AUTHORIZATION, http.authorizationHeader())
-                         .header(CONTENT_TYPE, JSON_UTF_8.toString())
-                         .build(),
+              http.addAuthorization(requestWithNewJson).build(),
               HttpResponse.BodyHandlers.discarding());
 
       assertEquals(OK, responseToNewJson.statusCode());
@@ -259,13 +253,14 @@ public final class UploadResultsHandlerTest {
       // Upload the updated results JSON.
       //
 
+      HttpRequest.Builder requestWithUpdatedJson =
+          HttpRequest.newBuilder(http.uri("/upload"))
+                     .POST(filePublisher(jsonFile))
+                     .header(CONTENT_TYPE, JSON_UTF_8.toString());
+
       HttpResponse<Void> responseToUpdatedJson =
           http.client().send(
-              HttpRequest.newBuilder(http.uri("/upload"))
-                         .POST(filePublisher(jsonFile))
-                         .header(AUTHORIZATION, http.authorizationHeader())
-                         .header(CONTENT_TYPE, JSON_UTF_8.toString())
-                         .build(),
+              http.addAuthorization(requestWithUpdatedJson).build(),
               HttpResponse.BodyHandlers.discarding());
 
       assertEquals(OK, responseToUpdatedJson.statusCode());
@@ -335,13 +330,14 @@ public final class UploadResultsHandlerTest {
       // Upload the final results zip.
       //
 
+      HttpRequest.Builder requestWithZip =
+          HttpRequest.newBuilder(http.uri("/upload"))
+                     .POST(filePublisher(zipFile))
+                     .header(CONTENT_TYPE, ZIP.toString());
+
       HttpResponse<Void> responseToZip =
           http.client().send(
-              HttpRequest.newBuilder(http.uri("/upload"))
-                         .POST(filePublisher(zipFile))
-                         .header(AUTHORIZATION, http.authorizationHeader())
-                         .header(CONTENT_TYPE, ZIP.toString())
-                         .build(),
+              http.addAuthorization(requestWithZip).build(),
               HttpResponse.BodyHandlers.discarding());
 
       assertEquals(OK, responseToZip.statusCode());
