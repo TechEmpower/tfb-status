@@ -10,7 +10,6 @@ import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.sse.ServerSentEventConnection;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderValues;
 import java.io.BufferedReader;
@@ -61,31 +60,6 @@ public final class Authenticator {
     if (accountId == null)
       throw new IllegalStateException(
           "The exchange does not have an authenticated account");
-
-    return accountId;
-  }
-
-  /**
-   * Returns the id of the already-authenticated, known-present account
-   * associated with the SSE connection.  Throws {@link IllegalStateException}
-   * if the authentication step never occurred.
-   *
-   * <p>This method should only be used with SSE connections originating from
-   * HTTP handlers that have been wrapped by {@link
-   * #newRequiredAuthHandler(HttpHandler)}.
-   *
-   * @param connection the SSE connection
-   * @return the id of the account associated with the connection
-   * @throws IllegalStateException if the connection was not authenticated
-   * @see #newRequiredAuthHandler(HttpHandler)
-   */
-  public String requiredAccountId(ServerSentEventConnection connection) {
-    Objects.requireNonNull(connection);
-
-    String accountId = connection.getAttachment(ACCOUNT_ID);
-    if (accountId == null)
-      throw new IllegalStateException(
-          "The connection does not have an authenticated account");
 
     return accountId;
   }

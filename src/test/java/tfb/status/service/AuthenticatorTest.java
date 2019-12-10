@@ -2,7 +2,6 @@ package tfb.status.service;
 
 import static io.undertow.util.StatusCodes.OK;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,19 +11,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.sse.ServerSentEventConnection;
-import io.undertow.server.handlers.sse.ServerSentEventHandler;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -186,59 +179,6 @@ public final class AuthenticatorTest {
 
   /**
    * Verifies that {@link Authenticator#newRequiredAuthHandler(HttpHandler)}
-   * accepts SSE requests containing valid credentials and that {@link
-   * Authenticator#requiredAccountId(ServerSentEventConnection)} makes the
-   * verified account id available within the SSE connection.
-   */
-  @Test
-  public void testNewRequiredAuthHandler_sse_validCredentials(Authenticator authenticator,
-                                                              HttpTester http)
-      throws IOException, InterruptedException {
-
-    HttpHandler handler =
-        authenticator.newRequiredAuthHandler(
-            new ServerSentEventHandler(
-                /* callback= */
-                (ServerSentEventConnection connection, String lastEventId) -> {
-                  String accountId = authenticator.requiredAccountId(connection);
-                  connection.send(accountId);
-                }));
-
-    String path = http.addHandler(handler);
-
-    URI uri = http.uri(path);
-
-    for (Account account : VALID_ACCOUNTS) {
-      HttpResponse<InputStream> response =
-          http.client().send(
-              http.addAuthorization(HttpRequest.newBuilder(uri),
-                                    account.accountId,
-                                    account.password)
-                  .build(),
-              HttpResponse.BodyHandlers.ofInputStream());
-
-      try (var is = response.body();
-           var isr = new InputStreamReader(is, UTF_8);
-           var br = new BufferedReader(isr)) {
-
-        assertEquals(OK, response.statusCode());
-
-        var message = new StringJoiner("\n");
-
-        for (String line = br.readLine();
-             line != null && line.startsWith("data:");
-             line = br.readLine()) {
-
-          message.add(line.substring("data:".length()));
-        }
-
-        assertEquals(account.accountId, message.toString());
-      }
-    }
-  }
-
-  /**
-   * Verifies that {@link Authenticator#newRequiredAuthHandler(HttpHandler)}
    * rejects requests containing no credentials.
    */
   @Test
@@ -377,60 +317,6 @@ public final class AuthenticatorTest {
     assertEquals(OK, response.statusCode());
 
     assertEquals(expectedMessage, response.body());
-  }
-
-  /**
-   * Verifies that {@link
-   * Authenticator#requiredAccountId(ServerSentEventConnection)} throws an
-   * exception when used in an SSE handler that was not wrapped by {@link
-   * Authenticator#newRequiredAuthHandler(HttpHandler)}.
-   */
-  @Test
-  public void testRequiredAccountId_sse_noAuthentication(Authenticator authenticator,
-                                                         HttpTester http)
-      throws IOException, InterruptedException {
-
-    String expectedMessage = "___NOT_AN_ACCOUNT_ID___";
-
-    HttpHandler handler =
-        new ServerSentEventHandler(
-            /* callback= */
-            (ServerSentEventConnection connection, String lastEventId) -> {
-              String message;
-              try {
-                message = authenticator.requiredAccountId(connection);
-              } catch (IllegalStateException expected) {
-                message = expectedMessage;
-              }
-              connection.send(message);
-            });
-
-    String path = http.addHandler(handler);
-
-    URI uri = http.uri(path);
-
-    HttpResponse<InputStream> response =
-        http.client().send(
-            HttpRequest.newBuilder(uri).build(),
-            HttpResponse.BodyHandlers.ofInputStream());
-
-    try (var is = response.body();
-         var isr = new InputStreamReader(is, UTF_8);
-         var br = new BufferedReader(isr)) {
-
-      assertEquals(OK, response.statusCode());
-
-      var message = new StringJoiner("\n");
-
-      for (String line = br.readLine();
-           line != null && line.startsWith("data:");
-           line = br.readLine()) {
-
-        message.add(line.substring("data:".length()));
-      }
-
-      assertEquals(expectedMessage, message.toString());
-    }
   }
 
   @Immutable
