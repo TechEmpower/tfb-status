@@ -1,32 +1,32 @@
 package tfb.status.service;
 
+import static io.undertow.util.Headers.AUTHORIZATION;
+import static io.undertow.util.Headers.WWW_AUTHENTICATE;
+import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+
 import com.google.common.io.MoreFiles;
-import com.google.errorprone.annotations.Immutable;
-import io.undertow.security.api.SecurityContext;
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.idm.PasswordCredential;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
+import io.undertow.util.AttachmentKey;
+import io.undertow.util.HeaderValues;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.security.Principal;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.mindrot.jbcrypt.BCrypt;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import tfb.status.undertow.extensions.BasicAuthenticationHandler;
 
 /**
  * Implements a simple password-based authentication scheme.
@@ -34,7 +34,7 @@ import tfb.status.undertow.extensions.BasicAuthenticationHandler;
 @Singleton
 public final class Authenticator {
   private final FileStore fileStore;
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
   @Inject
   public Authenticator(FileStore fileStore) {
@@ -56,17 +56,13 @@ public final class Authenticator {
    */
   public String requiredAccountId(HttpServerExchange exchange) {
     Objects.requireNonNull(exchange);
-    SecurityContext securityContext = exchange.getSecurityContext();
-    if (securityContext == null)
-      throw new IllegalStateException(
-          "The exchange does not have a security context");
 
-    Account account = securityContext.getAuthenticatedAccount();
-    if (account == null)
+    String accountId = exchange.getAttachment(ACCOUNT_ID);
+    if (accountId == null)
       throw new IllegalStateException(
           "The exchange does not have an authenticated account");
 
-    return accountToId(account);
+    return accountId;
   }
 
   /**
@@ -85,30 +81,13 @@ public final class Authenticator {
    */
   public String requiredAccountId(ServerSentEventConnection connection) {
     Objects.requireNonNull(connection);
-    Account account = connection.getAccount();
-    if (account == null)
+
+    String accountId = connection.getAttachment(ACCOUNT_ID);
+    if (accountId == null)
       throw new IllegalStateException(
           "The connection does not have an authenticated account");
 
-    return accountToId(account);
-  }
-
-  private static String accountToId(Account account) {
-    Objects.requireNonNull(account, "account");
-
-    //
-    // The principal and name should never be null.  If either one is null, then
-    // an NPE is an appropriate outcome--indicating programmer error--because
-    // whatever created the Account object is broken.
-    //
-
-    Principal principal = account.getPrincipal();
-    Objects.requireNonNull(principal, "principal");
-
-    String principalName = principal.getName();
-    Objects.requireNonNull(principalName, "principal name");
-
-    return principalName;
+    return accountId;
   }
 
   /**
@@ -135,153 +114,130 @@ public final class Authenticator {
    */
   public HttpHandler newRequiredAuthHandler(HttpHandler nextHandler) {
     Objects.requireNonNull(nextHandler);
-
-    return new BasicAuthenticationHandler(
-        /* realmName= */ "TFB Status",
-        /* identityManager= */ new ThisAsIdentityManager(),
-        /* nextHandler= */ nextHandler);
+    return new RequiredAuthHandler(this, nextHandler);
   }
 
-  private final class ThisAsIdentityManager implements IdentityManager {
-    @Override
-    public @Nullable Account verify(Account account) {
-      String accountId = accountToId(account);
-      return accountExists(accountId) ? account : null;
+  // Currently implements Basic authentication.
+  // TODO: Use some other form of authentication.
+  private static final class RequiredAuthHandler implements HttpHandler {
+    private final Authenticator authenticator;
+    private final HttpHandler nextHandler;
+
+    RequiredAuthHandler(Authenticator authenticator, HttpHandler nextHandler) {
+      this.authenticator = Objects.requireNonNull(authenticator);
+      this.nextHandler = Objects.requireNonNull(nextHandler);
     }
 
     @Override
-    public @Nullable Account verify(String accountId, Credential credential) {
-      Objects.requireNonNull(accountId);
-      Objects.requireNonNull(credential);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+      HeaderValues authValues = exchange.getRequestHeaders().get(AUTHORIZATION);
+      if (authValues != null) {
+        for (String auth : authValues) {
+          if (auth.startsWith("Basic ")) {
+            String encoded = auth.substring("Basic ".length());
+            byte[] decodedBytes;
+            try {
+              decodedBytes = Base64.getDecoder().decode(encoded);
+            } catch (IllegalArgumentException ignored) {
+              continue;
+            }
+            String decoded = new String(decodedBytes, UTF_8);
+            int colonIndex = decoded.indexOf(':');
+            if (colonIndex == -1)
+              continue;
 
-      if (!(credential instanceof PasswordCredential))
-        return null;
-
-      char[] passwordChars = ((PasswordCredential) credential).getPassword();
-      String password = String.valueOf(passwordChars);
-
-      boolean isPasswordCorrect;
-      try {
-        isPasswordCorrect = checkPassword(accountId, password);
-      } catch (IOException e) {
-        logger.error("Error checking password", e);
-        return null;
+            String accountId = decoded.substring(0, colonIndex);
+            String password = decoded.substring(colonIndex + 1);
+            if (authenticator.checkPassword(accountId, password)) {
+              exchange.putAttachment(ACCOUNT_ID, accountId);
+              nextHandler.handleRequest(exchange);
+              return;
+            }
+          }
+        }
       }
 
-      if (isPasswordCorrect)
-        return new IdAsAccount(accountId);
-      else
-        return null;
-    }
-
-    @Override
-    public @Nullable Account verify(Credential credential) {
-      Objects.requireNonNull(credential);
-      return null;
+      exchange.setStatusCode(UNAUTHORIZED);
+      exchange.getResponseHeaders().put(
+          WWW_AUTHENTICATE,
+          "Basic realm=\"TFB Status\", charset=\"UTF-8\"");
     }
   }
 
-  @Immutable
-  private static final class IdAsAccount implements Account {
-    private final String accountId;
-
-    IdAsAccount(String accountId) {
-      this.accountId = Objects.requireNonNull(accountId);
-    }
-
-    @Override
-    public Principal getPrincipal() {
-      return new IdAsPrincipal(accountId);
-    }
-
-    @Override
-    public Set<String> getRoles() {
-      return Set.of();
-    }
-
-    private static final long serialVersionUID = 0;
-  }
-
-  @Immutable
-  private static final class IdAsPrincipal implements Principal, Serializable {
-    private final String accountId;
-
-    IdAsPrincipal(String accountId) {
-      this.accountId = Objects.requireNonNull(accountId);
-    }
-
-    @Override
-    public String getName() {
-      return accountId;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-      if (object == this)
-        return true;
-
-      if (!(object instanceof IdAsPrincipal))
-        return false;
-
-      var that = (IdAsPrincipal) object;
-      return this.accountId.equals(that.accountId);
-    }
-
-    @Override
-    public int hashCode() {
-      return accountId.hashCode();
-    }
-
-    private static final long serialVersionUID = 0;
-  }
+  private static final AttachmentKey<String> ACCOUNT_ID =
+      AttachmentKey.create(String.class);
 
   /**
-   * Creates a new account with the given id and password.
+   * Creates a new account with the given id and password if that account does
+   * not already exist.
    *
+   * @return {@code true} if the account was created as a result of this call
    * @throws IllegalArgumentException if there is already an account with that
-   *         id or if the id cannot possibly be the id of an account
+   *         id but it has a different password or if the id cannot possibly be
+   *         the id of an account
    * @throws IOException if an I/O error occurs while saving the account details
    */
-  public void createNewAccount(String accountId, String password)
+  @CanIgnoreReturnValue
+  public boolean createAccountIfAbsent(String accountId, String password)
       throws IOException {
 
     Objects.requireNonNull(accountId);
     Objects.requireNonNull(password);
 
-    Path passwordFile = getPasswordFile(accountId);
-    if (passwordFile == null)
-      throw new IllegalArgumentException("Invalid account id: " + accountId);
+    lock.writeLock().lock();
+    try {
+      Path passwordFile = getPasswordFile(accountId);
+      if (passwordFile == null)
+        throw new IllegalArgumentException("Invalid account id: " + accountId);
 
-    if (Files.isRegularFile(passwordFile))
-      throw new IllegalArgumentException(
-          "Account with id " + accountId + " already exists");
+      if (Files.isRegularFile(passwordFile)) {
+        if (!checkPassword(accountId, password))
+          throw new IllegalArgumentException(
+              "Account with id "
+                  + accountId
+                  + " already exists with a different password");
 
-    String passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
-    MoreFiles.createParentDirectories(passwordFile);
-    Files.write(passwordFile, List.of(passwordHash));
+        return false;
+      }
+
+      String passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
+      MoreFiles.createParentDirectories(passwordFile);
+      Files.write(passwordFile, List.of(passwordHash), CREATE_NEW);
+      return true;
+    } finally {
+      lock.writeLock().unlock();
+    }
   }
 
   /**
-   * Deletes the account with the given id.
+   * Deletes the account with the given id if it exists.
    *
    * @param accountId the id of the account
-   *
-   * @throws IllegalArgumentException if there is no account with that id or if
-   *         the id cannot possibly be the id of an account
+   * @return {@code true} if the account was deleted as a result of this call
+   * @throws IllegalArgumentException the id cannot possibly be the id of an
+   *         account
    * @throws IOException if an I/O error occurs while deleting the account
    */
-  public void deleteAccount(String accountId) throws IOException {
+  @CanIgnoreReturnValue
+  public boolean deleteAccountIfPresent(String accountId)
+      throws IOException {
+
     Objects.requireNonNull(accountId);
 
-    Path passwordFile = getPasswordFile(accountId);
-    if (passwordFile == null)
-      throw new IllegalArgumentException("Invalid account id: " + accountId);
+    lock.writeLock().lock();
+    try {
+      Path passwordFile = getPasswordFile(accountId);
+      if (passwordFile == null)
+        throw new IllegalArgumentException("Invalid account id: " + accountId);
 
-    if (!Files.isRegularFile(passwordFile))
-      throw new IllegalArgumentException(
-          "Account with id " + accountId + " does not exist");
+      if (!Files.isRegularFile(passwordFile))
+        return false;
 
-    Files.delete(passwordFile);
+      Files.delete(passwordFile);
+      return true;
+    } finally {
+      lock.writeLock().unlock();
+    }
   }
 
   /**
@@ -299,16 +255,21 @@ public final class Authenticator {
     Objects.requireNonNull(accountId);
     Objects.requireNonNull(password);
 
-    Path passwordFile = getPasswordFile(accountId);
-    if (passwordFile == null || !Files.isRegularFile(passwordFile))
-      return false;
+    lock.readLock().lock();
+    try {
+      Path passwordFile = getPasswordFile(accountId);
+      if (passwordFile == null || !Files.isRegularFile(passwordFile))
+        return false;
 
-    String passwordHash;
-    try (BufferedReader reader = Files.newBufferedReader(passwordFile)) {
-      passwordHash = reader.readLine();
+      String passwordHash;
+      try (BufferedReader reader = Files.newBufferedReader(passwordFile)) {
+        passwordHash = reader.readLine();
+      }
+
+      return passwordHash != null && BCrypt.checkpw(password, passwordHash);
+    } finally {
+      lock.readLock().unlock();
     }
-
-    return passwordHash != null && BCrypt.checkpw(password, passwordHash);
   }
 
   /**
@@ -316,10 +277,18 @@ public final class Authenticator {
    *
    * @param accountId the id of the account
    * @return {@code true} if the account exists
+   * @throws IOException if an I/O error occurs while verifying the account
    */
-  public boolean accountExists(String accountId) {
-    Path passwordFile = getPasswordFile(accountId);
-    return passwordFile != null && Files.isRegularFile(passwordFile);
+  public boolean accountExists(String accountId)
+      throws IOException {
+
+    lock.readLock().lock();
+    try {
+      Path passwordFile = getPasswordFile(accountId);
+      return passwordFile != null && Files.isRegularFile(passwordFile);
+    } finally {
+      lock.readLock().unlock();
+    }
   }
 
   /**
