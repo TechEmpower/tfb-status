@@ -37,6 +37,7 @@ import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.service.RunProgressMonitor;
+import tfb.status.service.TaskScheduler;
 
 /**
  * Registers all of this application's service classes.
@@ -146,6 +147,7 @@ public final class ServicesBinder extends AbstractBinder {
     bindAsContract(DiffGenerator.class).in(Singleton.class);
     bindAsContract(FileStore.class).in(Singleton.class);
     bindAsContract(RunProgressMonitor.class).in(Singleton.class);
+    bindAsContract(TaskScheduler.class).in(Singleton.class);
 
     bindFactory(ObjectMapperFactory.class, Singleton.class)
         .to(ObjectMapper.class)
