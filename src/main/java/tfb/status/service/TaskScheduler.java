@@ -104,7 +104,7 @@ public final class TaskScheduler implements PreDestroy {
       // someone cancels an in-progress task.  Throwing those exceptions is
       // expected behavior, so we don't want to clutter up our logs with them.
       throw e;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       logger.error("Uncaught exception from task", e);
       throw e;
     }
