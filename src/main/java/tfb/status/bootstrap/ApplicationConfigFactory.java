@@ -42,7 +42,7 @@ final class ApplicationConfigFactory implements Factory<ApplicationConfig> {
   public ApplicationConfig provide() {
     if (path == null) {
       logger.info("Using default configuration");
-      return new ApplicationConfig(null, null, null, null, null);
+      return new ApplicationConfig(null, null, null, null, null, null);
     }
 
     Path yamlFile = fileSystem.getPath(path);

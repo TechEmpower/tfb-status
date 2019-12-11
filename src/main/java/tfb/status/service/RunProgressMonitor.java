@@ -1,46 +1,43 @@
 package tfb.status.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.MessagingException;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.config.RunProgressMonitorConfig;
+import tfb.status.service.TaskScheduler.CancellableTask;
 
 /**
  * Complains over email when a benchmarking environment has stopped sending
  * updates.
  */
 @Singleton
-public final class RunProgressMonitor implements PostConstruct, PreDestroy {
+public final class RunProgressMonitor implements PreDestroy {
+  private final RunProgressMonitorConfig config;
   private final EmailSender emailSender;
+  private final TaskScheduler taskScheduler;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @GuardedBy("this")
-  private @Nullable ScheduledThreadPoolExecutor taskScheduler;
-
-  @GuardedBy("this")
-  private final Map<String, ScheduledFuture<?>> environmentToTask = new HashMap<>();
+  private final Map<String, CancellableTask> environmentToTask = new HashMap<>();
 
   @Inject
-  public RunProgressMonitor(EmailSender emailSender) {
-    this.emailSender = Objects.requireNonNull(emailSender);
-  }
+  public RunProgressMonitor(RunProgressMonitorConfig config,
+                            EmailSender emailSender,
+                            TaskScheduler taskScheduler) {
 
-  @Override
-  public void postConstruct() {
-    start();
+    this.config = Objects.requireNonNull(config);
+    this.emailSender = Objects.requireNonNull(emailSender);
+    this.taskScheduler = Objects.requireNonNull(taskScheduler);
   }
 
   @Override
@@ -49,29 +46,13 @@ public final class RunProgressMonitor implements PostConstruct, PreDestroy {
   }
 
   /**
-   * Initializes resources used by this service.
-   */
-  public synchronized void start() {
-    taskScheduler = new ScheduledThreadPoolExecutor(1);
-    taskScheduler.setRemoveOnCancelPolicy(true);
-    taskScheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
-    taskScheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-  }
-
-  /**
    * Cleans up resources used by this service.
    */
   public synchronized void stop() {
-    for (ScheduledFuture<?> task : environmentToTask.values())
-      task.cancel(false);
+    for (CancellableTask task : environmentToTask.values())
+      task.cancel();
 
     environmentToTask.clear();
-
-    ScheduledThreadPoolExecutor scheduler = this.taskScheduler;
-    if (scheduler != null) {
-      scheduler.shutdownNow();
-      this.taskScheduler = null;
-    }
   }
 
   /**
@@ -81,17 +62,12 @@ public final class RunProgressMonitor implements PostConstruct, PreDestroy {
    * @param environment the name of the environment
    * @param expectMore {@code true} if this service should expect more progress
    *        to be made in this same environment
-   * @throws IllegalStateException if this service is not running
    */
   public synchronized void recordProgress(String environment,
                                           boolean expectMore) {
     Objects.requireNonNull(environment);
 
-    ScheduledThreadPoolExecutor scheduler = this.taskScheduler;
-    if (scheduler == null)
-      throw new IllegalStateException("This service is not running");
-
-    if (environmentToTask.size() >= MAX_ENVIRONMENTS
+    if (environmentToTask.size() >= config.maxEnvironments
         && !environmentToTask.containsKey(environment)) {
       logger.warn(
           "Ignoring progress from environment {} because there are "
@@ -104,38 +80,31 @@ public final class RunProgressMonitor implements PostConstruct, PreDestroy {
 
     environmentToTask.compute(
         environment,
-        (String env, ScheduledFuture<?> oldTask) -> {
+        (String env, CancellableTask oldTask) -> {
 
           if (oldTask != null)
-            oldTask.cancel(false);
+            oldTask.cancel();
 
           if (!expectMore)
             return null;
 
-          return scheduler.schedule(
-              /* command= */ () -> {
-
+          return taskScheduler.schedule(
+              /* task= */
+              () -> {
                 synchronized (this) {
                   environmentToTask.remove(environment);
                 }
-
                 complain(environment);
               },
-              /* delay= */ COMPLAINT_DELAY.toMillis(),
-              /* unit= */ TimeUnit.MILLISECONDS);
+              /* delay= */
+              Duration.ofSeconds(config.environmentTimeoutSeconds));
         });
   }
-
-  private static final Duration COMPLAINT_DELAY = Duration.ofHours(6);
-  private static final int MAX_ENVIRONMENTS = 5;
 
   private void complain(String environment) {
     Objects.requireNonNull(environment);
 
-    String subject =
-        "<tfb> <auto> Benchmarking environment \""
-            + environment
-            + "\" crashed?";
+    String subject = environmentCrashedEmailSubject(environment);
 
     String textContent =
         "tfb-status hasn't received any new data from "
@@ -153,5 +122,12 @@ public final class RunProgressMonitor implements PostConstruct, PreDestroy {
           "Error sending email regarding lack of progress in environment {}",
           environment, e);
     }
+  }
+
+  @VisibleForTesting
+  static String environmentCrashedEmailSubject(String environment) {
+    return "<tfb> <auto> Benchmarking environment \""
+        + environment
+        + "\" crashed?";
   }
 }

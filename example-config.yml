@@ -26,3 +26,7 @@
 #  port: 25
 #  from: mhixson@techempower.com
 #  to: mhixson@techempower.com
+
+#runProgressMonitor:
+#  environmentTimeoutSeconds: 21600
+#  maxEnvironments: 5

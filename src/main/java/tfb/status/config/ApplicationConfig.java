@@ -18,6 +18,7 @@ public final class ApplicationConfig {
   public final AssetsConfig assets;
   public final MustacheConfig mustache;
   public final FileStoreConfig fileStore;
+  public final RunProgressMonitorConfig runProgressMonitor;
 
   /**
    * The configuration for outbound emails, or {@code null} if outbound emails
@@ -41,7 +42,10 @@ public final class ApplicationConfig {
       @Nullable FileStoreConfig fileStore,
 
       @JsonProperty(value = "email", required = false)
-      @Nullable EmailConfig email) {
+      @Nullable EmailConfig email,
+
+      @JsonProperty(value = "runProgressMonitor", required = false)
+      @Nullable RunProgressMonitorConfig runProgressMonitor) {
 
     this.http =
         Objects.requireNonNullElseGet(
@@ -64,5 +68,10 @@ public final class ApplicationConfig {
             () -> new FileStoreConfig(null));
 
     this.email = email;
+
+    this.runProgressMonitor =
+        Objects.requireNonNullElseGet(
+            runProgressMonitor,
+            () -> new RunProgressMonitorConfig(null, null));
   }
 }

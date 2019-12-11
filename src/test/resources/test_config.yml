@@ -21,3 +21,7 @@ mustache:
 
 fileStore:
   root: test_managed_files
+
+runProgressMonitor:
+  environmentTimeoutSeconds: 1
+  maxEnvironments: 100

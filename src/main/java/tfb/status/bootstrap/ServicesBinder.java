@@ -16,6 +16,7 @@ import tfb.status.config.EmailConfig;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.config.MustacheConfig;
+import tfb.status.config.RunProgressMonitorConfig;
 import tfb.status.handler.AboutPageHandler;
 import tfb.status.handler.AssetsHandler;
 import tfb.status.handler.AttributesPageHandler;
@@ -83,6 +84,10 @@ public final class ServicesBinder extends AbstractBinder {
 
     bindFactory(EmailConfigFactory.class, Singleton.class)
         .to(new TypeLiteral<Optional<EmailConfig>>() {})
+        .in(Singleton.class);
+
+    bindFactory(RunProgressMonitorConfigFactory.class, Singleton.class)
+        .to(RunProgressMonitorConfig.class)
         .in(Singleton.class);
 
     bindAsContract(HttpServer.class).in(Singleton.class);
