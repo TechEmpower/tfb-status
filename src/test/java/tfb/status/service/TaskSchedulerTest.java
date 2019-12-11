@@ -9,8 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.testlib.TestServicesInjector;
 import tfb.status.service.TaskScheduler.CancellableTask;
+import tfb.status.testlib.TestServicesInjector;
 
 /**
  * Tests for {@link TaskScheduler}.
