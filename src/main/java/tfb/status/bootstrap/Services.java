@@ -1,8 +1,13 @@
 package tfb.status.bootstrap;
 
+import com.google.common.reflect.TypeToken;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import javax.inject.Provider;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.Binder;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
@@ -56,7 +61,42 @@ public final class Services {
    * @throws NoSuchElementException if there is no service of that type
    */
   public <T> T getService(Class<T> type) {
-    T service = serviceLocator.getService(type);
+    // This unchecked cast is safe because getService(Type) is guaranteed to
+    // return an instance of the correct type.
+    @SuppressWarnings("unchecked")
+    T service = (T) getService((Type) type);
+    return service;
+  }
+
+  /**
+   * Returns the service of the specified type.
+   *
+   * <p>This method may be useful in cases where the service has a generic type.
+   * If the type of the service is a non-generic {@link Class}, use {@link
+   * #getService(Class)} instead of this method.
+   *
+   * @throws NoSuchElementException if there is no service of that type
+   */
+  public <T> T getService(TypeToken<T> type) {
+    // This unchecked cast is safe because getService(Type) is guaranteed to
+    // return an instance of the correct type.
+    @SuppressWarnings("unchecked")
+    T service = (T) getService(type.getType());
+    return service;
+  }
+
+  /**
+   * Returns the service of the specified type.
+   *
+   * <p>If the type of the service is a non-generic {@link Class}, use {@link
+   * #getService(Class)} instead of this method.  If the type of the service is
+   * generic, use {@link #getService(TypeToken)} instead of this method.
+   *
+   * @throws NoSuchElementException if there is no service of that type
+   */
+  public Object getService(Type type) {
+    Objects.requireNonNull(type);
+    Object service = serviceLocator.getService(type);
     if (service == null)
       throw new NoSuchElementException("There is no service of type " + type);
 
@@ -65,11 +105,23 @@ public final class Services {
 
   /**
    * Returns {@code true} if a service of the specified type exists.  In other
-   * words, this method returns {@code true} when {@link #getService(Class)}
+   * words, this method returns {@code true} when {@link #getService(Type)}
    * would succeed and {@code false} when that method would throw {@link
    * NoSuchElementException}.
+   *
+   * <p>Unlike {@link #getService(Type)}, calling this method will never result
+   * in the initialization of an instance of the service.
    */
-  public boolean hasService(Class<?> type) {
+  public boolean hasService(Type type) {
+    if (type instanceof ParameterizedType) {
+      Type rawType = ((ParameterizedType) type).getRawType();
+      if (rawType == Provider.class || rawType == IterableProvider.class) {
+        // Injecting Provider<T> always works even when the service locator
+        // can't provide an instance of T.  In that case, provider.get() returns
+        // null.
+        return true;
+      }
+    }
     return serviceLocator.getServiceHandle(type) != null;
   }
 }
