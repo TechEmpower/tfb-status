@@ -18,7 +18,7 @@ import tfb.status.testlib.TestServicesInjector;
 @ExtendWith(TestServicesInjector.class)
 public final class TaskSchedulerTest {
   /**
-   * Verifies that {@link TaskScheduler#submit(TaskScheduler.ThrowingTask)}
+   * Verifies that {@link TaskScheduler#submit(TaskScheduler.RunnableTask)}
    * works as expected when the task is allowed to complete.
    */
   @Test
@@ -46,7 +46,7 @@ public final class TaskSchedulerTest {
   }
 
   /**
-   * Verifies that {@link TaskScheduler#submit(TaskScheduler.ThrowingTask)}
+   * Verifies that {@link TaskScheduler#submit(TaskScheduler.RunnableTask)}
    * works as expected when the task is cancelled during execution.
    */
   @Test
@@ -80,7 +80,7 @@ public final class TaskSchedulerTest {
   }
 
   /**
-   * Verifies that {@link TaskScheduler#schedule(TaskScheduler.ThrowingTask,
+   * Verifies that {@link TaskScheduler#schedule(TaskScheduler.RunnableTask,
    * Duration)} works as expected when the task is allowed to complete.
    */
   @Test
@@ -107,7 +107,7 @@ public final class TaskSchedulerTest {
   }
 
   /**
-   * Verifies that {@link TaskScheduler#schedule(TaskScheduler.ThrowingTask,
+   * Verifies that {@link TaskScheduler#schedule(TaskScheduler.RunnableTask,
    * Duration)} works as expected when the task is cancelled before execution.
    */
   @Test
@@ -142,7 +142,7 @@ public final class TaskSchedulerTest {
   }
 
   /**
-   * Verifies that {@link TaskScheduler#schedule(TaskScheduler.ThrowingTask,
+   * Verifies that {@link TaskScheduler#schedule(TaskScheduler.RunnableTask,
    * Duration)} works as expected when the task is cancelled during execution.
    */
   @Test
@@ -179,7 +179,7 @@ public final class TaskSchedulerTest {
   }
 
   /**
-   * Verifies that {@link TaskScheduler#repeat(TaskScheduler.ThrowingTask,
+   * Verifies that {@link TaskScheduler#repeat(TaskScheduler.RunnableTask,
    * Duration, Duration)} works as expected when the task is cancelled before
    * the first execution.
    */
@@ -217,7 +217,7 @@ public final class TaskSchedulerTest {
   }
 
   /**
-   * Verifies that {@link TaskScheduler#repeat(TaskScheduler.ThrowingTask,
+   * Verifies that {@link TaskScheduler#repeat(TaskScheduler.RunnableTask,
    * Duration, Duration)} works as expected when the task is cancelled between
    * two executions.
    */
@@ -259,7 +259,7 @@ public final class TaskSchedulerTest {
   }
 
   /**
-   * Verifies that {@link TaskScheduler#repeat(TaskScheduler.ThrowingTask,
+   * Verifies that {@link TaskScheduler#repeat(TaskScheduler.RunnableTask,
    * Duration, Duration)} works as expected when the task is cancelled during
    * execution.
    */

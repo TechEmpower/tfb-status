@@ -94,7 +94,7 @@ public final class TaskScheduler implements PreDestroy {
   /**
    * Runs the specified task on the current thread and logs uncaught exceptions.
    */
-  private void runTaskLogExceptions(ThrowingTask task) throws Exception {
+  private void runTaskLogExceptions(RunnableTask task) throws Exception {
     try {
       task.run();
     } catch (InterruptedException
@@ -118,7 +118,7 @@ public final class TaskScheduler implements PreDestroy {
    * @throws RejectedExecutionException if {@link #shutdown()} was called
    */
   @CanIgnoreReturnValue
-  public CancellableTask submit(ThrowingTask task) {
+  public CancellableTask submit(RunnableTask task) {
     Objects.requireNonNull(task);
     return new ImmediateTask(task);
   }
@@ -132,7 +132,7 @@ public final class TaskScheduler implements PreDestroy {
    * @throws IllegalArgumentException if {@code delay} is negative
    * @throws RejectedExecutionException if {@link #shutdown()} was called
    */
-  public CancellableTask schedule(ThrowingTask task, Duration delay) {
+  public CancellableTask schedule(RunnableTask task, Duration delay) {
     Objects.requireNonNull(task);
     Objects.requireNonNull(delay);
 
@@ -156,7 +156,7 @@ public final class TaskScheduler implements PreDestroy {
    *         interval} is negative
    * @throws RejectedExecutionException if {@link #shutdown()} was called
    */
-  public CancellableTask repeat(ThrowingTask task,
+  public CancellableTask repeat(RunnableTask task,
                                 Duration initialDelay,
                                 Duration interval) {
 
@@ -179,7 +179,7 @@ public final class TaskScheduler implements PreDestroy {
    * A task whose execution may throw an exception.
    */
   @FunctionalInterface
-  public interface ThrowingTask {
+  public interface RunnableTask {
     /**
      * Runs this task.
      */
@@ -205,7 +205,7 @@ public final class TaskScheduler implements PreDestroy {
   private final class ImmediateTask implements CancellableTask {
     private final Future<?> future;
 
-    ImmediateTask(ThrowingTask task) {
+    ImmediateTask(RunnableTask task) {
       future =
           executor.submit(
               () -> {
@@ -224,7 +224,7 @@ public final class TaskScheduler implements PreDestroy {
    * A task that runs once after a delay.
    */
   private final class DelayedTask implements CancellableTask {
-    private final ThrowingTask task;
+    private final RunnableTask task;
 
     @GuardedBy("this")
     private boolean isCancelled = false;
@@ -232,7 +232,7 @@ public final class TaskScheduler implements PreDestroy {
     @GuardedBy("this")
     private Future<?> future;
 
-    DelayedTask(ThrowingTask task, long delayNanos) {
+    DelayedTask(RunnableTask task, long delayNanos) {
       this.task = Objects.requireNonNull(task);
 
       future =
@@ -264,7 +264,7 @@ public final class TaskScheduler implements PreDestroy {
    * A task that runs repeatedly.
    */
   private final class RepeatingTask implements CancellableTask {
-    private final ThrowingTask task;
+    private final RunnableTask task;
     private final long intervalNanos;
 
     @GuardedBy("this")
@@ -273,7 +273,7 @@ public final class TaskScheduler implements PreDestroy {
     @GuardedBy("this")
     private Future<?> future;
 
-    RepeatingTask(ThrowingTask task,
+    RepeatingTask(RunnableTask task,
                   long initialDelayNanos,
                   long intervalNanos) {
 
