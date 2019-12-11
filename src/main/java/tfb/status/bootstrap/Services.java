@@ -6,7 +6,6 @@ import java.lang.reflect.Type;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import javax.inject.Provider;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.Binder;
@@ -26,16 +25,6 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 public final class Services {
   private final ServiceLocator serviceLocator =
       ServiceLocatorUtilities.createAndPopulateServiceLocator();
-
-  /**
-   * Constructs the interface for managing this application's services.
-   *
-   * @param configFilePath the path to this application's YAML configuration
-   *        file, or {@code null} if a default configuration should be used
-   */
-  public Services(@Nullable String configFilePath) {
-    this(new ServicesBinder(configFilePath));
-  }
 
   /**
    * Use the specified binders to register service classes.
@@ -113,6 +102,7 @@ public final class Services {
    * in the initialization of an instance of the service.
    */
   public boolean hasService(Type type) {
+    Objects.requireNonNull(type);
     if (type instanceof ParameterizedType) {
       Type rawType = ((ParameterizedType) type).getRawType();
       if (rawType == Provider.class || rawType == IterableProvider.class) {

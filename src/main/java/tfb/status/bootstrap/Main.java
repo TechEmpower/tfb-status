@@ -36,7 +36,7 @@ public final class Main {
                 + " arguments instead");
     }
 
-    var services = new Services(configFilePath);
+    var services = new Services(new ServicesBinder(configFilePath));
     HttpServer httpServer = services.getService(HttpServer.class);
     httpServer.start();
   }
