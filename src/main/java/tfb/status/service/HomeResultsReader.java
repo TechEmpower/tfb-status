@@ -41,19 +41,16 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.service.TaskScheduler.CancellableTask;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.HomePageView.ResultsView;
 import tfb.status.view.HomePageView.ResultsView.Failure;
@@ -63,40 +60,33 @@ import tfb.status.view.Results;
  * Loads previously-uploaded results for display on the home page.
  */
 @Singleton
-public final class HomeResultsReader implements PostConstruct, PreDestroy {
+public final class HomeResultsReader implements PreDestroy {
   private final FileStore fileStore;
   private final ObjectMapper objectMapper;
   private final Clock clock;
+  private final TaskScheduler taskScheduler;
   private final Logger logger = LoggerFactory.getLogger(getClass());
-
-  private final LoadingCache<FileKey, FileSummary> fileCache =
-      Caffeine.newBuilder()
-              .maximumSize(FILE_CACHE_MAX_SIZE)
-              .build(key -> readFile(key.file));
 
   // This number should be greater than the total number of results files we'll
   // ever have on disk at once.
   private static final int FILE_CACHE_MAX_SIZE = 10_000;
 
   @GuardedBy("this")
-  private @Nullable ScheduledThreadPoolExecutor purgeScheduler;
+  private @Nullable LoadingCache<FileKey, FileSummary> fileCache;
 
   @GuardedBy("this")
-  private @Nullable ScheduledFuture<?> purgeTask;
+  private @Nullable CancellableTask purgeTask;
 
   @Inject
   public HomeResultsReader(FileStore fileStore,
                            ObjectMapper objectMapper,
-                           Clock clock) {
+                           Clock clock,
+                           TaskScheduler taskScheduler) {
 
     this.fileStore = Objects.requireNonNull(fileStore);
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.clock = Objects.requireNonNull(clock);
-  }
-
-  @Override
-  public void postConstruct() {
-    start();
+    this.taskScheduler = Objects.requireNonNull(taskScheduler);
   }
 
   @Override
@@ -105,43 +95,13 @@ public final class HomeResultsReader implements PostConstruct, PreDestroy {
   }
 
   /**
-   * Initializes resources used by this service.
-   */
-  public synchronized void start() {
-    purgeScheduler = new ScheduledThreadPoolExecutor(1);
-    purgeScheduler.setRemoveOnCancelPolicy(true);
-    purgeScheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
-    purgeScheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-
-    purgeTask =
-        purgeScheduler.scheduleWithFixedDelay(
-            /* command= */ () -> {
-              try {
-                purgeUnreachableCacheKeys();
-              } catch (RuntimeException e) {
-                // An uncaught exception would de-schedule this task.
-                logger.error("Error purging unreachable cache keys", e);
-              }
-            },
-            /* initialDelay= */ 1,
-            /* delay= */ 1,
-            /* unit= */ TimeUnit.HOURS);
-  }
-
-  /**
    * Cleans up resources used by this service.
    */
   public synchronized void stop() {
-    ScheduledFuture<?> task = this.purgeTask;
+    CancellableTask task = this.purgeTask;
     if (task != null) {
-      task.cancel(false);
+      task.cancel();
       this.purgeTask = null;
-    }
-
-    ScheduledThreadPoolExecutor scheduler = this.purgeScheduler;
-    if (scheduler != null) {
-      scheduler.shutdownNow();
-      this.purgeScheduler = null;
     }
   }
 
@@ -210,8 +170,10 @@ public final class HomeResultsReader implements PostConstruct, PreDestroy {
         keys.add(new FileKey(file));
     }
 
+    LoadingCache<FileKey, FileSummary> cache = getFileCache();
+
     return keys.build()
-               .map(key -> fileCache.get(key))
+               .map(key -> cache.get(key))
                .filter(summary -> summary != null);
   }
 
@@ -626,18 +588,43 @@ public final class HomeResultsReader implements PostConstruct, PreDestroy {
   }
 
   /**
+   * Returns the lazy-initialized internal cache.
+   */
+  private synchronized LoadingCache<FileKey, FileSummary> getFileCache() {
+    LoadingCache<FileKey, FileSummary> existing = this.fileCache;
+    if (existing != null)
+      return existing;
+
+    LoadingCache<FileKey, FileSummary> cache =
+        Caffeine.newBuilder()
+                .maximumSize(FILE_CACHE_MAX_SIZE)
+                .build(key -> readFile(key.file));
+
+    this.purgeTask =
+        taskScheduler.repeat(
+            /* task= */ () -> purgeUnreachableCacheKeys(cache),
+            /* initialDelay= */ Duration.ofHours(1),
+            /* interval= */ Duration.ofHours(1));
+
+    this.fileCache = cache;
+    return cache;
+  }
+
+  /**
    * Trims the internal cache, removing entries that are "dead" because they
    * have {@linkplain FileKey#isUnreachable() unreachable} keys.
    */
-  private void purgeUnreachableCacheKeys() {
-    ImmutableSet<FileKey> unreachableKeys =
-        fileCache.asMap()
-                 .keySet()
-                 .stream()
-                 .filter(key -> key.isUnreachable())
-                 .collect(toImmutableSet());
+  private static void purgeUnreachableCacheKeys(
+      LoadingCache<FileKey, FileSummary> cache) {
 
-    fileCache.invalidateAll(unreachableKeys);
+    ImmutableSet<FileKey> unreachableKeys =
+        cache.asMap()
+             .keySet()
+             .stream()
+             .filter(key -> key.isUnreachable())
+             .collect(toImmutableSet());
+
+    cache.invalidateAll(unreachableKeys);
   }
 
   /**
