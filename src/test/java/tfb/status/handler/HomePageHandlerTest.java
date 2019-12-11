@@ -45,5 +45,5 @@ public final class HomePageHandlerTest {
     assertContains(
         "This is the test announcement!",
         body);
-}
+  }
 }
