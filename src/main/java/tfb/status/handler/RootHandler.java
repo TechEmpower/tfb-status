@@ -1,17 +1,19 @@
 package tfb.status.handler;
 
+import io.undertow.server.DefaultResponseListener;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.ResponseCommitListener;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
+import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.undertow.extensions.ExceptionLoggingHandler;
 import tfb.status.undertow.extensions.LazyHandler;
 
 /**
@@ -85,10 +87,12 @@ public final class RootHandler implements HttpHandler {
         pathHandler.addPrefixPath(prefixPath.value(), handler);
     }
 
+    Logger logger = LoggerFactory.getLogger("http");
+
     HttpHandler handler = pathHandler;
 
-    handler = newAccessLoggingHandler(handler);
-    handler = new ExceptionLoggingHandler(handler);
+    handler = newAccessLoggingHandler(handler, logger);
+    handler = new ExceptionLoggingHandler(handler, logger);
     handler = new BlockingHandler(handler);
 
     delegate = handler;
@@ -99,10 +103,10 @@ public final class RootHandler implements HttpHandler {
     delegate.handleRequest(exchange);
   }
 
-  private static HttpHandler newAccessLoggingHandler(HttpHandler handler) {
+  private static HttpHandler newAccessLoggingHandler(HttpHandler handler,
+                                                     Logger logger) {
     Objects.requireNonNull(handler);
-
-    Logger logger = LoggerFactory.getLogger("http");
+    Objects.requireNonNull(logger);
 
     String formatString =
         String.join(
@@ -117,6 +121,54 @@ public final class RootHandler implements HttpHandler {
         /* accessLogReceiver= */ message -> logger.info(message),
         /* formatString= */ formatString,
         /* classLoader= */ Thread.currentThread().getContextClassLoader());
+  }
+
+  /**
+   * An HTTP handler that ensures that <em>all</em> uncaught exceptions from a
+   * caller-supplied HTTP handler are logged.
+   *
+   * <p>By default, Undertow only logs <em>some</em> uncaught exceptions.  In
+   * particular, it does not log uncaught {@link IOException}s.  This class
+   * fixes that problem.
+   */
+  // TODO: Figure out how to disable Undertow's default exception logging.
+  private static final class ExceptionLoggingHandler implements HttpHandler {
+    private final HttpHandler handler;
+    private final ResponseCommitListener listener;
+
+    ExceptionLoggingHandler(HttpHandler handler, Logger logger) {
+      this.handler = Objects.requireNonNull(handler);
+      this.listener = new ExceptionLoggingListener(logger);
+    }
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+      exchange.addResponseCommitListener(listener);
+      handler.handleRequest(exchange);
+    }
+
+    private static final class ExceptionLoggingListener
+        implements ResponseCommitListener {
+
+      private final Logger logger;
+
+      ExceptionLoggingListener(Logger logger) {
+        this.logger = Objects.requireNonNull(logger);
+      }
+
+      @Override
+      public void beforeCommit(HttpServerExchange exchange) {
+        Throwable exception =
+            exchange.getAttachment(DefaultResponseListener.EXCEPTION);
+
+        if (exception != null)
+          logger.error(
+              "Uncaught exception from HTTP handler {} {}",
+              exchange.getRequestMethod(),
+              exchange.getRequestURI(),
+              exception);
+      }
+    }
   }
 
   /**
