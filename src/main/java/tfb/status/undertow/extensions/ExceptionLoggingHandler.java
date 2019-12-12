@@ -1,9 +1,9 @@
 package tfb.status.undertow.extensions;
 
 import io.undertow.server.DefaultResponseListener;
-import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.ResponseCommitListener;
 import java.io.IOException;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class ExceptionLoggingHandler implements HttpHandler {
   private final HttpHandler handler;
-  private final ExchangeCompletionListener listener;
+  private final ResponseCommitListener listener;
 
   /**
    * Constructs a new HTTP handler that forwards all requests to the provided
@@ -34,18 +34,17 @@ public final class ExceptionLoggingHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws Exception {
-    exchange.addExchangeCompleteListener(listener);
+    exchange.addResponseCommitListener(listener);
     handler.handleRequest(exchange);
   }
 
   private static final class ExceptionLoggingListener
-      implements ExchangeCompletionListener {
+      implements ResponseCommitListener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public void exchangeEvent(HttpServerExchange exchange,
-                              NextListener nextListener) {
+    public void beforeCommit(HttpServerExchange exchange) {
       Throwable exception =
           exchange.getAttachment(DefaultResponseListener.EXCEPTION);
 
@@ -55,8 +54,6 @@ public final class ExceptionLoggingHandler implements HttpHandler {
             exchange.getRequestMethod(),
             exchange.getRequestURI(),
             exception);
-
-      nextListener.proceed();
     }
   }
 }

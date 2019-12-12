@@ -15,7 +15,7 @@ import tfb.status.undertow.extensions.ExceptionLoggingHandler;
 import tfb.status.undertow.extensions.LazyHandler;
 
 /**
- * Handles every incoming request, forwarding to other handlers based on path.
+ * Handles every incoming HTTP request, routing to other handlers based on path.
  *
  * <p>In order for this root handler to recognize the other handlers, those
  * other handlers must:
@@ -24,6 +24,17 @@ import tfb.status.undertow.extensions.LazyHandler;
  * <li>Use this application's dependency injection framework to bind themselves
  *     to the {@link HttpHandler} contract.
  * <li>Annotate themselves with either {@link ExactPath} or {@link PrefixPath}.
+ * </ul>
+ *
+ * <p>This handler provides the following features in addition to routing:
+ *
+ * <ul>
+ * <li>Incoming HTTP requests are logged.
+ * <li>Exceptions thrown from other handlers are logged.
+ * <li>Incoming HTTP requests are {@linkplain HttpServerExchange#startBlocking()
+ *     blocking}.  Other handlers are permitted to perform blocking operations
+ *     such as {@link HttpServerExchange#getInputStream()} and {@link
+ *     HttpServerExchange#getOutputStream()}.
  * </ul>
  *
  * @see ExactPath
