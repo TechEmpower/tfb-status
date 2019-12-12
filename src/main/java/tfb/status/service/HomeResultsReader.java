@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -50,7 +51,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.service.TaskScheduler.CancellableTask;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.HomePageView.ResultsView;
 import tfb.status.view.HomePageView.ResultsView.Failure;
@@ -75,7 +75,7 @@ public final class HomeResultsReader implements PreDestroy {
   private @Nullable LoadingCache<FileKey, FileSummary> fileCache;
 
   @GuardedBy("this")
-  private @Nullable CancellableTask purgeTask;
+  private @Nullable Future<?> purgeTask;
 
   @Inject
   public HomeResultsReader(FileStore fileStore,
@@ -98,9 +98,9 @@ public final class HomeResultsReader implements PreDestroy {
    * Cleans up resources used by this service.
    */
   public synchronized void stop() {
-    CancellableTask task = this.purgeTask;
+    Future<?> task = this.purgeTask;
     if (task != null) {
-      task.cancel();
+      task.cancel(true);
       this.purgeTask = null;
     }
   }

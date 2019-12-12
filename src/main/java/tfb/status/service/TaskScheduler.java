@@ -1,23 +1,28 @@
 package tfb.status.service;
 
+import com.google.common.util.concurrent.AbstractFuture;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import java.io.InterruptedIOException;
-import java.nio.channels.ClosedByInterruptException;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +32,22 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public final class TaskScheduler implements PreDestroy {
-  private final ScheduledExecutorService scheduler;
-  private final ExecutorService executor;
+  private final ListeningScheduledExecutorService scheduler;
+  private final ListeningExecutorService executor;
   private final Logger logger = LoggerFactory.getLogger(getClass());
+
+  private final FutureCallback<Object> logExceptionCallback =
+      new FutureCallback<Object>() {
+        @Override
+        public void onSuccess(@Nullable Object result) {
+          // Do nothing.
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          logException(t);
+        }
+      };
 
   public TaskScheduler() {
     var scheduler = new ScheduledThreadPoolExecutor(1);
@@ -38,7 +56,8 @@ public final class TaskScheduler implements PreDestroy {
     scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
 
     this.scheduler =
-        Executors.unconfigurableScheduledExecutorService(scheduler);
+        MoreExecutors.listeningDecorator(
+            Executors.unconfigurableScheduledExecutorService(scheduler));
 
     ThreadFactory threadFactory =
         new ThreadFactoryBuilder()
@@ -55,7 +74,8 @@ public final class TaskScheduler implements PreDestroy {
             /* threadFactory= */ threadFactory);
 
     this.executor =
-        Executors.unconfigurableExecutorService(executor);
+        MoreExecutors.listeningDecorator(
+            Executors.unconfigurableExecutorService(executor));
   }
 
   @Override
@@ -91,36 +111,50 @@ public final class TaskScheduler implements PreDestroy {
     }
   }
 
-  /**
-   * Runs the specified task on the current thread and logs uncaught exceptions.
-   */
-  private void runTaskLogExceptions(RunnableTask task) throws Exception {
-    try {
+  private void logException(Throwable t) {
+    if (!(t instanceof CancellationException))
+      logger.error("Uncaught exception from task", t);
+  }
+
+  private <T> ListenableFuture<T> addCallback(
+      ListenableFuture<T> future,
+      FutureCallback<? super T> callback) {
+    Futures.addCallback(future, callback, executor);
+    return future;
+  }
+
+  private static Callable<?> asCallable(Runnable task) {
+    Objects.requireNonNull(task);
+    return () -> {
       task.run();
-    } catch (InterruptedException
-        | ClosedByInterruptException
-        | InterruptedIOException e) {
-      // Ignore various forms of InterruptedException that are thrown when
-      // someone cancels an in-progress task.  Throwing those exceptions is
-      // expected behavior, so we don't want to clutter up our logs with them.
-      throw e;
-    } catch (Throwable e) {
-      logger.error("Uncaught exception from task", e);
-      throw e;
-    }
+      return null;
+    };
   }
 
   /**
    * Runs the specified task asynchronously as soon as possible.
    *
    * @param task the task to run
-   * @return a wrapper that may be used to cancel the task
+   * @return a future that completes when the task does and that may be used to
+   *         cancel the task
    * @throws RejectedExecutionException if {@link #shutdown()} was called
    */
-  @CanIgnoreReturnValue
-  public CancellableTask submit(RunnableTask task) {
+  @CanIgnoreReturnValue // failure will be logged, at least
+  public ListenableFuture<?> submit(Runnable task) {
+    return submit(asCallable(task));
+  }
+
+  /**
+   * Runs the specified task asynchronously as soon as possible.
+   *
+   * @param task the task to run
+   * @return a future that completes with the result of the task and that may be
+   *         used to cancel the task
+   * @throws RejectedExecutionException if {@link #shutdown()} was called
+   */
+  public <T> ListenableFuture<T> submit(Callable<T> task) {
     Objects.requireNonNull(task);
-    return new ImmediateTask(task);
+    return addCallback(executor.submit(task), logExceptionCallback);
   }
 
   /**
@@ -128,11 +162,26 @@ public final class TaskScheduler implements PreDestroy {
    *
    * @param task the task to run
    * @param delay the amount of time to wait before running the task
-   * @return a wrapper that may be used to cancel the task
+   * @return a future that completes when the task does and that may be used to
+   *         cancel the task
    * @throws IllegalArgumentException if {@code delay} is negative
    * @throws RejectedExecutionException if {@link #shutdown()} was called
    */
-  public CancellableTask schedule(RunnableTask task, Duration delay) {
+  public ListenableFuture<?> schedule(Runnable task, Duration delay) {
+    return schedule(asCallable(task), delay);
+  }
+
+  /**
+   * Runs the specified task asynchronously after a delay.
+   *
+   * @param task the task to run
+   * @param delay the amount of time to wait before running the task
+   * @return a future that completes with the result of the task and that may be
+   *         used to cancel the task
+   * @throws IllegalArgumentException if {@code delay} is negative
+   * @throws RejectedExecutionException if {@link #shutdown()} was called
+   */
+  public <T> ListenableFuture<T> schedule(Callable<T> task, Duration delay) {
     Objects.requireNonNull(task);
     Objects.requireNonNull(delay);
 
@@ -140,26 +189,59 @@ public final class TaskScheduler implements PreDestroy {
       throw new IllegalArgumentException(
           "negative delay: " + delay);
 
-    return new DelayedTask(task, delay.toNanos());
+    return addCallback(
+        Futures.scheduleAsync(
+            () -> executor.submit(task),
+            delay,
+            scheduler),
+        logExceptionCallback);
   }
 
   /**
    * Repeatedly runs the specified task asynchronously.
+   *
+   * <p>The returned future will never complete, successfully or exceptionally,
+   * unless it is cancelled.  Exceptions thrown from the task's {@link
+   * Runnable#run()} method are logged but not propagated to the returned
+   * future, and such exceptions will not prevent the task from repeating.
    *
    * @param task the task to run
    * @param initialDelay the amount of time to wait before running the task
    *        initially
    * @param interval the amount of time to wait after the task finishes running
    *        before running the task again
-   * @return a wrapper that may be used to cancel the task
+   * @return a future that may be used to cancel the task
    * @throws IllegalArgumentException if {@code initialDelay} or {@code
    *         interval} is negative
    * @throws RejectedExecutionException if {@link #shutdown()} was called
    */
-  public CancellableTask repeat(RunnableTask task,
-                                Duration initialDelay,
-                                Duration interval) {
+  public ListenableFuture<?> repeat(Runnable task,
+                                    Duration initialDelay,
+                                    Duration interval) {
+    return repeat(asCallable(task), initialDelay, interval);
+  }
 
+  /**
+   * Repeatedly runs the specified task asynchronously.
+   *
+   * <p>The returned future will never complete, successfully or exceptionally,
+   * unless it is cancelled.  Exceptions thrown from the task's {@link
+   * Callable#call()} method are logged but not propagated to the returned
+   * future, and such exceptions will not prevent the task from repeating.
+   *
+   * @param task the task to run
+   * @param initialDelay the amount of time to wait before running the task
+   *        initially
+   * @param interval the amount of time to wait after the task finishes running
+   *        before running the task again
+   * @return a future that may be used to cancel the task
+   * @throws IllegalArgumentException if {@code initialDelay} or {@code
+   *         interval} is negative
+   * @throws RejectedExecutionException if {@link #shutdown()} was called
+   */
+  public <T> ListenableFuture<T> repeat(Callable<T> task,
+                                        Duration initialDelay,
+                                        Duration interval) {
     Objects.requireNonNull(task);
     Objects.requireNonNull(initialDelay);
     Objects.requireNonNull(interval);
@@ -172,150 +254,58 @@ public final class TaskScheduler implements PreDestroy {
       throw new IllegalArgumentException(
           "negative interval: " + interval);
 
-    return new RepeatingTask(task, initialDelay.toNanos(), interval.toNanos());
+    return new RepeatingTask<>(task, initialDelay, interval);
   }
 
-  /**
-   * A task whose execution may throw an exception.
-   */
-  @FunctionalInterface
-  public interface RunnableTask {
-    /**
-     * Runs this task.
-     */
-    void run() throws Exception;
-  }
+  private final class RepeatingTask<T>
+      extends AbstractFuture<T>
+      implements FutureCallback<T> {
 
-  /**
-   * A task that will run asynchronously and that can be cancelled.
-   */
-  public interface CancellableTask {
-    /**
-     * Prevents this task from running in the future and interrupts this task if
-     * it is currently running.  If this task has already finished running and
-     * it is not scheduled to run again in the future, then calling this
-     * function has no effect.
-     */
-    void cancel();
-  }
-
-  /**
-   * A task that runs once immediately.
-   */
-  private final class ImmediateTask implements CancellableTask {
-    private final Future<?> future;
-
-    ImmediateTask(RunnableTask task) {
-      future =
-          executor.submit(
-              () -> {
-                runTaskLogExceptions(task);
-                return null;
-              });
-    }
-
-    @Override
-    public void cancel() {
-      future.cancel(true);
-    }
-  }
-
-  /**
-   * A task that runs once after a delay.
-   */
-  private final class DelayedTask implements CancellableTask {
-    private final RunnableTask task;
+    private final Callable<T> task;
+    private final Duration interval;
 
     @GuardedBy("this")
-    private boolean isCancelled = false;
+    private ListenableFuture<T> next;
 
-    @GuardedBy("this")
-    private Future<?> future;
-
-    DelayedTask(RunnableTask task, long delayNanos) {
-      this.task = Objects.requireNonNull(task);
-
-      future =
-          scheduler.schedule(
-              () -> submitTask(),
-              delayNanos,
-              TimeUnit.NANOSECONDS);
-    }
-
-    private synchronized void submitTask() {
-      if (!isCancelled) {
-        future =
-            executor.submit(
-                () -> {
-                  runTaskLogExceptions(task);
-                  return null;
-                });
-      }
-    }
-
-    @Override
-    public synchronized void cancel() {
-      isCancelled = true;
-      future.cancel(true);
-    }
-  }
-
-  /**
-   * A task that runs repeatedly.
-   */
-  private final class RepeatingTask implements CancellableTask {
-    private final RunnableTask task;
-    private final long intervalNanos;
-
-    @GuardedBy("this")
-    private boolean isCancelled = false;
-
-    @GuardedBy("this")
-    private Future<?> future;
-
-    RepeatingTask(RunnableTask task,
-                  long initialDelayNanos,
-                  long intervalNanos) {
+    RepeatingTask(Callable<T> task,
+                  Duration initialDelay,
+                  Duration interval) {
 
       this.task = Objects.requireNonNull(task);
-      this.intervalNanos = intervalNanos;
+      this.interval = Objects.requireNonNull(interval);
 
-      future =
-          scheduler.schedule(
-              () -> submitTask(),
-              initialDelayNanos,
-              TimeUnit.NANOSECONDS);
+      next = scheduleNext(Objects.requireNonNull(initialDelay));
     }
 
-    private synchronized void submitTask() {
-      if (!isCancelled) {
-        future =
-            executor.submit(
-                () -> {
-                  try {
-                    runTaskLogExceptions(task);
-                    return null;
-                  } finally {
-                    scheduleNext();
-                  }
-                });
-      }
+    private ListenableFuture<T> scheduleNext(Duration delay) {
+      return addCallback(
+          Futures.scheduleAsync(
+              () -> executor.submit(task),
+              delay,
+              scheduler),
+          this);
     }
 
-    private synchronized void scheduleNext() {
-      if (!isCancelled) {
-        future =
-            scheduler.schedule(
-                () -> submitTask(),
-                intervalNanos,
-                TimeUnit.NANOSECONDS);
-      }
+    private synchronized void reschedule() {
+      if (!isCancelled())
+        next = scheduleNext(interval);
     }
 
     @Override
-    public synchronized void cancel() {
-      isCancelled = true;
-      future.cancel(true);
+    protected synchronized void afterDone() {
+      if (isCancelled())
+        next.cancel(wasInterrupted());
+    }
+
+    @Override
+    public void onSuccess(@Nullable T result) {
+      reschedule();
+    }
+
+    @Override
+    public void onFailure(Throwable t) {
+      logException(t);
+      reschedule();
     }
   }
 }

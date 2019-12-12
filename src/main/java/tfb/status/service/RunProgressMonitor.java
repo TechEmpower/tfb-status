@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Future;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.MessagingException;
@@ -14,7 +15,6 @@ import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.RunProgressMonitorConfig;
-import tfb.status.service.TaskScheduler.CancellableTask;
 
 /**
  * Complains over email when a benchmarking environment has stopped sending
@@ -28,7 +28,7 @@ public final class RunProgressMonitor implements PreDestroy {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @GuardedBy("this")
-  private final Map<String, CancellableTask> environmentToTask = new HashMap<>();
+  private final Map<String, Future<?>> environmentToTask = new HashMap<>();
 
   @Inject
   public RunProgressMonitor(RunProgressMonitorConfig config,
@@ -49,8 +49,8 @@ public final class RunProgressMonitor implements PreDestroy {
    * Cleans up resources used by this service.
    */
   public synchronized void stop() {
-    for (CancellableTask task : environmentToTask.values())
-      task.cancel();
+    for (Future<?> task : environmentToTask.values())
+      task.cancel(true);
 
     environmentToTask.clear();
   }
@@ -80,10 +80,10 @@ public final class RunProgressMonitor implements PreDestroy {
 
     environmentToTask.compute(
         environment,
-        (String env, CancellableTask oldTask) -> {
+        (String env, Future<?> oldTask) -> {
 
           if (oldTask != null)
-            oldTask.cancel();
+            oldTask.cancel(true);
 
           if (!expectMore)
             return null;
