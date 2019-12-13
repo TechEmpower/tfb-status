@@ -1,6 +1,7 @@
 package tfb.status.service;
 
 import com.google.common.util.concurrent.AbstractFuture;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -9,12 +10,10 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import java.io.InterruptedIOException;
-import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.FileLockInterruptionException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -23,6 +22,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +35,20 @@ public final class TaskScheduler implements PreDestroy {
   private final ListeningScheduledExecutorService scheduler;
   private final ListeningExecutorService executor;
   private final Logger logger = LoggerFactory.getLogger(getClass());
+
+  private final FutureCallback<Object> logExceptions =
+      new FutureCallback<Object>() {
+        @Override
+        public void onSuccess(@Nullable Object result) {
+          // Do nothing.
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          if (!(t instanceof CancellationException))
+            logger.error("Uncaught exception from task", t);
+        }
+      };
 
   public TaskScheduler() {
     var scheduler = new ScheduledThreadPoolExecutor(1);
@@ -98,36 +112,6 @@ public final class TaskScheduler implements PreDestroy {
     }
   }
 
-  private <T> Callable<T> exceptionLoggingTask(Callable<T> task) {
-    Objects.requireNonNull(task);
-    return () -> {
-      try {
-        return task.call();
-      } catch (InterruptedException
-          | ClosedByInterruptException
-          | InterruptedIOException
-          | FileLockInterruptionException e) {
-        //
-        // Do not log the various forms of InterruptedException that are thrown
-        // when someone calls `future.cancel(true)` on an in-progress task.
-        // Throwing those exceptions is expected behavior.
-        //
-        throw e;
-      } catch (Throwable t) {
-        logger.error("Uncaught exception from task", t);
-        throw t;
-      }
-    };
-  }
-
-  private static Duration checkNonNegative(Duration duration, String name) {
-    if (duration.isNegative())
-      throw new IllegalArgumentException(
-          "negative " + name + ": " + duration);
-
-    return duration;
-  }
-
   /**
    * Runs the specified task asynchronously as soon as possible.
    *
@@ -150,11 +134,13 @@ public final class TaskScheduler implements PreDestroy {
    * @throws RejectedExecutionException if {@link #shutdown()} was called
    */
   public <T> ListenableFuture<T> submit(Callable<T> task) {
-    return internalSubmit(exceptionLoggingTask(task));
+    return internalSubmit(Objects.requireNonNull(task));
   }
 
   private <T> ListenableFuture<T> internalSubmit(Callable<T> task) {
-    return executor.submit(task);
+    ListenableFuture<T> future = executor.submit(task);
+    Futures.addCallback(future, logExceptions, executor);
+    return future;
   }
 
   /**
@@ -182,9 +168,14 @@ public final class TaskScheduler implements PreDestroy {
    * @throws RejectedExecutionException if {@link #shutdown()} was called
    */
   public <T> ListenableFuture<T> schedule(Callable<T> task, Duration delay) {
-    return internalSchedule(
-        exceptionLoggingTask(task),
-        checkNonNegative(delay, "delay"));
+    Objects.requireNonNull(task);
+    Objects.requireNonNull(delay);
+
+    if (delay.isNegative())
+      throw new IllegalArgumentException(
+          "negative delay: " + delay);
+
+    return internalSchedule(task, delay);
   }
 
   private <T> ListenableFuture<T> internalSchedule(Callable<T> task,
@@ -240,42 +231,50 @@ public final class TaskScheduler implements PreDestroy {
   public <T> ListenableFuture<T> repeat(Callable<T> task,
                                         Duration initialDelay,
                                         Duration interval) {
-    return internalRepeat(
-        exceptionLoggingTask(task),
-        checkNonNegative(initialDelay, "initialDelay"),
-        checkNonNegative(interval, "interval"));
-  }
+    Objects.requireNonNull(task);
+    Objects.requireNonNull(initialDelay);
+    Objects.requireNonNull(interval);
 
-  private <T> ListenableFuture<T> internalRepeat(Callable<T> task,
-                                                 Duration initialDelay,
-                                                 Duration interval) {
+    if (initialDelay.isNegative())
+      throw new IllegalArgumentException(
+          "negative initialDelay: " + initialDelay);
+
+    if (interval.isNegative())
+      throw new IllegalArgumentException(
+          "negative interval: " + interval);
+
     return new AbstractFuture<T>() {
-      final Object lock = this;
+      @GuardedBy("this")
+      ListenableFuture<T> next = internalSchedule(task, initialDelay);
 
-      @GuardedBy("lock")
-      ListenableFuture<T> next =
-          internalSchedule(
-              new Callable<T>() {
-                @Override
-                public T call() throws Exception {
-                  try {
-                    return task.call();
-                  } finally {
-                    synchronized (lock) {
-                      if (!isCancelled())
-                        next = internalSchedule(this, interval);
-                    }
-                  }
-                }
-              },
-              initialDelay);
+      final FutureCallback<T> reschedule =
+          new FutureCallback<T>() {
+            @Override
+            public void onSuccess(@Nullable T result) {
+              scheduleNext();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              scheduleNext();
+            }
+          };
+
+      {
+        Futures.addCallback(next, reschedule, executor);
+      }
+
+      synchronized void scheduleNext() {
+        if (!isCancelled()) {
+          next = internalSchedule(task, interval);
+          Futures.addCallback(next, reschedule, executor);
+        }
+      }
 
       @Override
-      protected void afterDone() {
-        synchronized (lock) {
-          if (isCancelled())
-            next.cancel(wasInterrupted());
-        }
+      protected synchronized void afterDone() {
+        if (isCancelled())
+          next.cancel(wasInterrupted());
       }
     };
   }
