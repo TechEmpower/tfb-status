@@ -87,7 +87,7 @@
       </ignoreVersions>
     </rule>
 
-    <rule groupId="ch.qos.logback" artifactId="logback-classic" comparisonMethod="maven">
+    <rule groupId="ch.qos.logback" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-alpha[\d]+</ignoreVersion>
       </ignoreVersions>
