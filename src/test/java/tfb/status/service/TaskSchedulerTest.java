@@ -2,12 +2,16 @@ package tfb.status.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import java.io.IOException;
 import java.time.Duration;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +19,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.testlib.LogTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -90,6 +95,47 @@ public final class TaskSchedulerTest {
     assertThrows(
         CancellationException.class,
         () -> task.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#submit(Runnable)} logs uncaught
+   * exceptions.
+   */
+  @Test
+  public void testSubmit_runnable_uncaughtException(TaskScheduler taskScheduler,
+                                                    LogTester logs)
+      throws InterruptedException {
+
+    String message = "test exception " + UUID.randomUUID();
+
+    ListenableFuture<?> task =
+        taskScheduler.submit(
+            () -> {
+              throw new TestException(message);
+            });
+
+    Thread.sleep(50);
+    assertFalse(task.cancel(true));
+
+    ExecutionException thrown =
+        assertThrows(
+            ExecutionException.class,
+            () -> task.get(0, TimeUnit.MILLISECONDS));
+
+    Throwable cause = thrown.getCause();
+    assertNotNull(cause);
+    assertEquals(message, cause.getMessage());
+    assertEquals(TestException.class, cause.getClass());
+
+    assertEquals(
+        1,
+        logs.getEvents()
+            .map(event -> event.getThrowableProxy())
+            .filter(throwable -> throwable != null)
+            .filter(throwable -> Objects.equals(throwable.getMessage(), message))
+            .filter(throwable -> Objects.equals(throwable.getClassName(),
+                                                TestException.class.getName()))
+            .count());
   }
 
   /**
@@ -190,6 +236,49 @@ public final class TaskSchedulerTest {
     assertThrows(
         CancellationException.class,
         () -> task.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#schedule(Runnable, Duration)} logs
+   * uncaught exceptions.
+   */
+  @Test
+  public void testSchedule_runnable_uncaughtException(TaskScheduler taskScheduler,
+                                                    LogTester logs)
+      throws InterruptedException {
+
+    String message = "test exception " + UUID.randomUUID();
+    Duration delay = Duration.ofMillis(50);
+
+    ListenableFuture<?> task =
+        taskScheduler.schedule(
+            () -> {
+              throw new TestException(message);
+            },
+            delay);
+
+    Thread.sleep(delay.multipliedBy(2).toMillis());
+    assertFalse(task.cancel(true));
+
+    ExecutionException thrown =
+        assertThrows(
+            ExecutionException.class,
+            () -> task.get(0, TimeUnit.MILLISECONDS));
+
+    Throwable cause = thrown.getCause();
+    assertNotNull(cause);
+    assertEquals(message, cause.getMessage());
+    assertEquals(TestException.class, cause.getClass());
+
+    assertEquals(
+        1,
+        logs.getEvents()
+            .map(event -> event.getThrowableProxy())
+            .filter(throwable -> throwable != null)
+            .filter(throwable -> Objects.equals(throwable.getMessage(), message))
+            .filter(throwable -> Objects.equals(throwable.getClassName(),
+                                                TestException.class.getName()))
+            .count());
   }
 
   /**
@@ -307,5 +396,65 @@ public final class TaskSchedulerTest {
     assertThrows(
         CancellationException.class,
         () -> task.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#repeat(Runnable, Duration, Duration)}
+   * logs uncaught exceptions.
+   */
+  @Test
+  public void testRepeat_runnable_uncaughtException(TaskScheduler taskScheduler,
+                                                      LogTester logs)
+      throws InterruptedException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    String messagePrefix = "test exception " + UUID.randomUUID() + "#";
+    Duration delay = Duration.ofMillis(50);
+
+    ListenableFuture<?> task =
+        taskScheduler.repeat(
+            () -> {
+              throw new TestException(
+                  messagePrefix + counter.incrementAndGet());
+            },
+            delay,
+            delay);
+
+    // Let the task run at least twice.
+    Thread.sleep(delay.multipliedBy(3).toMillis());
+
+    assertTrue(task.cancel(true));
+
+    assertThrows(
+        CancellationException.class,
+        () -> task.get(0, TimeUnit.MILLISECONDS));
+
+    assertEquals(
+        1,
+        logs.getEvents()
+            .map(event -> event.getThrowableProxy())
+            .filter(throwable -> throwable != null)
+            .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 1))
+            .filter(throwable -> Objects.equals(throwable.getClassName(),
+                                                TestException.class.getName()))
+            .count());
+
+    assertEquals(
+        1,
+        logs.getEvents()
+            .map(event -> event.getThrowableProxy())
+            .filter(throwable -> throwable != null)
+            .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 2))
+            .filter(throwable -> Objects.equals(throwable.getClassName(),
+                                                TestException.class.getName()))
+            .count());
+  }
+
+  private static final class TestException extends IOException {
+    TestException(String message) {
+      super(Objects.requireNonNull(message));
+    }
+
+    private static final long serialVersionUID = 0;
   }
 }

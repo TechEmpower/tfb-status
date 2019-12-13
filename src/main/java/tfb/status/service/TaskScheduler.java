@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Runs tasks asynchronously.
+ *
+ * <p>Exceptions thrown from tasks are logged.
  */
 @Singleton
 public final class TaskScheduler implements PreDestroy {
