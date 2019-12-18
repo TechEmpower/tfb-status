@@ -1,12 +1,19 @@
 package tfb.status.bootstrap;
 
+import static java.util.stream.Collectors.joining;
+
 import com.google.common.reflect.TypeToken;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import javax.inject.Provider;
+import javax.inject.Singleton;
+import org.glassfish.hk2.api.ActiveDescriptor;
+import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.IterableProvider;
+import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.Binder;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
@@ -31,10 +38,68 @@ public final class Services {
    *
    * @param binders the binders that register all of this application's service
    *        classes
+   * @throws InvalidServiceException if services requiring disposal ({@link
+   *         PreDestroy} or {@link Factory}) are registered with a non-{@link
+   *         Singleton} scope
    */
   public Services(Binder... binders) {
     Objects.requireNonNull(binders);
     ServiceLocatorUtilities.bind(serviceLocator, binders);
+
+    // We could theoretically allow non-singleton services that require
+    // disposal, but we'd have to provide an API for calling their disposal
+    // methods.
+    //
+    // Until we have such an API, we should explicitly disallow these services.
+    // It is extremely likely that the authors either:
+    //
+    //   (a) intended to make them singletons but forgot, or
+    //   (b) intended to make them non-singletons but thought the dependency
+    //       injection container would call their disposal methods, which it
+    //       won't.
+
+    List<ActiveDescriptor<?>> wontBeDisposed =
+        serviceLocator.getDescriptors(
+            descriptor -> {
+              ActiveDescriptor<?> activeDescriptor =
+                  serviceLocator.reifyDescriptor(descriptor);
+
+              if (activeDescriptor.getScopeAnnotation() == Singleton.class)
+                return false;
+
+              Class<?> implementation = activeDescriptor.getImplementationClass();
+              if (Factory.class.isAssignableFrom(implementation))
+                return true;
+
+              for (Type contract : activeDescriptor.getContractTypes())
+                if (TypeToken.of(contract).isSubtypeOf(PreDestroy.class))
+                  return true;
+
+              return false;
+            });
+
+    if (!wontBeDisposed.isEmpty()) {
+      String serviceNames =
+          wontBeDisposed.stream()
+                        .map(descriptor -> descriptor.getImplementation())
+                        .collect(joining(", "));
+
+      throw new InvalidServiceException(
+          "The services ["
+              + serviceNames
+              + "] require disposal (they implement "
+              + PreDestroy.class.getSimpleName()
+              + " or "
+              + Factory.class.getSimpleName()
+              + ") but they are are not "
+              + Singleton.class.getSimpleName()
+              + "-scoped, "
+              + "meaning their disposal methods will never be called.  "
+              + "Either (a) change the scopes of these services to "
+              + Singleton.class.getSimpleName()
+              + ", or (b) do not register these types as services, and "
+              + "manually manage the instances of these types instead.");
+    }
   }
 
   /**
@@ -113,5 +178,19 @@ public final class Services {
       }
     }
     return serviceLocator.getServiceHandle(type) != null;
+  }
+
+  /**
+   * An exception thrown from {@link Services#Services(Binder...)} when a
+   * particular service appears to be invalid.
+   */
+  public static final class InvalidServiceException
+      extends RuntimeException {
+
+    InvalidServiceException(String message) {
+      super(Objects.requireNonNull(message));
+    }
+
+    private static final long serialVersionUID = 0;
   }
 }
