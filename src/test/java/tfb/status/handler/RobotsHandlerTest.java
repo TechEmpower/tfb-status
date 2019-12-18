@@ -61,8 +61,8 @@ public final class RobotsHandlerTest {
 
     Stream<String> disallowedPaths =
         Stream.of("/about",
-                  "/raw/results.2017-12-26-05-07-14-321.json",
-                  "/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt");
+                  "/raw/results.2019-12-11-13-21-02-404.json",
+                  "/unzip/results.2019-12-16-03-22-48-407.zip/gemini/build/gemini.log");
 
     assertAll(
         Stream.concat(

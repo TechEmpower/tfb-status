@@ -81,8 +81,8 @@ public final class UploadResultsHandlerTest {
     Path jsonFile = fileSystem.getPath("results_to_upload.json");
     Path zipFile = fileSystem.getPath("results_to_upload.zip");
 
-    URI jsonUri = http.uri("/raw/results.2017-12-26-05-07-14-321.json");
-    URI zipUri = http.uri("/raw/results.2017-12-29-23-04-02-541.zip");
+    URI jsonUri = http.uri("/raw/results.2019-12-11-13-21-02-404.json");
+    URI zipUri = http.uri("/raw/results.2019-12-16-03-22-48-407.zip");
 
     HttpResponse<Path> responseToOriginalJson =
         http.client().send(

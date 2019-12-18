@@ -42,7 +42,7 @@ public final class UnzippedDirectoryView {
 
     /**
      * The full path of the file, including the name of the zip file, such as
-     * "results.2018-01-01-00-00-00-000.zip/gemini/build/base.log".
+     * "results.2018-01-01-00-00-00-000.zip/gemini/build/gemini.log".
      */
     public final String fullPath;
 

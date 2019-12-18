@@ -28,7 +28,7 @@ public final class HomeResultsReaderTest {
     // new results in another test.
     ImmutableList<ResultsView> resultsList = homeResultsReader.results();
     ResultsView firstResult = resultsList.get(0);
-    assertEquals("03da6340-d56c-4584-9ef2-702106203809", firstResult.uuid);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", firstResult.uuid);
   }
 
   /**
@@ -40,31 +40,31 @@ public final class HomeResultsReaderTest {
       throws IOException {
 
     ResultsView results =
-        homeResultsReader.resultsByUuid("03da6340-d56c-4584-9ef2-702106203809");
+        homeResultsReader.resultsByUuid("598923fe-6491-41bd-a2b6-047f70860aed");
 
     assertNotNull(results);
-    assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid);
 
-    assertEquals("ef202bb6ef535086ccf94d0a4064548fe41b4ca8", results.commitId);
+    assertEquals("57c558b30dd57e2421b8cbaeedfa90c1a59f02fe", results.commitId);
 
-    assertEquals("results.2017-12-26-05-07-14-321.json", results.jsonFileName);
-    assertEquals(459, results.totalFrameworks);
-    assertEquals(1652, results.successfulTests);
-    assertEquals(117, results.failedTests);
-    assertEquals(373, results.frameworksWithCleanSetup);
-    assertEquals(45, results.frameworksWithSetupProblems);
+    assertEquals("results.2019-12-11-13-21-02-404.json", results.jsonFileName);
+    assertEquals(659, results.totalFrameworks);
+    assertEquals(2247, results.successfulTests);
+    assertEquals(229, results.failedTests);
+    assertEquals(613, results.frameworksWithCleanSetup);
+    assertEquals(46, results.frameworksWithSetupProblems);
 
-    assertEquals("results.2017-12-29-23-04-02-541.zip", results.zipFileName);
-    assertEquals(76, results.failures.size());
+    assertEquals("results.2019-12-16-03-22-48-407.zip", results.zipFileName);
+    assertEquals(172, results.failures.size());
 
     assertEquals(
-        45,
+        46,
         results.failures.stream()
                         .filter(failure -> failure.hadSetupProblems)
                         .count());
 
     assertEquals(
-        37,
+        126,
         results.failures.stream()
                         .filter(failure -> !failure.failedTestTypes.isEmpty())
                         .count());

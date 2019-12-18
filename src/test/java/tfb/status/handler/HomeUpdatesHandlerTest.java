@@ -69,7 +69,7 @@ public final class HomeUpdatesHandlerTest {
       // wait for that collection to be updated before we proceed.
       Thread.sleep(100);
 
-      updates.sendUpdate("03da6340-d56c-4584-9ef2-702106203809");
+      updates.sendUpdate("598923fe-6491-41bd-a2b6-047f70860aed");
 
       var message = new StringJoiner("\n");
 
@@ -82,7 +82,7 @@ public final class HomeUpdatesHandlerTest {
       }
 
       assertContains(
-          "03da6340-d56c-4584-9ef2-702106203809",
+          "598923fe-6491-41bd-a2b6-047f70860aed",
           message.toString());
     }
   }
@@ -122,12 +122,12 @@ public final class HomeUpdatesHandlerTest {
 
     try {
 
-      updates.sendUpdate("03da6340-d56c-4584-9ef2-702106203809");
+      updates.sendUpdate("598923fe-6491-41bd-a2b6-047f70860aed");
 
       String message = future.get(1, TimeUnit.SECONDS);
 
       assertContains(
-          "03da6340-d56c-4584-9ef2-702106203809",
+          "598923fe-6491-41bd-a2b6-047f70860aed",
           message);
 
     } finally {

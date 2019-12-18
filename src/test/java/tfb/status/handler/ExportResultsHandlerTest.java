@@ -26,7 +26,7 @@ public final class ExportResultsHandlerTest {
       throws IOException, InterruptedException {
 
     HttpResponse<byte[]> response =
-        http.getBytes("/export/results.2017-12-26-05-07-14-321.json");
+        http.getBytes("/export/results.2019-12-11-13-21-02-404.json");
 
     assertEquals(OK, response.statusCode());
 
@@ -37,7 +37,7 @@ public final class ExportResultsHandlerTest {
                                Results.TfbWebsiteView.class);
 
     assertEquals(
-        "Continuous Benchmarking Run 2017-12-26 06:48:23",
+        "Continuous Benchmarking Run 2019-12-11 21:15:18",
         minifiedResults.name);
   }
 
@@ -50,7 +50,7 @@ public final class ExportResultsHandlerTest {
       throws IOException, InterruptedException {
 
     HttpResponse<byte[]> response =
-        http.getBytes("/export/results.2017-12-29-23-04-02-541.zip");
+        http.getBytes("/export/results.2019-12-16-03-22-48-407.zip");
 
     assertEquals(OK, response.statusCode());
 
@@ -61,7 +61,7 @@ public final class ExportResultsHandlerTest {
                                Results.TfbWebsiteView.class);
 
     assertEquals(
-        "Continuous Benchmarking Run 2017-12-26 06:48:23",
+        "Continuous Benchmarking Run 2019-12-11 21:15:18",
         minifiedResults.name);
   }
 }

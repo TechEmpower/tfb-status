@@ -27,7 +27,7 @@ public final class UnzipResultsHandlerTest {
       throws IOException, InterruptedException {
 
     HttpResponse<byte[]> response =
-        http.getBytes("/unzip/results.2017-12-29-23-04-02-541.zip/gemini/out.txt");
+        http.getBytes("/unzip/results.2019-12-16-03-22-48-407.zip/gemini/build/gemini.log");
 
     assertEquals(OK, response.statusCode());
 
@@ -39,6 +39,6 @@ public final class UnzipResultsHandlerTest {
 
     byte[] responseBytes = response.body();
 
-    assertEquals(33399L, responseBytes.length);
+    assertEquals(2554L, responseBytes.length);
   }
 }

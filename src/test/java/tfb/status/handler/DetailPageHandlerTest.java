@@ -29,7 +29,7 @@ public final class DetailPageHandlerTest {
       throws IOException, InterruptedException {
 
     HttpResponse<String> response =
-        http.getString("/results/03da6340-d56c-4584-9ef2-702106203809");
+        http.getString("/results/598923fe-6491-41bd-a2b6-047f70860aed");
 
     assertEquals(OK, response.statusCode());
 

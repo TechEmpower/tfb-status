@@ -30,7 +30,7 @@ public final class DownloadResultsHandlerTest {
       throws IOException, InterruptedException {
 
     HttpResponse<byte[]> response =
-        http.getBytes("/raw/results.2017-12-26-05-07-14-321.json");
+        http.getBytes("/raw/results.2019-12-11-13-21-02-404.json");
 
     assertEquals(OK, response.statusCode());
 
@@ -38,7 +38,7 @@ public final class DownloadResultsHandlerTest {
 
     Results results = objectMapper.readValue(responseBytes, Results.class);
 
-    assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid);
   }
 
   /**
@@ -50,7 +50,7 @@ public final class DownloadResultsHandlerTest {
       throws IOException, InterruptedException {
 
     HttpResponse<byte[]> response =
-        http.getBytes("/raw/results.2017-12-29-23-04-02-541.zip");
+        http.getBytes("/raw/results.2019-12-16-03-22-48-407.zip");
 
     assertEquals(OK, response.statusCode());
 
@@ -70,6 +70,6 @@ public final class DownloadResultsHandlerTest {
       results = objectMapper.readValue(zip, Results.class);
     }
 
-    assertEquals("03da6340-d56c-4584-9ef2-702106203809", results.uuid);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid);
   }
 }
