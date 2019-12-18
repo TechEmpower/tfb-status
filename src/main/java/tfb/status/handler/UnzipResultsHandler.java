@@ -2,6 +2,7 @@ package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static com.google.common.net.MediaType.HTML_UTF_8;
+import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.INTERNAL_SERVER_ERROR;
@@ -228,6 +229,11 @@ public final class UnzipResultsHandler implements HttpHandler {
      */
     private static @Nullable MediaType guessMediaType(Path file) {
       String extension = MoreFiles.getFileExtension(file);
+
+      // TFB itself generates plaintext .log files.
+      if (extension.equals("log")) {
+        return PLAIN_TEXT_UTF_8;
+      }
 
       String mediaTypeString =
           MimeMappings.DEFAULT_MIME_MAPPINGS.get(extension);
