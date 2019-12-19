@@ -34,8 +34,9 @@ public final class RunProgressMonitorTest {
                                  MailDelay mailDelay)
       throws IOException, MessagingException, InterruptedException {
 
-    // The amount of time
-    Duration delay =
+    // The amount of time after the final update for an environment is recorded
+    // and before we receive an email telling us the environment has timed out.
+    Duration expectedDelay =
         Duration.ofSeconds(config.environmentTimeoutSeconds)
                 .plus(mailDelay.timeToSendOneEmail());
 
@@ -45,7 +46,7 @@ public final class RunProgressMonitorTest {
         RunProgressMonitor.environmentCrashedEmailSubject(environment);
 
     runProgressMonitor.recordProgress(environment, false);
-    Thread.sleep(delay.toMillis());
+    Thread.sleep(expectedDelay.toMillis());
 
     ImmutableList<MimeMessage> messagesAfterOneTimeRun =
         mailServer.getMessages(m -> m.getSubject().equals(subject));
@@ -55,7 +56,7 @@ public final class RunProgressMonitorTest {
         messagesAfterOneTimeRun.size());
 
     runProgressMonitor.recordProgress("other_environment", true);
-    Thread.sleep(delay.toMillis());
+    Thread.sleep(expectedDelay.toMillis());
 
     ImmutableList<MimeMessage> messagesAfterOtherEnvironment =
         mailServer.getMessages(m -> m.getSubject().equals(subject));
@@ -63,16 +64,16 @@ public final class RunProgressMonitorTest {
     assertEquals(0, messagesAfterOtherEnvironment.size());
 
     runProgressMonitor.recordProgress(environment, true);
-    Thread.sleep(delay.dividedBy(2).toMillis());
+    Thread.sleep(expectedDelay.dividedBy(2).toMillis());
     runProgressMonitor.recordProgress(environment, true);
-    Thread.sleep(delay.dividedBy(2).toMillis());
+    Thread.sleep(expectedDelay.dividedBy(2).toMillis());
 
     ImmutableList<MimeMessage> messagesAfterProgressReceived =
         mailServer.getMessages(m -> m.getSubject().equals(subject));
 
     assertEquals(0, messagesAfterProgressReceived.size());
 
-    Thread.sleep(delay.toMillis());
+    Thread.sleep(expectedDelay.toMillis());
 
     ImmutableList<MimeMessage> messagesAfterNoProgress =
         mailServer.getMessages(m -> m.getSubject().equals(subject));
