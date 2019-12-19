@@ -28,6 +28,8 @@ public final class HttpServerConfig {
   /**
    * The key store having the certificate for the server, enabling HTTPS, or
    * {@code null} if the server is using unencrypted HTTP.
+   *
+   * @see KeyStore
    */
   public final @Nullable KeyStore keyStore;
 
@@ -79,7 +81,14 @@ public final class HttpServerConfig {
    */
   @Immutable
   public static final class KeyStore {
+    /**
+     * The path to the key store file on the file system.
+     */
     public final String path;
+
+    /**
+     * The password for the key store.
+     */
     public final String password;
 
     @JsonCreator

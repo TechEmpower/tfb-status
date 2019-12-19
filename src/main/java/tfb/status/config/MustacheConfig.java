@@ -13,7 +13,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 @Immutable
 @Singleton
 public final class MustacheConfig {
+  /**
+   * Indicates whether Mustache templates will be loaded from the file system or
+   * from the class path.
+   *
+   * @see ResourceMode
+   */
   public final ResourceMode mode;
+  /**
+   * The root directory for Mustache templates rendered by this application.
+   */
   public final String root;
 
   @JsonCreator

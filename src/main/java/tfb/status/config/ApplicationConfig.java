@@ -14,15 +14,36 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 @Immutable
 @Singleton
 public final class ApplicationConfig {
+  /**
+   * @see HttpServerConfig
+   */
   public final HttpServerConfig http;
+
+  /**
+   * @see AssetsConfig
+   */
   public final AssetsConfig assets;
+
+  /**
+   * @see MustacheConfig
+   */
   public final MustacheConfig mustache;
+
+  /**
+   * @see FileStoreConfig
+   */
   public final FileStoreConfig fileStore;
+
+  /**
+   * @see RunProgressMonitorConfig
+   */
   public final RunProgressMonitorConfig runProgressMonitor;
 
   /**
    * The configuration for outbound emails, or {@code null} if outbound emails
    * are disabled.
+   *
+   * @see EmailConfig
    */
   public final @Nullable EmailConfig email;
 

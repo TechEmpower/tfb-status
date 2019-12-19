@@ -13,7 +13,17 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 @Immutable
 @Singleton
 public final class AssetsConfig {
+  /**
+   * Indicates whether static assets will be loaded from the file system or from
+   * the class path.
+   *
+   * @see ResourceMode
+   */
   public final ResourceMode mode;
+
+  /**
+   * The root directory for static assets served by this application.
+   */
   public final String root;
 
   @JsonCreator

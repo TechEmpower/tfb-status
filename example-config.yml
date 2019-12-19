@@ -1,3 +1,20 @@
+# ------------------------------------------------------------------------------
+# This is an example configuration file for the tfb-status application.
+#
+# To create your own configuration file, start by copying this file and then
+# modify whatever settings you want.  The structure of configuration files is
+# defined by the following class:
+#
+#   src/main/java/tfb/status/bootstrap/ApplicationConfig.java
+#
+# Refer to that class for documentation about each of the available
+# configuration settings.
+#
+# To run the tfb-status application with a custom configuration file, the first
+# command-line argument for the application must be the path to that
+# configuration file.
+# ------------------------------------------------------------------------------
+
 # This "{}" is required when the rest of the file is empty or commented out.
 # Without this, the YAML parser throws an error because it expects the top-level
 # object in this file to be map-like.
