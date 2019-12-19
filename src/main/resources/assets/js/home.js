@@ -91,7 +91,7 @@
   }
 
   // TODO: After testing this for a while, probably move to web sockets only.
-  const useWebSockets = location.search.includes("useWebSockets");
+  const useWebSockets = !location.search.includes("useSse");
   if (useWebSockets) {
     window.addEventListener("load", enableWebSockets);
     window.addEventListener("beforeunload", disableWebSockets);
