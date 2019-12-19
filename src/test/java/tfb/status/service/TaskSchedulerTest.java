@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -27,8 +28,6 @@ import tfb.status.testlib.TestServicesInjector;
  */
 @ExtendWith(TestServicesInjector.class)
 public final class TaskSchedulerTest {
-  // TODO: Test the methods that accept Callable.
-
   /**
    * Verifies that {@link TaskScheduler#submit(Runnable)} works as expected when
    * the task is allowed to complete.
@@ -40,17 +39,18 @@ public final class TaskSchedulerTest {
     AtomicInteger counter = new AtomicInteger(0);
     Duration taskSleepTime = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.submit(
-            () -> {
-              counter.incrementAndGet();
-              try {
-                Thread.sleep(taskSleepTime.toMillis());
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-              counter.incrementAndGet();
-            });
+    Runnable task =
+        () -> {
+          counter.incrementAndGet();
+          try {
+            Thread.sleep(taskSleepTime.toMillis());
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          counter.incrementAndGet();
+        };
+
+    ListenableFuture<?> future = taskScheduler.submit(task);
 
     Thread.sleep(taskSleepTime.dividedBy(2).toMillis());
     assertEquals(1, counter.get());
@@ -58,8 +58,44 @@ public final class TaskSchedulerTest {
     assertEquals(2, counter.get());
     Thread.sleep(taskSleepTime.toMillis());
     assertEquals(2, counter.get());
-    assertFalse(task.cancel(true));
-    assertNull(task.get(0, TimeUnit.MILLISECONDS));
+    assertFalse(future.cancel(true));
+    assertNull(future.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#submit(Callable)} works as expected when
+   * the task is allowed to complete.
+   */
+  @Test
+  public void testSubmit_callable_completed(TaskScheduler taskScheduler)
+      throws InterruptedException, TimeoutException, ExecutionException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    Duration taskSleepTime = Duration.ofMillis(50);
+    String result = "hi";
+
+    Callable<String> task =
+        () -> {
+          counter.incrementAndGet();
+          try {
+            Thread.sleep(taskSleepTime.toMillis());
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          counter.incrementAndGet();
+          return result;
+        };
+
+    ListenableFuture<String> future = taskScheduler.submit(task);
+
+    Thread.sleep(taskSleepTime.dividedBy(2).toMillis());
+    assertEquals(1, counter.get());
+    Thread.sleep(taskSleepTime.toMillis());
+    assertEquals(2, counter.get());
+    Thread.sleep(taskSleepTime.toMillis());
+    assertEquals(2, counter.get());
+    assertFalse(future.cancel(true));
+    assertEquals(result, future.get(0, TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -73,28 +109,67 @@ public final class TaskSchedulerTest {
     AtomicInteger counter = new AtomicInteger(0);
     Duration taskSleepTime = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.submit(
-            () -> {
-              try {
-                counter.incrementAndGet();
-                Thread.sleep(taskSleepTime.toMillis());
-                counter.incrementAndGet();
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-            });
+    Runnable task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(taskSleepTime.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        };
+
+    ListenableFuture<?> future = taskScheduler.submit(task);
 
     Thread.sleep(taskSleepTime.dividedBy(2).toMillis());
     assertEquals(1, counter.get());
-    assertTrue(task.cancel(true));
+    assertTrue(future.cancel(true));
     Thread.sleep(taskSleepTime.toMillis());
     assertEquals(1, counter.get());
     Thread.sleep(taskSleepTime.toMillis());
     assertEquals(1, counter.get());
     assertThrows(
         CancellationException.class,
-        () -> task.get(0, TimeUnit.MILLISECONDS));
+        () -> future.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#submit(Callable)} works as expected when
+   * the task is cancelled during execution.
+   */
+  @Test
+  public void testSubmit_callable_cancelledDuringExecution(TaskScheduler taskScheduler)
+      throws InterruptedException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    Duration taskSleepTime = Duration.ofMillis(50);
+    String result = "hi";
+
+    Callable<String> task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(taskSleepTime.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          return result;
+        };
+
+    ListenableFuture<String> future = taskScheduler.submit(task);
+
+    Thread.sleep(taskSleepTime.dividedBy(2).toMillis());
+    assertEquals(1, counter.get());
+    assertTrue(future.cancel(true));
+    Thread.sleep(taskSleepTime.toMillis());
+    assertEquals(1, counter.get());
+    Thread.sleep(taskSleepTime.toMillis());
+    assertEquals(1, counter.get());
+    assertThrows(
+        CancellationException.class,
+        () -> future.get(0, TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -108,24 +183,25 @@ public final class TaskSchedulerTest {
 
     String message = "test exception " + UUID.randomUUID();
 
-    ListenableFuture<?> task =
-        taskScheduler.submit(
-            () -> {
-              throw new TestException(message);
-            });
+    Runnable task =
+        () -> {
+          throw new TestUncheckedException(message);
+        };
+
+    ListenableFuture<?> future = taskScheduler.submit(task);
 
     Thread.sleep(50);
-    assertFalse(task.cancel(true));
+    assertFalse(future.cancel(true));
 
     ExecutionException thrown =
         assertThrows(
             ExecutionException.class,
-            () -> task.get(0, TimeUnit.MILLISECONDS));
+            () -> future.get(0, TimeUnit.MILLISECONDS));
 
     Throwable cause = thrown.getCause();
     assertNotNull(cause);
     assertEquals(message, cause.getMessage());
-    assertEquals(TestException.class, cause.getClass());
+    assertEquals(TestUncheckedException.class, cause.getClass());
 
     assertEquals(
         1,
@@ -134,7 +210,49 @@ public final class TaskSchedulerTest {
             .filter(throwable -> throwable != null)
             .filter(throwable -> Objects.equals(throwable.getMessage(), message))
             .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestException.class.getName()))
+                                                TestUncheckedException.class.getName()))
+            .count());
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#submit(Callable)} logs uncaught
+   * exceptions.
+   */
+  @Test
+  public void testSubmit_callable_uncaughtException(TaskScheduler taskScheduler,
+                                                    LogTester logs)
+      throws InterruptedException {
+
+    String message = "test exception " + UUID.randomUUID();
+
+    Callable<String> task =
+        () -> {
+          throw new TestCheckedException(message);
+        };
+
+    ListenableFuture<String> future = taskScheduler.submit(task);
+
+    Thread.sleep(50);
+    assertFalse(future.cancel(true));
+
+    ExecutionException thrown =
+        assertThrows(
+            ExecutionException.class,
+            () -> future.get(0, TimeUnit.MILLISECONDS));
+
+    Throwable cause = thrown.getCause();
+    assertNotNull(cause);
+    assertEquals(message, cause.getMessage());
+    assertEquals(TestCheckedException.class, cause.getClass());
+
+    assertEquals(
+        1,
+        logs.getEvents()
+            .map(event -> event.getThrowableProxy())
+            .filter(throwable -> throwable != null)
+            .filter(throwable -> Objects.equals(throwable.getMessage(), message))
+            .filter(throwable -> Objects.equals(throwable.getClassName(),
+                                                TestCheckedException.class.getName()))
             .count());
   }
 
@@ -149,12 +267,12 @@ public final class TaskSchedulerTest {
     AtomicInteger counter = new AtomicInteger(0);
     Duration delay = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.schedule(
-            () -> {
-              counter.incrementAndGet();
-            },
-            delay);
+    Runnable task =
+        () -> {
+          counter.incrementAndGet();
+        };
+
+    ListenableFuture<?> future = taskScheduler.schedule(task, delay);
 
     Thread.sleep(delay.dividedBy(2).toMillis());
     assertEquals(0, counter.get());
@@ -162,8 +280,38 @@ public final class TaskSchedulerTest {
     assertEquals(1, counter.get());
     Thread.sleep(delay.toMillis());
     assertEquals(1, counter.get());
-    assertFalse(task.cancel(true));
-    assertNull(task.get(0, TimeUnit.MILLISECONDS));
+    assertFalse(future.cancel(true));
+    assertNull(future.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#schedule(Callable, Duration)} works as
+   * expected when the task is allowed to complete.
+   */
+  @Test
+  public void testSchedule_callable_completed(TaskScheduler taskScheduler)
+      throws InterruptedException, TimeoutException, ExecutionException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    Duration delay = Duration.ofMillis(50);
+    String result = "hi";
+
+    Callable<String> task =
+        () -> {
+          counter.incrementAndGet();
+          return result;
+        };
+
+    ListenableFuture<String> future = taskScheduler.schedule(task, delay);
+
+    Thread.sleep(delay.dividedBy(2).toMillis());
+    assertEquals(0, counter.get());
+    Thread.sleep(delay.toMillis());
+    assertEquals(1, counter.get());
+    Thread.sleep(delay.toMillis());
+    assertEquals(1, counter.get());
+    assertFalse(future.cancel(true));
+    assertEquals(result, future.get(0, TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -177,28 +325,65 @@ public final class TaskSchedulerTest {
     AtomicInteger counter = new AtomicInteger(0);
     Duration delay = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.schedule(
-            () -> {
-              try {
-                counter.incrementAndGet();
-                Thread.sleep(delay.toMillis());
-                counter.incrementAndGet();
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-            },
-            delay);
+    Runnable task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(delay.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        };
+
+    ListenableFuture<?> future = taskScheduler.schedule(task, delay);
 
     assertEquals(0, counter.get());
     Thread.sleep(delay.dividedBy(2).toMillis());
     assertEquals(0, counter.get());
-    assertTrue(task.cancel(true));
+    assertTrue(future.cancel(true));
     Thread.sleep(delay.toMillis());
     assertEquals(0, counter.get());
     assertThrows(
         CancellationException.class,
-        () -> task.get(0, TimeUnit.MILLISECONDS));
+        () -> future.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#schedule(Callable, Duration)} works as
+   * expected when the task is cancelled before execution.
+   */
+  @Test
+  public void testSchedule_callable_cancelledBeforeExecution(TaskScheduler taskScheduler)
+      throws InterruptedException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    Duration delay = Duration.ofMillis(50);
+    String result = "hi";
+
+    Callable<String> task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(delay.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          return result;
+        };
+
+    ListenableFuture<String> future = taskScheduler.schedule(task, delay);
+
+    assertEquals(0, counter.get());
+    Thread.sleep(delay.dividedBy(2).toMillis());
+    assertEquals(0, counter.get());
+    assertTrue(future.cancel(true));
+    Thread.sleep(delay.toMillis());
+    assertEquals(0, counter.get());
+    assertThrows(
+        CancellationException.class,
+        () -> future.get(0, TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -212,30 +397,69 @@ public final class TaskSchedulerTest {
     AtomicInteger counter = new AtomicInteger(0);
     Duration delay = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.schedule(
-            () -> {
-              try {
-                counter.incrementAndGet();
-                Thread.sleep(delay.toMillis());
-                counter.incrementAndGet();
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-            },
-            delay);
+    Runnable task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(delay.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        };
+
+    ListenableFuture<?> future = taskScheduler.schedule(task, delay);
 
     assertEquals(0, counter.get());
     Thread.sleep(delay.dividedBy(2).toMillis());
     assertEquals(0, counter.get());
     Thread.sleep(delay.toMillis());
     assertEquals(1, counter.get());
-    assertTrue(task.cancel(true));
+    assertTrue(future.cancel(true));
     Thread.sleep(delay.toMillis());
     assertEquals(1, counter.get());
     assertThrows(
         CancellationException.class,
-        () -> task.get(0, TimeUnit.MILLISECONDS));
+        () -> future.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#schedule(Callable, Duration)} works as
+   * expected when the task is cancelled during execution.
+   */
+  @Test
+  public void testSchedule_callable_cancelledDuringExecution(TaskScheduler taskScheduler)
+      throws InterruptedException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    Duration delay = Duration.ofMillis(50);
+    String result = "hi";
+
+    Callable<String> task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(delay.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          return result;
+        };
+
+    ListenableFuture<String> future = taskScheduler.schedule(task, delay);
+
+    assertEquals(0, counter.get());
+    Thread.sleep(delay.dividedBy(2).toMillis());
+    assertEquals(0, counter.get());
+    Thread.sleep(delay.toMillis());
+    assertEquals(1, counter.get());
+    assertTrue(future.cancel(true));
+    Thread.sleep(delay.toMillis());
+    assertEquals(1, counter.get());
+    assertThrows(
+        CancellationException.class,
+        () -> future.get(0, TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -244,31 +468,31 @@ public final class TaskSchedulerTest {
    */
   @Test
   public void testSchedule_runnable_uncaughtException(TaskScheduler taskScheduler,
-                                                    LogTester logs)
+                                                      LogTester logs)
       throws InterruptedException {
 
     String message = "test exception " + UUID.randomUUID();
     Duration delay = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.schedule(
-            () -> {
-              throw new TestException(message);
-            },
-            delay);
+    Runnable task =
+        () -> {
+          throw new TestUncheckedException(message);
+        };
+
+    ListenableFuture<?> future = taskScheduler.schedule(task, delay);
 
     Thread.sleep(delay.multipliedBy(2).toMillis());
-    assertFalse(task.cancel(true));
+    assertFalse(future.cancel(true));
 
     ExecutionException thrown =
         assertThrows(
             ExecutionException.class,
-            () -> task.get(0, TimeUnit.MILLISECONDS));
+            () -> future.get(0, TimeUnit.MILLISECONDS));
 
     Throwable cause = thrown.getCause();
     assertNotNull(cause);
     assertEquals(message, cause.getMessage());
-    assertEquals(TestException.class, cause.getClass());
+    assertEquals(TestUncheckedException.class, cause.getClass());
 
     assertEquals(
         1,
@@ -277,7 +501,50 @@ public final class TaskSchedulerTest {
             .filter(throwable -> throwable != null)
             .filter(throwable -> Objects.equals(throwable.getMessage(), message))
             .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestException.class.getName()))
+                                                TestUncheckedException.class.getName()))
+            .count());
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#schedule(Callable, Duration)} logs
+   * uncaught exceptions.
+   */
+  @Test
+  public void testSchedule_callable_uncaughtException(TaskScheduler taskScheduler,
+                                                      LogTester logs)
+      throws InterruptedException {
+
+    String message = "test exception " + UUID.randomUUID();
+    Duration delay = Duration.ofMillis(50);
+
+    Callable<String> task =
+        () -> {
+          throw new TestCheckedException(message);
+        };
+
+    ListenableFuture<String> future = taskScheduler.schedule(task, delay);
+
+    Thread.sleep(delay.multipliedBy(2).toMillis());
+    assertFalse(future.cancel(true));
+
+    ExecutionException thrown =
+        assertThrows(
+            ExecutionException.class,
+            () -> future.get(0, TimeUnit.MILLISECONDS));
+
+    Throwable cause = thrown.getCause();
+    assertNotNull(cause);
+    assertEquals(message, cause.getMessage());
+    assertEquals(TestCheckedException.class, cause.getClass());
+
+    assertEquals(
+        1,
+        logs.getEvents()
+            .map(event -> event.getThrowableProxy())
+            .filter(throwable -> throwable != null)
+            .filter(throwable -> Objects.equals(throwable.getMessage(), message))
+            .filter(throwable -> Objects.equals(throwable.getClassName(),
+                                                TestCheckedException.class.getName()))
             .count());
   }
 
@@ -293,29 +560,68 @@ public final class TaskSchedulerTest {
     Duration initialDelay = Duration.ofMillis(50);
     Duration interval = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.repeat(
-            () -> {
-              try {
-                counter.incrementAndGet();
-                Thread.sleep(interval.toMillis());
-                counter.incrementAndGet();
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-            },
-            initialDelay,
-            interval);
+    Runnable task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(interval.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        };
+
+    ListenableFuture<?> future =
+        taskScheduler.repeat(task, initialDelay, interval);
 
     assertEquals(0, counter.get());
     Thread.sleep(initialDelay.dividedBy(2).toMillis());
     assertEquals(0, counter.get());
-    assertTrue(task.cancel(true));
+    assertTrue(future.cancel(true));
     Thread.sleep(initialDelay.toMillis());
     assertEquals(0, counter.get());
     assertThrows(
         CancellationException.class,
-        () -> task.get(0, TimeUnit.MILLISECONDS));
+        () -> future.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#repeat(Callable, Duration, Duration)}
+   * works as expected when the task is cancelled before the first execution.
+   */
+  @Test
+  public void testRepeat_callable_cancelledBeforeFirstExecution(TaskScheduler taskScheduler)
+      throws InterruptedException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    Duration initialDelay = Duration.ofMillis(50);
+    Duration interval = Duration.ofMillis(50);
+    String result = "hi";
+
+    Callable<String> task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(interval.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          return result;
+        };
+
+    ListenableFuture<String> future =
+        taskScheduler.repeat(task, initialDelay, interval);
+
+    assertEquals(0, counter.get());
+    Thread.sleep(initialDelay.dividedBy(2).toMillis());
+    assertEquals(0, counter.get());
+    assertTrue(future.cancel(true));
+    Thread.sleep(initialDelay.toMillis());
+    assertEquals(0, counter.get());
+    assertThrows(
+        CancellationException.class,
+        () -> future.get(0, TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -330,19 +636,19 @@ public final class TaskSchedulerTest {
     Duration initialDelay = Duration.ofMillis(50);
     Duration interval = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.repeat(
-            () -> {
-              try {
-                counter.incrementAndGet();
-                Thread.sleep(interval.toMillis());
-                counter.incrementAndGet();
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-            },
-            initialDelay,
-            interval);
+    Runnable task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(interval.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        };
+
+    ListenableFuture<?> future =
+        taskScheduler.repeat(task, initialDelay, interval);
 
     assertEquals(0, counter.get());
     Thread.sleep(initialDelay.dividedBy(2).toMillis());
@@ -351,12 +657,55 @@ public final class TaskSchedulerTest {
     assertEquals(1, counter.get());
     Thread.sleep(interval.toMillis());
     assertEquals(2, counter.get());
-    assertTrue(task.cancel(true));
+    assertTrue(future.cancel(true));
     Thread.sleep(interval.toMillis());
     assertEquals(2, counter.get());
     assertThrows(
         CancellationException.class,
-        () -> task.get(0, TimeUnit.MILLISECONDS));
+        () -> future.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#repeat(Callable, Duration, Duration)}
+   * works as expected when the task is cancelled between two executions.
+   */
+  @Test
+  public void testRepeat_callable_cancelledBetweenExecutions(TaskScheduler taskScheduler)
+      throws InterruptedException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    Duration initialDelay = Duration.ofMillis(50);
+    Duration interval = Duration.ofMillis(50);
+    String result = "hi";
+
+    Callable<String> task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(interval.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          return result;
+        };
+
+    ListenableFuture<String> future =
+        taskScheduler.repeat(task, initialDelay, interval);
+
+    assertEquals(0, counter.get());
+    Thread.sleep(initialDelay.dividedBy(2).toMillis());
+    assertEquals(0, counter.get());
+    Thread.sleep(initialDelay.toMillis());
+    assertEquals(1, counter.get());
+    Thread.sleep(interval.toMillis());
+    assertEquals(2, counter.get());
+    assertTrue(future.cancel(true));
+    Thread.sleep(interval.toMillis());
+    assertEquals(2, counter.get());
+    assertThrows(
+        CancellationException.class,
+        () -> future.get(0, TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -371,31 +720,72 @@ public final class TaskSchedulerTest {
     Duration initialDelay = Duration.ofMillis(50);
     Duration interval = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.repeat(
-            () -> {
-              try {
-                counter.incrementAndGet();
-                Thread.sleep(interval.toMillis());
-                counter.incrementAndGet();
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-            },
-            initialDelay,
-            interval);
+    Runnable task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(interval.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        };
+
+    ListenableFuture<?> future =
+        taskScheduler.repeat(task, initialDelay, interval);
 
     assertEquals(0, counter.get());
     Thread.sleep(initialDelay.dividedBy(2).toMillis());
     assertEquals(0, counter.get());
     Thread.sleep(initialDelay.toMillis());
     assertEquals(1, counter.get());
-    assertTrue(task.cancel(true));
+    assertTrue(future.cancel(true));
     Thread.sleep(interval.toMillis());
     assertEquals(1, counter.get());
     assertThrows(
         CancellationException.class,
-        () -> task.get(0, TimeUnit.MILLISECONDS));
+        () -> future.get(0, TimeUnit.MILLISECONDS));
+  }
+
+  /**
+   * Verifies that {@link TaskScheduler#repeat(Callable, Duration, Duration)}
+   * works as expected when the task is cancelled during execution.
+   */
+  @Test
+  public void testRepeat_callable_cancelledDuringExecution(TaskScheduler taskScheduler)
+      throws InterruptedException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    Duration initialDelay = Duration.ofMillis(50);
+    Duration interval = Duration.ofMillis(50);
+    String result = "hi";
+
+    Callable<String> task =
+        () -> {
+          try {
+            counter.incrementAndGet();
+            Thread.sleep(interval.toMillis());
+            counter.incrementAndGet();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          return result;
+        };
+
+    ListenableFuture<?> future =
+        taskScheduler.repeat(task, initialDelay, interval);
+
+    assertEquals(0, counter.get());
+    Thread.sleep(initialDelay.dividedBy(2).toMillis());
+    assertEquals(0, counter.get());
+    Thread.sleep(initialDelay.toMillis());
+    assertEquals(1, counter.get());
+    assertTrue(future.cancel(true));
+    Thread.sleep(interval.toMillis());
+    assertEquals(1, counter.get());
+    assertThrows(
+        CancellationException.class,
+        () -> future.get(0, TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -409,25 +799,26 @@ public final class TaskSchedulerTest {
 
     AtomicInteger counter = new AtomicInteger(0);
     String messagePrefix = "test exception " + UUID.randomUUID() + "#";
-    Duration delay = Duration.ofMillis(50);
+    Duration initialDelay = Duration.ofMillis(50);
+    Duration interval = Duration.ofMillis(50);
 
-    ListenableFuture<?> task =
-        taskScheduler.repeat(
-            () -> {
-              throw new TestException(
-                  messagePrefix + counter.incrementAndGet());
-            },
-            delay,
-            delay);
+    Runnable task =
+        () -> {
+          throw new TestUncheckedException(
+              messagePrefix + counter.incrementAndGet());
+        };
+
+    ListenableFuture<?> future =
+        taskScheduler.repeat(task, initialDelay, interval);
 
     // Let the task run at least twice.
-    Thread.sleep(delay.multipliedBy(3).toMillis());
+    Thread.sleep(initialDelay.plus(interval.multipliedBy(3)).toMillis());
 
-    assertTrue(task.cancel(true));
+    assertTrue(future.cancel(true));
 
     assertThrows(
         CancellationException.class,
-        () -> task.get(0, TimeUnit.MILLISECONDS));
+        () -> future.get(0, TimeUnit.MILLISECONDS));
 
     assertEquals(
         1,
@@ -436,7 +827,7 @@ public final class TaskSchedulerTest {
             .filter(throwable -> throwable != null)
             .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 1))
             .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestException.class.getName()))
+                                                TestUncheckedException.class.getName()))
             .count());
 
     assertEquals(
@@ -446,12 +837,73 @@ public final class TaskSchedulerTest {
             .filter(throwable -> throwable != null)
             .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 2))
             .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestException.class.getName()))
+                                                TestUncheckedException.class.getName()))
             .count());
   }
 
-  private static final class TestException extends IOException {
-    TestException(String message) {
+  /**
+   * Verifies that {@link TaskScheduler#repeat(Callable, Duration, Duration)}
+   * logs uncaught exceptions.
+   */
+  @Test
+  public void testRepeat_callable_uncaughtException(TaskScheduler taskScheduler,
+                                                    LogTester logs)
+      throws InterruptedException {
+
+    AtomicInteger counter = new AtomicInteger(0);
+    String messagePrefix = "test exception " + UUID.randomUUID() + "#";
+    Duration initialDelay = Duration.ofMillis(50);
+    Duration interval = Duration.ofMillis(50);
+
+    Callable<String> task =
+        () -> {
+          throw new TestCheckedException(
+              messagePrefix + counter.incrementAndGet());
+        };
+
+    ListenableFuture<String> future =
+        taskScheduler.repeat(task, initialDelay, interval);
+
+    // Let the task run at least twice.
+    Thread.sleep(initialDelay.plus(interval.multipliedBy(3)).toMillis());
+
+    assertTrue(future.cancel(true));
+
+    assertThrows(
+        CancellationException.class,
+        () -> future.get(0, TimeUnit.MILLISECONDS));
+
+    assertEquals(
+        1,
+        logs.getEvents()
+            .map(event -> event.getThrowableProxy())
+            .filter(throwable -> throwable != null)
+            .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 1))
+            .filter(throwable -> Objects.equals(throwable.getClassName(),
+                                                TestCheckedException.class.getName()))
+            .count());
+
+    assertEquals(
+        1,
+        logs.getEvents()
+            .map(event -> event.getThrowableProxy())
+            .filter(throwable -> throwable != null)
+            .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 2))
+            .filter(throwable -> Objects.equals(throwable.getClassName(),
+                                                TestCheckedException.class.getName()))
+            .count());
+  }
+
+  private static final class TestUncheckedException extends RuntimeException {
+    TestUncheckedException(String message) {
+      super(Objects.requireNonNull(message));
+    }
+
+    private static final long serialVersionUID = 0;
+  }
+
+  private static final class TestCheckedException extends IOException {
+    TestCheckedException(String message) {
       super(Objects.requireNonNull(message));
     }
 
