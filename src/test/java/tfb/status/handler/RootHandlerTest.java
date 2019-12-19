@@ -71,11 +71,12 @@ public final class RootHandlerTest {
     assertEquals(
         1,
         logs.getEvents()
-            .map(event -> event.getThrowableProxy())
-            .filter(throwable -> throwable != null)
-            .filter(throwable -> Objects.equals(throwable.getMessage(), message))
-            .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestException.class.getName()))
+            .filter(
+                event ->
+                    logs.isExceptionEvent(
+                        /* event= */ event,
+                        /* exceptionType= */ TestException.class,
+                        /* exceptionMessage= */ message))
             .count());
   }
 

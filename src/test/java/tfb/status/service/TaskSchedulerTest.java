@@ -206,11 +206,12 @@ public final class TaskSchedulerTest {
     assertEquals(
         1,
         logs.getEvents()
-            .map(event -> event.getThrowableProxy())
-            .filter(throwable -> throwable != null)
-            .filter(throwable -> Objects.equals(throwable.getMessage(), message))
-            .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestUncheckedException.class.getName()))
+            .filter(
+                event ->
+                    logs.isExceptionEvent(
+                        /* event= */ event,
+                        /* exceptionType= */ TestUncheckedException.class,
+                        /* exceptionMessage= */ message))
             .count());
   }
 
@@ -248,11 +249,12 @@ public final class TaskSchedulerTest {
     assertEquals(
         1,
         logs.getEvents()
-            .map(event -> event.getThrowableProxy())
-            .filter(throwable -> throwable != null)
-            .filter(throwable -> Objects.equals(throwable.getMessage(), message))
-            .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestCheckedException.class.getName()))
+            .filter(
+                event ->
+                    logs.isExceptionEvent(
+                        /* event= */ event,
+                        /* exceptionType= */ TestCheckedException.class,
+                        /* exceptionMessage= */ message))
             .count());
   }
 
@@ -497,11 +499,12 @@ public final class TaskSchedulerTest {
     assertEquals(
         1,
         logs.getEvents()
-            .map(event -> event.getThrowableProxy())
-            .filter(throwable -> throwable != null)
-            .filter(throwable -> Objects.equals(throwable.getMessage(), message))
-            .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestUncheckedException.class.getName()))
+            .filter(
+                event ->
+                    logs.isExceptionEvent(
+                        /* event= */ event,
+                        /* exceptionType= */ TestUncheckedException.class,
+                        /* exceptionMessage= */ message))
             .count());
   }
 
@@ -540,11 +543,12 @@ public final class TaskSchedulerTest {
     assertEquals(
         1,
         logs.getEvents()
-            .map(event -> event.getThrowableProxy())
-            .filter(throwable -> throwable != null)
-            .filter(throwable -> Objects.equals(throwable.getMessage(), message))
-            .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestCheckedException.class.getName()))
+            .filter(
+                event ->
+                    logs.isExceptionEvent(
+                        /* event= */ event,
+                        /* exceptionType= */ TestCheckedException.class,
+                        /* exceptionMessage= */ message))
             .count());
   }
 
@@ -823,21 +827,23 @@ public final class TaskSchedulerTest {
     assertEquals(
         1,
         logs.getEvents()
-            .map(event -> event.getThrowableProxy())
-            .filter(throwable -> throwable != null)
-            .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 1))
-            .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestUncheckedException.class.getName()))
+            .filter(
+                event ->
+                    logs.isExceptionEvent(
+                        /* event= */ event,
+                        /* exceptionType= */ TestUncheckedException.class,
+                        /* exceptionMessage= */ messagePrefix + 1))
             .count());
 
     assertEquals(
         1,
         logs.getEvents()
-            .map(event -> event.getThrowableProxy())
-            .filter(throwable -> throwable != null)
-            .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 2))
-            .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestUncheckedException.class.getName()))
+            .filter(
+                event ->
+                    logs.isExceptionEvent(
+                        /* event= */ event,
+                        /* exceptionType= */ TestUncheckedException.class,
+                        /* exceptionMessage= */ messagePrefix + 2))
             .count());
   }
 
@@ -876,21 +882,23 @@ public final class TaskSchedulerTest {
     assertEquals(
         1,
         logs.getEvents()
-            .map(event -> event.getThrowableProxy())
-            .filter(throwable -> throwable != null)
-            .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 1))
-            .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestCheckedException.class.getName()))
+            .filter(
+                event ->
+                    logs.isExceptionEvent(
+                        /* event= */ event,
+                        /* exceptionType= */ TestCheckedException.class,
+                        /* exceptionMessage= */ messagePrefix + 1))
             .count());
 
     assertEquals(
         1,
         logs.getEvents()
-            .map(event -> event.getThrowableProxy())
-            .filter(throwable -> throwable != null)
-            .filter(throwable -> Objects.equals(throwable.getMessage(), messagePrefix + 2))
-            .filter(throwable -> Objects.equals(throwable.getClassName(),
-                                                TestCheckedException.class.getName()))
+            .filter(
+                event ->
+                    logs.isExceptionEvent(
+                        /* event= */ event,
+                        /* exceptionType= */ TestCheckedException.class,
+                        /* exceptionMessage= */ messagePrefix + 2))
             .count());
   }
 
