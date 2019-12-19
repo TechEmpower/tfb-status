@@ -48,6 +48,29 @@ public final class HttpServerConfig {
     this.keyStore = keyStore;
   }
 
+  @Override
+  public boolean equals(Object object) {
+    if (object == this) {
+      return true;
+    } else if (!(object instanceof HttpServerConfig)) {
+      return false;
+    } else {
+      HttpServerConfig that = (HttpServerConfig) object;
+      return this.port == that.port
+          && this.host.equals(that.host)
+          && Objects.equals(this.keyStore, that.keyStore);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = 1;
+    hash = 31 * hash + host.hashCode();
+    hash = 31 * hash + Integer.hashCode(port);
+    hash = 31 * hash + Objects.hashCode(keyStore);
+    return hash;
+  }
+
   private static final String DEFAULT_HOST = "0.0.0.0";
   private static final int DEFAULT_PORT = 80;
 
@@ -70,6 +93,27 @@ public final class HttpServerConfig {
 
       this.path = Objects.requireNonNull(path);
       this.password = Objects.requireNonNull(password);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+      if (object == this) {
+        return true;
+      } else if (!(object instanceof KeyStore)) {
+        return false;
+      } else {
+        KeyStore that = (KeyStore) object;
+        return this.path.equals(that.path)
+            && this.password.equals(that.password);
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      int hash = 1;
+      hash = 31 * hash + path.hashCode();
+      hash = 31 * hash + password.hashCode();
+      return hash;
     }
   }
 }

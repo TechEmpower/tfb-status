@@ -29,6 +29,27 @@ public final class AssetsConfig {
     this.root = Objects.requireNonNullElseGet(root, () -> defaultRoot(this.mode));
   }
 
+  @Override
+  public boolean equals(Object object) {
+    if (object == this) {
+      return true;
+    } else if (!(object instanceof AssetsConfig)) {
+      return false;
+    } else {
+      AssetsConfig that = (AssetsConfig) object;
+      return this.mode == that.mode
+          && this.root.equals(that.root);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = 1;
+    hash = 31 * hash + mode.hashCode();
+    hash = 31 * hash + root.hashCode();
+    return hash;
+  }
+
   private static String defaultRoot(ResourceMode mode) {
     switch (mode) {
       case CLASS_PATH:  return "assets";

@@ -47,6 +47,27 @@ public final class RunProgressMonitorConfig {
             DEFAULT_MAX_ENVIRONMENTS);
   }
 
+  @Override
+  public boolean equals(Object object) {
+    if (object == this) {
+      return true;
+    } else if (!(object instanceof RunProgressMonitorConfig)) {
+      return false;
+    } else {
+      RunProgressMonitorConfig that = (RunProgressMonitorConfig) object;
+      return this.environmentTimeoutSeconds == that.environmentTimeoutSeconds
+          && this.maxEnvironments == that.maxEnvironments;
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = 1;
+    hash = 31 * hash + Long.hashCode(environmentTimeoutSeconds);
+    hash = 31 * hash + Integer.hashCode(maxEnvironments);
+    return hash;
+  }
+
   private static final long DEFAULT_ENVIRONMENT_TIMEOUT_SECONDS =
       Duration.ofHours(6).toSeconds();
 

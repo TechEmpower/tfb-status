@@ -52,4 +52,29 @@ public final class EmailConfig {
     this.from = Objects.requireNonNull(from);
     this.to = Objects.requireNonNull(to);
   }
+
+  @Override
+  public boolean equals(Object object) {
+    if (object == this) {
+      return true;
+    } else if (!(object instanceof EmailConfig)) {
+      return false;
+    } else {
+      EmailConfig that = (EmailConfig) object;
+      return this.port == that.port
+          && this.host.equals(that.host)
+          && this.from.equals(that.from)
+          && this.to.equals(that.to);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = 1;
+    hash = 31 * hash + host.hashCode();
+    hash = 31 * hash + Integer.hashCode(port);
+    hash = 31 * hash + from.hashCode();
+    hash = 31 * hash + to.hashCode();
+    return hash;
+  }
 }

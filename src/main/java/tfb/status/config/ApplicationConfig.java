@@ -74,4 +74,33 @@ public final class ApplicationConfig {
             runProgressMonitor,
             () -> new RunProgressMonitorConfig(null, null));
   }
+
+  @Override
+  public boolean equals(Object object) {
+    if (object == this) {
+      return true;
+    } else if (!(object instanceof ApplicationConfig)) {
+      return false;
+    } else {
+      ApplicationConfig that = (ApplicationConfig) object;
+      return this.http.equals(that.http)
+          && this.assets.equals(that.assets)
+          && this.mustache.equals(that.mustache)
+          && this.fileStore.equals(that.fileStore)
+          && this.runProgressMonitor.equals(that.runProgressMonitor)
+          && Objects.equals(this.email, that.email);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = 1;
+    hash = 31 * hash + http.hashCode();
+    hash = 31 * hash + assets.hashCode();
+    hash = 31 * hash + mustache.hashCode();
+    hash = 31 * hash + fileStore.hashCode();
+    hash = 31 * hash + runProgressMonitor.hashCode();
+    hash = 31 * hash + Objects.hashCode(email);
+    return hash;
+  }
 }

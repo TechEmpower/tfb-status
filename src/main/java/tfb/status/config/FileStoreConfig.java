@@ -30,5 +30,22 @@ public final class FileStoreConfig {
             DEFAULT_ROOT);
   }
 
+  @Override
+  public boolean equals(Object object) {
+    if (object == this) {
+      return true;
+    } else if (!(object instanceof FileStoreConfig)) {
+      return false;
+    } else {
+      FileStoreConfig that = (FileStoreConfig) object;
+      return this.root.equals(that.root);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    return root.hashCode();
+  }
+
   private static final String DEFAULT_ROOT = "managed_files";
 }
