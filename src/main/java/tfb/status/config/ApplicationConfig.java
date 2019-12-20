@@ -15,27 +15,27 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 @Singleton
 public final class ApplicationConfig {
   /**
-   * @see HttpServerConfig
+   * See {@link HttpServerConfig}.
    */
   public final HttpServerConfig http;
 
   /**
-   * @see AssetsConfig
+   * See {@link AssetsConfig}.
    */
   public final AssetsConfig assets;
 
   /**
-   * @see MustacheConfig
+   * See {@link MustacheConfig}.
    */
   public final MustacheConfig mustache;
 
   /**
-   * @see FileStoreConfig
+   * See {@link FileStoreConfig}.
    */
   public final FileStoreConfig fileStore;
 
   /**
-   * @see RunProgressMonitorConfig
+   * See {@link RunProgressMonitorConfig}.
    */
   public final RunProgressMonitorConfig runProgressMonitor;
 
