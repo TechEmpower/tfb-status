@@ -1,8 +1,16 @@
 package tfb.status.bootstrap;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
+import javax.inject.Provider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.config.ApplicationConfig;
@@ -31,19 +39,109 @@ public final class ConfigFactoryTest {
    * Verifies that all configuration objects are available for injection.
    */
   @Test
-  public void testAllConfigsInjectable(ApplicationConfig applicationConfig,
-                                       HttpServerConfig httpServerConfig,
-                                       AssetsConfig assetsConfig,
-                                       MustacheConfig mustacheConfig,
-                                       FileStoreConfig fileStoreConfig,
-                                       RunProgressMonitorConfig runProgressMonitorConfig,
-                                       Optional<EmailConfig> optionalEmailConfig) {
+  public void testAllConfigsInjectable(
+      Provider<ApplicationConfig> applicationConfigProvider,
+      Provider<HttpServerConfig> httpServerConfigProvider,
+      Provider<AssetsConfig> assetsConfigProvider,
+      Provider<MustacheConfig> mustacheConfigProvider,
+      Provider<FileStoreConfig> fileStoreConfigProvider,
+      Provider<RunProgressMonitorConfig> runProgressMonitorConfigProvider,
+      Provider<Optional<EmailConfig>> optionalEmailConfigProvider) {
 
-    assertSame(applicationConfig.http, httpServerConfig);
-    assertSame(applicationConfig.assets, assetsConfig);
-    assertSame(applicationConfig.mustache, mustacheConfig);
-    assertSame(applicationConfig.fileStore, fileStoreConfig);
-    assertSame(applicationConfig.runProgressMonitor, runProgressMonitorConfig);
-    assertSame(applicationConfig.email, optionalEmailConfig.orElse(null));
+    ApplicationConfig config = applicationConfigProvider.get();
+
+    assertEquals(
+        config.http,
+        httpServerConfigProvider.get());
+
+    assertEquals(
+        config.assets,
+        assetsConfigProvider.get());
+
+    assertEquals(
+        config.mustache,
+        mustacheConfigProvider.get());
+
+    assertEquals(
+        config.fileStore,
+        fileStoreConfigProvider.get());
+
+    assertEquals(
+        config.runProgressMonitor,
+        runProgressMonitorConfigProvider.get());
+
+    assertEquals(
+        Optional.ofNullable(config.email),
+        optionalEmailConfigProvider.get());
+  }
+
+  /**
+   * Verifies that the default configuration is used when no configuration file
+   * is specified.
+   */
+  @Test
+  public void testNoConfigFile(FileSystem fileSystem,
+                               ObjectMapper objectMapper) {
+
+    var configFactory =
+        new ApplicationConfigFactory(
+            fileSystem,
+            objectMapper,
+            Optional.empty());
+
+    ApplicationConfig config = configFactory.provide();
+
+    assertEquals(
+        new ApplicationConfig(null, null, null, null, null, null),
+        config);
+  }
+
+  /**
+   * Verifies that the default configuration is used when an empty configuration
+   * file is specified.
+   */
+  @Test
+  public void testEmptyConfigFile(FileSystem fileSystem,
+                                  ObjectMapper objectMapper)
+      throws IOException {
+
+    Path file = fileSystem.getPath("empty_config.yml");
+
+    Files.write(
+        file,
+        List.of(
+            "# This is a comment line.",
+            "# This is another comment line."));
+
+    var configFactory =
+        new ApplicationConfigFactory(
+            fileSystem,
+            objectMapper,
+            Optional.of(file.toString()));
+
+    ApplicationConfig config = configFactory.provide();
+
+    assertEquals(
+        new ApplicationConfig(null, null, null, null, null, null),
+        config);
+  }
+
+  /**
+   * Verifies that an exception is thrown when a configuration file is specified
+   * but that file does not exist.
+   */
+  @Test
+  public void testMissingConfigFile(FileSystem fileSystem,
+                                    ObjectMapper objectMapper) {
+
+    var configFactory =
+        new ApplicationConfigFactory(
+            fileSystem,
+            objectMapper,
+            Optional.of("missing_file.yml"));
+
+    assertThrows(
+        RuntimeException.class,
+        () -> configFactory.provide());
   }
 }
