@@ -1,6 +1,7 @@
 package tfb.status.testlib;
 
 import java.lang.reflect.Parameter;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -32,16 +33,16 @@ public final class TestServicesInjector implements ParameterResolver {
 
     Parameter parameter = parameterContext.getParameter();
     Services services = getServices(extensionContext);
-    return services.hasService(parameter);
+    return services.supportsParameter(parameter);
   }
 
   @Override
-  public Object resolveParameter(ParameterContext parameterContext,
-                                 ExtensionContext extensionContext) {
+  public @Nullable Object resolveParameter(ParameterContext parameterContext,
+                                           ExtensionContext extensionContext) {
 
     Parameter parameter = parameterContext.getParameter();
     Services services = getServices(extensionContext);
-    return services.getService(parameter);
+    return services.resolveParameter(parameter);
   }
 
   private Services getServices(ExtensionContext extensionContext) {

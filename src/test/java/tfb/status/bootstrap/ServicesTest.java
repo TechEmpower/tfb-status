@@ -11,21 +11,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PreDestroy;
+import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.TypeLiteral;
-import org.glassfish.hk2.utilities.Binder;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
-import tfb.status.bootstrap.Services.InvalidServiceException;
 
 /**
  * Tests for {@link Services}.
@@ -97,58 +96,47 @@ public final class ServicesTest {
     assertThrows(
         NoSuchElementException.class,
         () -> services.getService(UnregisteredService.class));
+
+    Iterable<UnregisteredService> iterable =
+        services.getService(
+            new TypeToken<Iterable<UnregisteredService>>() {});
+
+    Iterator<UnregisteredService> iterator = iterable.iterator();
+
+    assertFalse(iterator.hasNext());
   }
 
   /**
-   * Verifies that {@link Services#shutdown()} invokes the {@link
-   * PreDestroy#preDestroy()} methods of registered singleton services.
+   * Verifies that {@link Services#getService(Class)} throws {@link
+   * NoSuchElementException} when there is a service of the specified type but
+   * its provider provided {@code null}.
    */
   @Test
-  public void testShutdownService() {
+  public void testGetNullService() {
     var binder =
         new AbstractBinder() {
           @Override
           protected void configure() {
-            bindAsContract(ServiceWithShutdown.class).in(Singleton.class);
+            bindFactory(NullFactory.class).to(SimpleService.class);
           }
         };
 
     var services = new Services(binder);
 
-    var service = services.getService(ServiceWithShutdown.class);
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(SimpleService.class));
 
-    assertFalse(service.isShutdown());
+    // Assert that there is one "instance" of the service, but it's null.
+    Iterable<SimpleService> iterable =
+        services.getService(
+            new TypeToken<Iterable<SimpleService>>() {});
 
-    services.shutdown();
+    Iterator<SimpleService> iterator = iterable.iterator();
 
-    assertTrue(service.isShutdown());
-  }
-
-  /**
-   * Verifies that {@link Services#shutdown()} invokes the {@link
-   * Factory#dispose(Object)} methods of registered singleton factories.
-   */
-  @Test
-  public void testShutdownFactory() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindFactory(FactoryWithShutdown.class, Singleton.class)
-                .to(ServiceWithShutdown.class)
-                .in(Singleton.class);
-          }
-        };
-
-    var services = new Services(binder);
-
-    var service = services.getService(ServiceWithShutdown.class);
-
-    assertFalse(service.isShutdown());
-
-    services.shutdown();
-
-    assertTrue(service.isShutdown());
+    assertTrue(iterator.hasNext());
+    assertNull(iterator.next());
+    assertFalse(iterator.hasNext());
   }
 
   /**
@@ -406,62 +394,65 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#hasService(Type)} works as expected.
+   * Verifies that {@link Services#shutdown()} invokes the {@link
+   * PreDestroy#preDestroy()} methods of registered singleton services.
    */
   @Test
-  public void testHasService() {
+  public void testShutdownSingletonService() {
     var binder =
         new AbstractBinder() {
           @Override
           protected void configure() {
-            bindAsContract(SimpleService.class);
-
-            bind(ServiceWithContract1.class).to(SimpleContract.class);
-            bind(ServiceWithContract2.class).to(SimpleContract.class);
-
-            bind(ServiceWithGenericContract1.class)
-                .to(new TypeLiteral<GenericContract<Integer>>() {});
-
-            bind(ServiceWithGenericContract2.class)
-                .to(new TypeLiteral<GenericContract<String>>() {});
+            bindAsContract(ServiceWithShutdown.class).in(Singleton.class);
           }
         };
 
     var services = new Services(binder);
 
-    assertTrue(services.hasService(SimpleService.class));
-    assertFalse(services.hasService(UnregisteredService.class));
-    assertTrue(services.hasService(SimpleContract.class));
-    assertFalse(services.hasService(ServiceWithContract1.class));
-    assertFalse(services.hasService(ServiceWithContract2.class));
+    ServiceWithShutdown service =
+        services.getService(ServiceWithShutdown.class);
 
-    assertTrue(services.hasService(new TypeToken<GenericContract<Integer>>() {}.getType()));
-    assertTrue(services.hasService(new TypeToken<GenericContract<String>>() {}.getType()));
-    assertFalse(services.hasService(new TypeToken<GenericContract<Double>>() {}.getType()));
-    assertFalse(services.hasService(ServiceWithGenericContract1.class));
-    assertFalse(services.hasService(ServiceWithGenericContract2.class));
+    assertFalse(service.isShutdown());
 
-    assertTrue(services.hasService(new TypeToken<Optional<SimpleService>>() {}.getType()));
-    assertTrue(services.hasService(new TypeToken<Provider<SimpleService>>() {}.getType()));
-    assertTrue(services.hasService(new TypeToken<Iterable<SimpleService>>() {}.getType()));
-    assertTrue(services.hasService(new TypeToken<IterableProvider<SimpleService>>() {}.getType()));
+    services.shutdown();
 
-    assertTrue(services.hasService(new TypeToken<Optional<UnregisteredService>>() {}.getType()));
-    assertTrue(services.hasService(new TypeToken<Provider<UnregisteredService>>() {}.getType()));
-    assertTrue(services.hasService(new TypeToken<Iterable<UnregisteredService>>() {}.getType()));
-    assertTrue(services.hasService(new TypeToken<IterableProvider<UnregisteredService>>() {}.getType()));
+    assertTrue(service.isShutdown());
   }
 
   /**
-   * Verifies that {@link Services#Services(Binder...)} throws {@link
-   * InvalidServiceException} when registering a {@link PerLookup} service that
-   * has a {@link PreDestroy#preDestroy()} method.
-   *
-   * <p>This exception is thrown in order to warn the caller that the {@link
-   * PreDestroy#preDestroy()} method of their service will never be called.
+   * Verifies that {@link Services#shutdown()} invokes the {@link
+   * Factory#dispose(Object)} methods of registered singleton factories.
    */
   @Test
-  public void testRejectPerLookupServiceWithShutdown() {
+  public void testShutdownSingletonFactory() {
+    var binder =
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            bindFactory(FactoryWithShutdown.class, Singleton.class)
+                .to(ServiceWithShutdown.class)
+                .in(Singleton.class);
+          }
+        };
+
+    var services = new Services(binder);
+
+    ServiceWithShutdown service =
+        services.getService(ServiceWithShutdown.class);
+
+    assertFalse(service.isShutdown());
+
+    services.shutdown();
+
+    assertTrue(service.isShutdown());
+  }
+
+  /**
+   * Verifies that {@link ServiceHandle#close()} invokes the {@link
+   * PreDestroy#preDestroy()} methods of registered per-lookup services.
+   */
+  @Test
+  public void testShutdownPerLookupService() {
     var binder =
         new AbstractBinder() {
           @Override
@@ -470,33 +461,69 @@ public final class ServicesTest {
           }
         };
 
-    assertThrows(
-        Services.InvalidServiceException.class,
-        () -> new Services(binder));
+    var services = new Services(binder);
+
+    IterableProvider<ServiceWithShutdown> providers =
+        services.getService(
+            new TypeToken<IterableProvider<ServiceWithShutdown>>() {});
+
+    int loopCount = 2;
+    int serviceCount = 0;
+
+    for (int i = 0; i < loopCount; i++) {
+      for (ServiceHandle<ServiceWithShutdown> handle
+          : providers.handleIterator()) {
+
+        ServiceWithShutdown service = handle.getService();
+        assertFalse(service.isShutdown());
+        handle.close();
+        assertTrue(service.isShutdown());
+        serviceCount++;
+      }
+    }
+
+    // Assert that we saw one service during each iteration of the loop.
+    assertEquals(loopCount, serviceCount);
   }
 
   /**
-   * Verifies that {@link Services#Services(Binder...)} throws {@link
-   * InvalidServiceException} when registering a {@link PerLookup} factory.
-   *
-   * <p>This exception is thrown in order to warn the caller that the {@link
-   * Factory#dispose(Object)} method of their factory will never be called.
+   * Verifies that {@link ServiceHandle#close()} invokes the {@link
+   * Factory#dispose(Object)} methods of registered singleton factories.
    */
   @Test
-  public void testRejectPerLookupFactory() {
+  public void testShutdownPerLookupFactory() {
     var binder =
         new AbstractBinder() {
           @Override
           protected void configure() {
             bindFactory(FactoryWithShutdown.class)
-                .to(SimpleService.class)
-                .in(Singleton.class);
+                .to(ServiceWithShutdown.class);
           }
         };
 
-    assertThrows(
-        Services.InvalidServiceException.class,
-        () -> new Services(binder));
+    var services = new Services(binder);
+
+    IterableProvider<ServiceWithShutdown> providers =
+        services.getService(
+            new TypeToken<IterableProvider<ServiceWithShutdown>>() {});
+
+    int loopCount = 2;
+    int serviceCount = 0;
+
+    for (int i = 0; i < loopCount; i++) {
+      for (ServiceHandle<ServiceWithShutdown> handle
+          : providers.handleIterator()) {
+
+        ServiceWithShutdown service = handle.getService();
+        assertFalse(service.isShutdown());
+        handle.close();
+        assertTrue(service.isShutdown());
+        serviceCount++;
+      }
+    }
+
+    // Assert that we saw one service during each iteration of the loop.
+    assertEquals(loopCount, serviceCount);
   }
 
   public static final class SimpleService {}
@@ -562,4 +589,16 @@ public final class ServicesTest {
   }
 
   public static final class UnregisteredService {}
+
+  public static final class NullFactory implements Factory<SimpleService> {
+    @Override
+    public @Nullable SimpleService provide() {
+      return null;
+    }
+
+    @Override
+    public void dispose(SimpleService instance) {
+      // Do nothing.
+    }
+  }
 }
