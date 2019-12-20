@@ -40,6 +40,10 @@ public final class RootHandlerTest {
 
     assertEquals(OK, response.statusCode());
 
+    // The server commits the response before writing the log message.  Sleep
+    // for a bit to allow the logging to occur.
+    Thread.sleep(100);
+
     assertEquals(
         1,
         logs.getEvents()
@@ -67,6 +71,10 @@ public final class RootHandlerTest {
     HttpResponse<String> response = http.getString(path);
 
     assertEquals(INTERNAL_SERVER_ERROR, response.statusCode());
+
+    // The server commits the response before writing the log message.  Sleep
+    // for a bit to allow the logging to occur.
+    Thread.sleep(100);
 
     assertEquals(
         1,

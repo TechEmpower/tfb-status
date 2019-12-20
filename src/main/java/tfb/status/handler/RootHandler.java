@@ -1,9 +1,9 @@
 package tfb.status.handler;
 
 import io.undertow.server.DefaultResponseListener;
+import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.ResponseCommitListener;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
@@ -134,7 +134,7 @@ public final class RootHandler implements HttpHandler {
   // TODO: Figure out how to disable Undertow's default exception logging.
   private static final class ExceptionLoggingHandler implements HttpHandler {
     private final HttpHandler handler;
-    private final ResponseCommitListener listener;
+    private final ExchangeCompletionListener listener;
 
     ExceptionLoggingHandler(HttpHandler handler, Logger logger) {
       this.handler = Objects.requireNonNull(handler);
@@ -143,12 +143,12 @@ public final class RootHandler implements HttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-      exchange.addResponseCommitListener(listener);
+      exchange.addExchangeCompleteListener(listener);
       handler.handleRequest(exchange);
     }
 
     private static final class ExceptionLoggingListener
-        implements ResponseCommitListener {
+        implements ExchangeCompletionListener {
 
       private final Logger logger;
 
@@ -157,7 +157,8 @@ public final class RootHandler implements HttpHandler {
       }
 
       @Override
-      public void beforeCommit(HttpServerExchange exchange) {
+      public void exchangeEvent(HttpServerExchange exchange,
+                                NextListener nextListener) {
         Throwable exception =
             exchange.getAttachment(DefaultResponseListener.EXCEPTION);
 
@@ -167,6 +168,8 @@ public final class RootHandler implements HttpHandler {
               exchange.getRequestMethod(),
               exchange.getRequestURI(),
               exception);
+
+        nextListener.proceed();
       }
     }
   }
