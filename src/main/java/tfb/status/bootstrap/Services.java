@@ -4,26 +4,29 @@ import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.Injectee;
-import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.PreDestroy;
+import org.glassfish.hk2.api.Self;
 import org.glassfish.hk2.api.ServiceLocator;
-import org.glassfish.hk2.api.messaging.Topic;
+import org.glassfish.hk2.api.Unqualified;
 import org.glassfish.hk2.utilities.Binder;
 import org.glassfish.hk2.utilities.InjecteeImpl;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
+import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 
 /**
  * Manages the instances of HTTP handlers and service classes within this
@@ -156,10 +159,7 @@ public final class Services {
    * @throws NoSuchElementException if there is no service of that type
    */
   public Object getService(Type type) {
-    Objects.requireNonNull(type);
-
-    var injectee = new InjecteeImpl(type);
-    injectee.setParent(FakeInjecteeParent.field);
+    Injectee injectee = getInjectee(type);
 
     ActiveDescriptor<?> activeDescriptor =
         serviceLocator.getInjecteeDescriptor(injectee);
@@ -180,6 +180,35 @@ public final class Services {
   }
 
   /**
+   * Returns the service matching the specified method parameter.
+   *
+   * @throws NoSuchElementException if there is no service matching that
+   *         parameter
+   */
+  public Object getService(Parameter parameter) {
+    Injectee injectee = getInjectee(parameter);
+
+    ActiveDescriptor<?> activeDescriptor =
+        serviceLocator.getInjecteeDescriptor(injectee);
+
+    if (activeDescriptor == null)
+      throw new NoSuchElementException(
+          "There is no service for parameter " + parameter);
+
+    Object service =
+        serviceLocator.getService(
+            activeDescriptor,
+            /* root= */ null,
+            injectee);
+
+    if (service == null)
+      throw new NoSuchElementException(
+          "There is no service for parameter " + parameter);
+
+    return service;
+  }
+
+  /**
    * Returns {@code true} if a service of the specified type exists.  In other
    * words, this method returns {@code true} when {@link #getService(Type)}
    * would succeed and {@code false} when that method would throw {@link
@@ -189,27 +218,31 @@ public final class Services {
    * in the initialization of an instance of the service.
    */
   public boolean hasService(Type type) {
-    Objects.requireNonNull(type);
-    if (type instanceof ParameterizedType) {
-      Type rawType = ((ParameterizedType) type).getRawType();
-      if (SERVICE_WRAPPER_TYPES.contains(rawType)) {
-        // Injecting instances of these wrapper types always works even when the
-        // service locator can't provide an instance of the wrapped type.  For
-        // example, a `Provider<Foo>` can be injected even when a `Foo` cannot,
-        // and its provider.get() method returns null.
-        return true;
-      }
-    }
-    return serviceLocator.getServiceHandle(type) != null;
+    Injectee injectee = getInjectee(type);
+
+    ActiveDescriptor<?> activeDescriptor =
+        serviceLocator.getInjecteeDescriptor(injectee);
+
+    return activeDescriptor != null;
   }
 
-  private static final ImmutableSet<Type> SERVICE_WRAPPER_TYPES =
-      ImmutableSet.of(
-          Provider.class,
-          IterableProvider.class,
-          Iterable.class,
-          Optional.class,
-          Topic.class);
+  /**
+   * Returns {@code true} if a service matching the specified parameter exists.
+   * In other words, this method returns {@code true} when {@link
+   * #getService(Parameter)} would succeed and {@code false} when that method
+   * would throw {@link NoSuchElementException}.
+   *
+   * <p>Unlike {@link #getService(Parameter)}, calling this method will never
+   * result in the initialization of an instance of the service.
+   */
+  public boolean hasService(Parameter parameter) {
+    Injectee injectee = getInjectee(parameter);
+
+    ActiveDescriptor<?> activeDescriptor =
+        serviceLocator.getInjecteeDescriptor(injectee);
+
+    return activeDescriptor != null;
+  }
 
   /**
    * An exception thrown from {@link Services#Services(Binder...)} when a
@@ -223,6 +256,46 @@ public final class Services {
     }
 
     private static final long serialVersionUID = 0;
+  }
+
+  private Injectee getInjectee(Type type) {
+    Objects.requireNonNull(type);
+    var injectee = new InjecteeImpl(type);
+    injectee.setParent(FakeInjecteeParent.field);
+    return injectee;
+  }
+
+  private Injectee getInjectee(Parameter parameter) {
+    Objects.requireNonNull(parameter);
+
+    Executable parent = parameter.getDeclaringExecutable();
+
+    int index = Arrays.asList(parent.getParameters()).indexOf(parameter);
+    if (index == -1)
+      throw new AssertionError(
+          "parameter " + parameter + " not found in parent " + parent);
+
+    var injectee = new InjecteeImpl(parameter.getParameterizedType());
+    injectee.setParent(parent);
+    injectee.setPosition(index);
+
+    // This block of code reproduces the behavior of
+    // org.jvnet.hk2.internal.Utilities#getParamInformation(Annotation[])
+    var qualifiers = new ImmutableSet.Builder<Annotation>();
+    for (Annotation annotation : parameter.getAnnotations()) {
+      if (ReflectionHelper.isAnnotationAQualifier(annotation)) {
+        qualifiers.add(annotation);
+      } else if (annotation.annotationType() == org.jvnet.hk2.annotations.Optional.class) {
+        injectee.setOptional(true);
+      } else if (annotation.annotationType() == Self.class) {
+        injectee.setSelf(true);
+      } else if (annotation.annotationType() == Unqualified.class) {
+        injectee.setUnqualified((Unqualified) annotation);
+      }
+    }
+    injectee.setRequiredQualifiers(qualifiers.build());
+
+    return injectee;
   }
 
   /**

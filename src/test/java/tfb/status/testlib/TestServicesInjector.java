@@ -1,6 +1,6 @@
 package tfb.status.testlib;
 
-import java.lang.reflect.Type;
+import java.lang.reflect.Parameter;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -30,18 +30,18 @@ public final class TestServicesInjector implements ParameterResolver {
   public boolean supportsParameter(ParameterContext parameterContext,
                                    ExtensionContext extensionContext) {
 
-    Type type = parameterContext.getParameter().getParameterizedType();
+    Parameter parameter = parameterContext.getParameter();
     Services services = getServices(extensionContext);
-    return services.hasService(type);
+    return services.hasService(parameter);
   }
 
   @Override
   public Object resolveParameter(ParameterContext parameterContext,
                                  ExtensionContext extensionContext) {
 
-    Type type = parameterContext.getParameter().getParameterizedType();
+    Parameter parameter = parameterContext.getParameter();
     Services services = getServices(extensionContext);
-    return services.getService(type);
+    return services.getService(parameter);
   }
 
   private Services getServices(ExtensionContext extensionContext) {
