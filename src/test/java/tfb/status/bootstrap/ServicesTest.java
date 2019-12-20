@@ -14,6 +14,7 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.Factory;
@@ -151,6 +152,50 @@ public final class ServicesTest {
   }
 
   /**
+   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
+   * Optional} of a registered service type, and that the returned optional
+   * contains an instance of that service.
+   */
+  @Test
+  public void testGetOptional() {
+    var binder =
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            bindAsContract(SimpleService.class);
+          }
+        };
+
+    var services = new Services(binder);
+
+    Optional<SimpleService> optional =
+        services.getService(new TypeToken<Optional<SimpleService>>() {});
+
+    assertTrue(optional.isPresent());
+  }
+
+  /**
+   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
+   * Optional} even when the service type is unregistered, and that the returned
+   * optional is empty.
+   */
+  @Test
+  public void testGetUnregisteredOptional() {
+    var binder =
+        new AbstractBinder() {
+          @Override
+          protected void configure() {}
+        };
+
+    var services = new Services(binder);
+
+    Optional<UnregisteredService> optional =
+        services.getService(new TypeToken<Optional<UnregisteredService>>() {});
+
+    assertTrue(optional.isEmpty());
+  }
+
+  /**
    * Verifies that {@link Services#getService(TypeToken)} can produce a {@link
    * Provider} of a registered service type, and that the returned provider's
    * {@link Provider#get()} method provides an instance of that service.
@@ -196,6 +241,67 @@ public final class ServicesTest {
     UnregisteredService service = provider.get();
 
     assertNull(service);
+  }
+
+  /**
+   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
+   * Iterable} of a registered contract type, and that the returned iterable
+   * contains one element for each service registered with that contract.
+   */
+  @Test
+  public void testGetIterable() {
+    var binder =
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            bind(ServiceWithContract1.class).to(SimpleContract.class);
+            bind(ServiceWithContract2.class).to(SimpleContract.class);
+          }
+        };
+
+    var services = new Services(binder);
+
+    Iterable<SimpleContract> provider =
+        services.getService(
+            new TypeToken<Iterable<SimpleContract>>() {});
+
+    Iterator<SimpleContract> iterator = provider.iterator();
+
+    assertTrue(iterator.hasNext());
+
+    SimpleContract service1 = iterator.next();
+
+    assertTrue(iterator.hasNext());
+
+    SimpleContract service2 = iterator.next();
+
+    assertFalse(iterator.hasNext());
+
+    assertNotNull(service1);
+    assertNotNull(service2);
+    assertNotSame(service1, service2);
+  }
+
+  /**
+   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
+   * Iterable} even when the service type is unregistered, and that the returned
+   * iterable is empty.
+   */
+  @Test
+  public void testGetUnregisteredIterable() {
+    var binder =
+        new AbstractBinder() {
+          @Override
+          protected void configure() {}
+        };
+
+    var services = new Services(binder);
+
+    Iterable<UnregisteredService> provider =
+        services.getService(
+            new TypeToken<Iterable<UnregisteredService>>() {});
+
+    assertFalse(provider.iterator().hasNext());
   }
 
   /**
@@ -297,7 +403,6 @@ public final class ServicesTest {
     assertNotSame(service1, service2);
     assertEquals(1, service1.method());
     assertEquals("hello", service2.method());
-
   }
 
   /**
@@ -329,14 +434,21 @@ public final class ServicesTest {
     assertTrue(services.hasService(SimpleContract.class));
     assertFalse(services.hasService(ServiceWithContract1.class));
     assertFalse(services.hasService(ServiceWithContract2.class));
+
     assertTrue(services.hasService(new TypeToken<GenericContract<Integer>>() {}.getType()));
     assertTrue(services.hasService(new TypeToken<GenericContract<String>>() {}.getType()));
     assertFalse(services.hasService(new TypeToken<GenericContract<Double>>() {}.getType()));
     assertFalse(services.hasService(ServiceWithGenericContract1.class));
     assertFalse(services.hasService(ServiceWithGenericContract2.class));
+
+    assertTrue(services.hasService(new TypeToken<Optional<SimpleService>>() {}.getType()));
     assertTrue(services.hasService(new TypeToken<Provider<SimpleService>>() {}.getType()));
+    assertTrue(services.hasService(new TypeToken<Iterable<SimpleService>>() {}.getType()));
     assertTrue(services.hasService(new TypeToken<IterableProvider<SimpleService>>() {}.getType()));
+
+    assertTrue(services.hasService(new TypeToken<Optional<UnregisteredService>>() {}.getType()));
     assertTrue(services.hasService(new TypeToken<Provider<UnregisteredService>>() {}.getType()));
+    assertTrue(services.hasService(new TypeToken<Iterable<UnregisteredService>>() {}.getType()));
     assertTrue(services.hasService(new TypeToken<IterableProvider<UnregisteredService>>() {}.getType()));
   }
 

@@ -2,20 +2,27 @@ package tfb.status.bootstrap;
 
 import static java.util.stream.Collectors.joining;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
+import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.Injectee;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.utilities.Binder;
+import org.glassfish.hk2.utilities.InjecteeImpl;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 
 /**
@@ -150,7 +157,22 @@ public final class Services {
    */
   public Object getService(Type type) {
     Objects.requireNonNull(type);
-    Object service = serviceLocator.getService(type);
+
+    var injectee = new InjecteeImpl(type);
+    injectee.setParent(FakeInjecteeParent.field);
+
+    ActiveDescriptor<?> activeDescriptor =
+        serviceLocator.getInjecteeDescriptor(injectee);
+
+    if (activeDescriptor == null)
+      throw new NoSuchElementException("There is no service of type " + type);
+
+    Object service =
+        serviceLocator.getService(
+            activeDescriptor,
+            /* root= */ null,
+            injectee);
+
     if (service == null)
       throw new NoSuchElementException("There is no service of type " + type);
 
@@ -170,15 +192,24 @@ public final class Services {
     Objects.requireNonNull(type);
     if (type instanceof ParameterizedType) {
       Type rawType = ((ParameterizedType) type).getRawType();
-      if (rawType == Provider.class || rawType == IterableProvider.class) {
-        // Injecting Provider<T> always works even when the service locator
-        // can't provide an instance of T.  In that case, provider.get() returns
-        // null.
+      if (SERVICE_WRAPPER_TYPES.contains(rawType)) {
+        // Injecting instances of these wrapper types always works even when the
+        // service locator can't provide an instance of the wrapped type.  For
+        // example, a `Provider<Foo>` can be injected even when a `Foo` cannot,
+        // and its provider.get() method returns null.
         return true;
       }
     }
     return serviceLocator.getServiceHandle(type) != null;
   }
+
+  private static final ImmutableSet<Type> SERVICE_WRAPPER_TYPES =
+      ImmutableSet.of(
+          Provider.class,
+          IterableProvider.class,
+          Iterable.class,
+          Optional.class,
+          Topic.class);
 
   /**
    * An exception thrown from {@link Services#Services(Binder...)} when a
@@ -192,5 +223,21 @@ public final class Services {
     }
 
     private static final long serialVersionUID = 0;
+  }
+
+  /**
+   * Works around an issue in hk2 where requesting an {@link Optional} service
+   * fails if {@link Injectee#getParent()} is {@code null}.
+   */
+  private static final class FakeInjecteeParent {
+    static final @Nullable Object injectee = null;
+    static final Field field;
+    static {
+      try {
+        field = FakeInjecteeParent.class.getDeclaredField("injectee");
+      } catch (NoSuchFieldException impossible) {
+        throw new AssertionError(impossible);
+      }
+    }
   }
 }
