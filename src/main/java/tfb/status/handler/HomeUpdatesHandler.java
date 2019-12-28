@@ -7,8 +7,6 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
-import io.undertow.server.handlers.sse.ServerSentEventConnection;
-import io.undertow.server.handlers.sse.ServerSentEventHandler;
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
 import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
@@ -30,15 +28,13 @@ import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.HomePageView.ResultsView;
 
 /**
- * Handles request to subscribe to updates to the home page.  This endpoint
- * supports both server-sent events (SSE) and web sockets.
+ * Handles requests to listen for updates to the home page using web sockets.
  */
 @Singleton
 @ExactPath("/updates")
 public final class HomeUpdatesHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;
   private final HomeResultsReader homeResultsReader;
-  private final ServerSentEventHandler sseHandler;
   private final WebSocketCallback<Void> wsSendCallback;
   private final WebSocketProtocolHandshakeHandler wsHandler;
   private final HttpHandler delegate;
@@ -50,15 +46,6 @@ public final class HomeUpdatesHandler implements HttpHandler {
 
     this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
     this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
-
-    sseHandler =
-        new ServerSentEventHandler(
-            /* callback= */
-            (ServerSentEventConnection connection, String lastEventId) -> {
-              // Prevent proxies such as nginx from terminating our idle
-              // connections.
-              connection.setKeepAliveTime(15_000);
-            });
 
     wsSendCallback =
         new WebSocketCallback<Void>() {
@@ -86,9 +73,11 @@ public final class HomeUpdatesHandler implements HttpHandler {
             (WebSocketHttpExchange exchange, WebSocketChannel channel) -> {
 
               Runnable pingTask =
-                  () -> WebSockets.sendPing(UTF_8.encode("hello"),
-                                            channel,
-                                            wsSendCallback);
+                  () ->
+                      WebSockets.sendPing(
+                          UTF_8.encode("hello"),
+                          channel,
+                          wsSendCallback);
 
               XnioExecutor.Key pingTimer =
                   channel.getIoThread()
@@ -98,10 +87,7 @@ public final class HomeUpdatesHandler implements HttpHandler {
                              /* unit= */ TimeUnit.SECONDS);
 
               channel.addCloseTask(ch -> pingTimer.remove());
-            },
-            // Fall back to SSE for requests that don't appear to be web socket
-            // handshakes.
-            /* next= */ sseHandler);
+            });
 
     delegate =
         HttpHandlers.chain(
@@ -129,15 +115,14 @@ public final class HomeUpdatesHandler implements HttpHandler {
   public void sendUpdate(String uuid) throws IOException {
     Objects.requireNonNull(uuid);
 
-    Set<ServerSentEventConnection> sseConnections = sseHandler.getConnections();
     Set<WebSocketChannel> wsConnections = wsHandler.getPeerConnections();
 
     logger.info(
         "Result {} updated, {} listeners to be notified",
         uuid,
-        sseConnections.size() + wsConnections.size());
+        wsConnections.size());
 
-    if (sseConnections.isEmpty() && wsConnections.isEmpty())
+    if (wsConnections.isEmpty())
       // No one is listening.
       return;
 
@@ -154,9 +139,6 @@ public final class HomeUpdatesHandler implements HttpHandler {
     }
 
     String html = mustacheRenderer.render("home-result.mustache", results);
-
-    for (ServerSentEventConnection connection : sseConnections)
-      connection.send(html);
 
     for (WebSocketChannel connection : wsConnections)
       WebSockets.sendText(html, connection, wsSendCallback);
