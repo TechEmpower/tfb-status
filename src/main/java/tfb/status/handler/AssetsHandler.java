@@ -47,11 +47,11 @@ public final class AssetsHandler implements HttpHandler {
     switch (config.mode) {
       case CLASS_PATH: {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        var resourceManager = new ClassPathResourceManager(classLoader, config.root);
+        var resourceManager = new ClassPathResourceManager(classLoader, "assets");
         return new ResourceHandler(resourceManager);
       }
       case FILE_SYSTEM: {
-        Path assetsRoot = fileSystem.getPath(config.root);
+        Path assetsRoot = fileSystem.getPath("src/main/resources/assets");
         var resourceManager = new PathResourceManager(assetsRoot);
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setCacheTime(0);

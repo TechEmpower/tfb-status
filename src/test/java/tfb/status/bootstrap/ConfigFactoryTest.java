@@ -1,6 +1,7 @@
 package tfb.status.bootstrap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +50,7 @@ public final class ConfigFactoryTest {
       Provider<Optional<EmailConfig>> optionalEmailConfigProvider) {
 
     ApplicationConfig config = applicationConfigProvider.get();
+    assertNotNull(config);
 
     assertEquals(
         config.http,
@@ -92,7 +94,7 @@ public final class ConfigFactoryTest {
     ApplicationConfig config = configFactory.provide();
 
     assertEquals(
-        new ApplicationConfig(null, null, null, null, null, null),
+        ApplicationConfig.defaultConfig(),
         config);
   }
 
@@ -122,7 +124,7 @@ public final class ConfigFactoryTest {
     ApplicationConfig config = configFactory.provide();
 
     assertEquals(
-        new ApplicationConfig(null, null, null, null, null, null),
+        ApplicationConfig.defaultConfig(),
         config);
   }
 

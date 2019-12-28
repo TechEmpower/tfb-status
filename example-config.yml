@@ -24,11 +24,9 @@
 
 #assets:
 #  mode: FILE_SYSTEM
-#  root: src/main/resources/assets
 
 #mustache:
 #  mode: FILE_SYSTEM
-#  root: src/main/resources/mustache
 
 #fileStore:
 #  root: managed_files

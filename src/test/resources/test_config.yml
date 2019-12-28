@@ -13,11 +13,9 @@ email:
 
 assets:
   mode: CLASS_PATH
-  root: assets
 
 mustache:
   mode: CLASS_PATH
-  root: mustache
 
 fileStore:
   root: test_managed_files

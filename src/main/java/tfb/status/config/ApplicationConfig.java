@@ -41,59 +41,23 @@ public final class ApplicationConfig {
 
   /**
    * The configuration for outbound emails, or {@code null} if outbound emails
-   * are disabled.
-   *
-   * @see EmailConfig
+   * are disabled.  See {@link EmailConfig}.
    */
   public final @Nullable EmailConfig email;
 
-  @JsonCreator
-  public ApplicationConfig(
+  public ApplicationConfig(HttpServerConfig http,
+                           AssetsConfig assets,
+                           MustacheConfig mustache,
+                           FileStoreConfig fileStore,
+                           RunProgressMonitorConfig runProgressMonitor,
+                           @Nullable EmailConfig email) {
 
-      @JsonProperty(value = "http", required = false)
-      @Nullable HttpServerConfig http,
-
-      @JsonProperty(value = "assets", required = false)
-      @Nullable AssetsConfig assets,
-
-      @JsonProperty(value = "mustache", required = false)
-      @Nullable MustacheConfig mustache,
-
-      @JsonProperty(value = "fileStore", required = false)
-      @Nullable FileStoreConfig fileStore,
-
-      @JsonProperty(value = "email", required = false)
-      @Nullable EmailConfig email,
-
-      @JsonProperty(value = "runProgressMonitor", required = false)
-      @Nullable RunProgressMonitorConfig runProgressMonitor) {
-
-    this.http =
-        Objects.requireNonNullElseGet(
-            http,
-            () -> new HttpServerConfig(null, null, null));
-
-    this.assets =
-        Objects.requireNonNullElseGet(
-            assets,
-            () -> new AssetsConfig(null, null));
-
-    this.mustache =
-        Objects.requireNonNullElseGet(
-            mustache,
-            () -> new MustacheConfig(null, null));
-
-    this.fileStore =
-        Objects.requireNonNullElseGet(
-            fileStore,
-            () -> new FileStoreConfig(null));
-
+    this.http = Objects.requireNonNull(http);
+    this.assets = Objects.requireNonNull(assets);
+    this.mustache = Objects.requireNonNull(mustache);
+    this.fileStore = Objects.requireNonNull(fileStore);
+    this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
     this.email = email;
-
-    this.runProgressMonitor =
-        Objects.requireNonNullElseGet(
-            runProgressMonitor,
-            () -> new RunProgressMonitorConfig(null, null));
   }
 
   @Override
@@ -123,5 +87,59 @@ public final class ApplicationConfig {
     hash = 31 * hash + runProgressMonitor.hashCode();
     hash = 31 * hash + Objects.hashCode(email);
     return hash;
+  }
+
+  @JsonCreator
+  public static ApplicationConfig create(
+      @JsonProperty(value = "http", required = false)
+      @Nullable HttpServerConfig http,
+
+      @JsonProperty(value = "assets", required = false)
+      @Nullable AssetsConfig assets,
+
+      @JsonProperty(value = "mustache", required = false)
+      @Nullable MustacheConfig mustache,
+
+      @JsonProperty(value = "fileStore", required = false)
+      @Nullable FileStoreConfig fileStore,
+
+      @JsonProperty(value = "runProgressMonitor", required = false)
+      @Nullable RunProgressMonitorConfig runProgressMonitor,
+
+      @JsonProperty(value = "email", required = false)
+      @Nullable EmailConfig email) {
+
+    return new ApplicationConfig(
+        /* http= */
+        Objects.requireNonNullElseGet(
+            http,
+            () -> HttpServerConfig.defaultConfig()),
+
+        /* assets= */
+        Objects.requireNonNullElseGet(
+            assets,
+            () -> AssetsConfig.defaultConfig()),
+
+        /* mustache= */
+        Objects.requireNonNullElseGet(
+            mustache,
+            () -> MustacheConfig.defaultConfig()),
+
+        /* fileStore= */
+        Objects.requireNonNullElseGet(
+            fileStore,
+            () -> FileStoreConfig.defaultConfig()),
+
+        /* runProgressMonitor= */
+        Objects.requireNonNullElseGet(
+            runProgressMonitor,
+            () -> RunProgressMonitorConfig.defaultConfig()),
+
+        /* email= */
+        email);
+  }
+
+  public static ApplicationConfig defaultConfig() {
+    return create(null, null, null, null, null, null);
   }
 }

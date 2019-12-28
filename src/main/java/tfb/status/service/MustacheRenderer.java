@@ -68,12 +68,12 @@ public final class MustacheRenderer {
 
     switch (config.mode) {
       case CLASS_PATH: {
-        var resolver = new ClasspathResolver(config.root);
+        var resolver = new ClasspathResolver("mustache");
         var onlyFactory = new DefaultMustacheFactory(resolver);
         return fileName -> onlyFactory.compile(fileName);
       }
       case FILE_SYSTEM: {
-        Path mustacheRoot = fileSystem.getPath(config.root);
+        Path mustacheRoot = fileSystem.getPath("src/main/resources/mustache");
         // FIXME: Use a version of Mustache that lets us avoid calling toFile(),
         //        which breaks on non-default file systems.
         var resolver = new FileSystemResolver(mustacheRoot.toFile());

@@ -32,21 +32,7 @@ public final class EmailConfig {
    */
   public final String to;
 
-  @JsonCreator
-  public EmailConfig(
-
-      @JsonProperty(value = "host", required = true)
-      String host,
-
-      @JsonProperty(value = "port", required = true)
-      int port,
-
-      @JsonProperty(value = "from", required = true)
-      String from,
-
-      @JsonProperty(value = "to", required = true)
-      String to) {
-
+  public EmailConfig(String host, int port, String from, String to) {
     this.host = Objects.requireNonNull(host);
     this.port = port;
     this.from = Objects.requireNonNull(from);
@@ -76,5 +62,22 @@ public final class EmailConfig {
     hash = 31 * hash + from.hashCode();
     hash = 31 * hash + to.hashCode();
     return hash;
+  }
+
+  @JsonCreator
+  public static EmailConfig create(
+      @JsonProperty(value = "host", required = true)
+      String host,
+
+      @JsonProperty(value = "port", required = true)
+      int port,
+
+      @JsonProperty(value = "from", required = true)
+      String from,
+
+      @JsonProperty(value = "to", required = true)
+      String to) {
+
+    return new EmailConfig(host, port, from, to);
   }
 }

@@ -15,27 +15,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public final class MustacheConfig {
   /**
    * Indicates whether Mustache templates will be loaded from the file system or
-   * from the class path.
-   *
-   * @see ResourceMode
+   * from the class path.  See {@link ResourceMode}.
    */
   public final ResourceMode mode;
-  /**
-   * The root directory for Mustache templates rendered by this application.
-   */
-  public final String root;
 
-  @JsonCreator
-  public MustacheConfig(
-
-      @JsonProperty(value = "mode", required = false)
-      @Nullable ResourceMode mode,
-
-      @JsonProperty(value = "root", required = false)
-      @Nullable String root) {
-
-    this.mode = Objects.requireNonNullElseGet(mode, () -> ResourceMode.defaultMode());
-    this.root = Objects.requireNonNullElseGet(root, () -> defaultRoot(this.mode));
+  public MustacheConfig(ResourceMode mode) {
+    this.mode = Objects.requireNonNull(mode);
   }
 
   @Override
@@ -46,8 +31,7 @@ public final class MustacheConfig {
       return false;
     } else {
       MustacheConfig that = (MustacheConfig) object;
-      return this.mode == that.mode
-          && this.root.equals(that.root);
+      return this.mode == that.mode;
     }
   }
 
@@ -55,15 +39,22 @@ public final class MustacheConfig {
   public int hashCode() {
     int hash = 1;
     hash = 31 * hash + mode.hashCode();
-    hash = 31 * hash + root.hashCode();
     return hash;
   }
 
-  private static String defaultRoot(ResourceMode mode) {
-    switch (mode) {
-      case CLASS_PATH:  return "mustache";
-      case FILE_SYSTEM: return "src/main/resources/mustache";
-    }
-    throw new AssertionError("Unknown resource mode: " + mode);
+  @JsonCreator
+  public static MustacheConfig create(
+      @JsonProperty(value = "mode", required = false)
+      @Nullable ResourceMode mode) {
+
+    return new MustacheConfig(
+        /* mode= */
+        Objects.requireNonNullElseGet(
+            mode,
+            () -> ResourceMode.defaultMode()));
+  }
+
+  public static MustacheConfig defaultConfig() {
+    return create(null);
   }
 }

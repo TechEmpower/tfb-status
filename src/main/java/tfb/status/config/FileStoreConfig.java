@@ -18,16 +18,8 @@ public final class FileStoreConfig {
    */
   public final String root;
 
-  @JsonCreator
-  public FileStoreConfig(
-
-      @JsonProperty(value = "root", required = false)
-      @Nullable String root) {
-
-    this.root =
-        Objects.requireNonNullElse(
-            root,
-            DEFAULT_ROOT);
+  public FileStoreConfig(String root) {
+    this.root = Objects.requireNonNull(root);
   }
 
   @Override
@@ -44,7 +36,25 @@ public final class FileStoreConfig {
 
   @Override
   public int hashCode() {
-    return root.hashCode();
+    int hash = 1;
+    hash = 31 * hash + root.hashCode();
+    return hash;
+  }
+
+  @JsonCreator
+  public static FileStoreConfig create(
+      @JsonProperty(value = "root", required = false)
+      @Nullable String root) {
+
+    return new FileStoreConfig(
+        /* root= */
+        Objects.requireNonNullElse(
+            root,
+            DEFAULT_ROOT));
+  }
+
+  public static FileStoreConfig defaultConfig() {
+    return create(null);
   }
 
   private static final String DEFAULT_ROOT = "managed_files";

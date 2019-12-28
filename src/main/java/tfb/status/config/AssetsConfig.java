@@ -15,28 +15,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public final class AssetsConfig {
   /**
    * Indicates whether static assets will be loaded from the file system or from
-   * the class path.
-   *
-   * @see ResourceMode
+   * the class path.  See {@link ResourceMode}.
    */
   public final ResourceMode mode;
 
-  /**
-   * The root directory for static assets served by this application.
-   */
-  public final String root;
-
-  @JsonCreator
-  public AssetsConfig(
-
-      @JsonProperty(value = "mode", required = false)
-      @Nullable ResourceMode mode,
-
-      @JsonProperty(value = "root", required = false)
-      @Nullable String root) {
-
-    this.mode = Objects.requireNonNullElseGet(mode, () -> ResourceMode.defaultMode());
-    this.root = Objects.requireNonNullElseGet(root, () -> defaultRoot(this.mode));
+  public AssetsConfig(ResourceMode mode) {
+    this.mode = Objects.requireNonNull(mode);
   }
 
   @Override
@@ -47,8 +31,7 @@ public final class AssetsConfig {
       return false;
     } else {
       AssetsConfig that = (AssetsConfig) object;
-      return this.mode == that.mode
-          && this.root.equals(that.root);
+      return this.mode == that.mode;
     }
   }
 
@@ -56,15 +39,22 @@ public final class AssetsConfig {
   public int hashCode() {
     int hash = 1;
     hash = 31 * hash + mode.hashCode();
-    hash = 31 * hash + root.hashCode();
     return hash;
   }
 
-  private static String defaultRoot(ResourceMode mode) {
-    switch (mode) {
-      case CLASS_PATH:  return "assets";
-      case FILE_SYSTEM: return "src/main/resources/assets";
-    }
-    throw new AssertionError("Unknown resource mode: " + mode);
+  @JsonCreator
+  public static AssetsConfig create(
+      @JsonProperty(value = "mode", required = false)
+      @Nullable ResourceMode mode) {
+
+    return new AssetsConfig(
+        /* mode= */
+        Objects.requireNonNullElseGet(
+            mode,
+            () -> ResourceMode.defaultMode()));
+  }
+
+  public static AssetsConfig defaultConfig() {
+    return create(null);
   }
 }
