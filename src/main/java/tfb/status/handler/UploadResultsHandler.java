@@ -475,25 +475,6 @@ public final class UploadResultsHandler implements HttpHandler {
         return;
       }
 
-      var minifiedResults =
-          new Results.TfbWebsiteView(
-              /* name= */ results.name,
-              /* completionTime= */ results.completionTime,
-              /* duration= */ results.duration,
-              /* queryIntervals= */ results.queryIntervals,
-              /* concurrencyLevels= */ results.concurrencyLevels,
-              /* rawData= */ results.rawData,
-              /* failed= */ results.failed);
-
-      byte[] minifiedResultsBytes;
-      try {
-        minifiedResultsBytes = objectMapper.writeValueAsBytes(minifiedResults);
-      } catch (IOException impossible) {
-        throw new AssertionError(
-            "The TFB website view of results is always JSON-serializable",
-            impossible);
-      }
-
       byte[] testMetadataBytes = findTestMetadataBytes(newZipFile);
       Path previousZipFile = findPreviousZipFile(newZipFile);
 
@@ -523,7 +504,6 @@ public final class UploadResultsHandler implements HttpHandler {
       ImmutableList<DataSource> attachments =
           prepareEmailAttachments(
               /* rawResultsBytes= */ rawResultsBytes,
-              /* minifiedResultsBytes= */ minifiedResultsBytes,
               /* testMetadataBytes= */ testMetadataBytes,
               /* diff= */ diff);
 
@@ -713,7 +693,6 @@ public final class UploadResultsHandler implements HttpHandler {
 
     private ImmutableList<DataSource> prepareEmailAttachments(
         byte[] rawResultsBytes,
-        byte[] minifiedResultsBytes,
         byte@Nullable[] testMetadataBytes,
         @Nullable String diff) {
 
@@ -724,12 +703,6 @@ public final class UploadResultsHandler implements HttpHandler {
               /* fileName= */ "results.json",
               /* mediaType= */ JSON_UTF_8,
               /* fileBytes= */ ByteSource.wrap(rawResultsBytes)));
-
-      attachments.add(
-          emailSender.createAttachment(
-              /* fileName= */ "results.min.json",
-              /* mediaType= */ JSON_UTF_8,
-              /* fileBytes= */ ByteSource.wrap(minifiedResultsBytes)));
 
       if (testMetadataBytes != null)
         attachments.add(

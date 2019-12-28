@@ -401,54 +401,6 @@ public final class Results {
   }
 
   /**
-   * A view of the results.json for consumption by the TFB website, which
-   * contains only the subset of fields that the TFB website needs.
-   */
-  @Immutable
-  public static final class TfbWebsiteView {
-    public final @Nullable String name;
-    public final @Nullable Long completionTime;
-    public final long duration;
-    public final ImmutableList<Integer> queryIntervals;
-    public final ImmutableList<Integer> concurrencyLevels;
-    public final RawData rawData;
-    public final ImmutableListMultimap<String, String> failed;
-
-    @JsonCreator
-    public TfbWebsiteView(
-
-        @JsonProperty(value = "name", required = false)
-        @Nullable String name,
-
-        @JsonProperty(value = "completionTime", required = false)
-        @Nullable Long completionTime,
-
-        @JsonProperty(value = "duration", required = true)
-        long duration,
-
-        @JsonProperty(value = "queryIntervals", required = true)
-        ImmutableList<Integer> queryIntervals,
-
-        @JsonProperty(value = "concurrencyLevels", required = true)
-        ImmutableList<Integer> concurrencyLevels,
-
-        @JsonProperty(value = "rawData", required = true)
-        RawData rawData,
-
-        @JsonProperty(value = "failed", required = true)
-        ImmutableListMultimap<String, String> failed) {
-
-      this.name = name;
-      this.completionTime = completionTime;
-      this.duration = duration;
-      this.queryIntervals = Objects.requireNonNull(queryIntervals);
-      this.concurrencyLevels = Objects.requireNonNull(concurrencyLevels);
-      this.rawData = Objects.requireNonNull(rawData);
-      this.failed = Objects.requireNonNull(failed);
-    }
-  }
-
-  /**
    * The set of all known test types.
    */
   public static final ImmutableSet<String> TEST_TYPES =

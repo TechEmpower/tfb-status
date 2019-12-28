@@ -22,7 +22,6 @@ import tfb.status.handler.AssetsHandler;
 import tfb.status.handler.AttributesPageHandler;
 import tfb.status.handler.DetailPageHandler;
 import tfb.status.handler.DownloadResultsHandler;
-import tfb.status.handler.ExportResultsHandler;
 import tfb.status.handler.HomePageHandler;
 import tfb.status.handler.HomeUpdatesHandler;
 import tfb.status.handler.LastSeenCommitHandler;
@@ -111,10 +110,6 @@ public final class ServicesBinder extends AbstractBinder {
         .in(Singleton.class);
 
     bindAsContract(DownloadResultsHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(ExportResultsHandler.class)
         .to(HttpHandler.class)
         .in(Singleton.class);
 
