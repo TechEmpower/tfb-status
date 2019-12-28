@@ -11,6 +11,7 @@ import com.google.common.collect.Maps;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Objects;
@@ -37,7 +38,7 @@ public final class AboutPageHandler implements HttpHandler {
 
     delegate =
         HttpHandlers.chain(
-            new CoreHandler(mustacheRenderer),
+            exchange -> internalHandleRequest(exchange, mustacheRenderer),
             handler -> new MethodHandler().addMethod(GET, handler),
             handler -> new DisableCacheHandler(handler));
   }
@@ -47,47 +48,44 @@ public final class AboutPageHandler implements HttpHandler {
     delegate.handleRequest(exchange);
   }
 
-  private static final class CoreHandler implements HttpHandler {
-    private final MustacheRenderer mustacheRenderer;
+  private static void internalHandleRequest(HttpServerExchange exchange,
+                                            MustacheRenderer mustacheRenderer)
+      throws IOException {
 
-    CoreHandler(MustacheRenderer mustacheRenderer) {
-      this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
-    }
+    ImmutableMap<String, String> gitProperties;
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      ImmutableMap<String, String> gitProperties;
+    try (InputStream inputStream =
+             Thread.currentThread()
+                   .getContextClassLoader()
+                   .getResourceAsStream("git.properties")) {
 
-      try (InputStream inputStream =
-               Thread.currentThread()
-                     .getContextClassLoader()
-                     .getResourceAsStream("git.properties")) {
+      if (inputStream == null)
+        gitProperties = ImmutableMap.of();
 
-        if (inputStream == null)
-          gitProperties = ImmutableMap.of();
-
-        else {
-          try (var reader = new InputStreamReader(inputStream, UTF_8)) {
-            var props = new Properties();
-            props.load(reader);
-            gitProperties = Maps.fromProperties(props);
-          }
+      else {
+        try (var reader = new InputStreamReader(inputStream, UTF_8)) {
+          var props = new Properties();
+          props.load(reader);
+          gitProperties = Maps.fromProperties(props);
         }
       }
-
-      var aboutPageView =
-          new AboutPageView(
-              /* gitProperties= */
-              gitProperties.entrySet()
-                           .stream()
-                           .map(entry -> new GitPropertyView(
-                               /* name= */ entry.getKey(),
-                               /* value= */ entry.getValue()))
-                           .collect(toImmutableList()));
-
-      String html = mustacheRenderer.render("about.mustache", aboutPageView);
-      exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
-      exchange.getResponseSender().send(html, UTF_8);
     }
+
+    var aboutPageView =
+        new AboutPageView(
+            /* gitProperties= */
+            gitProperties
+                .entrySet()
+                .stream()
+                .map(
+                    entry ->
+                        new GitPropertyView(
+                            /* name= */ entry.getKey(),
+                            /* value= */ entry.getValue()))
+                .collect(toImmutableList()));
+
+    String html = mustacheRenderer.render("about.mustache", aboutPageView);
+    exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
+    exchange.getResponseSender().send(html, UTF_8);
   }
 }

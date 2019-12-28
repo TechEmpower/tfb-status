@@ -29,9 +29,12 @@ public final class DownloadResultsHandler implements HttpHandler {
 
     delegate =
         HttpHandlers.chain(
-            new ResourceHandler(new PathResourceManager(fileStore.resultsDirectory())),
+            new ResourceHandler(
+                new PathResourceManager(fileStore.resultsDirectory())),
             handler -> new MethodHandler().addMethod(GET, handler),
-            handler -> new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*"));
+            handler -> new SetHeaderHandler(handler,
+                                            ACCESS_CONTROL_ALLOW_ORIGIN,
+                                            "*"));
   }
 
   @Override

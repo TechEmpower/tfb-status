@@ -12,6 +12,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
+import java.io.IOException;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,10 +44,17 @@ public final class DetailPageHandler implements HttpHandler {
 
     delegate =
         HttpHandlers.chain(
-            new CoreHandler(homeResultsReader, mustacheRenderer, objectMapper),
+            exchange ->
+                internalHandleRequest(
+                    exchange,
+                    homeResultsReader,
+                    mustacheRenderer,
+                    objectMapper),
             handler -> new MethodHandler().addMethod(GET, handler),
             handler -> new DisableCacheHandler(handler),
-            handler -> new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*"));
+            handler -> new SetHeaderHandler(handler,
+                                            ACCESS_CONTROL_ALLOW_ORIGIN,
+                                            "*"));
   }
 
   @Override
@@ -54,54 +62,43 @@ public final class DetailPageHandler implements HttpHandler {
     delegate.handleRequest(exchange);
   }
 
-  private static final class CoreHandler implements HttpHandler {
-    private final HomeResultsReader homeResultsReader;
-    private final MustacheRenderer mustacheRenderer;
-    private final ObjectMapper objectMapper;
+  private static void internalHandleRequest(HttpServerExchange exchange,
+                                            HomeResultsReader homeResultsReader,
+                                            MustacheRenderer mustacheRenderer,
+                                            ObjectMapper objectMapper)
+      throws IOException {
 
-    CoreHandler(HomeResultsReader homeResultsReader,
-                MustacheRenderer mustacheRenderer,
-                ObjectMapper objectMapper) {
+    Matcher matcher = REQUEST_PATH_PATTERN.matcher(exchange.getRelativePath());
 
-      this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
-      this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
-      this.objectMapper = Objects.requireNonNull(objectMapper);
+    if (!matcher.matches()) {
+      exchange.setStatusCode(NOT_FOUND);
+      return;
     }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      Matcher matcher = REQUEST_PATH_PATTERN.matcher(exchange.getRelativePath());
+    String uuid = matcher.group("uuid");
+    boolean isJson = exchange.getRelativePath().endsWith(".json");
 
-      if (!matcher.matches()) {
-        exchange.setStatusCode(NOT_FOUND);
-        return;
-      }
+    ResultsView result = homeResultsReader.resultsByUuid(uuid);
 
-      String uuid = matcher.group("uuid");
-      boolean isJson = exchange.getRelativePath().endsWith(".json");
-
-      ResultsView result = homeResultsReader.resultsByUuid(uuid);
-
-      if (result == null) {
-        exchange.setStatusCode(NOT_FOUND);
-        return;
-      }
-
-      var detailPageView = new DetailPageView(result);
-
-      if (isJson) {
-        String json = objectMapper.writeValueAsString(detailPageView);
-        exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
-        exchange.getResponseSender().send(json);
-      } else {
-        String html = mustacheRenderer.render("detail.mustache", detailPageView);
-        exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
-        exchange.getResponseSender().send(html);
-      }
+    if (result == null) {
+      exchange.setStatusCode(NOT_FOUND);
+      return;
     }
 
-    // Matches "/6f221937-b8e5-4b22-a52d-020d2538fa64.json", for example.
-    private static final Pattern REQUEST_PATH_PATTERN =
-        Pattern.compile("^/(?<uuid>[\\w-]+)(\\.json)?$");
+    var detailPageView = new DetailPageView(result);
+
+    if (isJson) {
+      String json = objectMapper.writeValueAsString(detailPageView);
+      exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
+      exchange.getResponseSender().send(json);
+    } else {
+      String html = mustacheRenderer.render("detail.mustache", detailPageView);
+      exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
+      exchange.getResponseSender().send(html);
+    }
   }
+
+  // Matches "/6f221937-b8e5-4b22-a52d-020d2538fa64.json", for example.
+  private static final Pattern REQUEST_PATH_PATTERN =
+      Pattern.compile("^/(?<uuid>[\\w-]+)(\\.json)?$");
 }

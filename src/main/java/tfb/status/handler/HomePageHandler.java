@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Objects;
@@ -43,7 +44,12 @@ public final class HomePageHandler implements HttpHandler {
 
     delegate =
         HttpHandlers.chain(
-            new CoreHandler(mustacheRenderer, homeResultsReader, fileStore),
+            exchange ->
+                internalHandleRequest(
+                    exchange,
+                    mustacheRenderer,
+                    homeResultsReader,
+                    fileStore),
             handler -> new MethodHandler().addMethod(GET, handler),
             handler -> new DisableCacheHandler(handler));
   }
@@ -53,67 +59,60 @@ public final class HomePageHandler implements HttpHandler {
     delegate.handleRequest(exchange);
   }
 
-  private static final class CoreHandler implements HttpHandler {
-    private final MustacheRenderer mustacheRenderer;
-    private final HomeResultsReader homeResultsReader;
-    private final FileStore fileStore;
+  private static void internalHandleRequest(HttpServerExchange exchange,
+                                            MustacheRenderer mustacheRenderer,
+                                            HomeResultsReader homeResultsReader,
+                                            FileStore fileStore)
+      throws IOException {
 
-    CoreHandler(MustacheRenderer mustacheRenderer,
-                HomeResultsReader homeResultsReader,
-                FileStore fileStore) {
+    ImmutableList<ResultsView> results = homeResultsReader.results();
 
-      this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
-      this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
-      this.fileStore = Objects.requireNonNull(fileStore);
+    int skip =
+        queryParameterAsInt(
+            /* exchange= */ exchange,
+            /* parameterName= */ "skip",
+            /* valueIfAbsent= */ 0,
+            /* valueIfMalformed= */ -1);
+
+    int limit =
+        queryParameterAsInt(
+            /* exchange= */ exchange,
+            /* parameterName= */ "limit",
+            /* valueIfAbsent= */ 50,
+            /* valueIfMalformed= */ -1);
+
+    if (skip < 0 || limit < 0) {
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
     }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      ImmutableList<ResultsView> results = homeResultsReader.results();
+    ImmutableList<ResultsView> resultsOnThisPage =
+        results.subList(Math.min(results.size(), skip),
+                        Math.min(results.size(), skip + limit));
 
-      int skip = queryParameterAsInt(/* exchange= */ exchange,
-                                     /* parameterName= */ "skip",
-                                     /* valueIfAbsent= */ 0,
-                                     /* valueIfMalformed= */ -1);
+    String announcement = null;
 
-      int limit = queryParameterAsInt(/* exchange= */ exchange,
-                                      /* parameterName= */ "limit",
-                                      /* valueIfAbsent= */ 50,
-                                      /* valueIfMalformed= */ -1);
+    if (Files.isRegularFile(fileStore.announcementFile())) {
+      List<String> lines =
+          Files.readAllLines(fileStore.announcementFile(), UTF_8);
 
-      if (skip < 0 || limit < 0) {
-        exchange.setStatusCode(BAD_REQUEST);
-        return;
-      }
+      announcement = String.join("\n", lines).strip();
 
-      ImmutableList<ResultsView> resultsOnThisPage =
-          results.subList(Math.min(results.size(), skip),
-                          Math.min(results.size(), skip + limit));
-
-      String announcement = null;
-
-      if (Files.isRegularFile(fileStore.announcementFile())) {
-        List<String> lines =
-            Files.readAllLines(fileStore.announcementFile(), UTF_8);
-
-        announcement = String.join("\n", lines).strip();
-
-        if (announcement.isEmpty())
-          announcement = null;
-      }
-
-      var homePageView =
-          new HomePageView(
-              /* results= */ resultsOnThisPage,
-              /* skip= */ skip,
-              /* limit= */ limit,
-              /* next= */ skip + limit,
-              /* hasNext= */ skip + limit < results.size(),
-              /* announcement= */ announcement);
-
-      String html = mustacheRenderer.render("home.mustache", homePageView);
-      exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
-      exchange.getResponseSender().send(html, UTF_8);
+      if (announcement.isEmpty())
+        announcement = null;
     }
+
+    var homePageView =
+        new HomePageView(
+            /* results= */ resultsOnThisPage,
+            /* skip= */ skip,
+            /* limit= */ limit,
+            /* next= */ skip + limit,
+            /* hasNext= */ skip + limit < results.size(),
+            /* announcement= */ announcement);
+
+    String html = mustacheRenderer.render("home.mustache", homePageView);
+    exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
+    exchange.getResponseSender().send(html, UTF_8);
   }
 }

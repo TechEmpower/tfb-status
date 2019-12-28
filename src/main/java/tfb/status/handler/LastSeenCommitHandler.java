@@ -9,6 +9,7 @@ import static tfb.status.undertow.extensions.RequestValues.queryParameter;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -54,7 +55,7 @@ public final class LastSeenCommitHandler implements HttpHandler {
 
     delegate =
         HttpHandlers.chain(
-            new CoreHandler(homeResultsReader),
+            exchange -> internalHandleRequest(exchange, homeResultsReader),
             handler -> new MethodHandler().addMethod(GET, handler));
   }
 
@@ -63,36 +64,33 @@ public final class LastSeenCommitHandler implements HttpHandler {
     delegate.handleRequest(exchange);
   }
 
-  private static final class CoreHandler implements HttpHandler {
-    private final HomeResultsReader homeResultsReader;
+  private static void internalHandleRequest(HttpServerExchange exchange,
+                                            HomeResultsReader homeResultsReader)
+      throws IOException {
 
-    CoreHandler(HomeResultsReader homeResultsReader) {
-      this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
+    String environment = queryParameter(exchange, "environment");
+    if (environment == null) {
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
     }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      String environment = queryParameter(exchange, "environment");
-      if (environment == null) {
-        exchange.setStatusCode(BAD_REQUEST);
-        return;
-      }
+    ResultsView mostRecent =
+        homeResultsReader
+            .results()
+            .stream()
+            .filter(result -> environment.equals(result.environmentDescription))
+            .findFirst()
+            .orElse(null);
 
-      ResultsView mostRecent =
-          homeResultsReader
-              .results()
-              .stream()
-              .filter(result -> environment.equals(result.environmentDescription))
-              .findFirst()
-              .orElse(null);
-
-      if (mostRecent == null || mostRecent.commitId == null) {
-        exchange.setStatusCode(NO_CONTENT);
-        return;
-      }
-
-      exchange.getResponseHeaders().put(CONTENT_TYPE, PLAIN_TEXT_UTF_8.toString());
-      exchange.getResponseSender().send(mostRecent.commitId);
+    if (mostRecent == null || mostRecent.commitId == null) {
+      exchange.setStatusCode(NO_CONTENT);
+      return;
     }
+
+    exchange.getResponseHeaders().put(
+        CONTENT_TYPE,
+        PLAIN_TEXT_UTF_8.toString());
+
+    exchange.getResponseSender().send(mostRecent.commitId);
   }
 }

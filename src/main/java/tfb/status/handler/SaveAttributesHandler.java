@@ -46,9 +46,16 @@ public final class SaveAttributesHandler implements HttpHandler {
     Objects.requireNonNull(authenticator);
     Objects.requireNonNull(objectMapper);
 
+    Logger logger = LoggerFactory.getLogger(getClass());
+
     delegate =
         HttpHandlers.chain(
-            new CoreHandler(fileStore, objectMapper),
+            exchange ->
+                internalHandleRequest(
+                    exchange,
+                    fileStore,
+                    objectMapper,
+                    logger),
             handler -> new MethodHandler().addMethod(POST, handler),
             handler -> new DisableCacheHandler(handler),
             handler -> new EagerFormParsingHandler().setNext(handler),
@@ -60,67 +67,62 @@ public final class SaveAttributesHandler implements HttpHandler {
     delegate.handleRequest(exchange);
   }
 
-  private static final class CoreHandler implements HttpHandler {
-    private final ObjectMapper objectMapper;
-    private final FileStore fileStore;
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static void internalHandleRequest(HttpServerExchange exchange,
+                                            FileStore fileStore,
+                                            ObjectMapper objectMapper,
+                                            Logger logger)
+      throws IOException {
 
-    CoreHandler(FileStore fileStore, ObjectMapper objectMapper) {
-      this.fileStore = Objects.requireNonNull(fileStore);
-      this.objectMapper = Objects.requireNonNull(objectMapper);
+    FormData form = exchange.getAttachment(FormDataParser.FORM_DATA);
+    if (form == null) {
+      logger.warn("Unable to parse the request form data");
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
     }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      FormData form = exchange.getAttachment(FormDataParser.FORM_DATA);
-      if (form == null) {
-        logger.warn("Unable to parse the request form data");
-        exchange.setStatusCode(BAD_REQUEST);
-        return;
-      }
-
-      FormData.FormValue lookupField = form.getFirst("lookupjson");
-      if (lookupField == null) {
-        logger.warn("Missing required form field: lookupjson");
-        exchange.setStatusCode(BAD_REQUEST);
-        return;
-      }
-
-      String lookupJson = lookupField.getValue();
-
-      AttributeLookup lookup;
-      try {
-        lookup = objectMapper.readValue(lookupJson, AttributeLookup.class);
-      } catch (IOException e) {
-        logger.warn("Unable to parse the updated tfb_lookup.json", e);
-        exchange.setStatusCode(BAD_REQUEST);
-        return;
-      }
-
-      Path tempFile = Files.createTempFile(/* prefix= */ "TFB_lookup_upload",
-                                           /* suffix= */ ".json");
-
-      try (OutputStream outputStream = Files.newOutputStream(tempFile)) {
-        objectMapper.writeValue(outputStream, lookup);
-      } catch (IOException e) {
-        logger.warn("Unable to save tfb_lookup.json", e);
-        Files.delete(tempFile);
-        exchange.setStatusCode(BAD_REQUEST);
-        return;
-      }
-
-      Path lookupFile =
-          fileStore.attributesDirectory().resolve("tfb_lookup.json");
-
-      MoreFiles.createParentDirectories(lookupFile);
-
-      Files.move(
-          /* source= */ tempFile,
-          /* target= */ lookupFile,
-          /* options= */ REPLACE_EXISTING);
-
-      exchange.getResponseHeaders().put(LOCATION, "/");
-      exchange.setStatusCode(SEE_OTHER);
+    FormData.FormValue lookupField = form.getFirst("lookupjson");
+    if (lookupField == null) {
+      logger.warn("Missing required form field: lookupjson");
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
     }
+
+    String lookupJson = lookupField.getValue();
+
+    AttributeLookup lookup;
+    try {
+      lookup = objectMapper.readValue(lookupJson, AttributeLookup.class);
+    } catch (IOException e) {
+      logger.warn("Unable to parse the updated tfb_lookup.json", e);
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
+    }
+
+    Path tempFile =
+        Files.createTempFile(
+            /* prefix= */ "TFB_lookup_upload",
+            /* suffix= */ ".json");
+
+    try (OutputStream outputStream = Files.newOutputStream(tempFile)) {
+      objectMapper.writeValue(outputStream, lookup);
+    } catch (IOException e) {
+      logger.warn("Unable to save tfb_lookup.json", e);
+      Files.delete(tempFile);
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
+    }
+
+    Path lookupFile =
+        fileStore.attributesDirectory().resolve("tfb_lookup.json");
+
+    MoreFiles.createParentDirectories(lookupFile);
+
+    Files.move(
+        /* source= */ tempFile,
+        /* target= */ lookupFile,
+        /* options= */ REPLACE_EXISTING);
+
+    exchange.getResponseHeaders().put(LOCATION, "/");
+    exchange.setStatusCode(SEE_OTHER);
   }
 }
