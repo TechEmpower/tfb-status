@@ -186,7 +186,7 @@ public final class Results {
     Objects.requireNonNull(framework);
 
     ImmutableList<SingleWrkExecution> executions =
-        executionsForTestType(testType).get(framework);
+        rawData.get(testType, framework);
 
     switch (testType) {
       //
@@ -199,7 +199,7 @@ public final class Results {
       case "db":
       case "fortune":
         return executions.stream()
-                         .mapToLong(execution -> requestsForExecution(execution))
+                         .mapToLong(execution -> execution.successfulRequests())
                          .max()
                          .orElse(0);
 
@@ -211,18 +211,14 @@ public final class Results {
       case "query":
       case "update":
       case "cached_query":
-        if (executions.isEmpty())
-          return 0;
-        else
-          return requestsForExecution(executions.get(executions.size() - 1));
+        return executions.isEmpty()
+            ? 0
+            : executions.get(executions.size() - 1)
+                        .successfulRequests();
 
       default:
         return 0;
     }
-  }
-
-  private static long requestsForExecution(SingleWrkExecution execution) {
-    return execution.totalRequests - execution.status5xx;
   }
 
   /**
@@ -236,34 +232,20 @@ public final class Results {
   }
 
   /**
-   * Extracts the raw results data for the given test type, grouping by
-   * framework (the keys of the returned multimap are framework names).
+   * Maps test type names and framework names to the list of raw results for
+   * that test type and framework.
    */
-  private ImmutableListMultimap<String, SingleWrkExecution>
-  executionsForTestType(String testType) {
-    switch (testType) {
-      case "json":         return rawData.json;
-      case "plaintext":    return rawData.plaintext;
-      case "db":           return rawData.db;
-      case "query":        return rawData.query;
-      case "update":       return rawData.update;
-      case "fortune":      return rawData.fortune;
-      case "cached_query": return rawData.cachedQuery;
-      default:             return ImmutableListMultimap.of();
-    }
-  }
-
   @Immutable
   public static final class RawData {
-    public final ImmutableListMultimap<String, SingleWrkExecution> json;
-    public final ImmutableListMultimap<String, SingleWrkExecution> plaintext;
-    public final ImmutableListMultimap<String, SingleWrkExecution> db;
-    public final ImmutableListMultimap<String, SingleWrkExecution> query;
-    public final ImmutableListMultimap<String, SingleWrkExecution> update;
-    public final ImmutableListMultimap<String, SingleWrkExecution> fortune;
+    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> json;
+    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> plaintext;
+    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> db;
+    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> query;
+    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> update;
+    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> fortune;
 
     @JsonProperty("cached_query")
-    public final ImmutableListMultimap<String, SingleWrkExecution> cachedQuery;
+    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> cachedQuery;
 
     @JsonCreator
     public RawData(
@@ -289,43 +271,45 @@ public final class Results {
         @JsonProperty(value = "cached_query", required = false)
         @Nullable ImmutableListMultimap<String, SingleWrkExecution> cachedQuery) {
 
-      this.json =
-          Objects.requireNonNullElseGet(
-              json,
-              () -> ImmutableListMultimap.of());
+      this.json = json;
+      this.plaintext = plaintext;
+      this.db = db;
+      this.query = query;
+      this.update = update;
+      this.fortune = fortune;
+      this.cachedQuery = cachedQuery;
+    }
 
-      this.plaintext =
-          Objects.requireNonNullElseGet(
-              plaintext,
-              () -> ImmutableListMultimap.of());
+    /**
+     * Extracts the raw results data for the given test type, grouping by
+     * framework (the keys of the returned multimap are framework names).
+     */
+    ImmutableListMultimap<String, SingleWrkExecution> get(String testType) {
+      ImmutableListMultimap<String, SingleWrkExecution> m;
+      switch (testType) {
+        case "json":         m = json; break;
+        case "plaintext":    m = plaintext; break;
+        case "db":           m = db; break;
+        case "query":        m = query; break;
+        case "update":       m = update; break;
+        case "fortune":      m = fortune; break;
+        case "cached_query": m = cachedQuery; break;
+        default:             m = null; break;
+      }
+      return (m == null) ? ImmutableListMultimap.of() : m;
+    }
 
-      this.db =
-          Objects.requireNonNullElseGet(
-              db,
-              () -> ImmutableListMultimap.of());
-
-      this.query =
-          Objects.requireNonNullElseGet(
-              query,
-              () -> ImmutableListMultimap.of());
-
-      this.update =
-          Objects.requireNonNullElseGet(
-              update,
-              () -> ImmutableListMultimap.of());
-
-      this.fortune =
-          Objects.requireNonNullElseGet(
-              fortune,
-              () -> ImmutableListMultimap.of());
-
-      this.cachedQuery =
-          Objects.requireNonNullElseGet(
-              cachedQuery,
-              () -> ImmutableListMultimap.of());
+    /**
+     * Extracts the raw results data for the given test type and framework.
+     */
+    ImmutableList<SingleWrkExecution> get(String testType, String framework) {
+      return get(testType).get(framework);
     }
   }
 
+  /**
+   * Data collected from a single execution of wrk.
+   */
   @Immutable
   @JsonInclude(NON_DEFAULT)
   public static final class SingleWrkExecution {
@@ -374,8 +358,18 @@ public final class Results {
       this.read = read;
       this.connect = connect;
     }
+
+    /**
+     * The total number of successful requests during this execution.
+     */
+    long successfulRequests() {
+      return totalRequests - status5xx;
+    }
   }
 
+  /**
+   * Information about the state of the local git repository for this run.
+   */
   @Immutable
   public static final class GitInfo {
     public final String commitId;
