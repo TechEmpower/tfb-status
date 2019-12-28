@@ -155,8 +155,10 @@ public final class UploadResultsHandler implements HttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-      Path tempFile = Files.createTempFile(/* prefix= */ "TFB_Status_Upload",
-                                           /* suffix= */ "." + fileExtension);
+      Path tempFile =
+          Files.createTempFile(
+              /* prefix= */ "TFB_Status_Upload",
+              /* suffix= */ "." + fileExtension);
 
       try (WritableByteChannel out =
                Files.newByteChannel(tempFile, WRITE, APPEND)) {
@@ -355,55 +357,21 @@ public final class UploadResultsHandler implements HttpHandler {
     @Override
     @Nullable String tryReadUuid(Path zipFile) {
       Objects.requireNonNull(zipFile);
-      Results parsed;
-      try {
-        parsed =
-            ZipFiles.readZipEntry(
-                /* zipFile= */ zipFile,
-                /* entryPath= */ "results.json",
-                /* entryReader= */ inputStream ->
-                                       objectMapper.readValue(inputStream,
-                                                              Results.class));
-      } catch (IOException ignored) {
-        return null;
-      }
-      return (parsed == null) ? null : parsed.uuid;
+      Results results = findResults(zipFile);
+      return (results == null) ? null : results.uuid;
     }
 
     @Override
     @Nullable String tryReadEnvironment(Path zipFile) {
       Objects.requireNonNull(zipFile);
-      Results results;
-      try {
-        results =
-            ZipFiles.readZipEntry(
-                /* zipFile= */ zipFile,
-                /* entryPath= */ "results.json",
-                /* entryReader= */ inputStream ->
-                                       objectMapper.readValue(inputStream,
-                                                              Results.class));
-      } catch (IOException ignored) {
-        return null;
-      }
+      Results results = findResults(zipFile);
       return (results == null) ? null : results.environmentDescription;
     }
 
     @Override
     boolean isValidNewFile(Path newZipFile) {
       Objects.requireNonNull(newZipFile);
-      Results results;
-      try {
-        results =
-            ZipFiles.readZipEntry(
-                /* zipFile= */ newZipFile,
-                /* entryPath= */ "results.json",
-                /* entryReader= */ inputStream ->
-                                       objectMapper.readValue(inputStream,
-                                                              Results.class));
-      } catch (IOException e) {
-        logger.warn("Exception validating zip file {}", newZipFile, e);
-        return false;
-      }
+      Results results = findResults(newZipFile);
       return results != null;
     }
 
