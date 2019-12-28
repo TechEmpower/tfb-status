@@ -35,7 +35,7 @@ public final class RunProgressMonitorConfig {
   }
 
   @Override
-  public boolean equals(Object object) {
+  public boolean equals(@Nullable Object object) {
     if (object == this) {
       return true;
     } else if (!(object instanceof RunProgressMonitorConfig)) {

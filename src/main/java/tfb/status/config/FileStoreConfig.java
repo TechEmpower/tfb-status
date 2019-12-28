@@ -23,7 +23,7 @@ public final class FileStoreConfig {
   }
 
   @Override
-  public boolean equals(Object object) {
+  public boolean equals(@Nullable Object object) {
     if (object == this) {
       return true;
     } else if (!(object instanceof FileStoreConfig)) {
