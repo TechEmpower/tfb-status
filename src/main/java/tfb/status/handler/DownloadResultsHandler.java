@@ -8,9 +8,11 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.service.FileStore;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 
 /**
@@ -23,13 +25,13 @@ public final class DownloadResultsHandler implements HttpHandler {
 
   @Inject
   public DownloadResultsHandler(FileStore fileStore) {
-    var resourceManager = new PathResourceManager(fileStore.resultsDirectory());
+    Objects.requireNonNull(fileStore);
 
-    HttpHandler handler = new ResourceHandler(resourceManager);
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            new ResourceHandler(new PathResourceManager(fileStore.resultsDirectory())),
+            handler -> new MethodHandler().addMethod(GET, handler),
+            handler -> new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*"));
   }
 
   @Override

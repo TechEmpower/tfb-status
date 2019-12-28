@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
@@ -49,14 +50,15 @@ public final class TimelinePageHandler implements HttpHandler {
                              MustacheRenderer mustacheRenderer,
                              ObjectMapper objectMapper) {
 
-    HttpHandler handler = new CoreHandler(fileStore,
-                                          mustacheRenderer,
-                                          objectMapper);
+    Objects.requireNonNull(fileStore);
+    Objects.requireNonNull(mustacheRenderer);
+    Objects.requireNonNull(objectMapper);
 
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new DisableCacheHandler(handler);
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            new CoreHandler(fileStore, mustacheRenderer, objectMapper),
+            handler -> new MethodHandler().addMethod(GET, handler),
+            handler -> new DisableCacheHandler(handler));
   }
 
   @Override
@@ -144,7 +146,7 @@ public final class TimelinePageHandler implements HttpHandler {
                           != 0);
 
           double rps = results.rps(/* testType= */ selectedTestType,
-              /* framework= */ selectedFramework);
+                                   /* framework= */ selectedFramework);
 
           if (rps != 0) {
             dataPoints.add(

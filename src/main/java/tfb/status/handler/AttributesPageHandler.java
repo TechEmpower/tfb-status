@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import tfb.status.service.Authenticator;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Attribute;
@@ -70,15 +71,17 @@ public final class AttributesPageHandler implements HttpHandler {
                                Authenticator authenticator,
                                ObjectMapper objectMapper) {
 
-    HttpHandler handler = new CoreHandler(fileStore,
-                                          mustacheRenderer,
-                                          objectMapper);
+    Objects.requireNonNull(fileStore);
+    Objects.requireNonNull(mustacheRenderer);
+    Objects.requireNonNull(authenticator);
+    Objects.requireNonNull(objectMapper);
 
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new DisableCacheHandler(handler);
-    handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            new CoreHandler(fileStore, mustacheRenderer, objectMapper),
+            handler -> new MethodHandler().addMethod(GET, handler),
+            handler -> new DisableCacheHandler(handler),
+            handler -> new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*"));
   }
 
   @Override

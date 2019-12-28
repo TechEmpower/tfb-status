@@ -19,6 +19,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.DetailPageView;
 import tfb.status.view.HomePageView.ResultsView;
@@ -36,15 +37,16 @@ public final class DetailPageHandler implements HttpHandler {
                            MustacheRenderer mustacheRenderer,
                            ObjectMapper objectMapper) {
 
-    HttpHandler handler = new CoreHandler(homeResultsReader,
-                                          mustacheRenderer,
-                                          objectMapper);
+    Objects.requireNonNull(homeResultsReader);
+    Objects.requireNonNull(mustacheRenderer);
+    Objects.requireNonNull(objectMapper);
 
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new DisableCacheHandler(handler);
-    handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            new CoreHandler(homeResultsReader, mustacheRenderer, objectMapper),
+            handler -> new MethodHandler().addMethod(GET, handler),
+            handler -> new DisableCacheHandler(handler),
+            handler -> new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*"));
   }
 
   @Override

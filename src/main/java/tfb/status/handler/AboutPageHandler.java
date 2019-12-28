@@ -18,6 +18,7 @@ import java.util.Properties;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.service.MustacheRenderer;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.AboutPageView;
 import tfb.status.view.AboutPageView.GitPropertyView;
@@ -32,12 +33,13 @@ public final class AboutPageHandler implements HttpHandler {
 
   @Inject
   public AboutPageHandler(MustacheRenderer mustacheRenderer) {
-    HttpHandler handler = new CoreHandler(mustacheRenderer);
+    Objects.requireNonNull(mustacheRenderer);
 
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new DisableCacheHandler(handler);
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            new CoreHandler(mustacheRenderer),
+            handler -> new MethodHandler().addMethod(GET, handler),
+            handler -> new DisableCacheHandler(handler));
   }
 
   @Override

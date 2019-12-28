@@ -14,6 +14,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.config.AssetsConfig;
 import tfb.status.undertow.extensions.DefaultToUtf8Handler;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 
 /**
@@ -28,10 +29,14 @@ public final class AssetsHandler implements HttpHandler {
 
   @Inject
   public AssetsHandler(AssetsConfig config, FileSystem fileSystem) {
-    HttpHandler handler = newResourceHandler(config, fileSystem);
-    handler = new DefaultToUtf8Handler(handler);
-    handler = new MethodHandler().addMethod(GET, handler);
-    delegate = handler;
+    Objects.requireNonNull(config);
+    Objects.requireNonNull(fileSystem);
+
+    delegate =
+        HttpHandlers.chain(
+            newResourceHandler(config, fileSystem),
+            handler -> new DefaultToUtf8Handler(handler),
+            handler -> new MethodHandler().addMethod(GET, handler));
   }
 
   @Override

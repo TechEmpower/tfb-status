@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.service.Authenticator;
 import tfb.status.service.FileStore;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.AttributeLookup;
 
@@ -41,14 +42,17 @@ public final class SaveAttributesHandler implements HttpHandler {
                                Authenticator authenticator,
                                ObjectMapper objectMapper) {
 
-    HttpHandler handler = new CoreHandler(fileStore, objectMapper);
+    Objects.requireNonNull(fileStore);
+    Objects.requireNonNull(authenticator);
+    Objects.requireNonNull(objectMapper);
 
-    handler = new MethodHandler().addMethod(POST, handler);
-    handler = new DisableCacheHandler(handler);
-    handler = new EagerFormParsingHandler().setNext(handler);
-    handler = authenticator.newRequiredAuthHandler(handler);
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            new CoreHandler(fileStore, objectMapper),
+            handler -> new MethodHandler().addMethod(POST, handler),
+            handler -> new DisableCacheHandler(handler),
+            handler -> new EagerFormParsingHandler().setNext(handler),
+            handler -> authenticator.newRequiredAuthHandler(handler));
   }
 
   @Override

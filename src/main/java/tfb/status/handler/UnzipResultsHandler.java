@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.DefaultToUtf8Handler;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.UnzippedDirectoryView;
@@ -57,14 +58,16 @@ public final class UnzipResultsHandler implements HttpHandler {
   public UnzipResultsHandler(FileStore fileStore,
                              MustacheRenderer mustacheRenderer) {
 
-    HttpHandler handler = new CoreHandler(fileStore, mustacheRenderer);
+    Objects.requireNonNull(fileStore);
+    Objects.requireNonNull(mustacheRenderer);
 
-    handler = new DefaultToUtf8Handler(handler);
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new DisableCacheHandler(handler);
-    handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            new CoreHandler(fileStore, mustacheRenderer),
+            handler -> new DefaultToUtf8Handler(handler),
+            handler -> new MethodHandler().addMethod(GET, handler),
+            handler -> new DisableCacheHandler(handler),
+            handler -> new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*"));
   }
 
   @Override
@@ -77,9 +80,7 @@ public final class UnzipResultsHandler implements HttpHandler {
     private final MustacheRenderer mustacheRenderer;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    CoreHandler(FileStore fileStore,
-                MustacheRenderer mustacheRenderer) {
-
+    CoreHandler(FileStore fileStore, MustacheRenderer mustacheRenderer) {
       this.fileStore = Objects.requireNonNull(fileStore);
       this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
     }

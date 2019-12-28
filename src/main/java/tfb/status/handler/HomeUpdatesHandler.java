@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.xnio.XnioExecutor;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.HomePageView.ResultsView;
 
@@ -102,16 +103,16 @@ public final class HomeUpdatesHandler implements HttpHandler {
             // handshakes.
             /* next= */ sseHandler);
 
-    HttpHandler handler = wsHandler;
+    delegate =
+        HttpHandlers.chain(
+            wsHandler,
 
-    // Prevent proxies such as nginx from buffering our output, which would
-    // break this endpoint.
-    handler = new SetHeaderHandler(handler, "X-Accel-Buffering", "no");
+            // Prevent proxies such as nginx from buffering our output, which
+            // would break this endpoint.
+            handler -> new SetHeaderHandler(handler, "X-Accel-Buffering", "no"),
 
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new DisableCacheHandler(handler);
-
-    delegate = handler;
+            handler -> new MethodHandler().addMethod(GET, handler),
+            handler -> new DisableCacheHandler(handler));
   }
 
   @Override

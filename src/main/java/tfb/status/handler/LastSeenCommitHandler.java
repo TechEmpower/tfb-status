@@ -13,6 +13,7 @@ import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.service.HomeResultsReader;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.HomePageView.ResultsView;
 
@@ -49,9 +50,12 @@ public final class LastSeenCommitHandler implements HttpHandler {
 
   @Inject
   public LastSeenCommitHandler(HomeResultsReader homeResultsReader) {
-    HttpHandler handler = new CoreHandler(homeResultsReader);
-    handler = new MethodHandler().addMethod(GET, handler);
-    delegate = handler;
+    Objects.requireNonNull(homeResultsReader);
+
+    delegate =
+        HttpHandlers.chain(
+            new CoreHandler(homeResultsReader),
+            handler -> new MethodHandler().addMethod(GET, handler));
   }
 
   @Override

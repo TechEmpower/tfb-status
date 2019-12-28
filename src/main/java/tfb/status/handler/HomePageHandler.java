@@ -19,6 +19,7 @@ import javax.inject.Singleton;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.HomePageView;
 import tfb.status.view.HomePageView.ResultsView;
@@ -36,14 +37,15 @@ public final class HomePageHandler implements HttpHandler {
                          HomeResultsReader homeResultsReader,
                          FileStore fileStore) {
 
-    HttpHandler handler = new CoreHandler(mustacheRenderer,
-                                          homeResultsReader,
-                                          fileStore);
+    Objects.requireNonNull(mustacheRenderer);
+    Objects.requireNonNull(homeResultsReader);
+    Objects.requireNonNull(fileStore);
 
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new DisableCacheHandler(handler);
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            new CoreHandler(mustacheRenderer, homeResultsReader, fileStore),
+            handler -> new MethodHandler().addMethod(GET, handler),
+            handler -> new DisableCacheHandler(handler));
   }
 
   @Override

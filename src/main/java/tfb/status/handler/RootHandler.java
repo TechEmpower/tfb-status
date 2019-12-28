@@ -14,6 +14,7 @@ import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.LazyHandler;
 
 /**
@@ -89,13 +90,12 @@ public final class RootHandler implements HttpHandler {
 
     Logger logger = LoggerFactory.getLogger("http");
 
-    HttpHandler handler = pathHandler;
-
-    handler = newAccessLoggingHandler(handler, logger);
-    handler = new ExceptionLoggingHandler(handler, logger);
-    handler = new BlockingHandler(handler);
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            pathHandler,
+            handler -> newAccessLoggingHandler(handler, logger),
+            handler -> new ExceptionLoggingHandler(handler, logger),
+            handler -> new BlockingHandler(handler));
   }
 
   @Override

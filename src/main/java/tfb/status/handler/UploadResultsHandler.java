@@ -49,6 +49,7 @@ import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.RunProgressMonitor;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
@@ -78,37 +79,44 @@ public final class UploadResultsHandler implements HttpHandler {
                               Clock clock,
                               RunProgressMonitor runProgressMonitor) {
 
-    var jsonHandler =
-        new JsonHandler(
-            /* fileStore= */ fileStore,
-            /* authenticator= */ authenticator,
-            /* homeUpdates=*/ homeUpdates,
-            /* homeResultsReader=*/ homeResultsReader,
-            /* clock= */ clock,
-            /* objectMapper=*/ objectMapper,
-            /* runProgressMonitor= */ runProgressMonitor);
+    Objects.requireNonNull(fileStore);
+    Objects.requireNonNull(authenticator);
+    Objects.requireNonNull(objectMapper);
+    Objects.requireNonNull(emailSender);
+    Objects.requireNonNull(homeUpdates);
+    Objects.requireNonNull(homeResultsReader);
+    Objects.requireNonNull(diffGenerator);
+    Objects.requireNonNull(clock);
+    Objects.requireNonNull(runProgressMonitor);
 
-    var zipHandler =
-        new ZipHandler(
-            /* fileStore= */ fileStore,
-            /* authenticator= */ authenticator,
-            /* homeUpdates=*/ homeUpdates,
-            /* homeResultsReader=*/ homeResultsReader,
-            /* clock= */ clock,
-            /* objectMapper=*/ objectMapper,
-            /* emailSender=*/ emailSender,
-            /* diffGenerator=*/ diffGenerator,
-            /* runProgressMonitor= */ runProgressMonitor);
-
-    HttpHandler handler =
-        new MediaTypeHandler().addMediaType("application/json", jsonHandler)
-                              .addMediaType("application/zip", zipHandler);
-
-    handler = new MethodHandler().addMethod(POST, handler);
-    handler = new DisableCacheHandler(handler);
-    handler = authenticator.newRequiredAuthHandler(handler);
-
-    delegate = handler;
+    delegate =
+        HttpHandlers.chain(
+            new MediaTypeHandler()
+                .addMediaType(
+                    "application/json",
+                    new JsonHandler(
+                        /* fileStore= */ fileStore,
+                        /* authenticator= */ authenticator,
+                        /* homeUpdates=*/ homeUpdates,
+                        /* homeResultsReader=*/ homeResultsReader,
+                        /* clock= */ clock,
+                        /* objectMapper=*/ objectMapper,
+                        /* runProgressMonitor= */ runProgressMonitor))
+                .addMediaType(
+                    "application/zip",
+                    new ZipHandler(
+                        /* fileStore= */ fileStore,
+                        /* authenticator= */ authenticator,
+                        /* homeUpdates=*/ homeUpdates,
+                        /* homeResultsReader=*/ homeResultsReader,
+                        /* clock= */ clock,
+                        /* objectMapper=*/ objectMapper,
+                        /* emailSender=*/ emailSender,
+                        /* diffGenerator=*/ diffGenerator,
+                        /* runProgressMonitor= */ runProgressMonitor)),
+            handler -> new MethodHandler().addMethod(POST, handler),
+            handler -> new DisableCacheHandler(handler),
+            handler -> authenticator.newRequiredAuthHandler(handler));
   }
 
   @Override
