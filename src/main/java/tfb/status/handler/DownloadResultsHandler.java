@@ -11,6 +11,7 @@ import io.undertow.server.handlers.resource.ResourceHandler;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
@@ -19,6 +20,7 @@ import tfb.status.undertow.extensions.MethodHandler;
  * Handles requests to download full, raw, previously-uploaded results files.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @PrefixPath("/raw")
 public final class DownloadResultsHandler implements HttpHandler {
   private final HttpHandler delegate;

@@ -36,6 +36,7 @@ import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.service.FileStore;
@@ -51,6 +52,7 @@ import tfb.status.view.UnzippedDirectoryView.FileView;
  * Handles requests to extract files from within results.zip files.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @PrefixPath("/unzip")
 public final class UnzipResultsHandler implements HttpHandler {
   private final HttpHandler delegate;

@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import tfb.status.config.AssetsConfig;
 import tfb.status.undertow.extensions.DefaultToUtf8Handler;
 import tfb.status.undertow.extensions.HttpHandlers;
@@ -23,6 +24,7 @@ import tfb.status.undertow.extensions.MethodHandler;
  * on this application's {@linkplain AssetsConfig assets configuration}.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @PrefixPath("/assets")
 public final class AssetsHandler implements HttpHandler {
   private final HttpHandler delegate;

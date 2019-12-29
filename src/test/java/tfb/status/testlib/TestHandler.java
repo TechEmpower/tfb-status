@@ -6,6 +6,7 @@ import io.undertow.server.handlers.PathHandler;
 import java.util.Objects;
 import java.util.UUID;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import tfb.status.handler.PrefixPath;
 
 /**
@@ -13,6 +14,7 @@ import tfb.status.handler.PrefixPath;
  * #addHandler(HttpHandler) added at runtime} during tests.
  */
 @Singleton
+@ContractsProvided({ HttpHandler.class, TestHandler.class })
 @PrefixPath("/test")
 public final class TestHandler implements HttpHandler {
   private final PathHandler pathHandler = new PathHandler();

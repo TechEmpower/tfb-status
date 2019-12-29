@@ -10,6 +10,7 @@ import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ import tfb.status.undertow.extensions.LazyHandler;
  * @see ExactPath
  * @see PrefixPath
  */
+@Singleton
 public final class RootHandler implements HttpHandler {
   private final HttpHandler delegate;
 

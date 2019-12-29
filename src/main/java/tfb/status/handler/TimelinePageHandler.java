@@ -24,6 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.service.FileStore;
@@ -41,6 +42,7 @@ import tfb.status.view.TimelinePageView.TestTypeOptionView;
  * Handles requests for the timeline page.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @PrefixPath("/timeline")
 public final class TimelinePageHandler implements HttpHandler {
   private final HttpHandler delegate;

@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
@@ -29,6 +30,7 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests for the home page.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @ExactPath("/")
 public final class HomePageHandler implements HttpHandler {
   private final HttpHandler delegate;

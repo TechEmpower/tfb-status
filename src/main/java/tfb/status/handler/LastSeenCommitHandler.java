@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
@@ -45,6 +46,7 @@ import tfb.status.view.HomePageView.ResultsView;
  * to consume -- plain text, with no parsing required.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @ExactPath("/last-seen-commit")
 public final class LastSeenCommitHandler implements HttpHandler {
   private final HttpHandler delegate;

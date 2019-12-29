@@ -1,22 +1,9 @@
 package tfb.status.bootstrap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Ticker;
-import io.undertow.server.HttpHandler;
-import java.nio.file.FileSystem;
-import java.time.Clock;
 import java.util.Optional;
-import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import tfb.status.config.ApplicationConfig;
-import tfb.status.config.AssetsConfig;
-import tfb.status.config.EmailConfig;
-import tfb.status.config.FileStoreConfig;
-import tfb.status.config.HttpServerConfig;
-import tfb.status.config.MustacheConfig;
-import tfb.status.config.RunProgressMonitorConfig;
 import tfb.status.handler.AboutPageHandler;
 import tfb.status.handler.AssetsHandler;
 import tfb.status.handler.AttributesPageHandler;
@@ -62,112 +49,42 @@ public final class ServicesBinder extends AbstractBinder {
         .to(new TypeLiteral<Optional<String>>() {})
         .named(ApplicationConfigFactory.CONFIG_FILE_PATH);
 
-    bindFactory(ApplicationConfigFactory.class, Singleton.class)
-        .to(ApplicationConfig.class)
-        .in(Singleton.class);
+    addActiveFactoryDescriptor(ApplicationConfigFactory.class);
+    addActiveFactoryDescriptor(AssetsConfigFactory.class);
+    addActiveFactoryDescriptor(MustacheConfigFactory.class);
+    addActiveFactoryDescriptor(FileStoreConfigFactory.class);
+    addActiveFactoryDescriptor(HttpServerConfigFactory.class);
+    addActiveFactoryDescriptor(EmailConfigFactory.class);
+    addActiveFactoryDescriptor(RunProgressMonitorConfigFactory.class);
 
-    bindFactory(AssetsConfigFactory.class, Singleton.class)
-        .to(AssetsConfig.class)
-        .in(Singleton.class);
+    addActiveFactoryDescriptor(ObjectMapperFactory.class);
+    addActiveFactoryDescriptor(ClockFactory.class);
+    addActiveFactoryDescriptor(TickerFactory.class);
+    addActiveFactoryDescriptor(FileSystemFactory.class);
 
-    bindFactory(MustacheConfigFactory.class, Singleton.class)
-        .to(MustacheConfig.class)
-        .in(Singleton.class);
+    addActiveDescriptor(HttpServer.class);
+    addActiveDescriptor(RootHandler.class);
+    addActiveDescriptor(HomePageHandler.class);
+    addActiveDescriptor(HomeUpdatesHandler.class);
+    addActiveDescriptor(UploadResultsHandler.class);
+    addActiveDescriptor(RobotsHandler.class);
+    addActiveDescriptor(DownloadResultsHandler.class);
+    addActiveDescriptor(UnzipResultsHandler.class);
+    addActiveDescriptor(TimelinePageHandler.class);
+    addActiveDescriptor(DetailPageHandler.class);
+    addActiveDescriptor(AboutPageHandler.class);
+    addActiveDescriptor(AssetsHandler.class);
+    addActiveDescriptor(AttributesPageHandler.class);
+    addActiveDescriptor(SaveAttributesHandler.class);
+    addActiveDescriptor(LastSeenCommitHandler.class);
 
-    bindFactory(FileStoreConfigFactory.class, Singleton.class)
-        .to(FileStoreConfig.class)
-        .in(Singleton.class);
-
-    bindFactory(HttpServerConfigFactory.class, Singleton.class)
-        .to(HttpServerConfig.class)
-        .in(Singleton.class);
-
-    bindFactory(EmailConfigFactory.class, Singleton.class)
-        .to(new TypeLiteral<Optional<EmailConfig>>() {})
-        .in(Singleton.class);
-
-    bindFactory(RunProgressMonitorConfigFactory.class, Singleton.class)
-        .to(RunProgressMonitorConfig.class)
-        .in(Singleton.class);
-
-    bindAsContract(HttpServer.class).in(Singleton.class);
-    bindAsContract(RootHandler.class).in(Singleton.class);
-
-    bindAsContract(HomePageHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(HomeUpdatesHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(UploadResultsHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(RobotsHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(DownloadResultsHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(UnzipResultsHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(TimelinePageHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(DetailPageHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(AboutPageHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(AssetsHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(AttributesPageHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(SaveAttributesHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(LastSeenCommitHandler.class)
-        .to(HttpHandler.class)
-        .in(Singleton.class);
-
-    bindAsContract(Authenticator.class).in(Singleton.class);
-    bindAsContract(MustacheRenderer.class).in(Singleton.class);
-    bindAsContract(HomeResultsReader.class).in(Singleton.class);
-    bindAsContract(EmailSender.class).in(Singleton.class);
-    bindAsContract(DiffGenerator.class).in(Singleton.class);
-    bindAsContract(FileStore.class).in(Singleton.class);
-    bindAsContract(RunProgressMonitor.class).in(Singleton.class);
-    bindAsContract(TaskScheduler.class).in(Singleton.class);
-
-    bindFactory(ObjectMapperFactory.class, Singleton.class)
-        .to(ObjectMapper.class)
-        .in(Singleton.class);
-
-    bindFactory(ClockFactory.class, Singleton.class)
-        .to(Clock.class)
-        .in(Singleton.class);
-
-    bindFactory(TickerFactory.class, Singleton.class)
-        .to(Ticker.class)
-        .in(Singleton.class);
-
-    bindFactory(FileSystemFactory.class, Singleton.class)
-        .to(FileSystem.class)
-        .in(Singleton.class);
+    addActiveDescriptor(Authenticator.class);
+    addActiveDescriptor(MustacheRenderer.class);
+    addActiveDescriptor(HomeResultsReader.class);
+    addActiveDescriptor(EmailSender.class);
+    addActiveDescriptor(DiffGenerator.class);
+    addActiveDescriptor(FileStore.class);
+    addActiveDescriptor(RunProgressMonitor.class);
+    addActiveDescriptor(TaskScheduler.class);
   }
 }

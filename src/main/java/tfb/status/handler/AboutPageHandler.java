@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Properties;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
@@ -28,6 +29,7 @@ import tfb.status.view.AboutPageView.GitPropertyView;
  * Handles requests for the about page.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @ExactPath("/about")
 public final class AboutPageHandler implements HttpHandler {
   private final HttpHandler delegate;

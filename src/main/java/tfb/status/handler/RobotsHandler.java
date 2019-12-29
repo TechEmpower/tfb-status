@@ -8,6 +8,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import tfb.status.undertow.extensions.FixedResponseBodyHandler;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
@@ -16,6 +17,7 @@ import tfb.status.undertow.extensions.MethodHandler;
  * Handles requests for robots.txt.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @ExactPath("/robots.txt")
 public final class RobotsHandler implements HttpHandler {
   private final HttpHandler delegate;

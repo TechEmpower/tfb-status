@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.service.Authenticator;
@@ -33,6 +34,7 @@ import tfb.status.view.AttributeLookup;
  * Handles requests to replace the content of the tfb_lookup.json file on disk.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @ExactPath("/saveAttributes")
 public final class SaveAttributesHandler implements HttpHandler {
   private final HttpHandler delegate;

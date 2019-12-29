@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.XnioExecutor;
@@ -32,6 +33,7 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests to listen for updates to the home page using web sockets.
  */
 @Singleton
+@ContractsProvided({ HttpHandler.class, HomeUpdatesHandler.class })
 @ExactPath("/updates")
 public final class HomeUpdatesHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;

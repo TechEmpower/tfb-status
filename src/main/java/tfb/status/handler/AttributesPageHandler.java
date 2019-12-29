@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.service.Authenticator;
@@ -61,6 +62,7 @@ import tfb.status.view.TestDefinition;
  * test metadata for a run.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @ExactPath("/attributes")
 public final class AttributesPageHandler implements HttpHandler {
   private final HttpHandler delegate;

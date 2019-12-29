@@ -41,6 +41,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.MessagingException;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.service.Authenticator;
@@ -64,6 +65,7 @@ import tfb.status.view.Results;
  * {@code Content-Type} must be {@code application/zip}.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @ExactPath("/upload")
 public final class UploadResultsHandler implements HttpHandler {
   private final HttpHandler delegate;

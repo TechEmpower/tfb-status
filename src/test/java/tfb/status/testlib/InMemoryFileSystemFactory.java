@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.Rank;
 
 /**
  * Provides the {@link FileSystem} used by this application during tests.
@@ -19,6 +20,7 @@ import org.glassfish.hk2.api.Factory;
 final class InMemoryFileSystemFactory implements Factory<FileSystem> {
   @Override
   @Singleton
+  @Rank(1) // Override the default file system.
   public FileSystem provide() {
     FileSystem realFileSystem = FileSystems.getDefault();
     FileSystem fakeFileSystem = Jimfs.newFileSystem(Configuration.unix());

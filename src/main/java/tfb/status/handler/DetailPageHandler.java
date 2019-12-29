@@ -18,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.HttpHandlers;
@@ -29,6 +30,7 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests for the results detail page.
  */
 @Singleton
+@ContractsProvided(HttpHandler.class)
 @PrefixPath("/results")
 public final class DetailPageHandler implements HttpHandler {
   private final HttpHandler delegate;
