@@ -8,6 +8,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
+import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
@@ -87,6 +88,9 @@ public final class HomeUpdatesHandler implements HttpHandler {
                              /* unit= */ TimeUnit.SECONDS);
 
               channel.addCloseTask(ch -> pingTimer.remove());
+
+              channel.getReceiveSetter().set(new AbstractReceiveListener() {});
+              channel.resumeReceives();
             });
 
     delegate =
