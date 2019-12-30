@@ -40,3 +40,6 @@
 #runProgressMonitor:
 #  environmentTimeoutSeconds: 21600
 #  maxEnvironments: 5
+
+#runCompleteMailer:
+#  minSecondsBetweenEmails: 86400

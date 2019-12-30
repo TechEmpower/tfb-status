@@ -40,6 +40,11 @@ public final class ApplicationConfig {
   public final RunProgressMonitorConfig runProgressMonitor;
 
   /**
+   * See {@link RunCompleteMailerConfig}.
+   */
+  public final RunCompleteMailerConfig runCompleteMailer;
+
+  /**
    * The configuration for outbound emails, or {@code null} if outbound emails
    * are disabled.  See {@link EmailConfig}.
    */
@@ -50,6 +55,7 @@ public final class ApplicationConfig {
                            MustacheConfig mustache,
                            FileStoreConfig fileStore,
                            RunProgressMonitorConfig runProgressMonitor,
+                           RunCompleteMailerConfig runCompleteMailer,
                            @Nullable EmailConfig email) {
 
     this.http = Objects.requireNonNull(http);
@@ -57,6 +63,7 @@ public final class ApplicationConfig {
     this.mustache = Objects.requireNonNull(mustache);
     this.fileStore = Objects.requireNonNull(fileStore);
     this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
+    this.runCompleteMailer = Objects.requireNonNull(runCompleteMailer);
     this.email = email;
   }
 
@@ -106,6 +113,9 @@ public final class ApplicationConfig {
       @JsonProperty(value = "runProgressMonitor", required = false)
       @Nullable RunProgressMonitorConfig runProgressMonitor,
 
+      @JsonProperty(value = "runCompleteMailer", required = false)
+      @Nullable RunCompleteMailerConfig runCompleteMailer,
+
       @JsonProperty(value = "email", required = false)
       @Nullable EmailConfig email) {
 
@@ -135,11 +145,16 @@ public final class ApplicationConfig {
             runProgressMonitor,
             () -> RunProgressMonitorConfig.defaultConfig()),
 
+        /* runCompleteMailer= */
+        Objects.requireNonNullElseGet(
+            runCompleteMailer,
+            () -> RunCompleteMailerConfig.defaultConfig()),
+
         /* email= */
         email);
   }
 
   public static ApplicationConfig defaultConfig() {
-    return create(null, null, null, null, null, null);
+    return create(null, null, null, null, null, null, null);
   }
 }

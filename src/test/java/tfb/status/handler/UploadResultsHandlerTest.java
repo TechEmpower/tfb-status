@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import tfb.status.service.RunCompleteMailer;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.MailServer;
 import tfb.status.testlib.TestServicesInjector;
@@ -62,7 +63,6 @@ public final class UploadResultsHandlerTest {
   public void testUpload(HttpTester http,
                          FileSystem fileSystem,
                          ObjectMapper objectMapper,
-
                          MailServer mailServer)
       throws ExecutionException,
              InterruptedException,
@@ -375,7 +375,7 @@ public final class UploadResultsHandlerTest {
       //
 
       String subject =
-          UploadResultsHandler.runCompleteEmailSubject(finalResults);
+          RunCompleteMailer.runCompleteEmailSubject(finalResults);
 
       ImmutableList<MimeMessage> messages =
           mailServer.getMessages(m -> m.getSubject().equals(subject));

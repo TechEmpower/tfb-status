@@ -23,3 +23,6 @@ fileStore:
 runProgressMonitor:
   environmentTimeoutSeconds: 1
   maxEnvironments: 100
+
+runCompleteMailer:
+  minSecondsBetweenEmails: 0

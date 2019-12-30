@@ -24,6 +24,7 @@ import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
+import tfb.status.service.RunCompleteMailer;
 import tfb.status.service.RunProgressMonitor;
 import tfb.status.service.TaskScheduler;
 
@@ -56,6 +57,7 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveFactoryDescriptor(HttpServerConfigFactory.class);
     addActiveFactoryDescriptor(EmailConfigFactory.class);
     addActiveFactoryDescriptor(RunProgressMonitorConfigFactory.class);
+    addActiveFactoryDescriptor(RunCompleteMailerConfigFactory.class);
 
     addActiveFactoryDescriptor(ObjectMapperFactory.class);
     addActiveFactoryDescriptor(ClockFactory.class);
@@ -85,6 +87,7 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(DiffGenerator.class);
     addActiveDescriptor(FileStore.class);
     addActiveDescriptor(RunProgressMonitor.class);
+    addActiveDescriptor(RunCompleteMailer.class);
     addActiveDescriptor(TaskScheduler.class);
   }
 }

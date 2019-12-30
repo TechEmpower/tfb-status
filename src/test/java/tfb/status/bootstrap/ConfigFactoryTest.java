@@ -20,6 +20,7 @@ import tfb.status.config.EmailConfig;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.config.MustacheConfig;
+import tfb.status.config.RunCompleteMailerConfig;
 import tfb.status.config.RunProgressMonitorConfig;
 import tfb.status.testlib.TestServicesInjector;
 
@@ -32,6 +33,7 @@ import tfb.status.testlib.TestServicesInjector;
  * @see MustacheConfigFactory
  * @see FileStoreConfigFactory
  * @see RunProgressMonitorConfigFactory
+ * @see RunCompleteMailerConfigFactory
  * @see EmailConfigFactory
  */
 @ExtendWith(TestServicesInjector.class)
@@ -47,6 +49,7 @@ public final class ConfigFactoryTest {
       Provider<MustacheConfig> mustacheConfigProvider,
       Provider<FileStoreConfig> fileStoreConfigProvider,
       Provider<RunProgressMonitorConfig> runProgressMonitorConfigProvider,
+      Provider<RunCompleteMailerConfig> runCompleteMailerConfigProvider,
       Provider<Optional<EmailConfig>> optionalEmailConfigProvider) {
 
     ApplicationConfig config = applicationConfigProvider.get();
@@ -71,6 +74,10 @@ public final class ConfigFactoryTest {
     assertEquals(
         config.runProgressMonitor,
         runProgressMonitorConfigProvider.get());
+
+    assertEquals(
+        config.runCompleteMailer,
+        runCompleteMailerConfigProvider.get());
 
     assertEquals(
         Optional.ofNullable(config.email),
