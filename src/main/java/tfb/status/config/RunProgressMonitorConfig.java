@@ -16,7 +16,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 @Singleton
 public final class RunProgressMonitorConfig {
   /**
-   * The number of minutes to wait before assuming that a benchmarking
+   * The number of seconds to wait before assuming that a benchmarking
    * environment has crashed.
    */
   public final long environmentTimeoutSeconds;
