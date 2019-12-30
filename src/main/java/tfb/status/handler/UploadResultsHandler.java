@@ -50,7 +50,6 @@ import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
-import tfb.status.service.RunProgressMonitor;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
@@ -80,8 +79,7 @@ public final class UploadResultsHandler implements HttpHandler {
                               Topic<UpdatedResultsEvent> updatedResultsTopic,
                               HomeResultsReader homeResultsReader,
                               DiffGenerator diffGenerator,
-                              Clock clock,
-                              RunProgressMonitor runProgressMonitor) {
+                              Clock clock) {
 
     Objects.requireNonNull(fileStore);
     Objects.requireNonNull(authenticator);
@@ -91,7 +89,6 @@ public final class UploadResultsHandler implements HttpHandler {
     Objects.requireNonNull(homeResultsReader);
     Objects.requireNonNull(diffGenerator);
     Objects.requireNonNull(clock);
-    Objects.requireNonNull(runProgressMonitor);
 
     delegate =
         HttpHandlers.chain(
@@ -104,8 +101,7 @@ public final class UploadResultsHandler implements HttpHandler {
                         /* updatedResultsTopic= */ updatedResultsTopic,
                         /* homeResultsReader=*/ homeResultsReader,
                         /* clock= */ clock,
-                        /* objectMapper=*/ objectMapper,
-                        /* runProgressMonitor= */ runProgressMonitor))
+                        /* objectMapper=*/ objectMapper))
                 .addMediaType(
                     "application/zip",
                     new ZipHandler(
@@ -116,8 +112,7 @@ public final class UploadResultsHandler implements HttpHandler {
                         /* clock= */ clock,
                         /* objectMapper=*/ objectMapper,
                         /* emailSender=*/ emailSender,
-                        /* diffGenerator=*/ diffGenerator,
-                        /* runProgressMonitor= */ runProgressMonitor)),
+                        /* diffGenerator=*/ diffGenerator)),
             handler -> new MethodHandler().addMethod(POST, handler),
             handler -> new DisableCacheHandler(handler),
             handler -> authenticator.newRequiredAuthHandler(handler));
@@ -254,15 +249,13 @@ public final class UploadResultsHandler implements HttpHandler {
   private static final class JsonHandler extends BaseHandler {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ObjectMapper objectMapper;
-    private final RunProgressMonitor runProgressMonitor;
 
     JsonHandler(FileStore fileStore,
                 Authenticator authenticator,
                 Topic<UpdatedResultsEvent> updatedResultsTopic,
                 HomeResultsReader homeResultsReader,
                 Clock clock,
-                ObjectMapper objectMapper,
-                RunProgressMonitor runProgressMonitor) {
+                ObjectMapper objectMapper) {
 
       super(
           /* fileStore= */ fileStore,
@@ -273,7 +266,6 @@ public final class UploadResultsHandler implements HttpHandler {
           /* fileExtension= */ "json");
 
       this.objectMapper = Objects.requireNonNull(objectMapper);
-      this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
     }
 
     @Override
@@ -314,12 +306,7 @@ public final class UploadResultsHandler implements HttpHandler {
 
     @Override
     void runPostUploadActions(Path newJsonFile) {
-      String environment = tryReadEnvironment(newJsonFile);
-      if (environment != null) {
-        runProgressMonitor.recordProgress(
-            /* environment= */ environment,
-            /* expectMore= */ true);
-      }
+      // Do nothing.
     }
   }
 
@@ -330,7 +317,6 @@ public final class UploadResultsHandler implements HttpHandler {
     private final EmailSender emailSender;
     private final DiffGenerator diffGenerator;
     private final Clock clock;
-    private final RunProgressMonitor runProgressMonitor;
 
     ZipHandler(FileStore fileStore,
                Authenticator authenticator,
@@ -339,8 +325,7 @@ public final class UploadResultsHandler implements HttpHandler {
                Clock clock,
                ObjectMapper objectMapper,
                EmailSender emailSender,
-               DiffGenerator diffGenerator,
-               RunProgressMonitor runProgressMonitor) {
+               DiffGenerator diffGenerator) {
 
       super(
           /* fileStore= */ fileStore,
@@ -355,7 +340,6 @@ public final class UploadResultsHandler implements HttpHandler {
       this.clock = Objects.requireNonNull(clock);
       this.emailSender = Objects.requireNonNull(emailSender);
       this.diffGenerator = Objects.requireNonNull(diffGenerator);
-      this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
     }
 
     @Override
@@ -394,15 +378,6 @@ public final class UploadResultsHandler implements HttpHandler {
       maybeSendEmail(
           /* newZipFile= */ newZipFile,
           /* rawResultsBytes= */ rawResultsBytes);
-
-      String environment = tryReadEnvironment(newZipFile);
-      if (environment != null) {
-        // TODO: It's not great to have "Citrine" hardcoded.  How else can we
-        //       detect that this is a continuous benchmarking environment?
-        runProgressMonitor.recordProgress(
-            /* environment= */ environment,
-            /* expectMore= */ "Citrine".equals(environment));
-      }
     }
 
     //
