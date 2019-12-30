@@ -11,7 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.inject.Provider;
@@ -23,6 +25,10 @@ import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.TypeLiteral;
+import org.glassfish.hk2.api.messaging.MessageReceiver;
+import org.glassfish.hk2.api.messaging.SubscribeTo;
+import org.glassfish.hk2.api.messaging.Topic;
+import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
 
@@ -526,6 +532,68 @@ public final class ServicesTest {
     assertEquals(loopCount, serviceCount);
   }
 
+  /**
+   * Verifies that {@link Topic#publish(Object)} distributes the message to all
+   * subscribers.  Verifies the existence of a {@link TopicDistributionService}.
+   */
+  @Test
+  public void testTopics() {
+    var binder =
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            addActiveDescriptor(ServiceWithShutdown.class);
+            addActiveDescriptor(SingletonServiceWithShutdown.class);
+            addActiveDescriptor(SubscriberService.class);
+          }
+        };
+
+    var services = new Services(binder);
+
+    Topic<String> stringTopic =
+        services.getService(new TypeToken<Topic<String>>() {});
+
+    Topic<Integer> integerTopic = // subtype of Number, should be seen
+        services.getService(new TypeToken<Topic<Integer>>() {});
+
+    Topic<CharSequence> charSequenceTopic = // should be ignored
+        services.getService(new TypeToken<Topic<CharSequence>>() {});
+
+    stringTopic.publish("1");
+    integerTopic.publish(2);
+    charSequenceTopic.publish("3");
+
+    SubscriberService service = services.getService(SubscriberService.class);
+
+    assertEquals(
+        List.of("1", 2),
+        service.getMessages());
+
+    List<ServiceWithShutdown> service1List = service.getService1List();
+    List<SingletonServiceWithShutdown> service2List = service.getService2List();
+
+    List<Boolean> serviced1WasShutdown = service.getService1WasShutdown();
+    List<Boolean> serviced2WasShutdown = service.getService2WasShutdown();
+
+    assertEquals(2, service1List.size());
+    assertEquals(2, service2List.size());
+
+    assertEquals(2, serviced1WasShutdown.size());
+    assertEquals(2, serviced2WasShutdown.size());
+
+    assertFalse(serviced1WasShutdown.get(0));
+    assertFalse(serviced1WasShutdown.get(1));
+    assertTrue(service1List.get(0).isShutdown());
+    assertTrue(service1List.get(1).isShutdown());
+    assertNotSame(service1List.get(0), service1List.get(1));
+
+    assertFalse(serviced2WasShutdown.get(0));
+    assertFalse(serviced2WasShutdown.get(1));
+    assertFalse(service2List.get(0).isShutdown());
+    assertFalse(service2List.get(1).isShutdown());
+    assertSame(service2List.get(0), service2List.get(1));
+  }
+
   public static final class SimpleService {}
 
   public interface SimpleContract {}
@@ -556,7 +624,7 @@ public final class ServicesTest {
     }
   }
 
-  public static final class ServiceWithShutdown implements PreDestroy {
+  public static class ServiceWithShutdown implements PreDestroy {
     @GuardedBy("this")
     private boolean isShutdown = false;
 
@@ -573,6 +641,10 @@ public final class ServicesTest {
       shutdown();
     }
   }
+
+  @Singleton
+  public static class SingletonServiceWithShutdown
+      extends ServiceWithShutdown {}
 
   public static final class FactoryWithShutdown
       implements Factory<ServiceWithShutdown> {
@@ -599,6 +671,55 @@ public final class ServicesTest {
     @Override
     public void dispose(SimpleService instance) {
       // Do nothing.
+    }
+  }
+
+  @Singleton
+  @MessageReceiver({ String.class, Number.class })
+  public static final class SubscriberService {
+    @GuardedBy("this")
+    private List<Object> messages = new ArrayList<>();
+
+    @GuardedBy("this")
+    private List<ServiceWithShutdown> service1List = new ArrayList<>();
+
+    @GuardedBy("this")
+    private List<SingletonServiceWithShutdown> service2List = new ArrayList<>();
+
+    @GuardedBy("this")
+    private List<Boolean> service1WasShutdown = new ArrayList<>();
+
+    @GuardedBy("this")
+    private List<Boolean> service2WasShutdown = new ArrayList<>();
+
+    public synchronized void onEvent(@SubscribeTo Object message,
+                                     ServiceWithShutdown service1,
+                                     SingletonServiceWithShutdown service2) {
+      messages.add(message);
+      service1List.add(service1);
+      service2List.add(service2);
+      service1WasShutdown.add(service1.isShutdown());
+      service2WasShutdown.add(service2.isShutdown());
+    }
+
+    public synchronized List<Object> getMessages() {
+      return new ArrayList<>(messages);
+    }
+
+    public synchronized List<ServiceWithShutdown> getService1List() {
+      return new ArrayList<>(service1List);
+    }
+
+    public synchronized List<SingletonServiceWithShutdown> getService2List() {
+      return new ArrayList<>(service2List);
+    }
+
+    public synchronized List<Boolean> getService1WasShutdown() {
+      return new ArrayList<>(service1WasShutdown);
+    }
+
+    public synchronized List<Boolean> getService2WasShutdown() {
+      return new ArrayList<>(service2WasShutdown);
     }
   }
 }
