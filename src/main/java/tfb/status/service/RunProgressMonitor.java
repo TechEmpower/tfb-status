@@ -29,14 +29,24 @@ import tfb.status.view.UpdatedResultsEvent;
 @MessageReceiver
 public final class RunProgressMonitor implements PreDestroy {
   private final RunProgressMonitorConfig config;
+  private final HomeResultsReader homeResultsReader;
+  private final TaskScheduler taskScheduler;
+  private final EmailSender emailSender;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @GuardedBy("this")
   private final Map<String, Future<?>> environmentToTask = new HashMap<>();
 
   @Inject
-  public RunProgressMonitor(RunProgressMonitorConfig config) {
+  public RunProgressMonitor(RunProgressMonitorConfig config,
+                            HomeResultsReader homeResultsReader,
+                            TaskScheduler taskScheduler,
+                            EmailSender emailSender) {
+
     this.config = Objects.requireNonNull(config);
+    this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
+    this.taskScheduler = Objects.requireNonNull(taskScheduler);
+    this.emailSender = Objects.requireNonNull(emailSender);
   }
 
   @Override
@@ -54,14 +64,10 @@ public final class RunProgressMonitor implements PreDestroy {
     environmentToTask.clear();
   }
 
-  public void onUpdatedResults(@SubscribeTo UpdatedResultsEvent event,
-                               HomeResultsReader homeResultsReader,
-                               TaskScheduler taskScheduler,
-                               EmailSender emailSender)
+  public void onUpdatedResults(@SubscribeTo UpdatedResultsEvent event)
       throws IOException {
 
     Objects.requireNonNull(event);
-    Objects.requireNonNull(homeResultsReader);
 
     String uuid = event.uuid;
     ResultsView results = homeResultsReader.resultsByUuid(uuid);
@@ -82,63 +88,71 @@ public final class RunProgressMonitor implements PreDestroy {
     boolean expectMore =
         (results.zipFileName == null) // case (a)
             || environment.equals("Citrine"); // case (b)
-
     // TODO: It's not great to have "Citrine" hardcoded.  How else can we detect
     //       that this is a continuous benchmarking environment?
 
-    synchronized (this) {
-      if (environmentToTask.size() >= config.maxEnvironments
-          && !environmentToTask.containsKey(environment)) {
-        logger.warn(
-            "Ignoring progress from environment {} because there are "
-                + "already {} environments running concurrently, "
-                + "which is more than expected",
-            environment,
-            environmentToTask.size());
-        return;
-      }
+    recordProgress(environment, expectMore);
+  }
 
-      environmentToTask.compute(
+  private synchronized void recordProgress(String environment,
+                                           boolean expectMore) {
+
+    Objects.requireNonNull(environment);
+
+    if (environmentToTask.size() >= config.maxEnvironments
+        && !environmentToTask.containsKey(environment)) {
+      logger.warn(
+          "Ignoring progress from environment {} because there are "
+              + "already {} environments running concurrently, "
+              + "which is more than expected",
           environment,
-          (String env, Future<?> oldTask) -> {
+          environmentToTask.size());
+      return;
+    }
 
-            if (oldTask != null)
-              oldTask.cancel(true);
+    environmentToTask.compute(
+        environment,
+        (String env, Future<?> oldTask) -> {
 
-            if (!expectMore)
-              return null;
+          if (oldTask != null)
+            oldTask.cancel(true);
 
-            return taskScheduler.schedule(
-                /* task= */
-                () -> {
-                  synchronized (this) {
-                    environmentToTask.remove(environment);
-                  }
+          if (!expectMore)
+            return null;
 
-                  String subject = environmentCrashedEmailSubject(environment);
+          return taskScheduler.schedule(
+              /* task= */
+              () -> {
+                synchronized (this) {
+                  environmentToTask.remove(environment);
+                }
+                complain(environment);
+              },
+              /* delay= */
+              Duration.ofSeconds(config.environmentTimeoutSeconds));
+        });
+  }
 
-                  String textContent =
-                      "tfb-status hasn't received any new data from "
-                          + "the benchmarking environment \""
-                          + environment
-                          + "\" in a while.  Is everything ok?";
+  private void complain(String environment) {
+    String subject = environmentCrashedEmailSubject(environment);
 
-                  try {
-                    emailSender.sendEmail(
-                        /* subject= */ subject,
-                        /* textContent= */ textContent,
-                        /* attachments= */ List.of());
-                  } catch (MessagingException e) {
-                    logger.warn(
-                        "Error sending email regarding lack of progress in "
-                            + "environment {}",
-                        environment,
-                        e);
-                  }
-                },
-                /* delay= */
-                Duration.ofSeconds(config.environmentTimeoutSeconds));
-          });
+    String textContent =
+        "tfb-status hasn't received any new data from "
+            + "the benchmarking environment \""
+            + environment
+            + "\" in a while.  Is everything ok?";
+
+    try {
+      emailSender.sendEmail(
+          /* subject= */ subject,
+          /* textContent= */ textContent,
+          /* attachments= */ List.of());
+    } catch (MessagingException e) {
+      logger.warn(
+          "Error sending email regarding lack of progress in "
+              + "environment {}",
+          environment,
+          e);
     }
   }
 
