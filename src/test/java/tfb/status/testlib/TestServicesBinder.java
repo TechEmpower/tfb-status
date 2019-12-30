@@ -21,5 +21,6 @@ final class TestServicesBinder extends AbstractBinder {
     addActiveDescriptor(MailServer.class);
     addActiveDescriptor(MailDelay.class);
     addActiveDescriptor(MailServerDependency.class);
+    addActiveDescriptor(ResultsTester.class);
   }
 }
