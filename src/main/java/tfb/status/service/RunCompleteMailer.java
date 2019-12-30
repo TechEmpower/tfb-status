@@ -396,6 +396,8 @@ public final class RunCompleteMailer {
 
   @VisibleForTesting
   public static String runCompleteEmailSubject(Results results) {
-    return "<tfb> <auto> Run complete: " + results.name;
+    Objects.requireNonNull(results);
+    String name = (results.name == null) ? "(unnamed run)" : results.name;
+    return "<tfb> <auto> Run complete: " + name;
   }
 }
