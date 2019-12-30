@@ -80,6 +80,7 @@ public final class ApplicationConfig {
           && this.mustache.equals(that.mustache)
           && this.fileStore.equals(that.fileStore)
           && this.runProgressMonitor.equals(that.runProgressMonitor)
+          && this.runCompleteMailer.equals(that.runCompleteMailer)
           && Objects.equals(this.email, that.email);
     }
   }
@@ -92,6 +93,7 @@ public final class ApplicationConfig {
     hash = 31 * hash + mustache.hashCode();
     hash = 31 * hash + fileStore.hashCode();
     hash = 31 * hash + runProgressMonitor.hashCode();
+    hash = 31 * hash + runCompleteMailer.hashCode();
     hash = 31 * hash + Objects.hashCode(email);
     return hash;
   }
