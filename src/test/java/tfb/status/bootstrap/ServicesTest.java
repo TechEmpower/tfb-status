@@ -24,13 +24,13 @@ import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
-import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.api.messaging.MessageReceiver;
 import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
+import org.jvnet.hk2.annotations.Contract;
 
 /**
  * Tests for {@link Services}.
@@ -42,18 +42,10 @@ public final class ServicesTest {
    */
   @Test
   public void testGetSingletonService() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindAsContract(SimpleService.class).in(Singleton.class);
-          }
-        };
+    Services services = newServices();
 
-    var services = new Services(binder);
-
-    SimpleService service1 = services.getService(SimpleService.class);
-    SimpleService service2 = services.getService(SimpleService.class);
+    SingletonService service1 = services.getService(SingletonService.class);
+    SingletonService service2 = services.getService(SingletonService.class);
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -67,18 +59,10 @@ public final class ServicesTest {
    */
   @Test
   public void testGetPerLookupService() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindAsContract(SimpleService.class);
-          }
-        };
+    Services services = newServices();
 
-    var services = new Services(binder);
-
-    SimpleService service1 = services.getService(SimpleService.class);
-    SimpleService service2 = services.getService(SimpleService.class);
+    PerLookupService service1 = services.getService(PerLookupService.class);
+    PerLookupService service2 = services.getService(PerLookupService.class);
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -91,13 +75,7 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredService() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {}
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     assertThrows(
         NoSuchElementException.class,
@@ -119,26 +97,18 @@ public final class ServicesTest {
    */
   @Test
   public void testGetNullService() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindFactory(NullFactory.class).to(SimpleService.class);
-          }
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     assertThrows(
         NoSuchElementException.class,
-        () -> services.getService(SimpleService.class));
+        () -> services.getService(NullService.class));
 
     // Assert that there is one "instance" of the service, but it's null.
-    Iterable<SimpleService> iterable =
+    Iterable<NullService> iterable =
         services.getService(
-            new TypeToken<Iterable<SimpleService>>() {});
+            new TypeToken<Iterable<NullService>>() {});
 
-    Iterator<SimpleService> iterator = iterable.iterator();
+    Iterator<NullService> iterator = iterable.iterator();
 
     assertTrue(iterator.hasNext());
     assertNull(iterator.next());
@@ -152,18 +122,10 @@ public final class ServicesTest {
    */
   @Test
   public void testGetOptional() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindAsContract(SimpleService.class);
-          }
-        };
+    Services services = newServices();
 
-    var services = new Services(binder);
-
-    Optional<SimpleService> optional =
-        services.getService(new TypeToken<Optional<SimpleService>>() {});
+    Optional<PerLookupService> optional =
+        services.getService(new TypeToken<Optional<PerLookupService>>() {});
 
     assertTrue(optional.isPresent());
   }
@@ -175,13 +137,7 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredOptional() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {}
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     Optional<UnregisteredService> optional =
         services.getService(new TypeToken<Optional<UnregisteredService>>() {});
@@ -196,20 +152,12 @@ public final class ServicesTest {
    */
   @Test
   public void testGetProvider() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindAsContract(SimpleService.class);
-          }
-        };
+    Services services = newServices();
 
-    var services = new Services(binder);
+    Provider<PerLookupService> provider =
+        services.getService(new TypeToken<Provider<PerLookupService>>() {});
 
-    Provider<SimpleService> provider =
-        services.getService(new TypeToken<Provider<SimpleService>>() {});
-
-    SimpleService service = provider.get();
+    PerLookupService service = provider.get();
 
     assertNotNull(service);
   }
@@ -221,13 +169,7 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredProvider() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {}
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     Provider<UnregisteredService> provider =
         services.getService(new TypeToken<Provider<UnregisteredService>>() {});
@@ -244,16 +186,7 @@ public final class ServicesTest {
    */
   @Test
   public void testGetIterable() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bind(ServiceWithContract1.class).to(SimpleContract.class);
-            bind(ServiceWithContract2.class).to(SimpleContract.class);
-          }
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     Iterable<SimpleContract> provider =
         services.getService(
@@ -283,13 +216,7 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredIterable() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {}
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     Iterable<UnregisteredService> provider =
         services.getService(
@@ -306,16 +233,7 @@ public final class ServicesTest {
    */
   @Test
   public void testGetIterableProvider() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bind(ServiceWithContract1.class).to(SimpleContract.class);
-            bind(ServiceWithContract2.class).to(SimpleContract.class);
-          }
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     IterableProvider<SimpleContract> provider =
         services.getService(
@@ -345,13 +263,7 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredIterableProvider() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {}
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     IterableProvider<UnregisteredService> provider =
         services.getService(
@@ -368,19 +280,7 @@ public final class ServicesTest {
    */
   @Test
   public void testGetGenericService() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bind(ServiceWithGenericContract1.class)
-                .to(new TypeLiteral<GenericContract<Integer>>() {});
-
-            bind(ServiceWithGenericContract2.class)
-                .to(new TypeLiteral<GenericContract<String>>() {});
-          }
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     GenericContract<Integer> service1 =
         services.getService(new TypeToken<GenericContract<Integer>>() {});
@@ -405,18 +305,10 @@ public final class ServicesTest {
    */
   @Test
   public void testShutdownSingletonService() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindAsContract(ServiceWithShutdown.class).in(Singleton.class);
-          }
-        };
+    Services services = newServices();
 
-    var services = new Services(binder);
-
-    ServiceWithShutdown service =
-        services.getService(ServiceWithShutdown.class);
+    SingletonServiceWithShutdown service =
+        services.getService(SingletonServiceWithShutdown.class);
 
     assertFalse(service.isShutdown());
 
@@ -427,24 +319,15 @@ public final class ServicesTest {
 
   /**
    * Verifies that {@link Services#shutdown()} invokes the {@link
-   * Factory#dispose(Object)} methods of registered singleton factories.
+   * Factory#dispose(Object)} methods of registered factories that produce
+   * singleton services.
    */
   @Test
-  public void testShutdownSingletonFactory() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindFactory(FactoryWithShutdown.class, Singleton.class)
-                .to(ServiceWithShutdown.class)
-                .in(Singleton.class);
-          }
-        };
+  public void testShutdownSingletonServiceFromFactory() {
+    Services services = newServices();
 
-    var services = new Services(binder);
-
-    ServiceWithShutdown service =
-        services.getService(ServiceWithShutdown.class);
+    SingletonServiceWithShutdownFromFactory service =
+        services.getService(SingletonServiceWithShutdownFromFactory.class);
 
     assertFalse(service.isShutdown());
 
@@ -459,15 +342,7 @@ public final class ServicesTest {
    */
   @Test
   public void testShutdownPerLookupService() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindAsContract(ServiceWithShutdown.class);
-          }
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     IterableProvider<ServiceWithShutdown> providers =
         services.getService(
@@ -497,27 +372,18 @@ public final class ServicesTest {
    * Factory#dispose(Object)} methods of registered singleton factories.
    */
   @Test
-  public void testShutdownPerLookupFactory() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindFactory(FactoryWithShutdown.class)
-                .to(ServiceWithShutdown.class);
-          }
-        };
+  public void testShutdownPerLookupServiceFromFactory() {
+    Services services = newServices();
 
-    var services = new Services(binder);
-
-    IterableProvider<ServiceWithShutdown> providers =
+    IterableProvider<ServiceWithShutdownFromFactory> providers =
         services.getService(
-            new TypeToken<IterableProvider<ServiceWithShutdown>>() {});
+            new TypeToken<IterableProvider<ServiceWithShutdownFromFactory>>() {});
 
     int loopCount = 2;
     int serviceCount = 0;
 
     for (int i = 0; i < loopCount; i++) {
-      for (ServiceHandle<ServiceWithShutdown> handle
+      for (ServiceHandle<ServiceWithShutdownFromFactory> handle
           : providers.handleIterator()) {
 
         ServiceWithShutdown service = handle.getService();
@@ -538,17 +404,7 @@ public final class ServicesTest {
    */
   @Test
   public void testTopics() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            addActiveDescriptor(ServiceWithShutdown.class);
-            addActiveDescriptor(SingletonServiceWithShutdown.class);
-            addActiveDescriptor(SubscriberService.class);
-          }
-        };
-
-    var services = new Services(binder);
+    Services services = newServices();
 
     Topic<String> stringTopic =
         services.getService(new TypeToken<Topic<String>>() {});
@@ -594,14 +450,45 @@ public final class ServicesTest {
     assertSame(service2List.get(0), service2List.get(1));
   }
 
-  public static final class SimpleService {}
+  /**
+   * Constructs a new set of services to be used in one test.
+   */
+  private Services newServices() {
+    var binder =
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            addActiveDescriptor(PerLookupService.class);
+            addActiveDescriptor(SingletonService.class);
+            addActiveFactoryDescriptor(NullFactory.class);
+            addActiveDescriptor(ServiceWithContract1.class);
+            addActiveDescriptor(ServiceWithContract2.class);
+            addActiveDescriptor(ServiceWithGenericContract1.class);
+            addActiveDescriptor(ServiceWithGenericContract2.class);
+            addActiveDescriptor(ServiceWithShutdown.class);
+            addActiveDescriptor(SingletonServiceWithShutdown.class);
+            addActiveFactoryDescriptor(FactoryOfServiceWithShutdown.class);
+            addActiveFactoryDescriptor(FactoryOfSingletonServiceWithShutdown.class);
+            addActiveDescriptor(SubscriberService.class);
+          }
+        };
 
+    return new Services(binder);
+  }
+
+  public static final class PerLookupService {}
+
+  @Singleton
+  public static final class SingletonService {}
+
+  @Contract
   public interface SimpleContract {}
 
   public static final class ServiceWithContract1 implements SimpleContract {}
 
   public static final class ServiceWithContract2 implements SimpleContract {}
 
+  @Contract
   public interface GenericContract<T> {
     T method();
   }
@@ -646,30 +533,54 @@ public final class ServicesTest {
   public static class SingletonServiceWithShutdown
       extends ServiceWithShutdown {}
 
-  public static final class FactoryWithShutdown
-      implements Factory<ServiceWithShutdown> {
+  public static class ServiceWithShutdownFromFactory
+      extends ServiceWithShutdown {}
+
+  @Singleton
+  public static class SingletonServiceWithShutdownFromFactory
+      extends ServiceWithShutdown {}
+
+  public static final class FactoryOfServiceWithShutdown
+      implements Factory<ServiceWithShutdownFromFactory> {
 
     @Override
-    public ServiceWithShutdown provide() {
-      return new ServiceWithShutdown();
+    public ServiceWithShutdownFromFactory provide() {
+      return new ServiceWithShutdownFromFactory();
     }
 
     @Override
-    public void dispose(ServiceWithShutdown instance) {
+    public void dispose(ServiceWithShutdownFromFactory instance) {
+      instance.shutdown();
+    }
+  }
+
+  public static final class FactoryOfSingletonServiceWithShutdown
+      implements Factory<SingletonServiceWithShutdownFromFactory> {
+
+    @Override
+    @Singleton
+    public SingletonServiceWithShutdownFromFactory provide() {
+      return new SingletonServiceWithShutdownFromFactory();
+    }
+
+    @Override
+    public void dispose(SingletonServiceWithShutdownFromFactory instance) {
       instance.shutdown();
     }
   }
 
   public static final class UnregisteredService {}
 
-  public static final class NullFactory implements Factory<SimpleService> {
+  public static final class NullService {}
+
+  public static final class NullFactory implements Factory<NullService> {
     @Override
-    public @Nullable SimpleService provide() {
+    public @Nullable NullService provide() {
       return null;
     }
 
     @Override
-    public void dispose(SimpleService instance) {
+    public void dispose(NullService instance) {
       // Do nothing.
     }
   }
