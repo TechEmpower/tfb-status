@@ -1,7 +1,6 @@
 package tfb.status.handler;
 import static tfb.status.testlib.MoreAssertions.assertContains;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.WebSocket;
 import java.util.concurrent.CompletableFuture;
@@ -10,12 +9,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.messaging.Topic;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
+import tfb.status.view.UpdatedResultsEvent;
 
 /**
  * Tests for {@link HomeUpdatesHandler}.
@@ -26,12 +27,14 @@ public final class HomeUpdatesHandlerTest {
   /**
    * Verifies that a web socket client can use {@code GET /updates} to listen
    * for updates to the home page, which are broadcast via {@link
-   * HomeUpdatesHandler#sendUpdate(String)}.
+   * UpdatedResultsEvent}.
    */
   @Test
   public void testWebSocketGet(HttpTester http,
-                               HomeUpdatesHandler updates)
-      throws IOException, InterruptedException, ExecutionException, TimeoutException {
+                               Topic<UpdatedResultsEvent> updatedResultsTopic)
+      throws InterruptedException, ExecutionException, TimeoutException {
+
+    String uuid = "598923fe-6491-41bd-a2b6-047f70860aed";
 
     URI uri = http.webSocketUri("/updates");
 
@@ -57,15 +60,9 @@ public final class HomeUpdatesHandlerTest {
             .get(1, TimeUnit.SECONDS);
 
     try {
-
-      updates.sendUpdate("598923fe-6491-41bd-a2b6-047f70860aed");
-
+      updatedResultsTopic.publish(new UpdatedResultsEvent(uuid));
       String message = future.get(1, TimeUnit.SECONDS);
-
-      assertContains(
-          "598923fe-6491-41bd-a2b6-047f70860aed",
-          message);
-
+      assertContains(uuid, message);
     } finally {
       webSocket.abort();
     }

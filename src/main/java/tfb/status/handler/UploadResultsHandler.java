@@ -41,6 +41,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.MessagingException;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.messaging.Topic;
 import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,7 @@ import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.HomePageView.ResultsView;
 import tfb.status.view.Results;
+import tfb.status.view.UpdatedResultsEvent;
 
 /**
  * Handles requests to upload a file containing results from a TFB run.  The
@@ -75,7 +77,7 @@ public final class UploadResultsHandler implements HttpHandler {
                               Authenticator authenticator,
                               ObjectMapper objectMapper,
                               EmailSender emailSender,
-                              HomeUpdatesHandler homeUpdates,
+                              Topic<UpdatedResultsEvent> updatedResultsTopic,
                               HomeResultsReader homeResultsReader,
                               DiffGenerator diffGenerator,
                               Clock clock,
@@ -85,7 +87,7 @@ public final class UploadResultsHandler implements HttpHandler {
     Objects.requireNonNull(authenticator);
     Objects.requireNonNull(objectMapper);
     Objects.requireNonNull(emailSender);
-    Objects.requireNonNull(homeUpdates);
+    Objects.requireNonNull(updatedResultsTopic);
     Objects.requireNonNull(homeResultsReader);
     Objects.requireNonNull(diffGenerator);
     Objects.requireNonNull(clock);
@@ -99,7 +101,7 @@ public final class UploadResultsHandler implements HttpHandler {
                     new JsonHandler(
                         /* fileStore= */ fileStore,
                         /* authenticator= */ authenticator,
-                        /* homeUpdates=*/ homeUpdates,
+                        /* updatedResultsTopic= */ updatedResultsTopic,
                         /* homeResultsReader=*/ homeResultsReader,
                         /* clock= */ clock,
                         /* objectMapper=*/ objectMapper,
@@ -109,7 +111,7 @@ public final class UploadResultsHandler implements HttpHandler {
                     new ZipHandler(
                         /* fileStore= */ fileStore,
                         /* authenticator= */ authenticator,
-                        /* homeUpdates=*/ homeUpdates,
+                        /* updatedResultsTopic= */ updatedResultsTopic,
                         /* homeResultsReader=*/ homeResultsReader,
                         /* clock= */ clock,
                         /* objectMapper=*/ objectMapper,
@@ -130,7 +132,7 @@ public final class UploadResultsHandler implements HttpHandler {
    * Shared logic for the .json and .zip handlers.
    */
   private abstract static class BaseHandler implements HttpHandler {
-    private final HomeUpdatesHandler homeUpdates;
+    private final Topic<UpdatedResultsEvent> updatedResultsTopic;
     private final HomeResultsReader homeResultsReader;
     private final Clock clock;
     private final FileStore fileStore;
@@ -138,12 +140,12 @@ public final class UploadResultsHandler implements HttpHandler {
 
     BaseHandler(FileStore fileStore,
                 Authenticator authenticator,
-                HomeUpdatesHandler homeUpdates,
+                Topic<UpdatedResultsEvent> updatedResultsTopic,
                 HomeResultsReader homeResultsReader,
                 Clock clock,
                 String fileExtension) {
 
-      this.homeUpdates = Objects.requireNonNull(homeUpdates);
+      this.updatedResultsTopic = Objects.requireNonNull(updatedResultsTopic);
       this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
       this.clock = Objects.requireNonNull(clock);
       this.fileStore = Objects.requireNonNull(fileStore);
@@ -186,7 +188,7 @@ public final class UploadResultsHandler implements HttpHandler {
 
       String uuid = tryReadUuid(permanentFile);
       if (uuid != null)
-        homeUpdates.sendUpdate(uuid);
+        updatedResultsTopic.publish(new UpdatedResultsEvent(uuid));
 
       runPostUploadActions(permanentFile);
     }
@@ -256,7 +258,7 @@ public final class UploadResultsHandler implements HttpHandler {
 
     JsonHandler(FileStore fileStore,
                 Authenticator authenticator,
-                HomeUpdatesHandler homeUpdates,
+                Topic<UpdatedResultsEvent> updatedResultsTopic,
                 HomeResultsReader homeResultsReader,
                 Clock clock,
                 ObjectMapper objectMapper,
@@ -265,7 +267,7 @@ public final class UploadResultsHandler implements HttpHandler {
       super(
           /* fileStore= */ fileStore,
           /* authenticator= */ authenticator,
-          /* homeUpdates= */ homeUpdates,
+          /* updatedResultsTopic= */ updatedResultsTopic,
           /* homeResultsReader= */ homeResultsReader,
           /* clock= */ clock,
           /* fileExtension= */ "json");
@@ -332,7 +334,7 @@ public final class UploadResultsHandler implements HttpHandler {
 
     ZipHandler(FileStore fileStore,
                Authenticator authenticator,
-               HomeUpdatesHandler homeUpdates,
+               Topic<UpdatedResultsEvent> updatedResultsTopic,
                HomeResultsReader homeResultsReader,
                Clock clock,
                ObjectMapper objectMapper,
@@ -343,7 +345,7 @@ public final class UploadResultsHandler implements HttpHandler {
       super(
           /* fileStore= */ fileStore,
           /* authenticator= */ authenticator,
-          /* homeUpdates= */ homeUpdates,
+          /* updatedResultsTopic= */ updatedResultsTopic,
           /* homeResultsReader= */ homeResultsReader,
           /* clock= */ clock,
           /* fileExtension= */ "zip");
