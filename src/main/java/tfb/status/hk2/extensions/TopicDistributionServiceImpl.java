@@ -295,6 +295,10 @@ final class TopicDistributionServiceImpl
     for (int i = 0; i < parameters.length; i++) {
       if (i != parameterIndex
           && !InjectUtils.supportsParameter(parameters[i], serviceLocator)) {
+        // TODO: Should we accept this method anyway?  Is it possible that the
+        //       service for this parameter will be registered later?  Even if
+        //       not, issuing a warning here may be no better than throwing
+        //       exceptions later on when messages are received.
         logger.warn(
             "Unsupported parameter {} at index {} in method {} of service {}",
             parameters[i],
