@@ -5,6 +5,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
@@ -81,7 +82,9 @@ abstract class ProvidesDescriptor implements ActiveDescriptor<Object> {
   public final Set<String> getAdvertisedContracts() {
     return getContractTypes()
         .stream()
-        .map(contract -> contract.getTypeName())
+        .map(contract -> TypeToken.of(contract))
+        .map(contract -> contract.getRawType())
+        .map(contract -> contract.getName())
         .collect(toImmutableSet());
   }
 

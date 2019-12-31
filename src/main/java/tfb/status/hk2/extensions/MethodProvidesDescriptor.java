@@ -1,6 +1,7 @@
 package tfb.status.hk2.extensions;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
@@ -20,7 +21,6 @@ import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
-import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 
 /**
  * An {@link ActiveDescriptor} that describes a method annotated with {@link
@@ -64,15 +64,16 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor {
       }
 
       if (Modifier.isStatic(method.getModifiers())) {
-        if (!method.canAccess(null)) {
+        if (!method.canAccess(null))
           method.setAccessible(true);
-        }
+
         Object provided;
         try {
           provided = method.invoke(null, arguments);
         } catch (IllegalAccessException | InvocationTargetException e) {
           throw new MultiException(e);
         }
+
         serviceLocator.postConstruct(provided);
         return provided;
       }
@@ -84,15 +85,16 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor {
         perLookupHandles.add(serviceHandle);
 
       Object service = serviceHandle.getService();
-      if (!method.canAccess(service)) {
+      if (!method.canAccess(service))
         method.setAccessible(true);
-      }
+
       Object provided;
       try {
         provided = method.invoke(service, arguments);
       } catch (IllegalAccessException | InvocationTargetException e) {
         throw new MultiException(e);
       }
+
       serviceLocator.postConstruct(provided);
       return provided;
 
@@ -117,11 +119,10 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor {
         return annotation;
 
     for (Type contract : getContractTypes()) {
-      Class<?> rawClass = ReflectionHelper.getRawClass(contract);
-      if (rawClass != null)
-        for (Annotation annotation : rawClass.getAnnotations())
-          if (annotation.annotationType().isAnnotationPresent(Scope.class))
-            return annotation;
+      Class<?> rawType = TypeToken.of(contract).getRawType();
+      for (Annotation annotation : rawType.getAnnotations())
+        if (annotation.annotationType().isAnnotationPresent(Scope.class))
+          return annotation;
     }
 
     Annotation serviceScope = serviceDescriptor.getScopeAsAnnotation();
@@ -133,7 +134,7 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor {
 
   @Override
   public Class<?> getImplementationClass() {
-    return ReflectionHelper.getRawClass(method.getGenericReturnType());
+    return TypeToken.of(method.getGenericReturnType()).getRawType();
   }
 
   @Override

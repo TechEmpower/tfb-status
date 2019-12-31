@@ -490,10 +490,37 @@ public final class ServicesTest {
     assertNotNull(s6.param1);
     assertNotNull(s6.param2);
 
-    MiddleOfProvidesChain chain1 = services.getService(MiddleOfProvidesChain.class);
-    assertNotNull(chain1);
-    EndOfProvidesChain chain2 = services.getService(EndOfProvidesChain.class);
-    assertNotNull(chain2);
+    MiddleOfMethodProvidesChain methodChain1 = services.getService(
+        MiddleOfMethodProvidesChain.class);
+    assertNotNull(methodChain1);
+
+    EndOfMethodProvidesChain methodChain2 = services.getService(
+        EndOfMethodProvidesChain.class);
+    assertNotNull(methodChain2);
+
+    MiddleOfFieldProvidesChain fieldChain1 = services.getService(
+        MiddleOfFieldProvidesChain.class);
+    assertNotNull(fieldChain1);
+
+    EndOfFieldProvidesChain fieldChain2 = services.getService(
+        EndOfFieldProvidesChain.class);
+    assertNotNull(fieldChain2);
+
+    GenericFromProvidesMethod<String> methodGeneric =
+        services.getService(new TypeToken<GenericFromProvidesMethod<String>>() {});
+    assertNotNull(methodGeneric);
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(new TypeToken<GenericFromProvidesMethod<Integer>>() {}));
+
+    GenericFromProvidesField<String> fieldGeneric =
+        services.getService(new TypeToken<GenericFromProvidesField<String>>() {});
+    assertNotNull(fieldGeneric);
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(new TypeToken<GenericFromProvidesField<Integer>>() {}));
 
     ProvidedPerLookupWithLifecycle s7 =
         services.getService(ProvidedPerLookupWithLifecycle.class);
@@ -813,17 +840,41 @@ public final class ServicesTest {
     }
 
     @Provides
-    public MiddleOfProvidesChain next() {
-      return new MiddleOfProvidesChain();
+    public MiddleOfMethodProvidesChain next() {
+      return new MiddleOfMethodProvidesChain();
     }
-  }
 
-  public static final class MiddleOfProvidesChain {
     @Provides
-    public EndOfProvidesChain next() {
-      return new EndOfProvidesChain();
+    public final MiddleOfFieldProvidesChain next =
+        new MiddleOfFieldProvidesChain();
+
+    @Provides
+    public GenericFromProvidesMethod<String> generic() {
+      return new GenericFromProvidesMethod<>();
+    }
+
+    @Provides
+    public final GenericFromProvidesField<String> generic =
+        new GenericFromProvidesField<>();
+  }
+
+  public static final class MiddleOfMethodProvidesChain {
+    @Provides
+    public EndOfMethodProvidesChain next() {
+      return new EndOfMethodProvidesChain();
     }
   }
 
-  public static final class EndOfProvidesChain {}
+  public static final class EndOfMethodProvidesChain {}
+
+  public static final class MiddleOfFieldProvidesChain {
+    @Provides
+    public final EndOfFieldProvidesChain next = new EndOfFieldProvidesChain();
+  }
+
+  public static final class EndOfFieldProvidesChain {}
+
+  public static final class GenericFromProvidesMethod<T> {}
+
+  public static final class GenericFromProvidesField<T> {}
 }

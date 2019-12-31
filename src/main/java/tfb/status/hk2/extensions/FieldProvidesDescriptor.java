@@ -1,6 +1,7 @@
 package tfb.status.hk2.extensions;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
@@ -16,7 +17,6 @@ import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
-import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 
 /**
  * An {@link ActiveDescriptor} that describes a field annotated with {@link
@@ -39,15 +39,16 @@ final class FieldProvidesDescriptor extends ProvidesDescriptor {
   @Override
   public Object create(ServiceHandle<?> root) {
     if (Modifier.isStatic(field.getModifiers())) {
-      if (!field.canAccess(null)) {
+      if (!field.canAccess(null))
         field.setAccessible(true);
-      }
+
       Object provided;
       try {
         provided = field.get(null);
       } catch (IllegalAccessException e) {
         throw new MultiException(e);
       }
+
       serviceLocator.postConstruct(provided);
       return provided;
     }
@@ -60,15 +61,16 @@ final class FieldProvidesDescriptor extends ProvidesDescriptor {
 
     try {
       Object service = serviceHandle.getService();
-      if (!field.canAccess(service)) {
+      if (!field.canAccess(service))
         field.setAccessible(true);
-      }
+
       Object provided;
       try {
         provided = field.get(service);
       } catch (IllegalAccessException e) {
         throw new MultiException(e);
       }
+
       serviceLocator.postConstruct(provided);
       return provided;
     } finally {
@@ -92,11 +94,10 @@ final class FieldProvidesDescriptor extends ProvidesDescriptor {
         return annotation;
 
     for (Type contract : getContractTypes()) {
-      Class<?> rawClass = ReflectionHelper.getRawClass(contract);
-      if (rawClass != null)
-        for (Annotation annotation : rawClass.getAnnotations())
-          if (annotation.annotationType().isAnnotationPresent(Scope.class))
-            return annotation;
+      Class<?> rawType = TypeToken.of(contract).getRawType();
+      for (Annotation annotation : rawType.getAnnotations())
+        if (annotation.annotationType().isAnnotationPresent(Scope.class))
+          return annotation;
     }
 
     Annotation serviceScope = serviceDescriptor.getScopeAsAnnotation();
@@ -108,12 +109,12 @@ final class FieldProvidesDescriptor extends ProvidesDescriptor {
 
   @Override
   public Class<?> getImplementationClass() {
-    return field.getDeclaringClass();
+    return TypeToken.of(field.getGenericType()).getRawType();
   }
 
   @Override
   public Type getImplementationType() {
-    return field.getDeclaringClass();
+    return field.getGenericType();
   }
 
   @Override
