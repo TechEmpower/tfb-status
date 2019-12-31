@@ -28,16 +28,32 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
  */
 final class MethodProvidesDescriptor extends ProvidesDescriptor {
   private final Method method;
-  private final ActiveDescriptor<?> serviceDescriptor;
   private final ServiceLocator serviceLocator;
+  private final @Nullable ActiveDescriptor<?> serviceDescriptor;
 
   MethodProvidesDescriptor(Method method,
-                           ActiveDescriptor<?> serviceDescriptor,
                            ServiceLocator serviceLocator) {
 
     this.method = Objects.requireNonNull(method);
-    this.serviceDescriptor = Objects.requireNonNull(serviceDescriptor);
     this.serviceLocator = Objects.requireNonNull(serviceLocator);
+    this.serviceDescriptor = null;
+
+    if (!Modifier.isStatic(method.getModifiers()))
+      throw new IllegalArgumentException(
+          "Service descriptor required for non-static methods");
+  }
+
+  MethodProvidesDescriptor(Method method,
+                           ServiceLocator serviceLocator,
+                           ActiveDescriptor<?> serviceDescriptor) {
+
+    this.method = Objects.requireNonNull(method);
+    this.serviceLocator = Objects.requireNonNull(serviceLocator);
+    this.serviceDescriptor = Objects.requireNonNull(serviceDescriptor);
+
+    if (Modifier.isStatic(method.getModifiers()))
+      throw new IllegalArgumentException(
+          "Service descriptor forbidden for static methods");
   }
 
   @Override
@@ -63,7 +79,7 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor {
         }
       }
 
-      if (Modifier.isStatic(method.getModifiers())) {
+      if (serviceDescriptor == null) {
         if (!method.canAccess(null))
           method.setAccessible(true);
 
@@ -125,9 +141,11 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor {
           return annotation;
     }
 
-    Annotation serviceScope = serviceDescriptor.getScopeAsAnnotation();
-    if (serviceScope != null)
-      return serviceScope;
+    if (serviceDescriptor != null) {
+      Annotation serviceScope = serviceDescriptor.getScopeAsAnnotation();
+      if (serviceScope != null)
+        return serviceScope;
+    }
 
     return ServiceLocatorUtilities.getPerLookupAnnotation();
   }

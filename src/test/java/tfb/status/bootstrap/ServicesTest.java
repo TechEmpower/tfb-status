@@ -522,6 +522,13 @@ public final class ServicesTest {
         NoSuchElementException.class,
         () -> services.getService(new TypeToken<GenericFromProvidesField<Integer>>() {}));
 
+    ProvidesSelf self = services.getService(ProvidesSelf.class);
+    assertNotNull(self);
+    assertNotNull(self.nonService);
+    assertEquals("hi", self.nonService.message);
+    assertNotNull(self.otherService1);
+    assertNotNull(self.otherService2);
+
     ProvidedPerLookupWithLifecycle s7 =
         services.getService(ProvidedPerLookupWithLifecycle.class);
     assertNotNull(s7);
@@ -582,6 +589,7 @@ public final class ServicesTest {
             addActiveFactoryDescriptor(FactoryOfSingletonServiceWithShutdown.class);
             addActiveDescriptor(SubscriberService.class);
             addActiveDescriptor(ProvidesService.class);
+            addActiveDescriptor(ProvidesSelf.class);
           }
         };
 
@@ -877,4 +885,38 @@ public final class ServicesTest {
   public static final class GenericFromProvidesMethod<T> {}
 
   public static final class GenericFromProvidesField<T> {}
+
+  // Normally HK2 would be unable to instantiate this class and would reject it
+  // at registration time because it has no zero-argument constructor or @Inject
+  // constructor.
+  public static final class ProvidesSelf {
+    public final ExoticNonServiceType nonService;
+    public final PerLookupService otherService1;
+    public final SingletonService otherService2;
+
+    private ProvidesSelf(ExoticNonServiceType nonService,
+                         PerLookupService otherService1,
+                         SingletonService otherService2) {
+      this.nonService = Objects.requireNonNull(nonService);
+      this.otherService1 = Objects.requireNonNull(otherService1);
+      this.otherService2 = Objects.requireNonNull(otherService2);
+    }
+
+    @Provides
+    public static ProvidesSelf create(PerLookupService otherService1,
+                                      SingletonService other2) {
+      return new ProvidesSelf(
+          new ExoticNonServiceType("hi"),
+          otherService1,
+          other2);
+    }
+  }
+
+  public static final class ExoticNonServiceType {
+    public final String message;
+
+    ExoticNonServiceType(String message) {
+      this.message = Objects.requireNonNull(message);
+    }
+  }
 }

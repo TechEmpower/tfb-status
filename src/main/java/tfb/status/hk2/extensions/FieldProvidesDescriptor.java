@@ -24,21 +24,37 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
  */
 final class FieldProvidesDescriptor extends ProvidesDescriptor {
   private final Field field;
-  private final ActiveDescriptor<?> serviceDescriptor;
   private final ServiceLocator serviceLocator;
+  private final @Nullable ActiveDescriptor<?> serviceDescriptor;
 
   FieldProvidesDescriptor(Field field,
-                          ActiveDescriptor<?> serviceDescriptor,
                           ServiceLocator serviceLocator) {
 
     this.field = Objects.requireNonNull(field);
-    this.serviceDescriptor = Objects.requireNonNull(serviceDescriptor);
     this.serviceLocator = Objects.requireNonNull(serviceLocator);
+    this.serviceDescriptor = null;
+
+    if (!Modifier.isStatic(field.getModifiers()))
+      throw new IllegalArgumentException(
+          "Service descriptor required for non-static fields");
+  }
+
+  FieldProvidesDescriptor(Field field,
+                          ServiceLocator serviceLocator,
+                          ActiveDescriptor<?> serviceDescriptor) {
+
+    this.field = Objects.requireNonNull(field);
+    this.serviceLocator = Objects.requireNonNull(serviceLocator);
+    this.serviceDescriptor = Objects.requireNonNull(serviceDescriptor);
+
+    if (Modifier.isStatic(field.getModifiers()))
+      throw new IllegalArgumentException(
+          "Service descriptor forbidden for static fields");
   }
 
   @Override
   public Object create(ServiceHandle<?> root) {
-    if (Modifier.isStatic(field.getModifiers())) {
+    if (serviceDescriptor == null) {
       if (!field.canAccess(null))
         field.setAccessible(true);
 
@@ -100,9 +116,11 @@ final class FieldProvidesDescriptor extends ProvidesDescriptor {
           return annotation;
     }
 
-    Annotation serviceScope = serviceDescriptor.getScopeAsAnnotation();
-    if (serviceScope != null)
-      return serviceScope;
+    if (serviceDescriptor != null) {
+      Annotation serviceScope = serviceDescriptor.getScopeAsAnnotation();
+      if (serviceScope != null)
+        return serviceScope;
+    }
 
     return ServiceLocatorUtilities.getPerLookupAnnotation();
   }
