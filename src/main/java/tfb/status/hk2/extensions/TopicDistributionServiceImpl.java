@@ -128,6 +128,9 @@ final class TopicDistributionServiceImpl
       }
 
       if (Modifier.isStatic(subscriber.method.getModifiers())) {
+        if (!subscriber.method.canAccess(null))
+          subscriber.method.setAccessible(true);
+
         try {
           subscriber.method.invoke(null, arguments);
         } catch (InvocationTargetException | IllegalAccessException e) {
@@ -159,6 +162,9 @@ final class TopicDistributionServiceImpl
             subscriber);
         return;
       }
+
+      if (!subscriber.method.canAccess(service))
+        subscriber.method.setAccessible(true);
 
       try {
         subscriber.method.invoke(service, arguments);
