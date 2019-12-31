@@ -18,6 +18,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -55,6 +58,7 @@ final class TopicDistributionServiceImpl
     implements TopicDistributionService, DynamicConfigurationListener {
 
   private final ServiceLocator serviceLocator;
+  private final Set<Class<?>> classesAnalyzed = ConcurrentHashMap.newKeySet();
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @GuardedBy("this")
@@ -177,11 +181,10 @@ final class TopicDistributionServiceImpl
   @Override
   public void configurationChanged() {
     try {
-      reloadAllSubscribers();
+      findNewSubscribers();
     } catch (RuntimeException e) {
       // The contract of DynamicConfigurationListener states that exceptions
-      // thrown from this method are ignored.  If we don't log it, no one
-      // will.
+      // thrown from this method are ignored.  If we don't log it, no one will.
       logger.error("Uncaught exception from configurationChanged()", e);
       throw e;
     }
@@ -191,8 +194,13 @@ final class TopicDistributionServiceImpl
     return allSubscribers;
   }
 
-  private void reloadAllSubscribers() {
-    ImmutableList<Subscriber> subscribers =
+  /**
+   * Scans all registered service classes for services qualified with {@link
+   * MessageReceiver} having methods where a parameter is annotated with {@link
+   * SubscribeTo}.
+   */
+  private void findNewSubscribers() {
+    ImmutableList<Subscriber> newSubscribers =
         serviceLocator
             .getDescriptors(
                 descriptor ->
@@ -201,12 +209,15 @@ final class TopicDistributionServiceImpl
             .stream()
             .map(descriptor -> serviceLocator.reifyDescriptor(descriptor))
             .flatMap(
-                descriptor -> {
+                serviceDescriptor -> {
                   Class<?> serviceClass =
-                      Utilities.getFactoryAwareImplementationClass(descriptor);
+                      Utilities.getFactoryAwareImplementationClass(serviceDescriptor);
+
+                  if (!classesAnalyzed.add(serviceClass))
+                    return Stream.empty();
 
                   ImmutableSet<TypeToken<?>> permittedMessageTypes =
-                      descriptor
+                      serviceDescriptor
                           .getQualifierAnnotations()
                           .stream()
                           .filter(annotation -> annotation.annotationType() == MessageReceiver.class)
@@ -224,18 +235,24 @@ final class TopicDistributionServiceImpl
                                   method,
                                   permittedMessageTypes,
                                   serviceClass,
-                                  descriptor))
+                                  serviceDescriptor))
                       .filter(subscriber -> subscriber != null);
                 })
             .collect(toImmutableList());
 
-    for (Subscriber subscriber : subscribers)
-      logger.info("Found subscriber {}", subscriber);
+    if (newSubscribers.isEmpty())
+      return;
 
-    logger.info("Found {} total subscribers", subscribers.size());
+    for (Subscriber subscriber : newSubscribers)
+      logger.info("Found new subscriber {}", subscriber);
+
+    logger.info("Found {} new subscribers", newSubscribers.size());
 
     synchronized (this) {
-      this.allSubscribers = subscribers;
+      allSubscribers =
+          Stream.concat(allSubscribers.stream(),
+                        newSubscribers.stream())
+                .collect(toImmutableList());
     }
   }
 
