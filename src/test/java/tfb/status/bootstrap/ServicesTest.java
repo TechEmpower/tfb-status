@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -32,6 +33,7 @@ import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * Tests for {@link Services}.
@@ -452,6 +454,86 @@ public final class ServicesTest {
   }
 
   /**
+   * Verifies that a service can use the {@link Provides} annotation to provide
+   * other services.
+   */
+  @Test
+  public void testProvides() {
+    Services services = newServices();
+
+    ProvidesService s1 =
+        services.getService(ProvidesService.class);
+    assertNotNull(s1);
+
+    ProvidedByStaticField s2 =
+        services.getService(ProvidedByStaticField.class);
+    assertNotNull(s2);
+
+    ProvidedByInstanceField s3 =
+        services.getService(ProvidedByInstanceField.class);
+    assertNotNull(s3);
+
+    ProvidedByStaticMethod s4 =
+        services.getService(ProvidedByStaticMethod.class);
+    assertNotNull(s4);
+
+    ProvidedByStaticMethodWithParams s5 =
+        services.getService(ProvidedByStaticMethodWithParams.class);
+    assertNotNull(s5);
+    assertNotNull(s5.param1);
+    assertNotNull(s5.param2);
+
+    ProvidedByInstanceMethodWithParams s6 =
+        services.getService(ProvidedByInstanceMethodWithParams.class);
+    assertNotNull(s6);
+    assertNotNull(s6.param1);
+    assertNotNull(s6.param2);
+
+    MiddleOfProvidesChain chain1 = services.getService(MiddleOfProvidesChain.class);
+    assertNotNull(chain1);
+    EndOfProvidesChain chain2 = services.getService(EndOfProvidesChain.class);
+    assertNotNull(chain2);
+
+    ProvidedPerLookupWithLifecycle s7 =
+        services.getService(ProvidedPerLookupWithLifecycle.class);
+    assertNotNull(s7);
+    assertTrue(s7.wasStarted());
+    assertFalse(s7.wasStopped());
+    assertNotSame(s7, services.getService(ProvidedPerLookupWithLifecycle.class));
+
+    ProvidedSingletonWithLifecycle s8 =
+        services.getService(ProvidedSingletonWithLifecycle.class);
+    assertNotNull(s8);
+    assertTrue(s8.wasStarted());
+    assertFalse(s8.wasStopped());
+    assertSame(s8, services.getService(ProvidedSingletonWithLifecycle.class));
+
+    IterableProvider<ProvidedPerLookupWithLifecycle> iterableProvider =
+        services.getService(
+            new TypeToken<IterableProvider<ProvidedPerLookupWithLifecycle>>() {});
+    ServiceHandle<ProvidedPerLookupWithLifecycle> serviceHandle =
+        iterableProvider.getHandle();
+    ProvidedPerLookupWithLifecycle s9 = serviceHandle.getService();
+    assertNotNull(s9);
+    assertTrue(s9.wasStarted());
+    assertFalse(s9.wasStopped());
+    assertNotSame(s8, s9);
+    serviceHandle.close();
+    assertTrue(s9.wasStopped());
+
+    services.shutdown();
+
+    // Per-lookup services won't be stopped when the service locator is shut
+    // down.  The only way to shut them down is to obtain them through a
+    // ServiceHandle and then to close that ServiceHandle.  This is the same for
+    // services obtained through @Provides annotated elements as it is for
+    // services obtained through Factory.provides() methods.
+    assertFalse(s7.wasStopped());
+
+    assertTrue(s8.wasStopped());
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private Services newServices() {
@@ -471,6 +553,7 @@ public final class ServicesTest {
             addActiveFactoryDescriptor(FactoryOfServiceWithShutdown.class);
             addActiveFactoryDescriptor(FactoryOfSingletonServiceWithShutdown.class);
             addActiveDescriptor(SubscriberService.class);
+            addActiveDescriptor(ProvidesService.class);
           }
         };
 
@@ -650,4 +733,96 @@ public final class ServicesTest {
       return new ArrayList<>(service2WasShutdown);
     }
   }
+
+  public static final class ProvidedByStaticField {}
+  public static final class ProvidedByInstanceField {}
+  public static final class ProvidedByStaticMethod {}
+  public static final class ProvidedByInstanceMethod {}
+
+  public static final class ProvidedByStaticMethodWithParams {
+    public final PerLookupService param1;
+    public final SingletonService param2;
+
+    ProvidedByStaticMethodWithParams(PerLookupService param1,
+                                     SingletonService param2) {
+      this.param1 = Objects.requireNonNull(param1);
+      this.param2 = Objects.requireNonNull(param2);
+    }
+  }
+
+  public static final class ProvidedByInstanceMethodWithParams {
+    public final PerLookupService param1;
+    public final SingletonService param2;
+
+    ProvidedByInstanceMethodWithParams(PerLookupService param1,
+                                       SingletonService param2) {
+      this.param1 = Objects.requireNonNull(param1);
+      this.param2 = Objects.requireNonNull(param2);
+    }
+  }
+
+  public static class ProvidedPerLookupWithLifecycle
+      extends ServiceWithLifecycle {}
+
+  @Singleton
+  public static class ProvidedSingletonWithLifecycle
+      extends ServiceWithLifecycle {}
+
+  public static final class ProvidesService {
+    @Provides
+    public static final ProvidedByStaticField staticField =
+        new ProvidedByStaticField();
+
+    @Provides
+    public final ProvidedByInstanceField instanceField =
+        new ProvidedByInstanceField();
+
+    @Provides
+    public static ProvidedByStaticMethod staticMethod() {
+      return new ProvidedByStaticMethod();
+    }
+
+    @Provides
+    public ProvidedByInstanceMethod instanceMethod() {
+      return new ProvidedByInstanceMethod();
+    }
+
+    @Provides
+    public static ProvidedByStaticMethodWithParams staticMethodWithParams(
+        PerLookupService param1,
+        SingletonService param2) {
+      return new ProvidedByStaticMethodWithParams(param1, param2);
+    }
+
+    @Provides
+    public ProvidedByInstanceMethodWithParams instanceMethodWithParams(
+        PerLookupService param1,
+        SingletonService param2) {
+      return new ProvidedByInstanceMethodWithParams(param1, param2);
+    }
+
+    @Provides
+    public ProvidedPerLookupWithLifecycle perLookupWithLifecycle() {
+      return new ProvidedPerLookupWithLifecycle();
+    }
+
+    @Provides
+    public ProvidedSingletonWithLifecycle singletonWithLifecycle() {
+      return new ProvidedSingletonWithLifecycle();
+    }
+
+    @Provides
+    public MiddleOfProvidesChain next() {
+      return new MiddleOfProvidesChain();
+    }
+  }
+
+  public static final class MiddleOfProvidesChain {
+    @Provides
+    public EndOfProvidesChain next() {
+      return new EndOfProvidesChain();
+    }
+  }
+
+  public static final class EndOfProvidesChain {}
 }
