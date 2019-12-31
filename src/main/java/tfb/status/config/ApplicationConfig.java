@@ -6,6 +6,7 @@ import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * The parent configuration object for this entire application, containing all
@@ -17,37 +18,44 @@ public final class ApplicationConfig {
   /**
    * See {@link HttpServerConfig}.
    */
+  @Provides
   public final HttpServerConfig http;
 
   /**
    * See {@link AssetsConfig}.
    */
+  @Provides
   public final AssetsConfig assets;
 
   /**
    * See {@link MustacheConfig}.
    */
+  @Provides
   public final MustacheConfig mustache;
 
   /**
    * See {@link FileStoreConfig}.
    */
+  @Provides
   public final FileStoreConfig fileStore;
 
   /**
    * See {@link RunProgressMonitorConfig}.
    */
+  @Provides
   public final RunProgressMonitorConfig runProgressMonitor;
 
   /**
    * See {@link RunCompleteMailerConfig}.
    */
+  @Provides
   public final RunCompleteMailerConfig runCompleteMailer;
 
   /**
    * The configuration for outbound emails, or {@code null} if outbound emails
    * are disabled.  See {@link EmailConfig}.
    */
+  @Provides
   public final @Nullable EmailConfig email;
 
   public ApplicationConfig(HttpServerConfig http,

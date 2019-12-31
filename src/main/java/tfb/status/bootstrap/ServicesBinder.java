@@ -51,14 +51,6 @@ public final class ServicesBinder extends AbstractBinder {
         .named(ApplicationConfigFactory.CONFIG_FILE_PATH);
 
     addActiveFactoryDescriptor(ApplicationConfigFactory.class);
-    addActiveFactoryDescriptor(AssetsConfigFactory.class);
-    addActiveFactoryDescriptor(MustacheConfigFactory.class);
-    addActiveFactoryDescriptor(FileStoreConfigFactory.class);
-    addActiveFactoryDescriptor(HttpServerConfigFactory.class);
-    addActiveFactoryDescriptor(EmailConfigFactory.class);
-    addActiveFactoryDescriptor(RunProgressMonitorConfigFactory.class);
-    addActiveFactoryDescriptor(RunCompleteMailerConfigFactory.class);
-
     addActiveFactoryDescriptor(ObjectMapperFactory.class);
     addActiveFactoryDescriptor(ClockFactory.class);
     addActiveFactoryDescriptor(TickerFactory.class);

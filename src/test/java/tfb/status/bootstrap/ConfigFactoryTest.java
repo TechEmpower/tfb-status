@@ -25,16 +25,7 @@ import tfb.status.config.RunProgressMonitorConfig;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
- * Tests for all the {@code *ConfigFactory} classes.
- *
- * @see ApplicationConfigFactory
- * @see HttpServerConfigFactory
- * @see AssetsConfigFactory
- * @see MustacheConfigFactory
- * @see FileStoreConfigFactory
- * @see RunProgressMonitorConfigFactory
- * @see RunCompleteMailerConfigFactory
- * @see EmailConfigFactory
+ * Tests for {@link ApplicationConfigFactory}.
  */
 @ExtendWith(TestServicesInjector.class)
 public final class ConfigFactoryTest {
@@ -50,7 +41,7 @@ public final class ConfigFactoryTest {
       Provider<FileStoreConfig> fileStoreConfigProvider,
       Provider<RunProgressMonitorConfig> runProgressMonitorConfigProvider,
       Provider<RunCompleteMailerConfig> runCompleteMailerConfigProvider,
-      Provider<Optional<EmailConfig>> optionalEmailConfigProvider) {
+      Provider<EmailConfig> emailConfigProvider) {
 
     ApplicationConfig config = applicationConfigProvider.get();
     assertNotNull(config);
@@ -80,8 +71,8 @@ public final class ConfigFactoryTest {
         runCompleteMailerConfigProvider.get());
 
     assertEquals(
-        Optional.ofNullable(config.email),
-        optionalEmailConfigProvider.get());
+        config.email,
+        emailConfigProvider.get());
   }
 
   /**
