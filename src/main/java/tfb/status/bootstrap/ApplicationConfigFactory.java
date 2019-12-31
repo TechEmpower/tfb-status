@@ -10,12 +10,12 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Factory;
+import org.jvnet.hk2.annotations.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.ApplicationConfig;
@@ -34,11 +34,11 @@ final class ApplicationConfigFactory implements Factory<ApplicationConfig> {
   public ApplicationConfigFactory(
       FileSystem fileSystem,
       ObjectMapper objectMapper,
-      @Named(CONFIG_FILE_PATH) Optional<String> optionalPath) {
+      @Optional @Named(CONFIG_FILE_PATH) @Nullable String path) {
 
     this.fileSystem = Objects.requireNonNull(fileSystem);
     this.objectMapper = Objects.requireNonNull(objectMapper);
-    this.path = optionalPath.orElse(null);
+    this.path = path;
   }
 
   @Override

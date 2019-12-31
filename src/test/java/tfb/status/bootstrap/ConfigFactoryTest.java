@@ -10,7 +10,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import javax.inject.Provider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +86,7 @@ public final class ConfigFactoryTest {
         new ApplicationConfigFactory(
             fileSystem,
             objectMapper,
-            Optional.empty());
+            null);
 
     ApplicationConfig config = configFactory.provide();
 
@@ -117,7 +116,7 @@ public final class ConfigFactoryTest {
         new ApplicationConfigFactory(
             fileSystem,
             objectMapper,
-            Optional.of(file.toString()));
+            file.toString());
 
     ApplicationConfig config = configFactory.provide();
 
@@ -138,7 +137,7 @@ public final class ConfigFactoryTest {
         new ApplicationConfigFactory(
             fileSystem,
             objectMapper,
-            Optional.of("missing_file.yml"));
+            "missing_file.yml");
 
     assertThrows(
         RuntimeException.class,

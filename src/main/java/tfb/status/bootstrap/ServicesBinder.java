@@ -1,8 +1,6 @@
 package tfb.status.bootstrap;
 
-import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import tfb.status.handler.AboutPageHandler;
 import tfb.status.handler.AssetsHandler;
@@ -46,9 +44,10 @@ public final class ServicesBinder extends AbstractBinder {
 
   @Override
   protected void configure() {
-    bind(Optional.ofNullable(configFilePath))
-        .to(new TypeLiteral<Optional<String>>() {})
-        .named(ApplicationConfigFactory.CONFIG_FILE_PATH);
+    if (configFilePath != null)
+      bind(configFilePath)
+          .to(String.class)
+          .named(ApplicationConfigFactory.CONFIG_FILE_PATH);
 
     addActiveFactoryDescriptor(ApplicationConfigFactory.class);
     addActiveFactoryDescriptor(ObjectMapperFactory.class);
