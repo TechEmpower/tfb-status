@@ -5,7 +5,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import tfb.status.bootstrap.Services;
+import tfb.status.hk2.extensions.Services;
 import tfb.status.bootstrap.ServicesBinder;
 
 /**

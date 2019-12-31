@@ -34,6 +34,7 @@ import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
 import tfb.status.hk2.extensions.Provides;
+import tfb.status.hk2.extensions.Services;
 
 /**
  * Tests for {@link Services}.

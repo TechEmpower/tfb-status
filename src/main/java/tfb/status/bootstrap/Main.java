@@ -1,5 +1,7 @@
 package tfb.status.bootstrap;
 
+import tfb.status.hk2.extensions.Services;
+
 /**
  * Provides the {@code main} method for starting this application.
  */
