@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,36 +13,35 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glassfish.hk2.api.Factory;
 import org.jvnet.hk2.annotations.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.ApplicationConfig;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * Provides the {@link ApplicationConfig} used by this application.
  */
 @Singleton
-final class ApplicationConfigFactory implements Factory<ApplicationConfig> {
+final class ApplicationConfigFactory {
   private final FileSystem fileSystem;
   private final ObjectMapper objectMapper;
-  private final @Nullable String path;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
-  public ApplicationConfigFactory(
-      FileSystem fileSystem,
-      ObjectMapper objectMapper,
-      @Optional @Named(CONFIG_FILE_PATH) @Nullable String path) {
+  public ApplicationConfigFactory(FileSystem fileSystem,
+                                  ObjectMapper objectMapper) {
 
     this.fileSystem = Objects.requireNonNull(fileSystem);
     this.objectMapper = Objects.requireNonNull(objectMapper);
-    this.path = path;
   }
 
-  @Override
-  @Singleton
-  public ApplicationConfig provide() {
+  @Provides
+  public ApplicationConfig readConfigFile(@Optional
+                                          @Named(CONFIG_FILE_PATH)
+                                          @Nullable String path)
+      throws IOException {
+
     if (path == null) {
       logger.info("No configuration file; using default configuration");
       return ApplicationConfig.defaultConfig();
@@ -57,10 +55,6 @@ final class ApplicationConfigFactory implements Factory<ApplicationConfig> {
     JsonNode tree;
     try (InputStream inputStream = Files.newInputStream(yamlFile)) {
       tree = yamlMapper.readTree(inputStream);
-    } catch (IOException e) {
-      throw new UncheckedIOException(
-          "Unable to read configuration file \"" + yamlFile + "\"",
-          e);
     }
 
     if (tree.isEmpty()) {
@@ -68,16 +62,7 @@ final class ApplicationConfigFactory implements Factory<ApplicationConfig> {
       return ApplicationConfig.defaultConfig();
     }
 
-    try {
-      return objectMapper.treeToValue(tree, ApplicationConfig.class);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  @Override
-  public void dispose(ApplicationConfig instance) {
-    // No cleanup required.
+    return objectMapper.treeToValue(tree, ApplicationConfig.class);
   }
 
   static final String CONFIG_FILE_PATH = "tfb.status.configFilePath";

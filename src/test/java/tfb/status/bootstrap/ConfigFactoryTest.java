@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -79,20 +78,12 @@ public final class ConfigFactoryTest {
    * is specified.
    */
   @Test
-  public void testNoConfigFile(FileSystem fileSystem,
-                               ObjectMapper objectMapper) {
-
-    var configFactory =
-        new ApplicationConfigFactory(
-            fileSystem,
-            objectMapper,
-            null);
-
-    ApplicationConfig config = configFactory.provide();
+  public void testNoConfigFile(ApplicationConfigFactory configFactory)
+      throws IOException {
 
     assertEquals(
         ApplicationConfig.defaultConfig(),
-        config);
+        configFactory.readConfigFile(null));
   }
 
   /**
@@ -100,8 +91,8 @@ public final class ConfigFactoryTest {
    * file is specified.
    */
   @Test
-  public void testEmptyConfigFile(FileSystem fileSystem,
-                                  ObjectMapper objectMapper)
+  public void testEmptyConfigFile(ApplicationConfigFactory configFactory,
+                                  FileSystem fileSystem)
       throws IOException {
 
     Path file = fileSystem.getPath("empty_config.yml");
@@ -112,17 +103,9 @@ public final class ConfigFactoryTest {
             "# This is a comment line.",
             "# This is another comment line."));
 
-    var configFactory =
-        new ApplicationConfigFactory(
-            fileSystem,
-            objectMapper,
-            file.toString());
-
-    ApplicationConfig config = configFactory.provide();
-
     assertEquals(
         ApplicationConfig.defaultConfig(),
-        config);
+        configFactory.readConfigFile(file.toString()));
   }
 
   /**
@@ -130,17 +113,9 @@ public final class ConfigFactoryTest {
    * but that file does not exist.
    */
   @Test
-  public void testMissingConfigFile(FileSystem fileSystem,
-                                    ObjectMapper objectMapper) {
-
-    var configFactory =
-        new ApplicationConfigFactory(
-            fileSystem,
-            objectMapper,
-            "missing_file.yml");
-
+  public void testMissingConfigFile(ApplicationConfigFactory configFactory) {
     assertThrows(
-        RuntimeException.class,
-        () -> configFactory.provide());
+        IOException.class,
+        () -> configFactory.readConfigFile("missing_file.yml"));
   }
 }

@@ -49,7 +49,7 @@ public final class ServicesBinder extends AbstractBinder {
           .to(String.class)
           .named(ApplicationConfigFactory.CONFIG_FILE_PATH);
 
-    addActiveFactoryDescriptor(ApplicationConfigFactory.class);
+    addActiveDescriptor(ApplicationConfigFactory.class);
     addActiveFactoryDescriptor(ObjectMapperFactory.class);
     addActiveFactoryDescriptor(ClockFactory.class);
     addActiveFactoryDescriptor(TickerFactory.class);
