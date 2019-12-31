@@ -22,6 +22,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.PerLookup;
+import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.messaging.MessageReceiver;
@@ -310,11 +311,11 @@ public final class ServicesTest {
     SingletonServiceWithShutdown service =
         services.getService(SingletonServiceWithShutdown.class);
 
-    assertFalse(service.isShutdown());
+    assertFalse(service.wasStopped());
 
     services.shutdown();
 
-    assertTrue(service.isShutdown());
+    assertTrue(service.wasStopped());
   }
 
   /**
@@ -329,11 +330,11 @@ public final class ServicesTest {
     SingletonServiceWithShutdownFromFactory service =
         services.getService(SingletonServiceWithShutdownFromFactory.class);
 
-    assertFalse(service.isShutdown());
+    assertFalse(service.wasStopped());
 
     services.shutdown();
 
-    assertTrue(service.isShutdown());
+    assertTrue(service.wasStopped());
   }
 
   /**
@@ -344,21 +345,21 @@ public final class ServicesTest {
   public void testShutdownPerLookupService() {
     Services services = newServices();
 
-    IterableProvider<ServiceWithShutdown> providers =
+    IterableProvider<ServiceWithLifecycle> providers =
         services.getService(
-            new TypeToken<IterableProvider<ServiceWithShutdown>>() {});
+            new TypeToken<IterableProvider<ServiceWithLifecycle>>() {});
 
     int loopCount = 2;
     int serviceCount = 0;
 
     for (int i = 0; i < loopCount; i++) {
-      for (ServiceHandle<ServiceWithShutdown> handle
+      for (ServiceHandle<ServiceWithLifecycle> handle
           : providers.handleIterator()) {
 
-        ServiceWithShutdown service = handle.getService();
-        assertFalse(service.isShutdown());
+        ServiceWithLifecycle service = handle.getService();
+        assertFalse(service.wasStopped());
         handle.close();
-        assertTrue(service.isShutdown());
+        assertTrue(service.wasStopped());
         serviceCount++;
       }
     }
@@ -386,10 +387,10 @@ public final class ServicesTest {
       for (ServiceHandle<ServiceWithShutdownFromFactory> handle
           : providers.handleIterator()) {
 
-        ServiceWithShutdown service = handle.getService();
-        assertFalse(service.isShutdown());
+        ServiceWithLifecycle service = handle.getService();
+        assertFalse(service.wasStopped());
         handle.close();
-        assertTrue(service.isShutdown());
+        assertTrue(service.wasStopped());
         serviceCount++;
       }
     }
@@ -425,7 +426,7 @@ public final class ServicesTest {
         List.of("1", 2),
         service.getMessages());
 
-    List<ServiceWithShutdown> service1List = service.getService1List();
+    List<ServiceWithLifecycle> service1List = service.getService1List();
     List<SingletonServiceWithShutdown> service2List = service.getService2List();
 
     List<Boolean> serviced1WasShutdown = service.getService1WasShutdown();
@@ -439,14 +440,14 @@ public final class ServicesTest {
 
     assertFalse(serviced1WasShutdown.get(0));
     assertFalse(serviced1WasShutdown.get(1));
-    assertTrue(service1List.get(0).isShutdown());
-    assertTrue(service1List.get(1).isShutdown());
+    assertTrue(service1List.get(0).wasStopped());
+    assertTrue(service1List.get(1).wasStopped());
     assertNotSame(service1List.get(0), service1List.get(1));
 
     assertFalse(serviced2WasShutdown.get(0));
     assertFalse(serviced2WasShutdown.get(1));
-    assertFalse(service2List.get(0).isShutdown());
-    assertFalse(service2List.get(1).isShutdown());
+    assertFalse(service2List.get(0).wasStopped());
+    assertFalse(service2List.get(1).wasStopped());
     assertSame(service2List.get(0), service2List.get(1));
   }
 
@@ -465,7 +466,7 @@ public final class ServicesTest {
             addActiveDescriptor(ServiceWithContract2.class);
             addActiveDescriptor(ServiceWithGenericContract1.class);
             addActiveDescriptor(ServiceWithGenericContract2.class);
-            addActiveDescriptor(ServiceWithShutdown.class);
+            addActiveDescriptor(ServiceWithLifecycle.class);
             addActiveDescriptor(SingletonServiceWithShutdown.class);
             addActiveFactoryDescriptor(FactoryOfServiceWithShutdown.class);
             addActiveFactoryDescriptor(FactoryOfSingletonServiceWithShutdown.class);
@@ -511,34 +512,50 @@ public final class ServicesTest {
     }
   }
 
-  public static class ServiceWithShutdown implements PreDestroy {
+  public static class ServiceWithLifecycle implements PostConstruct, PreDestroy {
     @GuardedBy("this")
-    private boolean isShutdown = false;
+    private boolean wasStarted = false;
 
-    public synchronized boolean isShutdown() {
-      return isShutdown;
+    @GuardedBy("this")
+    private boolean wasStopped = false;
+
+    public synchronized boolean wasStarted() {
+      return wasStarted;
     }
 
-    public synchronized void shutdown() {
-      isShutdown = true;
+    public synchronized boolean wasStopped() {
+      return wasStopped;
+    }
+
+    public synchronized void start() {
+      wasStarted = true;
+    }
+
+    public synchronized void stop() {
+      wasStopped = true;
     }
 
     @Override
-    public synchronized void preDestroy() {
-      shutdown();
+    public void postConstruct() {
+      start();
+    }
+
+    @Override
+    public void preDestroy() {
+      stop();
     }
   }
 
   @Singleton
   public static class SingletonServiceWithShutdown
-      extends ServiceWithShutdown {}
+      extends ServiceWithLifecycle {}
 
   public static class ServiceWithShutdownFromFactory
-      extends ServiceWithShutdown {}
+      extends ServiceWithLifecycle {}
 
   @Singleton
   public static class SingletonServiceWithShutdownFromFactory
-      extends ServiceWithShutdown {}
+      extends ServiceWithLifecycle {}
 
   public static final class FactoryOfServiceWithShutdown
       implements Factory<ServiceWithShutdownFromFactory> {
@@ -550,7 +567,7 @@ public final class ServicesTest {
 
     @Override
     public void dispose(ServiceWithShutdownFromFactory instance) {
-      instance.shutdown();
+      instance.stop();
     }
   }
 
@@ -565,7 +582,7 @@ public final class ServicesTest {
 
     @Override
     public void dispose(SingletonServiceWithShutdownFromFactory instance) {
-      instance.shutdown();
+      instance.stop();
     }
   }
 
@@ -592,7 +609,7 @@ public final class ServicesTest {
     private List<Object> messages = new ArrayList<>();
 
     @GuardedBy("this")
-    private List<ServiceWithShutdown> service1List = new ArrayList<>();
+    private List<ServiceWithLifecycle> service1List = new ArrayList<>();
 
     @GuardedBy("this")
     private List<SingletonServiceWithShutdown> service2List = new ArrayList<>();
@@ -604,20 +621,20 @@ public final class ServicesTest {
     private List<Boolean> service2WasShutdown = new ArrayList<>();
 
     public synchronized void onEvent(@SubscribeTo Object message,
-                                     ServiceWithShutdown service1,
+                                     ServiceWithLifecycle service1,
                                      SingletonServiceWithShutdown service2) {
       messages.add(message);
       service1List.add(service1);
       service2List.add(service2);
-      service1WasShutdown.add(service1.isShutdown());
-      service2WasShutdown.add(service2.isShutdown());
+      service1WasShutdown.add(service1.wasStopped());
+      service2WasShutdown.add(service2.wasStopped());
     }
 
     public synchronized List<Object> getMessages() {
       return new ArrayList<>(messages);
     }
 
-    public synchronized List<ServiceWithShutdown> getService1List() {
+    public synchronized List<ServiceWithLifecycle> getService1List() {
       return new ArrayList<>(service1List);
     }
 
