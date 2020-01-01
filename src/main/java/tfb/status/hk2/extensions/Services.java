@@ -9,6 +9,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.Injectee;
+import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.UnsatisfiedDependencyException;
@@ -55,6 +56,10 @@ public final class Services {
   /**
    * Returns an instance of the service of the specified type.
    *
+   * @throws MultiException if a registered services matches the specified type
+   *         but an exception was thrown while retrieving that instance -- if
+   *         the service has unsatisfied dependencies or its constructor throws
+   *         an exception, for example
    * @throws NoSuchElementException if no registered service matches the
    *         specified type, or if a registered service does match the specified
    *         type but the provider of that service provided {@code null}
@@ -70,6 +75,10 @@ public final class Services {
    * If the type of the service is a non-generic {@link Class}, use {@link
    * #getService(Class)} instead of this method.
    *
+   * @throws MultiException if a registered services matches the specified type
+   *         but an exception was thrown while retrieving that instance -- if
+   *         the service has unsatisfied dependencies or its constructor throws
+   *         an exception, for example
    * @throws NoSuchElementException if no registered service matches the
    *         specified type, or if a registered service does match the specified
    *         type but the provider of that service provided {@code null}

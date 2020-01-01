@@ -17,11 +17,13 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.IterableProvider;
+import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
@@ -92,6 +94,20 @@ public final class ServicesTest {
     Iterator<UnregisteredService> iterator = iterable.iterator();
 
     assertFalse(iterator.hasNext());
+  }
+
+  /**
+   * Verifies that {@link Services#getService(Class)} throws {@link
+   * MultiException} when there is a service of the specified type but it has
+   * unsatisfied dependencies.
+   */
+  @Test
+  public void testGetServiceWithUnsatisfiedDependencies() {
+    Services services = newServices();
+
+    assertThrows(
+        MultiException.class,
+        () -> services.getService(UnsatisfiedDependencies.class));
   }
 
   /**
@@ -590,6 +606,7 @@ public final class ServicesTest {
             addActiveDescriptor(SubscriberService.class);
             addActiveDescriptor(ProvidesService.class);
             addActiveDescriptor(ProvidesSelf.class);
+            addActiveDescriptor(UnsatisfiedDependencies.class);
           }
         };
 
@@ -918,5 +935,10 @@ public final class ServicesTest {
     ExoticNonServiceType(String message) {
       this.message = Objects.requireNonNull(message);
     }
+  }
+
+  public static final class UnsatisfiedDependencies {
+    @Inject
+    public UnsatisfiedDependencies(UnregisteredService dependency) {}
   }
 }
