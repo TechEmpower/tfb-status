@@ -1,16 +1,22 @@
 package tfb.status.hk2.extensions;
 
-import static java.util.stream.Collectors.toList;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -45,9 +51,23 @@ final class ProvidesAnnotationEnabler
   private final ServiceLocator serviceLocator;
   private final DynamicConfigurationService defaultConfigurationService;
 
-  private final Set<Class<?>> classesAnalyzed = ConcurrentHashMap.newKeySet();
-  private final Set<Method> methodsAnalyzed = ConcurrentHashMap.newKeySet();
-  private final Set<Field> fieldsAnalyzed = ConcurrentHashMap.newKeySet();
+  private final Set<Class<?>> classesFullyAnalyzed = ConcurrentHashMap.newKeySet();
+
+  @GuardedBy("this")
+  private final Map<Class<?>, ImmutableList<ActiveDescriptor<?>>>
+      staticMethodsByClass = new HashMap<>();
+
+  @GuardedBy("this")
+  private final Map<Class<?>, ImmutableList<ActiveDescriptor<?>>>
+      staticFieldsByClass = new HashMap<>();
+
+  @GuardedBy("this")
+  private final Map<Class<?>, ImmutableList<ActiveDescriptor<?>>>
+      instanceMethodsByClass = new HashMap<>();
+
+  @GuardedBy("this")
+  private final Map<Class<?>, ImmutableList<ActiveDescriptor<?>>>
+      instanceFieldsByClass = new HashMap<>();
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -84,24 +104,6 @@ final class ProvidesAnnotationEnabler
    * registers the additional services they provide.
    */
   private void findAllProvidesAnnotations() {
-    List<ActiveDescriptor<?>> newDescriptors =
-        serviceLocator
-            .getDescriptors(any -> true)
-            .stream()
-            .map(descriptor -> serviceLocator.reifyDescriptor(descriptor))
-            .flatMap(descriptor -> providesDescriptors(descriptor))
-            .collect(toList());
-
-    if (newDescriptors.isEmpty())
-      return;
-
-    for (ActiveDescriptor<?> descriptor : newDescriptors)
-      logger.info("Found provides method or field {}", descriptor);
-
-    logger.info(
-        "Found {} total provides methods and fields",
-        newDescriptors.size());
-
     // Allow for the possibility that we've been replaced by a different
     // configuration service.
     DynamicConfigurationService configurationService =
@@ -110,45 +112,154 @@ final class ProvidesAnnotationEnabler
     DynamicConfiguration configuration =
         configurationService.createDynamicConfiguration();
 
-    for (ActiveDescriptor<?> descriptor : newDescriptors)
-      configuration.addActiveDescriptor(descriptor);
+    int added = 0;
 
-    configuration.commit();
+    for (ActiveDescriptor<?> serviceDescriptor : serviceLocator.getDescriptors(any -> true)) {
+      serviceDescriptor = serviceLocator.reifyDescriptor(serviceDescriptor);
+
+      Class<?> serviceClass =
+          Utilities.getFactoryAwareImplementationClass(serviceDescriptor);
+
+      if (classesFullyAnalyzed.add(serviceClass))
+        added +=
+            addProvidesDescriptors(
+                serviceClass,
+                serviceDescriptor,
+                configuration);
+    }
+
+    if (added > 0)
+      configuration.commit();
   }
 
   /**
-   * Returns descriptors for each of the methods and fields annotated with
-   * {@link Provides} in the specified service.
+   * Adds descriptors for each of the methods and fields annotated with {@link
+   * Provides} in the specified service.  Skips non-static methods and
+   * non-static fields if {@code serviceDescriptor} is {@code null}.  (This
+   * method may be called again later with a non-null service descriptor for the
+   * same service, at which time those methods and fields that were previously
+   * skipped will not be skipped.)
+   *
+   * @param serviceClass the service class to be scanned for {@link Provides}
+   *        annotations
+   * @param serviceDescriptor the descriptor for the service if available, or
+   *        {@code null} if a descriptor for the service is not available yet
+   * @param configuration the configuration to be modified with new descriptors
+   * @return the number of descriptors added as a result of the call
    */
-  private Stream<ActiveDescriptor<?>> providesDescriptors(
-      ActiveDescriptor<?> serviceDescriptor) {
+  @CanIgnoreReturnValue
+  private int addProvidesDescriptors(
+      Class<?> serviceClass,
+      @Nullable ActiveDescriptor<?> serviceDescriptor,
+      DynamicConfiguration configuration) {
 
-    Objects.requireNonNull(serviceDescriptor);
+    Objects.requireNonNull(serviceClass);
+    Objects.requireNonNull(configuration);
 
-    Class<?> serviceClass =
-        Utilities.getFactoryAwareImplementationClass(serviceDescriptor);
+    int added = 0;
 
-    if (!classesAnalyzed.add(serviceClass))
-      return Stream.empty();
+    boolean staticMethodsKnown;
+    boolean staticFieldsKnown;
+    boolean instanceMethodsKnown;
+    boolean instanceFieldsKnown;
 
-    return Stream.concat(
-        Arrays.stream(serviceClass.getMethods())
-              .map(
-                  method ->
-                      descriptorFromMethod(
-                          method,
-                          serviceClass,
-                          serviceDescriptor))
-              .filter(methodDescriptor -> methodDescriptor != null),
+    synchronized (this) {
+      staticMethodsKnown = staticMethodsByClass.containsKey(serviceClass);
+      staticFieldsKnown = staticFieldsByClass.containsKey(serviceClass);
+      instanceMethodsKnown = instanceMethodsByClass.containsKey(serviceClass);
+      instanceFieldsKnown = instanceFieldsByClass.containsKey(serviceClass);
+    }
 
-        Arrays.stream(serviceClass.getFields())
-              .map(
-                  field ->
-                      descriptorFromField(
-                          field,
-                          serviceClass,
-                          serviceDescriptor))
-              .filter(fieldDescriptor -> fieldDescriptor != null));
+    ImmutableList<ActiveDescriptor<?>> staticMethods;
+    if (staticMethodsKnown) {
+      staticMethods = null;
+    } else {
+      staticMethods =
+          Arrays.stream(serviceClass.getMethods())
+                .filter(method -> Modifier.isStatic(method.getModifiers()))
+                .map(
+                    method ->
+                        descriptorFromMethod(
+                            method,
+                            serviceClass,
+                            null))
+                .filter(methodDescriptor -> methodDescriptor != null)
+                .map(methodDescriptor -> configuration.addActiveDescriptor(methodDescriptor))
+                .collect(toImmutableList());
+      added += staticMethods.size();
+    }
+
+    ImmutableList<ActiveDescriptor<?>> staticFields;
+    if (staticFieldsKnown) {
+      staticFields = null;
+    } else {
+      staticFields =
+          Arrays.stream(serviceClass.getFields())
+                .filter(field -> Modifier.isStatic(field.getModifiers()))
+                .map(
+                    field ->
+                        descriptorFromField(
+                            field,
+                            serviceClass,
+                            null))
+                .filter(fieldDescriptor -> fieldDescriptor != null)
+                .map(fieldDescriptor -> configuration.addActiveDescriptor(fieldDescriptor))
+                .collect(toImmutableList());
+      added += staticFields.size();
+    }
+
+    ImmutableList<ActiveDescriptor<?>> instanceMethods;
+    if (serviceDescriptor == null || instanceMethodsKnown) {
+      instanceMethods = null;
+    } else {
+      instanceMethods =
+          Arrays.stream(serviceClass.getMethods())
+                .filter(method -> !Modifier.isStatic(method.getModifiers()))
+                .map(
+                    method ->
+                        descriptorFromMethod(
+                            method,
+                            serviceClass,
+                            serviceDescriptor))
+                .filter(methodDescriptor -> methodDescriptor != null)
+                .map(methodDescriptor -> configuration.addActiveDescriptor(methodDescriptor))
+                .collect(toImmutableList());
+      added += instanceMethods.size();
+    }
+
+    ImmutableList<ActiveDescriptor<?>> instanceFields;
+    if (serviceDescriptor == null || instanceFieldsKnown) {
+      instanceFields = null;
+    } else {
+      instanceFields =
+          Arrays.stream(serviceClass.getFields())
+                .filter(field -> !Modifier.isStatic(field.getModifiers()))
+                .map(
+                    field ->
+                        descriptorFromField(
+                            field,
+                            serviceClass,
+                            serviceDescriptor))
+                .filter(fieldDescriptor -> fieldDescriptor != null)
+                .map(fieldDescriptor -> configuration.addActiveDescriptor(fieldDescriptor))
+                .collect(toImmutableList());
+      added += instanceFields.size();
+    }
+
+    if (staticMethods != null
+        || staticFields != null
+        || instanceMethods != null
+        || instanceFields != null) {
+
+      synchronized (this) {
+        if (staticMethods   != null)   staticMethodsByClass.put(serviceClass, staticMethods);
+        if (staticFields    != null)    staticFieldsByClass.put(serviceClass, staticFields);
+        if (instanceMethods != null) instanceMethodsByClass.put(serviceClass, instanceMethods);
+        if (instanceFields  != null)  instanceFieldsByClass.put(serviceClass, instanceFields);
+      }
+    }
+
+    return added;
   }
 
   private @Nullable ActiveDescriptor<?> descriptorFromMethod(
@@ -164,9 +275,6 @@ final class ProvidesAnnotationEnabler
     if (serviceDescriptor == null && !isStatic)
       throw new IllegalArgumentException(
           "Service descriptor required for non-static methods");
-
-    if (!methodsAnalyzed.add(method))
-      return null;
 
     if (!method.isAnnotationPresent(Provides.class))
       return null;
@@ -200,9 +308,6 @@ final class ProvidesAnnotationEnabler
     if (serviceDescriptor == null && !isStatic)
       throw new IllegalArgumentException(
           "Service descriptor required for non-static fields");
-
-    if (!fieldsAnalyzed.add(field))
-      return null;
 
     if (!field.isAnnotationPresent(Provides.class))
       return null;
@@ -247,15 +352,34 @@ final class ProvidesAnnotationEnabler
       public <T> ActiveDescriptor<T> addActiveDescriptor(Class<T> rawClass)
           throws IllegalArgumentException {
 
+        addProvidesDescriptors(rawClass, null, this);
+
+        ImmutableList<ActiveDescriptor<?>> staticMethods;
+        ImmutableList<ActiveDescriptor<?>> staticFields;
+        synchronized (ProvidesAnnotationEnabler.this) {
+          staticMethods =
+              staticMethodsByClass.getOrDefault(rawClass, ImmutableList.of());
+          staticFields =
+              staticFieldsByClass.getOrDefault(rawClass, ImmutableList.of());
+        }
+
+        if (staticMethods.isEmpty() && staticFields.isEmpty())
+          // If there are no static @Provides methods or fields, there is no
+          // chance that we would want to handle anything differently from the
+          // default implementation.
+          return defaultConfiguration.addActiveDescriptor(rawClass);
+
+        // If there are static @Provides methods or fields, then registering
+        // this class has already served a purpose, and so we want to avoid
+        // throwing an exception.  If the class itself can't be instantiated
+        // through normal means, the default implementation would throw an
+        // exception, but we don't want to do that because the caller did
+        // nothing wrong.
+        //
         // Attempt to predict whether the default addActiveDescriptor(rawClass)
         // implementation would throw an exception.  It rejects classes that
         // don't have a usable constructor, which is a constructor annotated
         // with @Inject or a constructor with zero parameters.
-        //
-        // Normally a class like that would be unusable as a service, but we can
-        // potentially make it usable.  If it has a static @Provides factory
-        // method, then we know how to instantiate it even if it lacks a usable
-        // constructor.
 
         Service serviceAnnotation = rawClass.getAnnotation(Service.class);
 
@@ -269,45 +393,35 @@ final class ProvidesAnnotationEnabler
         ClassAnalyzer analyzer =
             Utilities.getClassAnalyzer(locator, analyzerName, collector);
 
-        Utilities.getConstructor(rawClass, analyzer, collector);
+        Constructor<T> constructor =
+            Utilities.getConstructor(rawClass, analyzer, collector);
 
-        if (!collector.hasErrors())
-          // The constructor exists, so the default implementation will be able
-          // to handle this class at least as well as we could.
+        if (!collector.hasErrors()
+            && !Modifier.isAbstract(rawClass.getModifiers())
+            && !isUtilityClassConstructor(constructor))
+          // The constructor exists and we don't expect it to throw errors, so
+          // the default implementation will be able to handle this class at
+          // least as well as we could.
           return defaultConfiguration.addActiveDescriptor(rawClass);
 
-        ActiveDescriptor<T> factoryMethodDescriptor =
-            Arrays.stream(rawClass.getMethods())
-                  .filter(method -> Modifier.isStatic(method.getModifiers()))
-                  .filter(method -> method.isAnnotationPresent(Provides.class))
-                  .filter(method -> method.getReturnType() == rawClass)
-                  .map(method -> descriptorFromMethod(method, rawClass, null))
-                  .map(
-                      methodDescriptor -> {
-                        // This cast is safe because we know that the factory
-                        // method produces an instance of T.
-                        @SuppressWarnings("unchecked")
-                        ActiveDescriptor<T> withNarrowedType =
-                            (ActiveDescriptor<T>) methodDescriptor;
-
-                        return withNarrowedType;
-                      })
-                  .findAny()
-                  .orElse(null);
-
-        if (factoryMethodDescriptor != null) {
-          logger.info(
-              "Found static factory method {} for otherwise non-instantiable "
-                  + "service class {}",
-              factoryMethodDescriptor,
-              rawClass);
-
-          return addActiveDescriptor(factoryMethodDescriptor, false);
+        // We don't think this class can be instantiated through normal means.
+        // If we found a static @Provides method or field that produces an
+        // instance of this class, return the descriptor for that method or
+        // field.
+        for (ActiveDescriptor<?> descriptor : Iterables.concat(staticMethods, staticFields)) {
+          if (descriptor.getContractTypes().contains(rawClass)) {
+            // This cast is safe because the descriptor's contracts guarantee
+            // that it will produce an instance of this class.
+            @SuppressWarnings("unchecked")
+            ActiveDescriptor<T> descriptorOfT = (ActiveDescriptor<T>) descriptor;
+            return descriptorOfT;
+          }
         }
 
-        // We tried, but we can't help.  The default implementation will
-        // probably throw an informative error.
-        return defaultConfiguration.addActiveDescriptor(rawClass);
+        // Otherwise, we suspect this class can't be instantiated at all.
+        // Return a descriptor modeling this, which advertises no contracts and
+        // which is incapable of producing instances.
+        return addActiveDescriptor(new NonInstantiableClassDescriptor<>(rawClass));
       }
     };
   }
@@ -315,5 +429,23 @@ final class ProvidesAnnotationEnabler
   @Override
   public Populator getPopulator() {
     return defaultConfigurationService.getPopulator();
+  }
+
+  /**
+   * Returns {@code true} if the the specified constructor appears to be the
+   * constructor of a utility class.  Traditionally, utility classes have only
+   * static members, and they declare a single private zero-argument constructor
+   * that either does nothing or throws an exception.
+   */
+  private static boolean isUtilityClassConstructor(@Nullable Constructor<?> constructor) {
+    return constructor != null
+        && Modifier.isPrivate(constructor.getModifiers())
+        && constructor.getParameterCount() == 0
+        && Arrays.asList(constructor.getDeclaringClass().getDeclaredConstructors())
+                 .equals(List.of(constructor))
+        && Arrays.stream(constructor.getDeclaringClass().getDeclaredFields())
+                 .allMatch(field -> Modifier.isStatic(field.getModifiers()))
+        && Arrays.stream(constructor.getDeclaringClass().getDeclaredMethods())
+                 .allMatch(method -> Modifier.isStatic(method.getModifiers()));
   }
 }

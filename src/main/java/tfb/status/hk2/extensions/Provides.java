@@ -9,9 +9,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PerLookup;
 
 /**
- * An annotation indicating that a method or field within a service class is the
- * provider of a service.  The contract of the provided service is equal to the
- * return type of that method or the type of that field.
+ * An annotation indicating that a method or field is the provider of a service.
+ * The contract of the provided service is equal to the return type of that
+ * method or the type of that field.
  *
  * <p>The scope of the provided service is:
  * <ul>

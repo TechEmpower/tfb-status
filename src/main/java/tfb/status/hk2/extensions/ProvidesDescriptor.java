@@ -27,12 +27,12 @@ import org.jvnet.hk2.internal.Collector;
 import org.jvnet.hk2.internal.Utilities;
 
 /**
- * An {@link ActiveDescriptor} that describes a method or field annotated with
- * {@link Provides}.
+ * An {@link ActiveDescriptor} for a service whose annotations come from some
+ * {@link AnnotatedElement}, such as a method, field, or class.
  */
-abstract class ProvidesDescriptor implements ActiveDescriptor<Object> {
+abstract class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   /**
-   * The method or field that is annotated with {@link Provides}.
+   * The method, field, or class that has the annotations for this service.
    */
   abstract AnnotatedElement annotatedElement();
 
@@ -75,7 +75,7 @@ abstract class ProvidesDescriptor implements ActiveDescriptor<Object> {
 
   @Override
   public final @Nullable String getImplementation() {
-    return getImplementationType().getTypeName();
+    return getImplementationClass().getName();
   }
 
   @Override
@@ -125,6 +125,7 @@ abstract class ProvidesDescriptor implements ActiveDescriptor<Object> {
 
   @Override
   public final Map<String, List<String>> getMetadata() {
+    // TODO: Is there a standard metadata-gathering algorithm we should use?
     return ImmutableMap.of();
   }
 
@@ -169,6 +170,7 @@ abstract class ProvidesDescriptor implements ActiveDescriptor<Object> {
   public final @Nullable Boolean isProxyForSameScope() {
     ProxyForSameScope proxyForSameScope =
         annotatedElement().getAnnotation(ProxyForSameScope.class);
+
     return (proxyForSameScope == null) ? null : proxyForSameScope.value();
   }
 
@@ -188,13 +190,13 @@ abstract class ProvidesDescriptor implements ActiveDescriptor<Object> {
   }
 
   @GuardedBy("this")
-  private @Nullable Object cache = null;
+  private @Nullable T cache = null;
 
   @GuardedBy("this")
   private boolean isCacheSet = false;
 
   @Override
-  public final synchronized @Nullable Object getCache() {
+  public final synchronized @Nullable T getCache() {
     if (!isCacheSet)
       throw new IllegalStateException();
 
@@ -207,7 +209,7 @@ abstract class ProvidesDescriptor implements ActiveDescriptor<Object> {
   }
 
   @Override
-  public final synchronized void setCache(Object cacheMe) {
+  public final synchronized void setCache(T cacheMe) {
     cache = cacheMe;
     isCacheSet = true;
   }

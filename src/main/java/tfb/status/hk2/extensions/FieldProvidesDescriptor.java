@@ -22,7 +22,7 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
  * An {@link ActiveDescriptor} that describes a field annotated with {@link
  * Provides}.
  */
-final class FieldProvidesDescriptor extends ProvidesDescriptor {
+final class FieldProvidesDescriptor extends ProvidesDescriptor<Object> {
   private final Field field;
   private final ServiceLocator serviceLocator;
   private final @Nullable ActiveDescriptor<?> serviceDescriptor;
@@ -50,6 +50,11 @@ final class FieldProvidesDescriptor extends ProvidesDescriptor {
     if (Modifier.isStatic(field.getModifiers()))
       throw new IllegalArgumentException(
           "Service descriptor forbidden for static fields");
+  }
+
+  @Override
+  AnnotatedElement annotatedElement() {
+    return field;
   }
 
   @Override
@@ -138,11 +143,6 @@ final class FieldProvidesDescriptor extends ProvidesDescriptor {
   @Override
   public Set<Type> getContractTypes() {
     return ImmutableSet.of(field.getGenericType());
-  }
-
-  @Override
-  AnnotatedElement annotatedElement() {
-    return field;
   }
 
   @Override

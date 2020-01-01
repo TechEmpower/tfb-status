@@ -471,117 +471,599 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that a service can use the {@link Provides} annotation to provide
-   * other services.
+   * Verifies that a service with {@link Provides} annotations can also be its
+   * own service that can be retrieved.
    */
   @Test
-  public void testProvides() {
+  public void testServiceThatProvidesAndIsAService() {
     Services services = newServices();
 
-    ProvidesService s1 =
+    ProvidesService service =
         services.getService(ProvidesService.class);
-    assertNotNull(s1);
 
-    ProvidedByStaticField s2 =
+    assertNotNull(service);
+  }
+
+  /**
+   * Verifies that a service may be registered by way of a static field
+   * annotated with {@link Provides}.
+   */
+  @Test
+  public void testStaticFieldProvides() {
+    Services services = newServices();
+
+    ProvidedByStaticField service =
         services.getService(ProvidedByStaticField.class);
-    assertNotNull(s2);
 
-    ProvidedByInstanceField s3 =
+    assertNotNull(service);
+  }
+
+  /**
+   * Verifies that a service may be registered by way of an instance field
+   * annotated with {@link Provides}.
+   */
+  @Test
+  public void testInstanceFieldProvides() {
+    Services services = newServices();
+
+    ProvidedByInstanceField service =
         services.getService(ProvidedByInstanceField.class);
-    assertNotNull(s3);
 
-    ProvidedByStaticMethod s4 =
+    assertNotNull(service);
+  }
+
+  /**
+   * Verifies that a service may be registered by way of a static method
+   * annotated with {@link Provides} when the method has zero parameters.
+   */
+  @Test
+  public void testStaticMethodProvides() {
+    Services services = newServices();
+
+    ProvidedByStaticMethod service =
         services.getService(ProvidedByStaticMethod.class);
-    assertNotNull(s4);
 
-    ProvidedByStaticMethodWithParams s5 =
+    assertNotNull(service);
+  }
+
+  /**
+   * Verifies that a service may be registered by way of an instance method
+   * annotated with {@link Provides} when the method has zero parameters.
+   */
+  @Test
+  public void testInstanceMethodProvides() {
+    Services services = newServices();
+
+    ProvidedByInstanceMethod service =
+        services.getService(ProvidedByInstanceMethod.class);
+
+    assertNotNull(service);
+  }
+
+  /**
+   * Verifies that a service may be registered by way of a static method
+   * annotated with {@link Provides} when the method has parameters.
+   */
+  @Test
+  public void testStaticMethodWithParamsProvides() {
+    Services services = newServices();
+
+    ProvidedByStaticMethodWithParams service =
         services.getService(ProvidedByStaticMethodWithParams.class);
-    assertNotNull(s5);
-    assertNotNull(s5.param1);
-    assertNotNull(s5.param2);
 
-    ProvidedByInstanceMethodWithParams s6 =
+    assertNotNull(service);
+    assertNotNull(service.param1);
+    assertNotNull(service.param2);
+  }
+
+  /**
+   * Verifies that a service may be registered by way of an instance method
+   * annotated with {@link Provides} when the method has parameters.
+   */
+  @Test
+  public void testInstanceMethodWithParamsProvides() {
+    Services services = newServices();
+
+    ProvidedByInstanceMethodWithParams service =
         services.getService(ProvidedByInstanceMethodWithParams.class);
-    assertNotNull(s6);
-    assertNotNull(s6.param1);
-    assertNotNull(s6.param2);
 
-    MiddleOfMethodProvidesChain methodChain1 = services.getService(
-        MiddleOfMethodProvidesChain.class);
-    assertNotNull(methodChain1);
+    assertNotNull(service);
+    assertNotNull(service.param1);
+    assertNotNull(service.param2);
+  }
 
-    EndOfMethodProvidesChain methodChain2 = services.getService(
-        EndOfMethodProvidesChain.class);
-    assertNotNull(methodChain2);
+  /**
+   * Verifies that when a service is registered by by of a static field
+   * annotated with {@link Provides}, and the service it provides also has its
+   * own {@link Provides} annotations, those other services are automatically
+   * registered.
+   */
+  @Test
+  public void testStaticFieldProvidesChain() {
+    Services services = newServices();
 
-    MiddleOfFieldProvidesChain fieldChain1 = services.getService(
-        MiddleOfFieldProvidesChain.class);
-    assertNotNull(fieldChain1);
+    MiddleOfStaticFieldProvidesChain middle =
+        services.getService(MiddleOfStaticFieldProvidesChain.class);
 
-    EndOfFieldProvidesChain fieldChain2 = services.getService(
-        EndOfFieldProvidesChain.class);
-    assertNotNull(fieldChain2);
+    assertNotNull(middle);
 
-    GenericFromProvidesMethod<String> methodGeneric =
+    EndOfStaticFieldProvidesChain end =
+        services.getService(EndOfStaticFieldProvidesChain.class);
+
+    assertNotNull(end);
+  }
+
+  /**
+   * Verifies that when a service is registered by by of an instance field
+   * annotated with {@link Provides}, and the service it provides also has its
+   * own {@link Provides} annotations, those other services are automatically
+   * registered.
+   */
+  @Test
+  public void testInstanceFieldProvidesChain() {
+    Services services = newServices();
+
+    MiddleOfInstanceFieldProvidesChain middle =
+        services.getService(MiddleOfInstanceFieldProvidesChain.class);
+
+    assertNotNull(middle);
+
+    EndOfInstanceFieldProvidesChain end =
+        services.getService(EndOfInstanceFieldProvidesChain.class);
+
+    assertNotNull(end);
+  }
+
+  /**
+   * Verifies that when a service is registered by by of a static method
+   * annotated with {@link Provides}, and the service it provides also has its
+   * own {@link Provides} annotations, those other services are automatically
+   * registered.
+   */
+  @Test
+  public void testStaticMethodProvidesChain() {
+    Services services = newServices();
+
+    MiddleOfStaticMethodProvidesChain middle =
+        services.getService(MiddleOfStaticMethodProvidesChain.class);
+
+    assertNotNull(middle);
+
+    EndOfStaticMethodProvidesChain end =
+        services.getService(EndOfStaticMethodProvidesChain.class);
+
+    assertNotNull(end);
+  }
+
+  /**
+   * Verifies that when a service is registered by by of an instance method
+   * annotated with {@link Provides}, and the service it provides also has its
+   * own {@link Provides} annotations, those other services are automatically
+   * registered.
+   */
+  @Test
+  public void testInstanceMethodProvidesChain() {
+    Services services = newServices();
+
+    MiddleOfInstanceMethodProvidesChain middle =
+        services.getService(MiddleOfInstanceMethodProvidesChain.class);
+
+    assertNotNull(middle);
+
+    EndOfInstanceMethodProvidesChain end =
+        services.getService(EndOfInstanceMethodProvidesChain.class);
+
+    assertNotNull(end);
+  }
+
+  /**
+   * Verifies that a service with a generic type can be registered from a method
+   * annotated with {@link Provides}.
+   */
+  @Test
+  public void testGenericMethodProvides() {
+    Services services = newServices();
+
+    GenericFromProvidesMethod<String> service =
         services.getService(new TypeToken<GenericFromProvidesMethod<String>>() {});
-    assertNotNull(methodGeneric);
+
+    assertNotNull(service);
 
     assertThrows(
         NoSuchElementException.class,
         () -> services.getService(new TypeToken<GenericFromProvidesMethod<Integer>>() {}));
+  }
 
-    GenericFromProvidesField<String> fieldGeneric =
+  /**
+   * Verifies that a service with a generic type can be registered from a field
+   * annotated with {@link Provides}.
+   */
+  @Test
+  public void testGenericFieldProvides() {
+    Services services = newServices();
+
+    GenericFromProvidesField<String> service =
         services.getService(new TypeToken<GenericFromProvidesField<String>>() {});
-    assertNotNull(fieldGeneric);
+
+    assertNotNull(service);
 
     assertThrows(
         NoSuchElementException.class,
         () -> services.getService(new TypeToken<GenericFromProvidesField<Integer>>() {}));
+  }
 
-    ProvidesSelf self = services.getService(ProvidesSelf.class);
+  /**
+   * Verifies that a service class may provide itself by way of a static {@link
+   * Provides} field even when the class has no constructors compatible with
+   * injection.
+   */
+  @Test
+  public void testServiceProvidesItselfFromField() {
+    Services services = newServices();
+
+    ProvidesSelfFromMethod self =
+        services.getService(ProvidesSelfFromMethod.class);
+
     assertNotNull(self);
     assertNotNull(self.nonService);
     assertEquals("hi", self.nonService.message);
     assertNotNull(self.otherService1);
     assertNotNull(self.otherService2);
+  }
 
-    ProvidedPerLookupWithLifecycle s7 =
-        services.getService(ProvidedPerLookupWithLifecycle.class);
-    assertNotNull(s7);
-    assertTrue(s7.wasStarted());
-    assertFalse(s7.wasStopped());
-    assertNotSame(s7, services.getService(ProvidedPerLookupWithLifecycle.class));
+  /**
+   * Verifies that a service class may provide itself by way of a static {@link
+   * Provides} method even when the class has no constructors compatible with
+   * injection.
+   */
+  @Test
+  public void testServiceProvidesItselfFromMethod() {
+    Services services = newServices();
 
-    ProvidedSingletonWithLifecycle s8 =
-        services.getService(ProvidedSingletonWithLifecycle.class);
-    assertNotNull(s8);
-    assertTrue(s8.wasStarted());
-    assertFalse(s8.wasStopped());
-    assertSame(s8, services.getService(ProvidedSingletonWithLifecycle.class));
+    ProvidesSelfFromMethod self =
+        services.getService(ProvidesSelfFromMethod.class);
 
-    IterableProvider<ProvidedPerLookupWithLifecycle> iterableProvider =
-        services.getService(
-            new TypeToken<IterableProvider<ProvidedPerLookupWithLifecycle>>() {});
-    ServiceHandle<ProvidedPerLookupWithLifecycle> serviceHandle =
-        iterableProvider.getHandle();
-    ProvidedPerLookupWithLifecycle s9 = serviceHandle.getService();
-    assertNotNull(s9);
-    assertTrue(s9.wasStarted());
-    assertFalse(s9.wasStopped());
-    assertNotSame(s8, s9);
-    serviceHandle.close();
-    assertTrue(s9.wasStopped());
+    assertNotNull(self);
+    assertNotNull(self.nonService);
+    assertEquals("hi", self.nonService.message);
+    assertNotNull(self.otherService1);
+    assertNotNull(self.otherService2);
+  }
+
+  /**
+   * Verifies that the {@link PostConstruct} and {@link PreDestroy} methods of a
+   * service are invoked at the expected times when the service was registered
+   * from a static {@link Provides} field and the service is a singleton.
+   */
+  @Test
+  public void testStaticFieldProvidesSingletonLifecycle() {
+    Services services = newServices();
+
+    ProvidedSingletonStaticFieldWithLifecycle service =
+        services.getService(ProvidedSingletonStaticFieldWithLifecycle.class);
+
+    assertNotNull(service);
+    assertTrue(service.wasStarted());
+    assertFalse(service.wasStopped());
+
+    assertSame(
+        service,
+        services.getService(ProvidedSingletonStaticFieldWithLifecycle.class));
 
     services.shutdown();
 
-    // Per-lookup services won't be stopped when the service locator is shut
-    // down.  The only way to shut them down is to obtain them through a
-    // ServiceHandle and then to close that ServiceHandle.  This is the same for
-    // services obtained through @Provides annotated elements as it is for
-    // services obtained through Factory.provides() methods.
-    assertFalse(s7.wasStopped());
+    assertTrue(service.wasStopped());
+  }
 
-    assertTrue(s8.wasStopped());
+  /**
+   * Verifies that the {@link PostConstruct} and {@link PreDestroy} methods of a
+   * service are invoked at the expected times when the service was registered
+   * from an instance {@link Provides} field and the service is a singleton.
+   */
+  @Test
+  public void testInstanceFieldProvidesSingletonLifecycle() {
+    Services services = newServices();
+
+    ProvidedSingletonInstanceFieldWithLifecycle service =
+        services.getService(ProvidedSingletonInstanceFieldWithLifecycle.class);
+
+    assertNotNull(service);
+    assertTrue(service.wasStarted());
+    assertFalse(service.wasStopped());
+
+    assertSame(
+        service,
+        services.getService(ProvidedSingletonInstanceFieldWithLifecycle.class));
+
+    services.shutdown();
+
+    assertTrue(service.wasStopped());
+  }
+
+  /**
+   * Verifies that the {@link PostConstruct} and {@link PreDestroy} methods of a
+   * service are invoked at the expected times when the service was registered
+   * from a static {@link Provides} method and the service is a singleton.
+   */
+  @Test
+  public void testStaticMethodProvidesSingletonLifecycle() {
+    Services services = newServices();
+
+    ProvidedSingletonStaticMethodWithLifecycle service =
+        services.getService(ProvidedSingletonStaticMethodWithLifecycle.class);
+
+    assertNotNull(service);
+    assertTrue(service.wasStarted());
+    assertFalse(service.wasStopped());
+
+    assertSame(
+        service,
+        services.getService(ProvidedSingletonStaticMethodWithLifecycle.class));
+
+    services.shutdown();
+
+    assertTrue(service.wasStopped());
+  }
+
+  /**
+   * Verifies that the {@link PostConstruct} and {@link PreDestroy} methods of a
+   * service are invoked at the expected times when the service was registered
+   * from an instance {@link Provides} method and the service is a singleton.
+   */
+  @Test
+  public void testInstanceMethodProvidesSingletonLifecycle() {
+    Services services = newServices();
+
+    ProvidedSingletonInstanceMethodWithLifecycle service =
+        services.getService(ProvidedSingletonInstanceMethodWithLifecycle.class);
+
+    assertNotNull(service);
+    assertTrue(service.wasStarted());
+    assertFalse(service.wasStopped());
+
+    assertSame(
+        service,
+        services.getService(ProvidedSingletonInstanceMethodWithLifecycle.class));
+
+    services.shutdown();
+
+    assertTrue(service.wasStopped());
+  }
+
+  /**
+   * Verifies that the {@link PostConstruct} and {@link PreDestroy} methods of a
+   * service are invoked at the expected times when the service was registered
+   * from a static {@link Provides} field and the service is per-lookup, and the
+   * service is not retrieved through a {@link ServiceHandle}.
+   */
+  @Test
+  public void testStaticFieldProvidesPerLookupLifecycleWithoutHandle() {
+    Services services = newServices();
+
+    ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle serviceWithoutHandle =
+        services.getService(ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle.class);
+
+    assertNotNull(serviceWithoutHandle);
+    assertTrue(serviceWithoutHandle.wasStarted());
+    assertFalse(serviceWithoutHandle.wasStopped());
+
+    // Avoid making any assumptions regarding the sameness of this instance and
+    // other instances.  The static field might hold one fixed instance, or a
+    // new value may be written to the field from time to time.  It doesn't
+    // matter to us.
+
+    services.shutdown();
+
+    assertFalse(serviceWithoutHandle.wasStopped());
+  }
+
+  /**
+   * Verifies that the {@link PostConstruct} and {@link PreDestroy} methods of a
+   * service are invoked at the expected times when the service was registered
+   * from a static {@link Provides} field and the service is per-lookup, and the
+   * service is retrieved through a {@link ServiceHandle}.
+   */
+  @Test
+  public void testStaticFieldProvidesPerLookupLifecycleWithHandle() {
+    Services services = newServices();
+
+    IterableProvider<ProvidedPerLookupStaticFieldWithLifecycleWithHandle> serviceProvider =
+        services.getService(
+            new TypeToken<IterableProvider<ProvidedPerLookupStaticFieldWithLifecycleWithHandle>>() {});
+
+    ServiceHandle<ProvidedPerLookupStaticFieldWithLifecycleWithHandle> serviceHandle =
+        serviceProvider.getHandle();
+
+    ProvidedPerLookupStaticFieldWithLifecycleWithHandle serviceWithHandle =
+        serviceHandle.getService();
+
+    assertNotNull(serviceWithHandle);
+    assertTrue(serviceWithHandle.wasStarted());
+    assertFalse(serviceWithHandle.wasStopped());
+
+    serviceHandle.close();
+
+    assertTrue(serviceWithHandle.wasStopped());
+  }
+
+  /**
+   * Verifies that the {@link PostConstruct} and {@link PreDestroy} methods of a
+   * service are invoked at the expected times when the service was registered
+   * from an instance {@link Provides} field and the service is per-lookup.
+   */
+  @Test
+  public void testInstanceFieldProvidesPerLookupLifecycle() {
+    Services services = newServices();
+
+    ProvidedPerLookupInstanceFieldWithLifecycle serviceWithoutHandle =
+        services.getService(ProvidedPerLookupInstanceFieldWithLifecycle.class);
+
+    assertNotNull(serviceWithoutHandle);
+    assertTrue(serviceWithoutHandle.wasStarted());
+    assertFalse(serviceWithoutHandle.wasStopped());
+
+    assertNotSame(
+        serviceWithoutHandle,
+        services.getService(ProvidedPerLookupInstanceFieldWithLifecycle.class));
+
+    IterableProvider<ProvidedPerLookupInstanceFieldWithLifecycle> serviceProvider =
+        services.getService(
+            new TypeToken<IterableProvider<ProvidedPerLookupInstanceFieldWithLifecycle>>() {});
+
+    ServiceHandle<ProvidedPerLookupInstanceFieldWithLifecycle> serviceHandle =
+        serviceProvider.getHandle();
+
+    ProvidedPerLookupInstanceFieldWithLifecycle serviceWitHandle =
+        serviceHandle.getService();
+
+    assertNotNull(serviceWitHandle);
+    assertTrue(serviceWitHandle.wasStarted());
+    assertFalse(serviceWitHandle.wasStopped());
+
+    serviceHandle.close();
+
+    assertTrue(serviceWitHandle.wasStopped());
+
+    services.shutdown();
+
+    assertFalse(serviceWithoutHandle.wasStopped());
+  }
+
+  /**
+   * Verifies that the {@link PostConstruct} and {@link PreDestroy} methods of a
+   * service are invoked at the expected times when the service was registered
+   * from a static {@link Provides} method and the service is per-lookup.
+   */
+  @Test
+  public void testStaticMethodProvidesPerLookupLifecycle() {
+    Services services = newServices();
+
+    ProvidedPerLookupStaticMethodWithLifecycle serviceWithoutHandle =
+        services.getService(ProvidedPerLookupStaticMethodWithLifecycle.class);
+
+    assertNotNull(serviceWithoutHandle);
+    assertTrue(serviceWithoutHandle.wasStarted());
+    assertFalse(serviceWithoutHandle.wasStopped());
+
+    assertNotSame(
+        serviceWithoutHandle,
+        services.getService(ProvidedPerLookupStaticMethodWithLifecycle.class));
+
+    IterableProvider<ProvidedPerLookupStaticMethodWithLifecycle> serviceProvider =
+        services.getService(
+            new TypeToken<IterableProvider<ProvidedPerLookupStaticMethodWithLifecycle>>() {});
+
+    ServiceHandle<ProvidedPerLookupStaticMethodWithLifecycle> serviceHandle =
+        serviceProvider.getHandle();
+
+    ProvidedPerLookupStaticMethodWithLifecycle serviceWitHandle =
+        serviceHandle.getService();
+
+    assertNotNull(serviceWitHandle);
+    assertTrue(serviceWitHandle.wasStarted());
+    assertFalse(serviceWitHandle.wasStopped());
+
+    serviceHandle.close();
+
+    assertTrue(serviceWitHandle.wasStopped());
+
+    services.shutdown();
+
+    assertFalse(serviceWithoutHandle.wasStopped());
+  }
+
+  /**
+   * Verifies that the {@link PostConstruct} and {@link PreDestroy} methods of a
+   * service are invoked at the expected times when the service was registered
+   * from an instance {@link Provides} method and the service is per-lookup.
+   */
+  @Test
+  public void testInstanceMethodProvidesPerLookupLifecycle() {
+    Services services = newServices();
+
+    ProvidedPerLookupInstanceMethodWithLifecycle serviceWithoutHandle =
+        services.getService(ProvidedPerLookupInstanceMethodWithLifecycle.class);
+
+    assertNotNull(serviceWithoutHandle);
+    assertTrue(serviceWithoutHandle.wasStarted());
+    assertFalse(serviceWithoutHandle.wasStopped());
+
+    assertNotSame(
+        serviceWithoutHandle,
+        services.getService(ProvidedPerLookupInstanceMethodWithLifecycle.class));
+
+    IterableProvider<ProvidedPerLookupInstanceMethodWithLifecycle> serviceProvider =
+        services.getService(
+            new TypeToken<IterableProvider<ProvidedPerLookupInstanceMethodWithLifecycle>>() {});
+
+    ServiceHandle<ProvidedPerLookupInstanceMethodWithLifecycle> serviceHandle =
+        serviceProvider.getHandle();
+
+    ProvidedPerLookupInstanceMethodWithLifecycle serviceWitHandle =
+        serviceHandle.getService();
+
+    assertNotNull(serviceWitHandle);
+    assertTrue(serviceWitHandle.wasStarted());
+    assertFalse(serviceWitHandle.wasStopped());
+
+    serviceHandle.close();
+
+    assertTrue(serviceWitHandle.wasStopped());
+
+    services.shutdown();
+
+    assertFalse(serviceWithoutHandle.wasStopped());
+  }
+
+  /**
+   * Verifies that a utility class may be registered as a service when it has
+   * static methods or fields annotated with {@link Provides}, and verifies that
+   * the utility class itself cannot be fetched as a service.
+   */
+  @Test
+  public void testUtilityClassProvides() {
+    Services services = newServices();
+
+    assertNotNull(services.getService(FromUtilityClassMethod.class));
+    assertNotNull(services.getService(FromUtilityClassField.class));
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(UtilityClassProvides.class));
+  }
+
+  /**
+   * Verifies that an abstract class may be registered as a service when it has
+   * static methods or fields annotated with {@link Provides}, and verifies that
+   * the abstract class itself cannot be fetched as a service.
+   */
+  @Test
+  public void testAbstractClassProvides() {
+    Services services = newServices();
+
+    assertNotNull(services.getService(FromAbstractClassMethod.class));
+    assertNotNull(services.getService(FromAbstractClassField.class));
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(AbstractClassProvides.class));
+  }
+
+  /**
+   * Verifies that an interface may be registered as a service when it has
+   * static methods or fields annotated with {@link Provides}, and verifies that
+   * the interface itself cannot be fetched as a service.
+   */
+  @Test
+  public void testInterfaceProvides() {
+    Services services = newServices();
+
+    assertNotNull(services.getService(FromInterfaceMethod.class));
+    assertNotNull(services.getService(FromInterfaceField.class));
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(InterfaceProvides.class));
   }
 
   /**
@@ -605,7 +1087,11 @@ public final class ServicesTest {
             addActiveFactoryDescriptor(FactoryOfSingletonServiceWithShutdown.class);
             addActiveDescriptor(SubscriberService.class);
             addActiveDescriptor(ProvidesService.class);
-            addActiveDescriptor(ProvidesSelf.class);
+            addActiveDescriptor(ProvidesSelfFromMethod.class);
+            addActiveDescriptor(ProvidesSelfFromField.class);
+            addActiveDescriptor(UtilityClassProvides.class);
+            addActiveDescriptor(AbstractClassProvides.class);
+            addActiveDescriptor(InterfaceProvides.class);
             addActiveDescriptor(UnsatisfiedDependencies.class);
           }
         };
@@ -814,12 +1300,16 @@ public final class ServicesTest {
     }
   }
 
-  public static class ProvidedPerLookupWithLifecycle
-      extends ServiceWithLifecycle {}
+  public static class ProvidedPerLookupStaticFieldWithLifecycleWithHandle extends ServiceWithLifecycle {}
+  public static class ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle extends ServiceWithLifecycle {}
+  public static class ProvidedPerLookupInstanceFieldWithLifecycle extends ServiceWithLifecycle {}
+  public static class ProvidedPerLookupStaticMethodWithLifecycle extends ServiceWithLifecycle {}
+  public static class ProvidedPerLookupInstanceMethodWithLifecycle extends ServiceWithLifecycle {}
 
-  @Singleton
-  public static class ProvidedSingletonWithLifecycle
-      extends ServiceWithLifecycle {}
+  @Singleton public static class ProvidedSingletonStaticFieldWithLifecycle extends ServiceWithLifecycle {}
+  @Singleton public static class ProvidedSingletonInstanceFieldWithLifecycle extends ServiceWithLifecycle {}
+  @Singleton public static class ProvidedSingletonStaticMethodWithLifecycle extends ServiceWithLifecycle {}
+  @Singleton public static class ProvidedSingletonInstanceMethodWithLifecycle extends ServiceWithLifecycle {}
 
   public static final class ProvidesService {
     @Provides
@@ -855,23 +1345,22 @@ public final class ServicesTest {
     }
 
     @Provides
-    public ProvidedPerLookupWithLifecycle perLookupWithLifecycle() {
-      return new ProvidedPerLookupWithLifecycle();
+    public static MiddleOfStaticMethodProvidesChain nextStaticMethod() {
+      return new MiddleOfStaticMethodProvidesChain();
     }
 
     @Provides
-    public ProvidedSingletonWithLifecycle singletonWithLifecycle() {
-      return new ProvidedSingletonWithLifecycle();
+    public MiddleOfInstanceMethodProvidesChain nextInstanceMethod() {
+      return new MiddleOfInstanceMethodProvidesChain();
     }
 
     @Provides
-    public MiddleOfMethodProvidesChain next() {
-      return new MiddleOfMethodProvidesChain();
-    }
+    public static final MiddleOfStaticFieldProvidesChain nextStaticField =
+        new MiddleOfStaticFieldProvidesChain();
 
     @Provides
-    public final MiddleOfFieldProvidesChain next =
-        new MiddleOfFieldProvidesChain();
+    public final MiddleOfInstanceFieldProvidesChain nextInstanceField =
+        new MiddleOfInstanceFieldProvidesChain();
 
     @Provides
     public GenericFromProvidesMethod<String> generic() {
@@ -881,52 +1370,122 @@ public final class ServicesTest {
     @Provides
     public final GenericFromProvidesField<String> generic =
         new GenericFromProvidesField<>();
-  }
 
-  public static final class MiddleOfMethodProvidesChain {
     @Provides
-    public EndOfMethodProvidesChain next() {
-      return new EndOfMethodProvidesChain();
+    public static final ProvidedPerLookupStaticFieldWithLifecycleWithHandle perLookupStaticFieldLifecycleWithHandle =
+        new ProvidedPerLookupStaticFieldWithLifecycleWithHandle();
+
+    @Provides
+    public static final ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle perLookupStaticFieldLifecycleWithoutHandle =
+        new ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle();
+
+    @Provides
+    public final ProvidedPerLookupInstanceFieldWithLifecycle perLookupInstanceFieldLifecycle =
+        new ProvidedPerLookupInstanceFieldWithLifecycle();
+
+    @Provides
+    public static ProvidedPerLookupStaticMethodWithLifecycle perLookupStaticMethodLifecycle() {
+      return new ProvidedPerLookupStaticMethodWithLifecycle();
+    }
+
+    @Provides
+    public ProvidedPerLookupInstanceMethodWithLifecycle perLookupInstanceMethodLifecycle() {
+      return new ProvidedPerLookupInstanceMethodWithLifecycle();
+    }
+
+    @Provides
+    public static final ProvidedSingletonStaticFieldWithLifecycle singletonStaticFieldLifecycle =
+        new ProvidedSingletonStaticFieldWithLifecycle();
+
+    @Provides
+    public final ProvidedSingletonInstanceFieldWithLifecycle singletonInstanceFieldLifecycle =
+        new ProvidedSingletonInstanceFieldWithLifecycle();
+
+    @Provides
+    public static ProvidedSingletonStaticMethodWithLifecycle singletonStaticMethodLifecycle() {
+      return new ProvidedSingletonStaticMethodWithLifecycle();
+    }
+
+    @Provides
+    public ProvidedSingletonInstanceMethodWithLifecycle singletonInstanceMethodLifecycle() {
+      return new ProvidedSingletonInstanceMethodWithLifecycle();
     }
   }
 
-  public static final class EndOfMethodProvidesChain {}
-
-  public static final class MiddleOfFieldProvidesChain {
+  public static final class MiddleOfStaticMethodProvidesChain {
     @Provides
-    public final EndOfFieldProvidesChain next = new EndOfFieldProvidesChain();
+    public static EndOfStaticMethodProvidesChain next() {
+      return new EndOfStaticMethodProvidesChain();
+    }
+
+    // Avoid "utility class with non-private constructor" warnings.
+    public final int x = 2;
   }
 
-  public static final class EndOfFieldProvidesChain {}
+  public static final class MiddleOfInstanceMethodProvidesChain {
+    @Provides
+    public EndOfInstanceMethodProvidesChain next() {
+      return new EndOfInstanceMethodProvidesChain();
+    }
+  }
+
+  public static final class MiddleOfStaticFieldProvidesChain {
+    @Provides
+    public static final EndOfStaticFieldProvidesChain next =
+        new EndOfStaticFieldProvidesChain();
+
+    // Avoid "utility class with non-private constructor" warnings.
+    public final int x = 2;
+  }
+
+  public static final class MiddleOfInstanceFieldProvidesChain {
+    @Provides
+    public final EndOfInstanceFieldProvidesChain next =
+        new EndOfInstanceFieldProvidesChain();
+  }
+
+  public static final class EndOfStaticFieldProvidesChain {}
+  public static final class EndOfInstanceFieldProvidesChain {}
+  public static final class EndOfStaticMethodProvidesChain {}
+  public static final class EndOfInstanceMethodProvidesChain {}
 
   public static final class GenericFromProvidesMethod<T> {}
 
   public static final class GenericFromProvidesField<T> {}
 
-  // Normally HK2 would be unable to instantiate this class and would reject it
-  // at registration time because it has no zero-argument constructor or @Inject
-  // constructor.
-  public static final class ProvidesSelf {
+  public static final class ProvidesSelfFromMethod {
     public final ExoticNonServiceType nonService;
     public final PerLookupService otherService1;
     public final SingletonService otherService2;
 
-    private ProvidesSelf(ExoticNonServiceType nonService,
-                         PerLookupService otherService1,
-                         SingletonService otherService2) {
+    private ProvidesSelfFromMethod(ExoticNonServiceType nonService,
+                                   PerLookupService otherService1,
+                                   SingletonService otherService2) {
       this.nonService = Objects.requireNonNull(nonService);
       this.otherService1 = Objects.requireNonNull(otherService1);
       this.otherService2 = Objects.requireNonNull(otherService2);
     }
 
     @Provides
-    public static ProvidesSelf create(PerLookupService otherService1,
-                                      SingletonService other2) {
-      return new ProvidesSelf(
+    public static ProvidesSelfFromMethod create(PerLookupService otherService1,
+                                                SingletonService otherService2) {
+      return new ProvidesSelfFromMethod(
           new ExoticNonServiceType("hi"),
           otherService1,
-          other2);
+          otherService2);
     }
+  }
+
+  public static final class ProvidesSelfFromField {
+    public final ExoticNonServiceType nonService;
+
+    private ProvidesSelfFromField(ExoticNonServiceType nonService) {
+      this.nonService = Objects.requireNonNull(nonService);
+    }
+
+    @Provides
+    public static final ProvidesSelfFromField instance =
+      new ProvidesSelfFromField(new ExoticNonServiceType("hi"));
   }
 
   public static final class ExoticNonServiceType {
@@ -936,6 +1495,51 @@ public final class ServicesTest {
       this.message = Objects.requireNonNull(message);
     }
   }
+
+  public static final class UtilityClassProvides {
+    private UtilityClassProvides() {
+      throw new AssertionError("This class cannot be instantiated");
+    }
+
+    @Provides
+    public static FromUtilityClassMethod method() {
+      return new FromUtilityClassMethod();
+    }
+
+    @Provides
+    public static final FromUtilityClassField field =
+        new FromUtilityClassField();
+  }
+
+  public static final class FromUtilityClassMethod {}
+  public static final class FromUtilityClassField {}
+
+  public abstract static class AbstractClassProvides {
+    @Provides
+    public static FromAbstractClassMethod method() {
+      return new FromAbstractClassMethod();
+    }
+
+    @Provides
+    public static final FromAbstractClassField field =
+        new FromAbstractClassField();
+  }
+
+  public static final class FromAbstractClassMethod {}
+  public static final class FromAbstractClassField {}
+
+  public interface InterfaceProvides {
+    @Provides
+    static FromInterfaceMethod method() {
+      return new FromInterfaceMethod();
+    }
+
+    @Provides
+    FromInterfaceField field = new FromInterfaceField();
+  }
+
+  public static final class FromInterfaceMethod {}
+  public static final class FromInterfaceField {}
 
   public static final class UnsatisfiedDependencies {
     @Inject

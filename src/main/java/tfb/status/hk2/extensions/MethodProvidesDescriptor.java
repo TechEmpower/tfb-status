@@ -26,7 +26,7 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
  * An {@link ActiveDescriptor} that describes a method annotated with {@link
  * Provides}.
  */
-final class MethodProvidesDescriptor extends ProvidesDescriptor {
+final class MethodProvidesDescriptor extends ProvidesDescriptor<Object> {
   private final Method method;
   private final ServiceLocator serviceLocator;
   private final @Nullable ActiveDescriptor<?> serviceDescriptor;
@@ -54,6 +54,11 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor {
     if (Modifier.isStatic(method.getModifiers()))
       throw new IllegalArgumentException(
           "Service descriptor forbidden for static methods");
+  }
+
+  @Override
+  AnnotatedElement annotatedElement() {
+    return method;
   }
 
   @Override
@@ -163,11 +168,6 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor {
   @Override
   public Set<Type> getContractTypes() {
     return ImmutableSet.of(method.getGenericReturnType());
-  }
-
-  @Override
-  AnnotatedElement annotatedElement() {
-    return method;
   }
 
   @Override
