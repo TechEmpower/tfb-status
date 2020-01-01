@@ -25,7 +25,7 @@ import tfb.status.hk2.extensions.Provides;
  *   <td>{@link Stopwatch#createStarted(Ticker)}
  * </table>
  */
-final class TickerFactory {
+public final class TickerFactory {
   private TickerFactory() {
     throw new AssertionError("This class cannot be instantiated");
   }

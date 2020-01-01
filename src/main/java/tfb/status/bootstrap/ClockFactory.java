@@ -35,7 +35,7 @@ import tfb.status.hk2.extensions.Provides;
  *   <td>{@link Clock#millis()}
  * </table>
  */
-final class ClockFactory {
+public final class ClockFactory {
   private ClockFactory() {
     throw new AssertionError("This class cannot be instantiated");
   }

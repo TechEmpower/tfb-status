@@ -9,7 +9,7 @@ import tfb.status.hk2.extensions.Provides;
 /**
  * Provides the {@link ObjectMapper} used by this application.
  */
-final class ObjectMapperFactory {
+public final class ObjectMapperFactory {
   private ObjectMapperFactory() {
     throw new AssertionError("This class cannot be instantiated");
   }

@@ -46,7 +46,7 @@ import tfb.status.hk2.extensions.Provides;
  * <li>{@link Files#createTempDirectory(String, FileAttribute[])}
  * </ul>
  */
-final class FileSystemFactory {
+public final class FileSystemFactory {
   private FileSystemFactory() {
     throw new AssertionError("This class cannot be instantiated");
   }

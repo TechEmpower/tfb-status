@@ -23,7 +23,7 @@ import tfb.status.hk2.extensions.Provides;
  * Provides the {@link ApplicationConfig} used by this application.
  */
 @Singleton
-final class ApplicationConfigFactory {
+public final class ApplicationConfigFactory {
   private final FileSystem fileSystem;
   private final ObjectMapper objectMapper;
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -65,5 +65,10 @@ final class ApplicationConfigFactory {
     return objectMapper.treeToValue(tree, ApplicationConfig.class);
   }
 
-  static final String CONFIG_FILE_PATH = "tfb.status.configFilePath";
+  /**
+   * The {@link Named#value()} of the {@link Optional} string that indicates the
+   * path to this application's YAML configuration file.  If absent, a default
+   * configuration will be used.
+   */
+  public static final String CONFIG_FILE_PATH = "tfb.status.configFilePath";
 }
