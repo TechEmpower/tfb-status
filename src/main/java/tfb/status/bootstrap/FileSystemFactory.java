@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import javax.inject.Singleton;
-import org.glassfish.hk2.api.Factory;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * Provides the {@link FileSystem} used by this application.
@@ -46,16 +46,14 @@ import org.glassfish.hk2.api.Factory;
  * <li>{@link Files#createTempDirectory(String, FileAttribute[])}
  * </ul>
  */
-@Singleton
-final class FileSystemFactory implements Factory<FileSystem> {
-  @Override
-  @Singleton
-  public FileSystem provide() {
-    return FileSystems.getDefault();
+final class FileSystemFactory {
+  private FileSystemFactory() {
+    throw new AssertionError("This class cannot be instantiated");
   }
 
-  @Override
-  public void dispose(FileSystem instance) {
-    // No cleanup required.
+  @Provides
+  @Singleton
+  public static FileSystem defaultFileSystem() {
+    return FileSystems.getDefault();
   }
 }

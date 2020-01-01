@@ -3,7 +3,7 @@ package tfb.status.bootstrap;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import javax.inject.Singleton;
-import org.glassfish.hk2.api.Factory;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * Provides the {@link Ticker} used by this application.
@@ -25,16 +25,14 @@ import org.glassfish.hk2.api.Factory;
  *   <td>{@link Stopwatch#createStarted(Ticker)}
  * </table>
  */
-@Singleton
-final class TickerFactory implements Factory<Ticker> {
-  @Override
-  @Singleton
-  public Ticker provide() {
-    return Ticker.systemTicker();
+final class TickerFactory {
+  private TickerFactory() {
+    throw new AssertionError("This class cannot be instantiated");
   }
 
-  @Override
-  public void dispose(Ticker instance) {
-    // No cleanup required.
+  @Provides
+  @Singleton
+  public static Ticker systemTicker() {
+    return Ticker.systemTicker();
   }
 }

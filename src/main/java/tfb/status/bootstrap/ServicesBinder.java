@@ -50,10 +50,10 @@ public final class ServicesBinder extends AbstractBinder {
           .named(ApplicationConfigFactory.CONFIG_FILE_PATH);
 
     addActiveDescriptor(ApplicationConfigFactory.class);
-    addActiveFactoryDescriptor(ObjectMapperFactory.class);
-    addActiveFactoryDescriptor(ClockFactory.class);
-    addActiveFactoryDescriptor(TickerFactory.class);
-    addActiveFactoryDescriptor(FileSystemFactory.class);
+    addActiveDescriptor(ObjectMapperFactory.class);
+    addActiveDescriptor(ClockFactory.class);
+    addActiveDescriptor(TickerFactory.class);
+    addActiveDescriptor(FileSystemFactory.class);
 
     addActiveDescriptor(HttpServer.class);
     addActiveDescriptor(RootHandler.class);

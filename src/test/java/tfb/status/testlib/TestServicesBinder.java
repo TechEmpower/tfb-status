@@ -8,13 +8,10 @@ import org.glassfish.hk2.utilities.binding.AbstractBinder;
 final class TestServicesBinder extends AbstractBinder {
   @Override
   protected void configure() {
-    addActiveFactoryDescriptor(MutableClockFactory.class);
-    addActiveFactoryDescriptor(MutableClockFactory.OverrideDefault.class);
-    addActiveFactoryDescriptor(MutableTickerFactory.class);
-    addActiveFactoryDescriptor(MutableTickerFactory.OverrideDefault.class);
+    addActiveDescriptor(MutableClockFactory.class);
+    addActiveDescriptor(MutableTickerFactory.class);
     addActiveFactoryDescriptor(InMemoryFileSystemFactory.class);
-    addActiveFactoryDescriptor(HttpClientFactory.class);
-
+    addActiveDescriptor(HttpClientFactory.class);
     addActiveDescriptor(TestHandler.class);
     addActiveDescriptor(LogTester.class);
     addActiveDescriptor(HttpTester.class);

@@ -4,25 +4,23 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import javax.inject.Singleton;
-import org.glassfish.hk2.api.Factory;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * Provides the {@link ObjectMapper} used by this application.
  */
-@Singleton
-final class ObjectMapperFactory implements Factory<ObjectMapper> {
-  @Override
+final class ObjectMapperFactory {
+  private ObjectMapperFactory() {
+    throw new AssertionError("This class cannot be instantiated");
+  }
+
+  @Provides
   @Singleton
-  public ObjectMapper provide() {
+  public static ObjectMapper objectMapper() {
     return new ObjectMapper()
         .registerModule(new GuavaModule())
         .configure(
             DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             false);
-  }
-
-  @Override
-  public void dispose(ObjectMapper instance) {
-    // No cleanup required.
   }
 }
