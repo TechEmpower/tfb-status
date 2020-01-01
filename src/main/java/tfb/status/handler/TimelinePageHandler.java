@@ -24,9 +24,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.HttpHandlers;
@@ -42,47 +42,34 @@ import tfb.status.view.TimelinePageView.TestTypeOptionView;
  * Handles requests for the timeline page.
  */
 @Singleton
-@ContractsProvided(HttpHandler.class)
-@PrefixPath("/timeline")
 public final class TimelinePageHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final FileStore fileStore;
+  private final MustacheRenderer mustacheRenderer;
+  private final ObjectMapper objectMapper;
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
   public TimelinePageHandler(FileStore fileStore,
                              MustacheRenderer mustacheRenderer,
                              ObjectMapper objectMapper) {
 
-    Objects.requireNonNull(fileStore);
-    Objects.requireNonNull(mustacheRenderer);
-    Objects.requireNonNull(objectMapper);
+    this.fileStore = Objects.requireNonNull(fileStore);
+    this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
+    this.objectMapper = Objects.requireNonNull(objectMapper);
+  }
 
-    Logger logger = LoggerFactory.getLogger(getClass());
-
-    delegate =
-        HttpHandlers.chain(
-            exchange ->
-                internalHandleRequest(
-                    exchange,
-                    fileStore,
-                    mustacheRenderer,
-                    objectMapper,
-                    logger),
-            handler -> new MethodHandler().addMethod(GET, handler),
-            handler -> new DisableCacheHandler(handler));
+  @Provides
+  @Singleton
+  @PrefixPath("/timeline")
+  public HttpHandler timelinePageHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
-
-  private static void internalHandleRequest(HttpServerExchange exchange,
-                                            FileStore fileStore,
-                                            MustacheRenderer mustacheRenderer,
-                                            ObjectMapper objectMapper,
-                                            Logger logger)
-      throws IOException {
-
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
     String relativePath = exchange.getRelativePath();
     Matcher matcher = REQUEST_PATH_PATTERN.matcher(relativePath);
 

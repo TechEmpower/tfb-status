@@ -9,11 +9,12 @@ import static tfb.status.undertow.extensions.RequestValues.queryParameter;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.jvnet.hk2.annotations.ContractsProvided;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
@@ -46,30 +47,26 @@ import tfb.status.view.HomePageView.ResultsView;
  * to consume -- plain text, with no parsing required.
  */
 @Singleton
-@ContractsProvided(HttpHandler.class)
-@ExactPath("/last-seen-commit")
 public final class LastSeenCommitHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final HomeResultsReader homeResultsReader;
 
   @Inject
   public LastSeenCommitHandler(HomeResultsReader homeResultsReader) {
-    Objects.requireNonNull(homeResultsReader);
+    this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
+  }
 
-    delegate =
-        HttpHandlers.chain(
-            exchange -> internalHandleRequest(exchange, homeResultsReader),
-            handler -> new MethodHandler().addMethod(GET, handler));
+  @Provides
+  @Singleton
+  @ExactPath("/last-seen-commit")
+  public HttpHandler lastSeenCommitHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
-
-  private static void internalHandleRequest(HttpServerExchange exchange,
-                                            HomeResultsReader homeResultsReader)
-      throws IOException {
-
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
     String environment = queryParameter(exchange, "environment");
     if (environment == null) {
       exchange.setStatusCode(BAD_REQUEST);

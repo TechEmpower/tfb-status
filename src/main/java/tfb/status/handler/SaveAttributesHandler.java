@@ -21,9 +21,9 @@ import java.nio.file.Path;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.Authenticator;
 import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.HttpHandlers;
@@ -34,47 +34,32 @@ import tfb.status.view.AttributeLookup;
  * Handles requests to replace the content of the tfb_lookup.json file on disk.
  */
 @Singleton
-@ContractsProvided(HttpHandler.class)
-@ExactPath("/saveAttributes")
 public final class SaveAttributesHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final FileStore fileStore;
+  private final ObjectMapper objectMapper;
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
-  public SaveAttributesHandler(FileStore fileStore,
-                               Authenticator authenticator,
-                               ObjectMapper objectMapper) {
+  public SaveAttributesHandler(FileStore fileStore, ObjectMapper objectMapper) {
+    this.fileStore = Objects.requireNonNull(fileStore);
+    this.objectMapper = Objects.requireNonNull(objectMapper);
+  }
 
-    Objects.requireNonNull(fileStore);
+  @Provides
+  @Singleton
+  @ExactPath("/saveAttributes")
+  public HttpHandler saveAttributesHandler(Authenticator authenticator) {
     Objects.requireNonNull(authenticator);
-    Objects.requireNonNull(objectMapper);
-
-    Logger logger = LoggerFactory.getLogger(getClass());
-
-    delegate =
-        HttpHandlers.chain(
-            exchange ->
-                internalHandleRequest(
-                    exchange,
-                    fileStore,
-                    objectMapper,
-                    logger),
-            handler -> new MethodHandler().addMethod(POST, handler),
-            handler -> new DisableCacheHandler(handler),
-            handler -> new EagerFormParsingHandler().setNext(handler),
-            handler -> authenticator.newRequiredAuthHandler(handler));
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(POST, handler),
+        handler -> new DisableCacheHandler(handler),
+        handler -> new EagerFormParsingHandler().setNext(handler),
+        handler -> authenticator.newRequiredAuthHandler(handler));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
-
-  private static void internalHandleRequest(HttpServerExchange exchange,
-                                            FileStore fileStore,
-                                            ObjectMapper objectMapper,
-                                            Logger logger)
-      throws IOException {
-
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
     FormData form = exchange.getAttachment(FormDataParser.FORM_DATA);
     if (form == null) {
       logger.warn("Unable to parse the request form data");

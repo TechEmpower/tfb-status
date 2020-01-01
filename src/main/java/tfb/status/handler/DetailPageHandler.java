@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.jvnet.hk2.annotations.ContractsProvided;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.HttpHandlers;
@@ -30,46 +30,36 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests for the results detail page.
  */
 @Singleton
-@ContractsProvided(HttpHandler.class)
-@PrefixPath("/results")
 public final class DetailPageHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final HomeResultsReader homeResultsReader;
+  private final MustacheRenderer mustacheRenderer;
+  private final ObjectMapper objectMapper;
 
   @Inject
   public DetailPageHandler(HomeResultsReader homeResultsReader,
                            MustacheRenderer mustacheRenderer,
                            ObjectMapper objectMapper) {
 
-    Objects.requireNonNull(homeResultsReader);
-    Objects.requireNonNull(mustacheRenderer);
-    Objects.requireNonNull(objectMapper);
+    this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
+    this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
+    this.objectMapper = Objects.requireNonNull(objectMapper);
+  }
 
-    delegate =
-        HttpHandlers.chain(
-            exchange ->
-                internalHandleRequest(
-                    exchange,
-                    homeResultsReader,
-                    mustacheRenderer,
-                    objectMapper),
-            handler -> new MethodHandler().addMethod(GET, handler),
-            handler -> new DisableCacheHandler(handler),
-            handler -> new SetHeaderHandler(handler,
-                                            ACCESS_CONTROL_ALLOW_ORIGIN,
-                                            "*"));
+  @Provides
+  @Singleton
+  @PrefixPath("/results")
+  public HttpHandler detailPageHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler),
+        handler -> new SetHeaderHandler(handler,
+                                        ACCESS_CONTROL_ALLOW_ORIGIN,
+                                        "*"));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
-
-  private static void internalHandleRequest(HttpServerExchange exchange,
-                                            HomeResultsReader homeResultsReader,
-                                            MustacheRenderer mustacheRenderer,
-                                            ObjectMapper objectMapper)
-      throws IOException {
-
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
     Matcher matcher = REQUEST_PATH_PATTERN.matcher(exchange.getRelativePath());
 
     if (!matcher.matches()) {

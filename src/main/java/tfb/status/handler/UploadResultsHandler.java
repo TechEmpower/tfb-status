@@ -26,10 +26,11 @@ import java.util.Locale;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.messaging.Topic;
-import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.Authenticator;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
@@ -48,58 +49,42 @@ import tfb.status.view.UpdatedResultsEvent;
  * Content-Type} must be {@code application/zip}.
  */
 @Singleton
-@ContractsProvided(HttpHandler.class)
-@ExactPath("/upload")
 public final class UploadResultsHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final FileStore fileStore;
+  private final ObjectMapper objectMapper;
+  private final Topic<UpdatedResultsEvent> updatedResultsTopic;
+  private final HomeResultsReader homeResultsReader;
+  private final Clock clock;
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
   public UploadResultsHandler(FileStore fileStore,
-                              Authenticator authenticator,
                               ObjectMapper objectMapper,
                               Topic<UpdatedResultsEvent> updatedResultsTopic,
                               HomeResultsReader homeResultsReader,
                               Clock clock) {
 
-    Objects.requireNonNull(fileStore);
+    this.fileStore = Objects.requireNonNull(fileStore);
+    this.objectMapper = Objects.requireNonNull(objectMapper);
+    this.updatedResultsTopic = Objects.requireNonNull(updatedResultsTopic);
+    this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
+    this.clock = Objects.requireNonNull(clock);
+  }
+
+  @Provides
+  @Singleton
+  @ExactPath("/upload")
+  public HttpHandler uploadResultsHandler(Authenticator authenticator) {
     Objects.requireNonNull(authenticator);
-    Objects.requireNonNull(objectMapper);
-    Objects.requireNonNull(updatedResultsTopic);
-    Objects.requireNonNull(homeResultsReader);
-    Objects.requireNonNull(clock);
-
-    Logger logger = LoggerFactory.getLogger(getClass());
-
-    delegate =
-        HttpHandlers.chain(
-            exchange ->
-                internalHandleRequest(
-                    exchange,
-                    fileStore,
-                    updatedResultsTopic,
-                    homeResultsReader,
-                    objectMapper,
-                    clock,
-                    logger),
-            handler -> new MethodHandler().addMethod(POST, handler),
-            handler -> new DisableCacheHandler(handler),
-            handler -> authenticator.newRequiredAuthHandler(handler));
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(POST, handler),
+        handler -> new DisableCacheHandler(handler),
+        handler -> authenticator.newRequiredAuthHandler(handler));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
-
-  private static void internalHandleRequest(HttpServerExchange exchange,
-                                            FileStore fileStore,
-                                            Topic<UpdatedResultsEvent> updatedResultsTopic,
-                                            HomeResultsReader homeResultsReader,
-                                            ObjectMapper objectMapper,
-                                            Clock clock,
-                                            Logger logger)
-      throws IOException {
-
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
     MediaType contentType = detectMediaType(exchange);
     boolean isJson;
     if (contentType.is(JSON_MEDIA_TYPE))
@@ -152,42 +137,7 @@ public final class UploadResultsHandler implements HttpHandler {
 
     String uuid = results.uuid;
 
-    class Helper {
-      Path newResultsFile() {
-        DateTimeFormatter formatter =
-            DateTimeFormatter.ofPattern(
-                "yyyy-MM-dd-HH-mm-ss-SSS", Locale.ROOT);
-
-        LocalDateTime now = LocalDateTime.now(clock);
-        String timestamp = formatter.format(now);
-
-        return fileStore.resultsDirectory().resolve(
-            "results." + timestamp + "." + fileExtension);
-      }
-
-      Path destinationForIncomingFile() throws IOException {
-        if (uuid == null)
-          return newResultsFile();
-
-        ResultsView oldResults = homeResultsReader.resultsByUuid(uuid);
-        if (oldResults == null)
-          return newResultsFile();
-
-        if (oldResults.jsonFileName != null
-            && oldResults.jsonFileName.endsWith("." + fileExtension))
-          return fileStore.resultsDirectory()
-                          .resolve(oldResults.jsonFileName);
-
-        if (oldResults.zipFileName != null
-            && oldResults.zipFileName.endsWith("." + fileExtension))
-          return fileStore.resultsDirectory()
-                          .resolve(oldResults.zipFileName);
-
-        return newResultsFile();
-      }
-    }
-
-    Path permanentFile = new Helper().destinationForIncomingFile();
+    Path permanentFile = destinationForIncomingFile(uuid, fileExtension);
 
     MoreFiles.createParentDirectories(permanentFile);
 
@@ -198,6 +148,46 @@ public final class UploadResultsHandler implements HttpHandler {
 
     if (uuid != null)
       updatedResultsTopic.publish(new UpdatedResultsEvent(uuid));
+  }
+
+  private Path newResultsFile(String fileExtension) {
+    Objects.requireNonNull(fileExtension);
+
+    DateTimeFormatter formatter =
+        DateTimeFormatter.ofPattern(
+            "yyyy-MM-dd-HH-mm-ss-SSS", Locale.ROOT);
+
+    LocalDateTime now = LocalDateTime.now(clock);
+    String timestamp = formatter.format(now);
+
+    return fileStore.resultsDirectory().resolve(
+        "results." + timestamp + "." + fileExtension);
+  }
+
+  private Path destinationForIncomingFile(@Nullable String uuid,
+                                          String fileExtension)
+      throws IOException {
+
+    Objects.requireNonNull(fileExtension);
+
+    if (uuid == null)
+      return newResultsFile(fileExtension);
+
+    ResultsView oldResults = homeResultsReader.resultsByUuid(uuid);
+    if (oldResults == null)
+      return newResultsFile(fileExtension);
+
+    if (oldResults.jsonFileName != null
+        && oldResults.jsonFileName.endsWith("." + fileExtension))
+      return fileStore.resultsDirectory()
+                      .resolve(oldResults.jsonFileName);
+
+    if (oldResults.zipFileName != null
+        && oldResults.zipFileName.endsWith("." + fileExtension))
+      return fileStore.resultsDirectory()
+                      .resolve(oldResults.zipFileName);
+
+    return newResultsFile(fileExtension);
   }
 
   private static MediaType detectMediaType(HttpServerExchange exchange) {

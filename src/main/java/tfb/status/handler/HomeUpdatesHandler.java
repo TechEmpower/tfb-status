@@ -4,7 +4,6 @@ import static io.undertow.util.Methods.GET;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
@@ -21,9 +20,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.messaging.MessageReceiver;
 import org.glassfish.hk2.api.messaging.SubscribeTo;
-import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.service.TaskScheduler;
@@ -36,12 +35,9 @@ import tfb.status.view.UpdatedResultsEvent;
  * Handles requests to listen for updates to the home page using web sockets.
  */
 @Singleton
-@ContractsProvided(HttpHandler.class)
-@ExactPath("/updates")
 @MessageReceiver
-public final class HomeUpdatesHandler implements HttpHandler {
+public final class HomeUpdatesHandler {
   private final WebSocketProtocolHandshakeHandler wsHandler;
-  private final HttpHandler delegate;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
@@ -72,22 +68,21 @@ public final class HomeUpdatesHandler implements HttpHandler {
               channel.getReceiveSetter().set(new AbstractReceiveListener() {});
               channel.resumeReceives();
             });
-
-    delegate =
-        HttpHandlers.chain(
-            wsHandler,
-
-            // Prevent proxies such as nginx from buffering our output, which
-            // would break this endpoint.
-            handler -> new SetHeaderHandler(handler, "X-Accel-Buffering", "no"),
-
-            handler -> new MethodHandler().addMethod(GET, handler),
-            handler -> new DisableCacheHandler(handler));
   }
 
-  @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
+  @Provides
+  @Singleton
+  @ExactPath("/updates")
+  public HttpHandler homeUpdatesHandler() {
+    return HttpHandlers.chain(
+        wsHandler,
+
+        // Prevent proxies such as nginx from buffering our output, which
+        // would break this endpoint.
+        handler -> new SetHeaderHandler(handler, "X-Accel-Buffering", "no"),
+
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler));
   }
 
   /**

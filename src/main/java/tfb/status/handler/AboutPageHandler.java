@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.Properties;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.jvnet.hk2.annotations.ContractsProvided;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
@@ -29,31 +29,26 @@ import tfb.status.view.AboutPageView.GitPropertyView;
  * Handles requests for the about page.
  */
 @Singleton
-@ContractsProvided(HttpHandler.class)
-@ExactPath("/about")
 public final class AboutPageHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final MustacheRenderer mustacheRenderer;
 
   @Inject
   public AboutPageHandler(MustacheRenderer mustacheRenderer) {
-    Objects.requireNonNull(mustacheRenderer);
+    this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
+  }
 
-    delegate =
-        HttpHandlers.chain(
-            exchange -> internalHandleRequest(exchange, mustacheRenderer),
-            handler -> new MethodHandler().addMethod(GET, handler),
-            handler -> new DisableCacheHandler(handler));
+  @Provides
+  @Singleton
+  @ExactPath("/about")
+  public HttpHandler aboutPageHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
-
-  private static void internalHandleRequest(HttpServerExchange exchange,
-                                            MustacheRenderer mustacheRenderer)
-      throws IOException {
-
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
     ImmutableMap<String, String> gitProperties;
 
     try (InputStream inputStream =

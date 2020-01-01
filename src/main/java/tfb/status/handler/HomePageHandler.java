@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.jvnet.hk2.annotations.ContractsProvided;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
@@ -30,43 +30,33 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests for the home page.
  */
 @Singleton
-@ContractsProvided(HttpHandler.class)
-@ExactPath("/")
 public final class HomePageHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final MustacheRenderer mustacheRenderer;
+  private final HomeResultsReader homeResultsReader;
+  private final FileStore fileStore;
 
   @Inject
   public HomePageHandler(MustacheRenderer mustacheRenderer,
                          HomeResultsReader homeResultsReader,
                          FileStore fileStore) {
 
-    Objects.requireNonNull(mustacheRenderer);
-    Objects.requireNonNull(homeResultsReader);
-    Objects.requireNonNull(fileStore);
+    this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
+    this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
+    this.fileStore = Objects.requireNonNull(fileStore);
+  }
 
-    delegate =
-        HttpHandlers.chain(
-            exchange ->
-                internalHandleRequest(
-                    exchange,
-                    mustacheRenderer,
-                    homeResultsReader,
-                    fileStore),
-            handler -> new MethodHandler().addMethod(GET, handler),
-            handler -> new DisableCacheHandler(handler));
+  @Provides
+  @Singleton
+  @ExactPath("/")
+  public HttpHandler homePageHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
-
-  private static void internalHandleRequest(HttpServerExchange exchange,
-                                            MustacheRenderer mustacheRenderer,
-                                            HomeResultsReader homeResultsReader,
-                                            FileStore fileStore)
-      throws IOException {
-
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
     ImmutableList<ResultsView> results = homeResultsReader.results();
 
     int skip =

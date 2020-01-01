@@ -36,9 +36,9 @@ import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.DefaultToUtf8Handler;
@@ -52,47 +52,35 @@ import tfb.status.view.UnzippedDirectoryView.FileView;
  * Handles requests to extract files from within results.zip files.
  */
 @Singleton
-@ContractsProvided(HttpHandler.class)
-@PrefixPath("/unzip")
 public final class UnzipResultsHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final FileStore fileStore;
+  private final MustacheRenderer mustacheRenderer;
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
   public UnzipResultsHandler(FileStore fileStore,
                              MustacheRenderer mustacheRenderer) {
 
-    Objects.requireNonNull(fileStore);
-    Objects.requireNonNull(mustacheRenderer);
+    this.fileStore = Objects.requireNonNull(fileStore);
+    this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
+  }
 
-    Logger logger = LoggerFactory.getLogger(getClass());
-
-    delegate =
-        HttpHandlers.chain(
-            exchange ->
-                internalHandleRequest(
-                    exchange,
-                    fileStore,
-                    mustacheRenderer,
-                    logger),
-            handler -> new DefaultToUtf8Handler(handler),
-            handler -> new MethodHandler().addMethod(GET, handler),
-            handler -> new DisableCacheHandler(handler),
-            handler -> new SetHeaderHandler(handler,
-                                            ACCESS_CONTROL_ALLOW_ORIGIN,
-                                            "*"));
+  @Provides
+  @Singleton
+  @PrefixPath("/unzip")
+  public HttpHandler unzipResultsHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new DefaultToUtf8Handler(handler),
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler),
+        handler -> new SetHeaderHandler(handler,
+                                        ACCESS_CONTROL_ALLOW_ORIGIN,
+                                        "*"));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
-
-  private static void internalHandleRequest(HttpServerExchange exchange,
-                                            FileStore fileStore,
-                                            MustacheRenderer mustacheRenderer,
-                                            Logger logger)
-      throws IOException {
-
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
     if (exchange.getRelativePath().isEmpty()) {
       exchange.setStatusCode(NOT_FOUND);
       return;
