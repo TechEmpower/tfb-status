@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;

@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import javax.inject.Singleton;
 import tfb.status.config.AssetsConfig;
+import tfb.status.handler.routing.PrefixPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.undertow.extensions.DefaultToUtf8Handler;
 import tfb.status.undertow.extensions.HttpHandlers;

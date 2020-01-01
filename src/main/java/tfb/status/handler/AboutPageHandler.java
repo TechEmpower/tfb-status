@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Properties;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.undertow.extensions.HttpHandlers;

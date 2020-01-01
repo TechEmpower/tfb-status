@@ -1,4 +1,4 @@
-package tfb.status.handler;
+package tfb.status.handler.routing;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;

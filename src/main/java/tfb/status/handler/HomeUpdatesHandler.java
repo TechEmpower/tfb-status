@@ -22,6 +22,7 @@ import org.glassfish.hk2.api.messaging.MessageReceiver;
 import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;

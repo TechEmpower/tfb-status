@@ -5,7 +5,7 @@ import io.undertow.server.handlers.PathHandler;
 import java.util.Objects;
 import java.util.UUID;
 import javax.inject.Singleton;
-import tfb.status.handler.PrefixPath;
+import tfb.status.handler.routing.PrefixPath;
 import tfb.status.hk2.extensions.Provides;
 
 /**

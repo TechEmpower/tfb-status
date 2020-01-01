@@ -7,6 +7,7 @@ import static io.undertow.util.Methods.GET;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import javax.inject.Singleton;
+import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.undertow.extensions.FixedResponseBodyHandler;
 import tfb.status.undertow.extensions.HttpHandlers;

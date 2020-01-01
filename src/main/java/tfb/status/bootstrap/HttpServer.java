@@ -15,7 +15,7 @@ import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.HttpServerConfig;
-import tfb.status.handler.AllPaths;
+import tfb.status.handler.routing.AllPaths;
 import tfb.status.util.KeyStores;
 
 /**

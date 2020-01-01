@@ -17,6 +17,9 @@ import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.handler.routing.AllPaths;
+import tfb.status.handler.routing.ExactPath;
+import tfb.status.handler.routing.PrefixPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.undertow.extensions.HttpHandlers;
 

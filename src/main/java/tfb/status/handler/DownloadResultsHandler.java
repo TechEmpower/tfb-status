@@ -9,6 +9,7 @@ import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import java.util.Objects;
 import javax.inject.Singleton;
+import tfb.status.handler.routing.PrefixPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.HttpHandlers;
