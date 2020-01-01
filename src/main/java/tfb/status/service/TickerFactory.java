@@ -1,4 +1,4 @@
-package tfb.status.bootstrap;
+package tfb.status.service;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;

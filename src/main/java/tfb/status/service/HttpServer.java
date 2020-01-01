@@ -1,4 +1,4 @@
-package tfb.status.bootstrap;
+package tfb.status.service;
 
 import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;

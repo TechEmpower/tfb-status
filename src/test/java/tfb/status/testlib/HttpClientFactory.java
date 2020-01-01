@@ -6,9 +6,9 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import javax.inject.Singleton;
 import javax.net.ssl.SSLContext;
-import tfb.status.bootstrap.HttpServer;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.hk2.extensions.Provides;
+import tfb.status.service.HttpServer;
 import tfb.status.util.KeyStores;
 
 /**

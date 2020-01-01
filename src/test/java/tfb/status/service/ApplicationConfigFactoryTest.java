@@ -1,4 +1,4 @@
-package tfb.status.bootstrap;
+package tfb.status.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -26,7 +26,7 @@ import tfb.status.testlib.TestServicesInjector;
  * Tests for {@link ApplicationConfigFactory}.
  */
 @ExtendWith(TestServicesInjector.class)
-public final class ConfigFactoryTest {
+public final class ApplicationConfigFactoryTest {
   /**
    * Verifies that all configuration objects are available for injection.
    */

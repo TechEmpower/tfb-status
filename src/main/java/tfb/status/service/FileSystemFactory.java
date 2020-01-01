@@ -1,4 +1,4 @@
-package tfb.status.bootstrap;
+package tfb.status.service;
 
 import java.io.File;
 import java.nio.file.FileSystem;
