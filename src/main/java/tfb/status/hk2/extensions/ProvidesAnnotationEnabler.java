@@ -40,7 +40,6 @@ import org.glassfish.hk2.api.ContractIndicator;
 import org.glassfish.hk2.api.DynamicConfiguration;
 import org.glassfish.hk2.api.DynamicConfigurationListener;
 import org.glassfish.hk2.api.DynamicConfigurationService;
-import org.glassfish.hk2.api.HK2RuntimeException;
 import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.Populator;
@@ -302,6 +301,9 @@ final class ProvidesAnnotationEnabler
    *         annotated with {@link Provides}
    * @throws IllegalArgumentException if the method is non-static and {@code
    *         serviceDescriptor} is {@code null}
+   * @throws MultiException if the {@link Provides} annotation has a non-empty
+   *         {@link Provides#destroyMethod()} and the method it specifies is not
+   *         found
    */
   private static @Nullable ActiveDescriptor<?> descriptorFromMethod(
       Method method,
@@ -371,6 +373,9 @@ final class ProvidesAnnotationEnabler
    *         annotated with {@link Provides}
    * @throws IllegalArgumentException if the field is non-static and {@code
    *         serviceDescriptor} is {@code null}
+   * @throws MultiException if the {@link Provides} annotation has a non-empty
+   *         {@link Provides#destroyMethod()} and the method it specifies is not
+   *         found
    */
   private static @Nullable ActiveDescriptor<?> descriptorFromField(
       Field field,
@@ -777,6 +782,9 @@ final class ProvidesAnnotationEnabler
    *        method or field, may be {@code null} if the method or field is
    *        static
    * @param serviceLocator the service locator
+   * @throws MultiException if the {@link Provides} annotation has a non-empty
+   *         {@link Provides#destroyMethod()} and the method it specifies is not
+   *         found
    */
   private static Consumer<Object> getDestroyFunction(
       Provides provides,
@@ -807,12 +815,13 @@ final class ProvidesAnnotationEnabler
                   .orElse(null);
 
         if (destroyMethod == null)
-          throw new HK2RuntimeException(
-              "Destroy method "
-                  + provides
-                  + " on "
-                  + providesMethodOrField
-                  + " not found");
+          throw new MultiException(
+              new NoSuchMethodException(
+                  "Destroy method "
+                      + provides
+                      + " on "
+                      + providesMethodOrField
+                      + " not found"));
 
         return instance -> {
           if (!destroyMethod.canAccess(instance))
@@ -838,12 +847,13 @@ final class ProvidesAnnotationEnabler
                   .orElse(null);
 
         if (destroyMethod == null)
-          throw new HK2RuntimeException(
-              "Destroy method "
-                  + provides
-                  + " on "
-                  + providesMethodOrField
-                  + " not found");
+          throw new MultiException(
+              new NoSuchMethodException(
+                  "Destroy method "
+                      + provides
+                      + " on "
+                      + providesMethodOrField
+                      + " not found"));
 
         if (isStatic)
           return instance -> {
