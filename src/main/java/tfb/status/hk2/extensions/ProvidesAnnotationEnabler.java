@@ -4,10 +4,13 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -17,6 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -25,8 +29,12 @@ import org.glassfish.hk2.api.ClassAnalyzer;
 import org.glassfish.hk2.api.DynamicConfiguration;
 import org.glassfish.hk2.api.DynamicConfigurationListener;
 import org.glassfish.hk2.api.DynamicConfigurationService;
+import org.glassfish.hk2.api.HK2RuntimeException;
+import org.glassfish.hk2.api.MultiException;
+import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.Populator;
 import org.glassfish.hk2.api.Rank;
+import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.jvnet.hk2.annotations.ContractsProvided;
 import org.jvnet.hk2.annotations.Service;
@@ -276,8 +284,19 @@ final class ProvidesAnnotationEnabler
       throw new IllegalArgumentException(
           "Service descriptor required for non-static methods");
 
-    if (!method.isAnnotationPresent(Provides.class))
+    Provides provides = method.getAnnotation(Provides.class);
+    if (provides == null)
       return null;
+
+    Consumer<Object> destroyFunction =
+        getDestroyFunction(
+            provides,
+            isStatic,
+            method,
+            TypeToken.of(method.getGenericReturnType()),
+            serviceClass,
+            serviceDescriptor,
+            serviceLocator);
 
     // Note: Verifying that all the method parameters are registered service
     // types would be incorrect because those service types may be registered
@@ -286,10 +305,12 @@ final class ProvidesAnnotationEnabler
     if (isStatic)
       return new MethodProvidesDescriptor(
           method,
+          destroyFunction,
           serviceLocator);
 
     return new MethodProvidesDescriptor(
         method,
+        destroyFunction,
         serviceLocator,
         // requireNonNull for NullAway's sake.
         Objects.requireNonNull(serviceDescriptor));
@@ -309,19 +330,144 @@ final class ProvidesAnnotationEnabler
       throw new IllegalArgumentException(
           "Service descriptor required for non-static fields");
 
-    if (!field.isAnnotationPresent(Provides.class))
+    Provides provides = field.getAnnotation(Provides.class);
+    if (provides == null)
       return null;
+
+    Consumer<Object> destroyFunction =
+        getDestroyFunction(
+            provides,
+            isStatic,
+            field,
+            TypeToken.of(field.getGenericType()),
+            serviceClass,
+            serviceDescriptor,
+            serviceLocator);
 
     if (isStatic)
       return new FieldProvidesDescriptor(
           field,
+          destroyFunction,
           serviceLocator);
 
     return new FieldProvidesDescriptor(
         field,
+        destroyFunction,
         serviceLocator,
         // requireNonNull for NullAway's sake.
         Objects.requireNonNull(serviceDescriptor));
+  }
+
+  private static Consumer<Object> getDestroyFunction(
+      Provides provides,
+      boolean isStatic,
+      AnnotatedElement providesMethodOrField,
+      TypeToken<?> providesType,
+      Class<?> serviceClass,
+      @Nullable ActiveDescriptor<?> serviceDescriptor,
+      ServiceLocator serviceLocator) {
+
+    Objects.requireNonNull(provides);
+    Objects.requireNonNull(providesMethodOrField);
+    Objects.requireNonNull(providesType);
+    Objects.requireNonNull(serviceClass);
+    Objects.requireNonNull(serviceLocator);
+
+    if (provides.destroyMethod().isEmpty())
+      return instance -> serviceLocator.preDestroy(instance);
+
+    switch (provides.destroyedBy()) {
+      case PROVIDED_INSTANCE: {
+        Method destroyMethod =
+            Arrays.stream(providesType.getRawType().getMethods())
+                  .filter(method -> method.getName().equals(provides.destroyMethod()))
+                  .filter(method -> !Modifier.isStatic(method.getModifiers()))
+                  .filter(method -> method.getParameterCount() == 0)
+                  .findAny()
+                  .orElse(null);
+
+        if (destroyMethod == null)
+          throw new HK2RuntimeException(
+              "Destroy method "
+                  + provides
+                  + " on "
+                  + providesMethodOrField
+                  + " not found");
+
+        return instance -> {
+          if (!destroyMethod.canAccess(instance))
+            destroyMethod.setAccessible(true);
+
+          try {
+            destroyMethod.invoke(instance);
+          } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new MultiException(e);
+          }
+        };
+      }
+
+      case PROVIDER: {
+        Method destroyMethod =
+            Arrays.stream(serviceClass.getMethods())
+                  .filter(method -> method.getName().equals(provides.destroyMethod()))
+                  .filter(method -> isStatic == Modifier.isStatic(method.getModifiers()))
+                  .filter(method -> method.getParameterCount() == 1)
+                  .filter(method -> TypeToken.of(method.getGenericParameterTypes()[0])
+                                             .isSupertypeOf(providesType))
+                  .findAny()
+                  .orElse(null);
+
+        if (destroyMethod == null)
+          throw new HK2RuntimeException(
+              "Destroy method "
+                  + provides
+                  + " on "
+                  + providesMethodOrField
+                  + " not found");
+
+        if (isStatic)
+          return instance -> {
+            if (!destroyMethod.canAccess(null))
+              destroyMethod.setAccessible(true);
+
+            try {
+              destroyMethod.invoke(null, instance);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+              throw new MultiException(e);
+            }
+          };
+
+        // The calling code should not let this be null if we've reached this
+        // case.
+        Objects.requireNonNull(serviceDescriptor);
+        return instance -> {
+          boolean isPerLookupService =
+              serviceDescriptor.getScopeAnnotation() == PerLookup.class;
+
+          ServiceHandle<?> serviceHandle =
+              serviceLocator.getServiceHandle(serviceDescriptor);
+
+          try {
+            Object service = serviceHandle.getService();
+            if (!destroyMethod.canAccess(service))
+              destroyMethod.setAccessible(true);
+
+            destroyMethod.invoke(service, instance);
+          } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new MultiException(e);
+          } finally {
+            if (isPerLookupService)
+              serviceHandle.close();
+          }
+        };
+      }
+    }
+
+    throw new AssertionError(
+        "Unknown "
+            + Provides.Destroyer.class.getSimpleName()
+            + " value "
+            + provides.destroyedBy());
   }
 
   @Override

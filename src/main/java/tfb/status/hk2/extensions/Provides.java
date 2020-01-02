@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 import javax.inject.Scope;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PerLookup;
+import org.glassfish.hk2.api.PreDestroy;
 
 /**
  * An annotation indicating that a method or field is the provider of a service.
@@ -27,7 +28,51 @@ import org.glassfish.hk2.api.PerLookup;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.FIELD })
-public @interface Provides {}
+public @interface Provides {
+  /**
+   * If non-empty, specifies the name of the method to be invoked when the
+   * provided service is being destroyed.  The class whose method is to be
+   * invoked is specified by {@link #destroyedBy()}.
+   *
+   * <p>If empty, then the default pre-destroy behavior for the provided type
+   * will be used.  If the provided type implements {@link PreDestroy} for
+   * example, then its {@link PreDestroy#preDestroy()} method will be invoked.
+   */
+  String destroyMethod() default "";
+
+  /**
+   * Specifies who is responsible for destroying instances of the provided
+   * service, assuming that {@link #destroyMethod()} is non-empty.  If {@link
+   * #destroyMethod()} is empty then this value is ignored.
+   *
+   * <p>See {@link Destroyer} for definitions of the possible values.
+   */
+  Destroyer destroyedBy() default Destroyer.PROVIDED_INSTANCE;
+
+  /**
+   * Specifies who is responsible for destroying instances of a service.
+   */
+  enum Destroyer {
+    /**
+     * The instance of the service that is provided is responsible for
+     * destroying itself.  {@link #destroyMethod()} names a non-static,
+     * zero-parameter, public method of the provided service type.
+     */
+    PROVIDED_INSTANCE,
+
+    /**
+     * The instance or class that provides the service -- the one declaring a
+     * method or field annotated with {@link Provides} -- is responsible for
+     * destroying instances of the provided service.  {@link #destroyMethod()}
+     * names a public method of the providing class that accepts one parameter,
+     * where the type of that parameter is a supertype of the provided service
+     * type.  If the method or field annotated with {@link Provides} is static,
+     * then the destroy method must also be static.  Otherwise the destroy
+     * method must be non-static.
+     */
+    PROVIDER
+  }
+}
 
 //
 // TODO: Re-examine how contracts of @Provides services are determined.

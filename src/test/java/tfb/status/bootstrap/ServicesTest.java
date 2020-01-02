@@ -1067,6 +1067,142 @@ public final class ServicesTest {
   }
 
   /**
+   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * provided type to be invoked at the end of the service's lifecycle when the
+   * {@link Provides} annotation is on a static field.
+   */
+  @Test
+  public void testProvidesCustomDisposeStaticField() {
+    Services services = newServices();
+
+    HasCustomDisposeMethod service = services.getService(
+        ProvidedWithCustomDisposeFromStaticField.class);
+
+    assertFalse(service.isClosed());
+    services.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
+   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * provided type to be invoked at the end of the service's lifecycle when the
+   * {@link Provides} annotation is on an instance field.
+   */
+  @Test
+  public void testProvidesCustomDisposeInstanceField() {
+    Services services = newServices();
+
+    HasCustomDisposeMethod service = services.getService(
+        ProvidedWithCustomDisposeFromInstanceField.class);
+
+    assertFalse(service.isClosed());
+    services.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
+   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * provided type to be invoked at the end of the service's lifecycle when the
+   * {@link Provides} annotation is on a static method.
+   */
+  @Test
+  public void testProvidesCustomDisposeStaticMethod() {
+    Services services = newServices();
+
+    HasCustomDisposeMethod service = services.getService(
+        ProvidedWithCustomDisposeFromStaticMethod.class);
+
+    assertFalse(service.isClosed());
+    services.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
+   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * provided type to be invoked at the end of the service's lifecycle when the
+   * {@link Provides} annotation is on an instance method.
+   */
+  @Test
+  public void testProvidesCustomDisposeInstanceMethod() {
+    Services services = newServices();
+
+    HasCustomDisposeMethod service = services.getService(
+        ProvidedWithCustomDisposeFromInstanceMethod.class);
+
+    assertFalse(service.isClosed());
+    services.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
+   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * provider type to be invoked at the end of the service's lifecycle when the
+   * {@link Provides} annotation is on a static field.
+   */
+  @Test
+  public void testProvidesCustomDisposeStaticFieldFactoryDestroys() {
+    Services services = newServices();
+
+    HasCustomDisposeMethod service = services.getService(
+        ProvidedWithCustomDisposeFromStaticFieldForFactory.class);
+
+    assertFalse(service.isClosed());
+    services.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
+   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * provider type to be invoked at the end of the service's lifecycle when the
+   * {@link Provides} annotation is on a static field.
+   */
+  @Test
+  public void testProvidesCustomDisposeInstanceFieldFactoryDestroys() {
+    Services services = newServices();
+
+    HasCustomDisposeMethod service = services.getService(
+        ProvidedWithCustomDisposeFromInstanceFieldForFactory.class);
+
+    assertFalse(service.isClosed());
+    services.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
+   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * provider type to be invoked at the end of the service's lifecycle when the
+   * {@link Provides} annotation is on a static field.
+   */
+  @Test
+  public void testProvidesCustomDisposeStaticMethodFactoryDestroys() {
+    Services services = newServices();
+
+    HasCustomDisposeMethod service = services.getService(
+        ProvidedWithCustomDisposeFromStaticMethodForFactory.class);
+
+    assertFalse(service.isClosed());
+    services.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
+   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * provider type to be invoked at the end of the service's lifecycle when the
+   * {@link Provides} annotation is on a static field.
+   */
+  @Test
+  public void testProvidesCustomDisposeInstanceMethodFactoryDestroys() {
+    Services services = newServices();
+
+    HasCustomDisposeMethod service = services.getService(
+        ProvidedWithCustomDisposeFromInstanceMethodForFactory.class);
+
+    assertFalse(service.isClosed());
+    services.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private Services newServices() {
@@ -1093,6 +1229,7 @@ public final class ServicesTest {
             addActiveDescriptor(AbstractClassProvides.class);
             addActiveDescriptor(InterfaceProvides.class);
             addActiveDescriptor(UnsatisfiedDependencies.class);
+            addActiveDescriptor(ProvidesCustomDispose.class);
           }
         };
 
@@ -1545,4 +1682,95 @@ public final class ServicesTest {
     @Inject
     public UnsatisfiedDependencies(UnregisteredService dependency) {}
   }
+
+  public static final class ProvidesCustomDispose {
+    @Provides(destroyMethod = "customDisposeMethod")
+    @Singleton
+    public static final ProvidedWithCustomDisposeFromStaticField staticField =
+        new ProvidedWithCustomDisposeFromStaticField();
+
+    @Provides(
+        destroyMethod = "staticDestroyMethod",
+        destroyedBy = Provides.Destroyer.PROVIDER)
+    @Singleton
+    public static final ProvidedWithCustomDisposeFromStaticFieldForFactory staticFieldForFactory =
+        new ProvidedWithCustomDisposeFromStaticFieldForFactory();
+
+    @Provides(
+        destroyMethod = "customDisposeMethod",
+        destroyedBy = Provides.Destroyer.PROVIDED_INSTANCE)
+    @Singleton
+    public final ProvidedWithCustomDisposeFromInstanceField instanceField =
+        new ProvidedWithCustomDisposeFromInstanceField();
+
+    @Provides(
+        destroyMethod = "instanceDestroyMethod",
+        destroyedBy = Provides.Destroyer.PROVIDER)
+    @Singleton
+    public final ProvidedWithCustomDisposeFromInstanceFieldForFactory instanceFieldForFactory =
+        new ProvidedWithCustomDisposeFromInstanceFieldForFactory();
+
+    @Provides(
+        destroyMethod = "customDisposeMethod",
+        destroyedBy = Provides.Destroyer.PROVIDED_INSTANCE)
+    @Singleton
+    public static ProvidedWithCustomDisposeFromStaticMethod staticMethod() {
+      return new ProvidedWithCustomDisposeFromStaticMethod();
+    }
+
+    @Provides(
+        destroyMethod = "staticDestroyMethod",
+        destroyedBy = Provides.Destroyer.PROVIDER)
+    @Singleton
+    public static ProvidedWithCustomDisposeFromStaticMethodForFactory staticMethodForFactory() {
+      return new ProvidedWithCustomDisposeFromStaticMethodForFactory();
+    }
+
+    @Provides(
+        destroyMethod = "customDisposeMethod",
+        destroyedBy = Provides.Destroyer.PROVIDED_INSTANCE)
+    @Singleton
+    public ProvidedWithCustomDisposeFromInstanceMethod instanceMethod() {
+      return new ProvidedWithCustomDisposeFromInstanceMethod();
+    }
+
+    @Provides(
+        destroyMethod = "instanceDestroyMethod",
+        destroyedBy = Provides.Destroyer.PROVIDER)
+    @Singleton
+    public ProvidedWithCustomDisposeFromInstanceMethodForFactory instanceMethodForFactory() {
+      return new ProvidedWithCustomDisposeFromInstanceMethodForFactory();
+    }
+
+    public static void staticDestroyMethod(HasCustomDisposeMethod instance) {
+      instance.customDisposeMethod();
+    }
+
+    public void instanceDestroyMethod(HasCustomDisposeMethod instance) {
+      instance.customDisposeMethod();
+    }
+  }
+
+  public static class HasCustomDisposeMethod {
+    @GuardedBy("this")
+    private boolean isClosed;
+
+    public synchronized boolean isClosed() {
+      return isClosed;
+    }
+
+    public synchronized void customDisposeMethod() {
+      isClosed = true;
+    }
+  }
+
+  public static final class ProvidedWithCustomDisposeFromStaticField extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromInstanceField extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromStaticMethod extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromInstanceMethod extends HasCustomDisposeMethod {}
+
+  public static final class ProvidedWithCustomDisposeFromStaticFieldForFactory extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromInstanceFieldForFactory extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromStaticMethodForFactory extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromInstanceMethodForFactory extends HasCustomDisposeMethod {}
 }

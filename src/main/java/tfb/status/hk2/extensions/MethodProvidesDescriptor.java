@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.inject.Scope;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
@@ -28,13 +29,16 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
  */
 final class MethodProvidesDescriptor extends ProvidesDescriptor<Object> {
   private final Method method;
+  private final Consumer<Object> disposeFunction;
   private final ServiceLocator serviceLocator;
   private final @Nullable ActiveDescriptor<?> serviceDescriptor;
 
   MethodProvidesDescriptor(Method method,
+                           Consumer<Object> disposeFunction,
                            ServiceLocator serviceLocator) {
 
     this.method = Objects.requireNonNull(method);
+    this.disposeFunction = Objects.requireNonNull(disposeFunction);
     this.serviceLocator = Objects.requireNonNull(serviceLocator);
     this.serviceDescriptor = null;
 
@@ -44,10 +48,12 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor<Object> {
   }
 
   MethodProvidesDescriptor(Method method,
+                           Consumer<Object> disposeFunction,
                            ServiceLocator serviceLocator,
                            ActiveDescriptor<?> serviceDescriptor) {
 
     this.method = Objects.requireNonNull(method);
+    this.disposeFunction = Objects.requireNonNull(disposeFunction);
     this.serviceLocator = Objects.requireNonNull(serviceLocator);
     this.serviceDescriptor = Objects.requireNonNull(serviceDescriptor);
 
@@ -126,8 +132,9 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor<Object> {
   }
 
   @Override
-  public void dispose(Object instance) {
-    serviceLocator.preDestroy(instance);
+  public void dispose(@Nullable Object instance) {
+    if (instance != null)
+      disposeFunction.accept(instance);
   }
 
   @Override
