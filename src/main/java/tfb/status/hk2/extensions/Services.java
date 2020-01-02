@@ -54,6 +54,22 @@ public final class Services {
   }
 
   /**
+   * Adds the specified type as a service.
+   */
+  public void addClass(Class<?> type) {
+    Objects.requireNonNull(type);
+    ServiceLocatorUtilities.addClasses(serviceLocator, type);
+  }
+
+  /**
+   * Adds the specified instance as a service.
+   */
+  public void addInstance(Object service) {
+    Objects.requireNonNull(service);
+    ServiceLocatorUtilities.addOneConstant(serviceLocator, service);
+  }
+
+  /**
    * Returns an instance of the service of the specified type.
    *
    * @throws MultiException if a registered services matches the specified type
