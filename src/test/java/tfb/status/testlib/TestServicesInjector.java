@@ -5,7 +5,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import tfb.status.bootstrap.ServicesBinder;
 import tfb.status.hk2.extensions.Services;
 
 /**
@@ -70,9 +69,11 @@ public final class TestServicesInjector implements ParameterResolver {
   private static final class StoredServices
       implements ExtensionContext.Store.CloseableResource {
 
-    final Services services =
-        new Services(new ServicesBinder("test_config.yml"),
-                     new TestServicesBinder());
+    final Services services = new Services();
+
+    StoredServices() {
+      services.addClass(TestServicesBinder.class);
+    }
 
     @Override
     public void close() {

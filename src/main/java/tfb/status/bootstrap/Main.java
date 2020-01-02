@@ -39,7 +39,8 @@ public final class Main {
                 + " arguments instead");
     }
 
-    var services = new Services(new ServicesBinder(configFilePath));
+    var services = new Services();
+    services.addInstance(new ServicesBinder(configFilePath));
     HttpServer httpServer = services.getService(HttpServer.class);
     httpServer.start();
   }
