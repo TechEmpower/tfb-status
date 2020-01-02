@@ -10,7 +10,7 @@ final class TestServicesBinder extends AbstractBinder {
   protected void configure() {
     addActiveDescriptor(MutableClockFactory.class);
     addActiveDescriptor(MutableTickerFactory.class);
-    addActiveFactoryDescriptor(InMemoryFileSystemFactory.class);
+    addActiveDescriptor(InMemoryFileSystemFactory.class);
     addActiveDescriptor(HttpClientFactory.class);
     addActiveDescriptor(TestHandler.class);
     addActiveDescriptor(LogTester.class);
