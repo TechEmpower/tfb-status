@@ -1069,6 +1069,10 @@ public final class ServicesTest {
         () -> services.getService(InterfaceProvides.class));
   }
 
+  /**
+   * Verifies that an enum class may be registered as a service when its enum
+   * constants are annotated with {@link Provides}.
+   */
   @Test
   public void testEnumProvides() {
     Services services = newServices();
@@ -1081,8 +1085,12 @@ public final class ServicesTest {
         Sets.immutableEnumSet(provider));
   }
 
+  /**
+   * Verifies that contracts of enum constants annotated with {@link Provides}
+   * are detected correctly.
+   */
   @Test
-  public void testEnumProvidesContract() {
+  public void testEnumProvidesContracts() {
     Services services = newServices();
 
     IterableProvider<EnumContract> provider =
@@ -1237,6 +1245,94 @@ public final class ServicesTest {
   }
 
   /**
+   * Verifies that {@link Provides#contractsProvided()} may specify a list of
+   * contracts that overrides the default contracts for a static field.
+   */
+  @Test
+  public void testProvidesExplicitContractsFromStaticField() {
+    Services services = newServices();
+
+    ExplicitContractInStaticField service =
+        services.getService(ExplicitContractInStaticField.class);
+
+    assertTrue(service instanceof HasDefaultContractsInStaticField);
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(HasDefaultContractsInStaticField.class));
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(DefaultContractInStaticField.class));
+  }
+
+  /**
+   * Verifies that {@link Provides#contractsProvided()} may specify a list of
+   * contracts that overrides the default contracts for an instance field.
+   */
+  @Test
+  public void testProvidesExplicitContractsFromInstanceField() {
+    Services services = newServices();
+
+    ExplicitContractInInstanceField service =
+        services.getService(ExplicitContractInInstanceField.class);
+
+    assertTrue(service instanceof HasDefaultContractsInInstanceField);
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(HasDefaultContractsInInstanceField.class));
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(DefaultContractInInstanceField.class));
+  }
+
+  /**
+   * Verifies that {@link Provides#contractsProvided()} may specify a list of
+   * contracts that overrides the default contracts for a static method.
+   */
+  @Test
+  public void testProvidesExplicitContractsFromStaticMethod() {
+    Services services = newServices();
+
+    ExplicitContractInStaticMethod service =
+        services.getService(ExplicitContractInStaticMethod.class);
+
+    assertTrue(service instanceof HasDefaultContractsInStaticMethod);
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(HasDefaultContractsInStaticMethod.class));
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(DefaultContractInStaticMethod.class));
+  }
+
+  /**
+   * Verifies that {@link Provides#contractsProvided()} may specify a list of
+   * contracts that overrides the default contracts for an instance method.
+   */
+  @Test
+  public void testProvidesExplicitContractsFromInstanceMethod() {
+    Services services = newServices();
+
+    ExplicitContractInInstanceMethod service =
+        services.getService(ExplicitContractInInstanceMethod.class);
+
+    assertTrue(service instanceof HasDefaultContractsInInstanceMethod);
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(HasDefaultContractsInInstanceMethod.class));
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> services.getService(DefaultContractInInstanceMethod.class));
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private Services newServices() {
@@ -1266,6 +1362,7 @@ public final class ServicesTest {
             addActiveDescriptor(EnumProvidesContract.class);
             addActiveDescriptor(UnsatisfiedDependencies.class);
             addActiveDescriptor(ProvidesCustomDispose.class);
+            addActiveDescriptor(ProvidesExplicitContracts.class);
           }
         };
 
@@ -1845,4 +1942,47 @@ public final class ServicesTest {
   public static final class ProvidedWithCustomDisposeFromInstanceFieldForFactory extends HasCustomDisposeMethod {}
   public static final class ProvidedWithCustomDisposeFromStaticMethodForFactory extends HasCustomDisposeMethod {}
   public static final class ProvidedWithCustomDisposeFromInstanceMethodForFactory extends HasCustomDisposeMethod {}
+
+  public static class ProvidesExplicitContracts {
+    @Provides(contractsProvided = ExplicitContractInStaticField.class)
+    public static final HasDefaultContractsInStaticField staticField =
+        new HasDefaultContractsInStaticField();
+
+    @Provides(contractsProvided = ExplicitContractInInstanceField.class)
+    public final HasDefaultContractsInInstanceField instanceField =
+        new HasDefaultContractsInInstanceField();
+
+    @Provides(contractsProvided = ExplicitContractInStaticMethod.class)
+    public static HasDefaultContractsInStaticMethod staticMethod() {
+      return new HasDefaultContractsInStaticMethod();
+    }
+
+    @Provides(contractsProvided = ExplicitContractInInstanceMethod.class)
+    public final HasDefaultContractsInInstanceMethod instanceMethod() {
+      return new HasDefaultContractsInInstanceMethod();
+    }
+  }
+
+  @Contract public interface DefaultContractInStaticField {}
+  @Contract public interface DefaultContractInInstanceField {}
+  @Contract public interface DefaultContractInStaticMethod {}
+  @Contract public interface DefaultContractInInstanceMethod {}
+
+  // not @Contract
+  public interface ExplicitContractInStaticField {}
+  public interface ExplicitContractInInstanceField {}
+  public interface ExplicitContractInStaticMethod {}
+  public interface ExplicitContractInInstanceMethod {}
+
+  public static final class HasDefaultContractsInStaticField
+      implements DefaultContractInStaticField, ExplicitContractInStaticField {}
+
+  public static final class HasDefaultContractsInInstanceField
+      implements DefaultContractInInstanceField, ExplicitContractInInstanceField {}
+
+  public static final class HasDefaultContractsInStaticMethod
+      implements DefaultContractInStaticMethod, ExplicitContractInStaticMethod {}
+
+  public static final class HasDefaultContractsInInstanceMethod
+      implements DefaultContractInInstanceMethod, ExplicitContractInInstanceMethod {}
 }
