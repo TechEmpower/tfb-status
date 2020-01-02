@@ -288,6 +288,21 @@ final class ProvidesAnnotationEnabler
     return added;
   }
 
+  /**
+   * Produces an {@link ActiveDescriptor} from a method that is annotated with
+   * {@link Provides}.  Returns {@code null} if the method is not annotated with
+   * {@link Provides}.
+   *
+   * @param method the method that may be annotated with {@link Provides}
+   * @param serviceClass the class of the service that defines the method
+   * @param serviceLocator the service locator
+   * @param serviceDescriptor the descriptor of the service that defines the
+   *        method, may be {@code null} if the method is static
+   * @return a descriptor for the method, or {@code null} if the method is not
+   *         annotated with {@link Provides}
+   * @throws IllegalArgumentException if the method is non-static and {@code
+   *         serviceDescriptor} is {@code null}
+   */
   private static @Nullable ActiveDescriptor<?> descriptorFromMethod(
       Method method,
       Class<?> serviceClass,
@@ -342,6 +357,21 @@ final class ProvidesAnnotationEnabler
         destroyFunction);
   }
 
+  /**
+   * Produces an {@link ActiveDescriptor} from a field that is annotated with
+   * {@link Provides}.  Returns {@code null} if the field is not annotated with
+   * {@link Provides}.
+   *
+   * @param field the field that may be annotated with {@link Provides}
+   * @param serviceClass the class of the service that defines the field
+   * @param serviceLocator the service locator
+   * @param serviceDescriptor the descriptor of the service that defines the
+   *        field, may be {@code null} if the field is static
+   * @return a descriptor for the field, or {@code null} if the field is not
+   *         annotated with {@link Provides}
+   * @throws IllegalArgumentException if the field is non-static and {@code
+   *         serviceDescriptor} is {@code null}
+   */
   private static @Nullable ActiveDescriptor<?> descriptorFromField(
       Field field,
       Class<?> serviceClass,
@@ -392,6 +422,14 @@ final class ProvidesAnnotationEnabler
         destroyFunction);
   }
 
+  /**
+   * Returns the set of contracts defined by a method or field that is annotated
+   * with {@link Provides}.
+   *
+   * @param provides the {@link Provides} annotation on the method or field
+   * @param type the {@link Method#getGenericReturnType()} of the annotated
+   *        method or the {@link Field#getGenericType()} of the annotated field
+   */
   private static ImmutableSet<Type> getContracts(Provides provides, Type type) {
     Objects.requireNonNull(provides);
     Objects.requireNonNull(type);
@@ -417,8 +455,14 @@ final class ProvidesAnnotationEnabler
                  .collect(toImmutableSet());
   }
 
+  /**
+   * Returns {@code true} if the specified type is a contract.
+   */
   private static boolean isContract(Type type) {
     Objects.requireNonNull(type);
+
+    // This block of code reproduces the behavior of
+    // org.jvnet.hk2.internal.Utilities#hasContract(Class)
 
     Class<?> rawClass = ReflectionHelper.getRawClass(type);
     if (rawClass == null)
@@ -434,6 +478,16 @@ final class ProvidesAnnotationEnabler
     return false;
   }
 
+  /**
+   * Returns the scope annotation for a method that is annotated with {@link
+   * Provides}.
+   *
+   * @param method the method that is annotated with {@link Provides}
+   * @param contracts the contracts provided by the method
+   * @param serviceDescriptor the descriptor of the service that defines the
+   *        method, in case the scope of that service is relevant, or {@code
+   *        null} if the scope of that service is irrelevant
+   */
   private static Annotation getScopeAnnotation(
       Method method,
       Set<Type> contracts,
@@ -446,6 +500,16 @@ final class ProvidesAnnotationEnabler
         serviceDescriptor);
   }
 
+  /**
+   * Returns the scope annotation for a field that is annotated with {@link
+   * Provides}.
+   *
+   * @param field the field that is annotated with {@link Provides}
+   * @param contracts the contracts provided by the field
+   * @param serviceDescriptor the descriptor of the service that defines the
+   *        field, in case the scope of that service is relevant, or {@code
+   *        null} if the scope of that service is irrelevant
+   */
   private static Annotation getScopeAnnotation(
       Field field,
       Set<Type> contracts,
@@ -458,6 +522,20 @@ final class ProvidesAnnotationEnabler
         serviceDescriptor);
   }
 
+  /**
+   * Returns the scope annotation for a method or field that is annotated with
+   * {@link Provides}.
+   *
+   * @param annotatedType the {@link Method#getAnnotatedReturnType()} or the
+   *        {@link Field#getAnnotatedType()} of the method or field that is
+   *        annotated with {@link Provides}
+   * @param annotatedElement the method or field that is annotated with {@link
+   *        Provides}
+   * @param contracts the contracts provided by the method or field
+   * @param serviceDescriptor the descriptor of the service that defines the
+   *        method or field, in case the scope of that service is relevant, or
+   *        {@code null} if the scope of that service is irrelevant
+   */
   private static Annotation getScopeAnnotation(
       AnnotatedType annotatedType,
       AnnotatedElement annotatedElement,
@@ -491,6 +569,15 @@ final class ProvidesAnnotationEnabler
     return ServiceLocatorUtilities.getPerLookupAnnotation();
   }
 
+  /**
+   * Retrieves an instance of a service by invoking a static method that is
+   * annotated with {@link Provides}.
+   *
+   * @param method the static method that is annotated with {@link Provides}.
+   * @param serviceLocator the service locator
+   * @return a new instance of the service provided by the method
+   * @throws MultiException if the invocation fails
+   */
   private static Object createFromStaticMethod(
       Method method,
       ServiceLocator serviceLocator) {
@@ -498,6 +585,17 @@ final class ProvidesAnnotationEnabler
     return createFromMethod(method, serviceLocator, null);
   }
 
+  /**
+   * Retrieves an instance of a service by invoking an instance method that is
+   * annotated with {@link Provides}.
+   *
+   * @param method the instance method that is annotated with {@link Provides}.
+   * @param serviceLocator the service locator
+   * @param serviceDescriptor the descriptor of the service that defines the
+   *        method
+   * @return a new instance of the service provided by the method
+   * @throws MultiException if the invocation fails
+   */
   private static Object createFromInstanceMethod(
       Method method,
       ServiceLocator serviceLocator,
@@ -506,6 +604,17 @@ final class ProvidesAnnotationEnabler
     return createFromMethod(method, serviceLocator, Objects.requireNonNull(serviceDescriptor));
   }
 
+  /**
+   * Retrieves an instance of a service by invoking a method that is annotated
+   * with {@link Provides}.
+   *
+   * @param method the method that is annotated with {@link Provides}.
+   * @param serviceLocator the service locator
+   * @param serviceDescriptor the descriptor of the service that defines the
+   *        method, or {@code null} if the method is static
+   * @return a new instance of the service provided by the method
+   * @throws MultiException if the invocation fails
+   */
   private static Object createFromMethod(
       Method method,
       ServiceLocator serviceLocator,
@@ -576,6 +685,15 @@ final class ProvidesAnnotationEnabler
     }
   }
 
+  /**
+   * Retrieves an instance of a service from a static field that is annotated
+   * with {@link Provides}.
+   *
+   * @param field the static field that is annotated with {@link Provides}.
+   * @param serviceLocator the service locator
+   * @return the instance of the service that is contained in the field
+   * @throws MultiException if reading the field fails
+   */
   private static Object createFromStaticField(
       Field field,
       ServiceLocator serviceLocator) {
@@ -597,6 +715,17 @@ final class ProvidesAnnotationEnabler
     return provided;
   }
 
+  /**
+   * Retrieves an instance of a service from an instance field that is annotated
+   * with {@link Provides}.
+   *
+   * @param field the instance field that is annotated with {@link Provides}.
+   * @param serviceLocator the service locator
+   * @param serviceDescriptor the descriptor of the service that defines the
+   *        field
+   * @return the instance of the service that is contained in the field
+   * @throws MultiException if reading the field fails
+   */
   private static Object createFromInstanceField(
       Field field,
       ServiceLocator serviceLocator,
@@ -632,6 +761,23 @@ final class ProvidesAnnotationEnabler
     }
   }
 
+  /**
+   * Returns a function that destroys instances of services that were retrieved
+   * from a method or field annotated with {@link Provides}.
+   *
+   * @param provides the {@link Provides} annotation on the method or field
+   * @param isStatic {@code true} if the method or field is static
+   * @param providesMethodOrField the method or field that is annotated with
+   *        {@link Provides}
+   * @param providesType the {@link Method#getGenericReturnType()} or {@link
+   *        Field#getGenericType()}
+   * @param serviceClass the class of the service that defines the method or
+   *        field
+   * @param serviceDescriptor the descriptor of the service that defines the
+   *        method or field, may be {@code null} if the method or field is
+   *        static
+   * @param serviceLocator the service locator
+   */
   private static Consumer<Object> getDestroyFunction(
       Provides provides,
       boolean isStatic,
