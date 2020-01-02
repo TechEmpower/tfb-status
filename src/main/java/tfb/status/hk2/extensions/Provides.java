@@ -19,7 +19,7 @@ import org.jvnet.hk2.annotations.ContractsProvided;
  * {@linkplain Method#getGenericReturnType() method return type} of the
  * annotated method or the {@linkplain Field#getGenericType() field type} of the
  * annotated field.  These default contracts can be overridden using {@link
- * #contractsProvided()}.
+ * #contracts()}.
  *
  * <p>The scope of the provided service is:
  * <ul>
@@ -42,7 +42,7 @@ public @interface Provides {
    *
    * <p>If empty, then the default contracts for the provided type will be used.
    */
-  Class<?>[] contractsProvided() default {};
+  Class<?>[] contracts() default {};
 
   /**
    * If non-empty, specifies the name of the method to be invoked when the

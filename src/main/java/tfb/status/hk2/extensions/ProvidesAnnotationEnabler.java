@@ -396,8 +396,8 @@ final class ProvidesAnnotationEnabler
     Objects.requireNonNull(provides);
     Objects.requireNonNull(type);
 
-    if (provides.contractsProvided().length > 0)
-      return ImmutableSet.copyOf(provides.contractsProvided());
+    if (provides.contracts().length > 0)
+      return ImmutableSet.copyOf(provides.contracts());
 
     // This block of code reproduces the behavior of
     // org.jvnet.hk2.internal.Utilities#getAutoAdvertisedTypes(Type)

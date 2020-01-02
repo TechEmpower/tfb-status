@@ -1245,8 +1245,8 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#contractsProvided()} may specify a list of
-   * contracts that overrides the default contracts for a static field.
+   * Verifies that {@link Provides#contracts()} may specify a list of contracts
+   * that overrides the default contracts for a static field.
    */
   @Test
   public void testProvidesExplicitContractsFromStaticField() {
@@ -1267,8 +1267,8 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#contractsProvided()} may specify a list of
-   * contracts that overrides the default contracts for an instance field.
+   * Verifies that {@link Provides#contracts()} may specify a list of contracts
+   * that overrides the default contracts for an instance field.
    */
   @Test
   public void testProvidesExplicitContractsFromInstanceField() {
@@ -1289,8 +1289,8 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#contractsProvided()} may specify a list of
-   * contracts that overrides the default contracts for a static method.
+   * Verifies that {@link Provides#contracts()} may specify a list of contracts
+   * that overrides the default contracts for a static method.
    */
   @Test
   public void testProvidesExplicitContractsFromStaticMethod() {
@@ -1311,8 +1311,8 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#contractsProvided()} may specify a list of
-   * contracts that overrides the default contracts for an instance method.
+   * Verifies that {@link Provides#contracts()} may specify a list of contracts
+   * that overrides the default contracts for an instance method.
    */
   @Test
   public void testProvidesExplicitContractsFromInstanceMethod() {
@@ -1944,20 +1944,20 @@ public final class ServicesTest {
   public static final class ProvidedWithCustomDisposeFromInstanceMethodForFactory extends HasCustomDisposeMethod {}
 
   public static class ProvidesExplicitContracts {
-    @Provides(contractsProvided = ExplicitContractInStaticField.class)
+    @Provides(contracts = ExplicitContractInStaticField.class)
     public static final HasDefaultContractsInStaticField staticField =
         new HasDefaultContractsInStaticField();
 
-    @Provides(contractsProvided = ExplicitContractInInstanceField.class)
+    @Provides(contracts = ExplicitContractInInstanceField.class)
     public final HasDefaultContractsInInstanceField instanceField =
         new HasDefaultContractsInInstanceField();
 
-    @Provides(contractsProvided = ExplicitContractInStaticMethod.class)
+    @Provides(contracts = ExplicitContractInStaticMethod.class)
     public static HasDefaultContractsInStaticMethod staticMethod() {
       return new HasDefaultContractsInStaticMethod();
     }
 
-    @Provides(contractsProvided = ExplicitContractInInstanceMethod.class)
+    @Provides(contracts = ExplicitContractInInstanceMethod.class)
     public final HasDefaultContractsInInstanceMethod instanceMethod() {
       return new HasDefaultContractsInInstanceMethod();
     }
