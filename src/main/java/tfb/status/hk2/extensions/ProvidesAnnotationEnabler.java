@@ -11,12 +11,15 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -25,8 +28,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+import javax.inject.Scope;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
@@ -43,6 +48,7 @@ import org.glassfish.hk2.api.Rank;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.NamedImpl;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 import org.jvnet.hk2.annotations.Contract;
 import org.jvnet.hk2.annotations.ContractsProvided;
@@ -198,6 +204,7 @@ final class ProvidesAnnotationEnabler
                         descriptorFromMethod(
                             method,
                             serviceClass,
+                            serviceLocator,
                             null))
                 .filter(methodDescriptor -> methodDescriptor != null)
                 .map(methodDescriptor -> configuration.addActiveDescriptor(methodDescriptor))
@@ -217,6 +224,7 @@ final class ProvidesAnnotationEnabler
                         descriptorFromField(
                             field,
                             serviceClass,
+                            serviceLocator,
                             null))
                 .filter(fieldDescriptor -> fieldDescriptor != null)
                 .map(fieldDescriptor -> configuration.addActiveDescriptor(fieldDescriptor))
@@ -236,6 +244,7 @@ final class ProvidesAnnotationEnabler
                         descriptorFromMethod(
                             method,
                             serviceClass,
+                            serviceLocator,
                             serviceDescriptor))
                 .filter(methodDescriptor -> methodDescriptor != null)
                 .map(methodDescriptor -> configuration.addActiveDescriptor(methodDescriptor))
@@ -255,6 +264,7 @@ final class ProvidesAnnotationEnabler
                         descriptorFromField(
                             field,
                             serviceClass,
+                            serviceLocator,
                             serviceDescriptor))
                 .filter(fieldDescriptor -> fieldDescriptor != null)
                 .map(fieldDescriptor -> configuration.addActiveDescriptor(fieldDescriptor))
@@ -278,13 +288,15 @@ final class ProvidesAnnotationEnabler
     return added;
   }
 
-  private @Nullable ActiveDescriptor<?> descriptorFromMethod(
+  private static @Nullable ActiveDescriptor<?> descriptorFromMethod(
       Method method,
       Class<?> serviceClass,
+      ServiceLocator serviceLocator,
       @Nullable ActiveDescriptor<?> serviceDescriptor) {
 
     Objects.requireNonNull(method);
     Objects.requireNonNull(serviceClass);
+    Objects.requireNonNull(serviceLocator);
 
     boolean isStatic = Modifier.isStatic(method.getModifiers());
 
@@ -298,6 +310,14 @@ final class ProvidesAnnotationEnabler
 
     ImmutableSet<Type> contracts =
         getContracts(provides, method.getGenericReturnType());
+
+    Annotation scope =
+        getScopeAnnotation(method, contracts, serviceDescriptor);
+
+    Supplier<Object> createFunction =
+        (serviceDescriptor == null)
+            ? () -> createFromStaticMethod(method, serviceLocator)
+            : () -> createFromInstanceMethod(method, serviceLocator, serviceDescriptor);
 
     Consumer<Object> destroyFunction =
         getDestroyFunction(
@@ -313,29 +333,24 @@ final class ProvidesAnnotationEnabler
     // types would be incorrect because those service types may be registered
     // later.
 
-    if (isStatic)
-      return new MethodProvidesDescriptor(
-          method,
-          contracts,
-          destroyFunction,
-          serviceLocator);
-
-    return new MethodProvidesDescriptor(
+    return new ProvidesDescriptor<>(
         method,
+        method.getGenericReturnType(),
         contracts,
-        destroyFunction,
-        serviceLocator,
-        // requireNonNull for NullAway's sake.
-        Objects.requireNonNull(serviceDescriptor));
+        scope,
+        createFunction,
+        destroyFunction);
   }
 
-  private @Nullable ActiveDescriptor<?> descriptorFromField(
+  private static @Nullable ActiveDescriptor<?> descriptorFromField(
       Field field,
       Class<?> serviceClass,
+      ServiceLocator serviceLocator,
       @Nullable ActiveDescriptor<?> serviceDescriptor) {
 
     Objects.requireNonNull(field);
     Objects.requireNonNull(serviceClass);
+    Objects.requireNonNull(serviceLocator);
 
     boolean isStatic = Modifier.isStatic(field.getModifiers());
 
@@ -350,6 +365,14 @@ final class ProvidesAnnotationEnabler
     ImmutableSet<Type> contracts =
         getContracts(provides, field.getGenericType());
 
+    Annotation scope =
+        getScopeAnnotation(field, contracts, serviceDescriptor);
+
+    Supplier<Object> createFunction =
+        (serviceDescriptor == null)
+            ? () -> createFromStaticField(field, serviceLocator)
+            : () -> createFromInstanceField(field, serviceLocator, serviceDescriptor);
+
     Consumer<Object> destroyFunction =
         getDestroyFunction(
             provides,
@@ -360,20 +383,13 @@ final class ProvidesAnnotationEnabler
             serviceDescriptor,
             serviceLocator);
 
-    if (isStatic)
-      return new FieldProvidesDescriptor(
-          field,
-          contracts,
-          destroyFunction,
-          serviceLocator);
-
-    return new FieldProvidesDescriptor(
+    return new ProvidesDescriptor<>(
         field,
+        field.getGenericType(),
         contracts,
-        destroyFunction,
-        serviceLocator,
-        // requireNonNull for NullAway's sake.
-        Objects.requireNonNull(serviceDescriptor));
+        scope,
+        createFunction,
+        destroyFunction);
   }
 
   private static ImmutableSet<Type> getContracts(Provides provides, Type type) {
@@ -416,6 +432,204 @@ final class ProvidesAnnotationEnabler
         return true;
 
     return false;
+  }
+
+  private static Annotation getScopeAnnotation(
+      Method method,
+      Set<Type> contracts,
+      @Nullable ActiveDescriptor<?> serviceDescriptor) {
+
+    return getScopeAnnotation(
+        method.getAnnotatedReturnType(),
+        method,
+        contracts,
+        serviceDescriptor);
+  }
+
+  private static Annotation getScopeAnnotation(
+      Field field,
+      Set<Type> contracts,
+      @Nullable ActiveDescriptor<?> serviceDescriptor) {
+
+    return getScopeAnnotation(
+        field.getAnnotatedType(),
+        field,
+        contracts,
+        serviceDescriptor);
+  }
+
+  private static Annotation getScopeAnnotation(
+      AnnotatedType annotatedType,
+      AnnotatedElement annotatedElement,
+      Set<Type> contracts,
+      @Nullable ActiveDescriptor<?> serviceDescriptor) {
+
+    Objects.requireNonNull(annotatedType);
+    Objects.requireNonNull(annotatedElement);
+    Objects.requireNonNull(contracts);
+
+    if (annotatedType.isAnnotationPresent(Nullable.class))
+      return ServiceLocatorUtilities.getPerLookupAnnotation();
+
+    for (Annotation annotation : annotatedElement.getAnnotations())
+      if (annotation.annotationType().isAnnotationPresent(Scope.class))
+        return annotation;
+
+    for (Type contract : contracts) {
+      Class<?> rawType = TypeToken.of(contract).getRawType();
+      for (Annotation annotation : rawType.getAnnotations())
+        if (annotation.annotationType().isAnnotationPresent(Scope.class))
+          return annotation;
+    }
+
+    if (serviceDescriptor != null) {
+      Annotation serviceScope = serviceDescriptor.getScopeAsAnnotation();
+      if (serviceScope != null)
+        return serviceScope;
+    }
+
+    return ServiceLocatorUtilities.getPerLookupAnnotation();
+  }
+
+  private static Object createFromStaticMethod(
+      Method method,
+      ServiceLocator serviceLocator) {
+
+    return createFromMethod(method, serviceLocator, null);
+  }
+
+  private static Object createFromInstanceMethod(
+      Method method,
+      ServiceLocator serviceLocator,
+      ActiveDescriptor<?> serviceDescriptor) {
+
+    return createFromMethod(method, serviceLocator, Objects.requireNonNull(serviceDescriptor));
+  }
+
+  private static Object createFromMethod(
+      Method method,
+      ServiceLocator serviceLocator,
+      @Nullable ActiveDescriptor<?> serviceDescriptor) {
+
+    Objects.requireNonNull(method);
+    Objects.requireNonNull(serviceLocator);
+
+    List<ServiceHandle<?>> perLookupHandles = new ArrayList<>();
+
+    try {
+      Parameter[] parameters = method.getParameters();
+      Object[] arguments = new Object[parameters.length];
+
+      for (int i = 0; i < parameters.length; i++) {
+        ServiceHandle<?> parameterHandle =
+            InjectUtils.serviceHandleFromParameter(parameters[i], serviceLocator);
+
+        if (parameterHandle == null)
+          arguments[i] = null;
+
+        else {
+          if (parameterHandle.getActiveDescriptor().getScopeAnnotation() == PerLookup.class)
+            perLookupHandles.add(parameterHandle);
+
+          arguments[i] = parameterHandle.getService();
+        }
+      }
+
+      if (serviceDescriptor == null) {
+        if (!method.canAccess(null))
+          method.setAccessible(true);
+
+        Object provided;
+        try {
+          provided = method.invoke(null, arguments);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+          throw new MultiException(e);
+        }
+
+        serviceLocator.postConstruct(provided);
+        return provided;
+      }
+
+      ServiceHandle<?> serviceHandle =
+          serviceLocator.getServiceHandle(serviceDescriptor);
+
+      if (serviceDescriptor.getScopeAnnotation() == PerLookup.class)
+        perLookupHandles.add(serviceHandle);
+
+      Object service = serviceHandle.getService();
+      if (!method.canAccess(service))
+        method.setAccessible(true);
+
+      Object provided;
+      try {
+        provided = method.invoke(service, arguments);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        throw new MultiException(e);
+      }
+
+      serviceLocator.postConstruct(provided);
+      return provided;
+
+    } finally {
+      for (ServiceHandle<?> serviceHandle : perLookupHandles)
+        serviceHandle.close();
+    }
+  }
+
+  private static Object createFromStaticField(
+      Field field,
+      ServiceLocator serviceLocator) {
+
+    Objects.requireNonNull(field);
+    Objects.requireNonNull(serviceLocator);
+
+    if (!field.canAccess(null))
+      field.setAccessible(true);
+
+    Object provided;
+    try {
+      provided = field.get(null);
+    } catch (IllegalAccessException e) {
+      throw new MultiException(e);
+    }
+
+    serviceLocator.postConstruct(provided);
+    return provided;
+  }
+
+  private static Object createFromInstanceField(
+      Field field,
+      ServiceLocator serviceLocator,
+      ActiveDescriptor<?> serviceDescriptor) {
+
+    Objects.requireNonNull(field);
+    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(serviceDescriptor);
+
+    boolean isPerLookupService =
+        serviceDescriptor.getScopeAnnotation() == PerLookup.class;
+
+    ServiceHandle<?> serviceHandle =
+        serviceLocator.getServiceHandle(serviceDescriptor);
+
+    try {
+      Object service = serviceHandle.getService();
+      if (!field.canAccess(service))
+        field.setAccessible(true);
+
+      Object provided;
+      try {
+        provided = field.get(service);
+      } catch (IllegalAccessException e) {
+        throw new MultiException(e);
+      }
+
+      serviceLocator.postConstruct(provided);
+      return provided;
+    } finally {
+      if (isPerLookupService)
+        serviceHandle.close();
+    }
   }
 
   private static Consumer<Object> getDestroyFunction(
@@ -617,7 +831,16 @@ final class ProvidesAnnotationEnabler
         // Otherwise, we suspect this class can't be instantiated at all.
         // Return a descriptor modeling this, which advertises no contracts and
         // which is incapable of producing instances.
-        return addActiveDescriptor(new NonInstantiableClassDescriptor<>(rawClass));
+        ActiveDescriptor<T> descriptor =
+            new ProvidesDescriptor<>(
+                rawClass,
+                rawClass,
+                ImmutableSet.of(), // Provides no contracts, not even itself.
+                ServiceLocatorUtilities.getSingletonAnnotation(),
+                () -> { throw new UnsupportedOperationException(); },
+                instance -> { throw new UnsupportedOperationException(); });
+
+        return addActiveDescriptor(descriptor);
       }
     };
   }

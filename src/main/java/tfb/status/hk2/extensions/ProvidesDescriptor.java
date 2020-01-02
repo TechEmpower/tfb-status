@@ -9,10 +9,14 @@ import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.inject.Named;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
@@ -22,6 +26,7 @@ import org.glassfish.hk2.api.HK2Loader;
 import org.glassfish.hk2.api.Injectee;
 import org.glassfish.hk2.api.ProxyForSameScope;
 import org.glassfish.hk2.api.Rank;
+import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.UseProxy;
 import org.jvnet.hk2.internal.Collector;
 import org.jvnet.hk2.internal.Utilities;
@@ -30,28 +35,76 @@ import org.jvnet.hk2.internal.Utilities;
  * An {@link ActiveDescriptor} for a service whose annotations come from some
  * {@link AnnotatedElement}, such as a method, field, or class.
  */
-abstract class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
-  /**
-   * The method, field, or class that has the annotations for this service.
-   */
-  abstract AnnotatedElement annotatedElement();
+final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
+  private final AnnotatedElement annotatedElement;
+  private final Type implementationType;
+  private final ImmutableSet<Type> contracts;
+  private final Annotation scope;
+  private final Supplier<T> createFunction;
+  private final Consumer<T> disposeFunction;
+
+  ProvidesDescriptor(AnnotatedElement annotatedElement,
+                     Type implementationType,
+                     ImmutableSet<Type> contracts,
+                     Annotation scope,
+                     Supplier<T> createFunction,
+                     Consumer<T> disposeFunction) {
+
+    this.annotatedElement = Objects.requireNonNull(annotatedElement);
+    this.implementationType = Objects.requireNonNull(implementationType);
+    this.contracts = Objects.requireNonNull(contracts);
+    this.scope = Objects.requireNonNull(scope);
+    this.createFunction = Objects.requireNonNull(createFunction);
+    this.disposeFunction = Objects.requireNonNull(disposeFunction);
+  }
 
   @Override
-  public final boolean isReified() {
+  public T create(ServiceHandle<?> root) {
+    return createFunction.get();
+  }
+
+  @Override
+  public void dispose(@Nullable T instance) {
+    if (instance != null)
+      disposeFunction.accept(instance);
+  }
+
+  @Override
+  public Class<?> getImplementationClass() {
+    return TypeToken.of(implementationType).getRawType();
+  }
+
+  @Override
+  public Type getImplementationType() {
+    return implementationType;
+  }
+
+  @Override
+  public Set<Type> getContractTypes() {
+    return contracts;
+  }
+
+  @Override
+  public boolean isReified() {
     return true;
   }
 
   @Override
-  public final Class<? extends Annotation> getScopeAnnotation() {
+  public Annotation getScopeAsAnnotation() {
+    return scope;
+  }
+
+  @Override
+  public Class<? extends Annotation> getScopeAnnotation() {
     return getScopeAsAnnotation().annotationType();
   }
 
   @Override
-  public final Set<Annotation> getQualifierAnnotations() {
+  public Set<Annotation> getQualifierAnnotations() {
     Collector collector = new Collector();
     Set<Annotation> qualifiers =
         Utilities.getAllQualifiers(
-            annotatedElement(),
+            annotatedElement,
             getName(),
             collector);
     collector.throwIfErrors();
@@ -59,27 +112,27 @@ abstract class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public final List<Injectee> getInjectees() {
+  public List<Injectee> getInjectees() {
     return ImmutableList.of();
   }
 
   @Override
-  public final @Nullable Long getFactoryServiceId() {
+  public @Nullable Long getFactoryServiceId() {
     return null;
   }
 
   @Override
-  public final @Nullable Long getFactoryLocatorId() {
+  public @Nullable Long getFactoryLocatorId() {
     return null;
   }
 
   @Override
-  public final @Nullable String getImplementation() {
+  public @Nullable String getImplementation() {
     return getImplementationClass().getName();
   }
 
   @Override
-  public final Set<String> getAdvertisedContracts() {
+  public Set<String> getAdvertisedContracts() {
     return getContractTypes()
         .stream()
         .map(contract -> TypeToken.of(contract))
@@ -89,23 +142,22 @@ abstract class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public final String getScope() {
+  public String getScope() {
     return getScopeAnnotation().getName();
   }
 
   @Override
-  public final @Nullable String getName() {
-    return Arrays
-        .stream(annotatedElement().getAnnotations())
-        .filter(annotation -> annotation.annotationType() == Named.class)
-        .map(annotation -> ((Named) annotation))
-        .map(annotation -> annotation.value())
-        .findAny()
-        .orElse(null);
+  public @Nullable String getName() {
+    return Arrays.stream(annotatedElement.getAnnotations())
+                 .filter(annotation -> annotation.annotationType() == Named.class)
+                 .map(annotation -> ((Named) annotation))
+                 .map(annotation -> annotation.value())
+                 .findAny()
+                 .orElse(null);
   }
 
   @Override
-  public final Set<String> getQualifiers() {
+  public Set<String> getQualifiers() {
     return getQualifierAnnotations()
         .stream()
         .map(annotation -> annotation.annotationType())
@@ -114,23 +166,23 @@ abstract class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public final DescriptorType getDescriptorType() {
+  public DescriptorType getDescriptorType() {
     return DescriptorType.CLASS;
   }
 
   @Override
-  public final DescriptorVisibility getDescriptorVisibility() {
+  public DescriptorVisibility getDescriptorVisibility() {
     return DescriptorVisibility.NORMAL;
   }
 
   @Override
-  public final Map<String, List<String>> getMetadata() {
+  public Map<String, List<String>> getMetadata() {
     // TODO: Is there a standard metadata-gathering algorithm we should use?
     return ImmutableMap.of();
   }
 
   @Override
-  public final @Nullable HK2Loader getLoader() {
+  public @Nullable HK2Loader getLoader() {
     return null;
   }
 
@@ -141,9 +193,9 @@ abstract class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   private boolean initialRankingFound = false;
 
   @Override
-  public final synchronized int getRanking() {
+  public synchronized int getRanking() {
     if (!initialRankingFound) {
-      Rank rank = annotatedElement().getAnnotation(Rank.class);
+      Rank rank = annotatedElement.getAnnotation(Rank.class);
       if (rank != null)
         ranking = rank.value();
 
@@ -154,38 +206,38 @@ abstract class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public final synchronized int setRanking(int ranking) {
+  public synchronized int setRanking(int ranking) {
     int previousRanking = getRanking();
     this.ranking = ranking;
     return previousRanking;
   }
 
   @Override
-  public final @Nullable Boolean isProxiable() {
-    UseProxy useProxy = annotatedElement().getAnnotation(UseProxy.class);
+  public @Nullable Boolean isProxiable() {
+    UseProxy useProxy = annotatedElement.getAnnotation(UseProxy.class);
     return (useProxy == null) ? null : useProxy.value();
   }
 
   @Override
-  public final @Nullable Boolean isProxyForSameScope() {
+  public @Nullable Boolean isProxyForSameScope() {
     ProxyForSameScope proxyForSameScope =
-        annotatedElement().getAnnotation(ProxyForSameScope.class);
+        annotatedElement.getAnnotation(ProxyForSameScope.class);
 
     return (proxyForSameScope == null) ? null : proxyForSameScope.value();
   }
 
   @Override
-  public final @Nullable String getClassAnalysisName() {
+  public @Nullable String getClassAnalysisName() {
     return null;
   }
 
   @Override
-  public final @Nullable Long getServiceId() {
+  public @Nullable Long getServiceId() {
     return null;
   }
 
   @Override
-  public final @Nullable Long getLocatorId() {
+  public @Nullable Long getLocatorId() {
     return null;
   }
 
@@ -196,7 +248,7 @@ abstract class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   private boolean isCacheSet = false;
 
   @Override
-  public final synchronized @Nullable T getCache() {
+  public synchronized @Nullable T getCache() {
     if (!isCacheSet)
       throw new IllegalStateException();
 
@@ -204,19 +256,24 @@ abstract class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public final synchronized boolean isCacheSet() {
+  public synchronized boolean isCacheSet() {
     return isCacheSet;
   }
 
   @Override
-  public final synchronized void setCache(T cacheMe) {
+  public synchronized void setCache(T cacheMe) {
     cache = cacheMe;
     isCacheSet = true;
   }
 
   @Override
-  public final synchronized void releaseCache() {
+  public synchronized void releaseCache() {
     cache = null;
     isCacheSet = false;
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "[" + annotatedElement + "]";
   }
 }
