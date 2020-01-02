@@ -9,9 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -1066,6 +1069,37 @@ public final class ServicesTest {
         () -> services.getService(InterfaceProvides.class));
   }
 
+  @Test
+  public void testEnumProvides() {
+    Services services = newServices();
+
+    IterableProvider<EnumProvides> provider =
+        services.getService(new TypeToken<IterableProvider<EnumProvides>>() {});
+
+    assertEquals(
+        EnumSet.allOf(EnumProvides.class),
+        Sets.immutableEnumSet(provider));
+  }
+
+  @Test
+  public void testEnumProvidesContract() {
+    Services services = newServices();
+
+    IterableProvider<EnumContract> provider =
+        services.getService(new TypeToken<IterableProvider<EnumContract>>() {});
+
+    assertEquals(
+        EnumSet.allOf(EnumProvidesContract.class),
+        ImmutableSet.copyOf(provider));
+
+    IterableProvider<SecondEnumContract> secondProvider =
+        services.getService(new TypeToken<IterableProvider<SecondEnumContract>>() {});
+
+    assertEquals(
+        EnumSet.allOf(EnumProvidesContract.class),
+        ImmutableSet.copyOf(secondProvider));
+  }
+
   /**
    * Verifies that {@link Provides#destroyMethod()} may specify a method of the
    * provided type to be invoked at the end of the service's lifecycle when the
@@ -1228,6 +1262,8 @@ public final class ServicesTest {
             addActiveDescriptor(UtilityClassProvides.class);
             addActiveDescriptor(AbstractClassProvides.class);
             addActiveDescriptor(InterfaceProvides.class);
+            addActiveDescriptor(EnumProvides.class);
+            addActiveDescriptor(EnumProvidesContract.class);
             addActiveDescriptor(UnsatisfiedDependencies.class);
             addActiveDescriptor(ProvidesCustomDispose.class);
           }
@@ -1681,6 +1717,42 @@ public final class ServicesTest {
   public static final class UnsatisfiedDependencies {
     @Inject
     public UnsatisfiedDependencies(UnregisteredService dependency) {}
+  }
+
+  public enum EnumProvides {
+    @Provides
+    FOO,
+
+    @Provides
+    BAR {
+      // Have a class body, which subclasses the enum type, so that we can
+      // verify that all of the enum constants still provide the same contract.
+      @Override
+      public String toString() {
+        return "bar";
+      }
+    }
+  }
+
+  @Contract
+  public interface EnumContract {}
+
+  @Contract
+  public interface SecondEnumContract {}
+
+  public enum EnumProvidesContract implements EnumContract, SecondEnumContract {
+    @Provides
+    FOO,
+
+    @Provides
+    BAR {
+      // Have a class body, which subclasses the enum type, so that we can
+      // verify that all of the enum constants still provide the same contract.
+      @Override
+      public String toString() {
+        return "bar";
+      }
+    }
   }
 
   public static final class ProvidesCustomDispose {

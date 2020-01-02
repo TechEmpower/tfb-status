@@ -1,18 +1,22 @@
 package tfb.status.hk2.extensions;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -21,11 +25,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.ClassAnalyzer;
+import org.glassfish.hk2.api.ContractIndicator;
 import org.glassfish.hk2.api.DynamicConfiguration;
 import org.glassfish.hk2.api.DynamicConfigurationListener;
 import org.glassfish.hk2.api.DynamicConfigurationService;
@@ -36,10 +42,12 @@ import org.glassfish.hk2.api.Populator;
 import org.glassfish.hk2.api.Rank;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.NamedImpl;
+import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
+import org.jvnet.hk2.annotations.Contract;
 import org.jvnet.hk2.annotations.ContractsProvided;
 import org.jvnet.hk2.annotations.Service;
 import org.jvnet.hk2.internal.Collector;
-import org.jvnet.hk2.internal.ServiceLocatorImpl;
 import org.jvnet.hk2.internal.Utilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -288,6 +296,9 @@ final class ProvidesAnnotationEnabler
     if (provides == null)
       return null;
 
+    ImmutableSet<Type> contracts =
+        getContracts(provides, method.getGenericReturnType());
+
     Consumer<Object> destroyFunction =
         getDestroyFunction(
             provides,
@@ -305,11 +316,13 @@ final class ProvidesAnnotationEnabler
     if (isStatic)
       return new MethodProvidesDescriptor(
           method,
+          contracts,
           destroyFunction,
           serviceLocator);
 
     return new MethodProvidesDescriptor(
         method,
+        contracts,
         destroyFunction,
         serviceLocator,
         // requireNonNull for NullAway's sake.
@@ -334,6 +347,9 @@ final class ProvidesAnnotationEnabler
     if (provides == null)
       return null;
 
+    ImmutableSet<Type> contracts =
+        getContracts(provides, field.getGenericType());
+
     Consumer<Object> destroyFunction =
         getDestroyFunction(
             provides,
@@ -347,15 +363,59 @@ final class ProvidesAnnotationEnabler
     if (isStatic)
       return new FieldProvidesDescriptor(
           field,
+          contracts,
           destroyFunction,
           serviceLocator);
 
     return new FieldProvidesDescriptor(
         field,
+        contracts,
         destroyFunction,
         serviceLocator,
         // requireNonNull for NullAway's sake.
         Objects.requireNonNull(serviceDescriptor));
+  }
+
+  private static ImmutableSet<Type> getContracts(Provides provides, Type type) {
+    Objects.requireNonNull(provides);
+    Objects.requireNonNull(type);
+
+    if (provides.contractsProvided().length > 0)
+      return ImmutableSet.copyOf(provides.contractsProvided());
+
+    // This block of code reproduces the behavior of
+    // org.jvnet.hk2.internal.Utilities#getAutoAdvertisedTypes(Type)
+
+    Class<?> rawClass = ReflectionHelper.getRawClass(type);
+    if (rawClass == null)
+      return ImmutableSet.of(type);
+
+    ContractsProvided provided = rawClass.getAnnotation(ContractsProvided.class);
+    if (provided != null)
+      return ImmutableSet.copyOf(provided.value());
+
+    return Stream.concat(Stream.of(type),
+                         ReflectionHelper.getAllTypes(type)
+                                         .stream()
+                                         .filter(t -> isContract(t)))
+                 .collect(toImmutableSet());
+  }
+
+  private static boolean isContract(Type type) {
+    Objects.requireNonNull(type);
+
+    Class<?> rawClass = ReflectionHelper.getRawClass(type);
+    if (rawClass == null)
+      return false;
+
+    if (rawClass.isAnnotationPresent(Contract.class))
+      return true;
+
+    for (Annotation annotation : rawClass.getAnnotations())
+      if (annotation.annotationType().isAnnotationPresent(ContractIndicator.class))
+        return true;
+
+    return false;
   }
 
   private static Consumer<Object> getDestroyFunction(
@@ -472,23 +532,10 @@ final class ProvidesAnnotationEnabler
 
   @Override
   public DynamicConfiguration createDynamicConfiguration() {
-    DynamicConfiguration defaultConfiguration =
-        defaultConfigurationService.createDynamicConfiguration();
-
-    if (!(serviceLocator instanceof ServiceLocatorImpl)) {
-      logger.warn(
-          "Unable to replace default configuration service "
-              + "because the service locator is of type {}, "
-              + "which is not a subclass of {}",
-          serviceLocator.getClass().getName(),
-          ServiceLocatorImpl.class.getName());
-
-      return defaultConfiguration;
-    }
-
-    ServiceLocatorImpl locator = (ServiceLocatorImpl) serviceLocator;
-
     return new ForwardingDynamicConfiguration() {
+      private final DynamicConfiguration defaultConfiguration =
+          defaultConfigurationService.createDynamicConfiguration();
+
       @Override
       public DynamicConfiguration delegate() {
         return defaultConfiguration;
@@ -531,18 +578,21 @@ final class ProvidesAnnotationEnabler
 
         String analyzerName =
             (serviceAnnotation == null)
-                ? null
+                ? serviceLocator.getDefaultClassAnalyzerName()
                 : serviceAnnotation.analyzer();
 
-        Collector collector = new Collector();
-
         ClassAnalyzer analyzer =
-            Utilities.getClassAnalyzer(locator, analyzerName, collector);
+            serviceLocator.getService(
+                ClassAnalyzer.class,
+                new NamedImpl(analyzerName));
+
+        Collector collector = new Collector();
 
         Constructor<T> constructor =
             Utilities.getConstructor(rawClass, analyzer, collector);
 
         if (!collector.hasErrors()
+            && !rawClass.isEnum()
             && !Modifier.isAbstract(rawClass.getModifiers())
             && !isUtilityClassConstructor(constructor))
           // The constructor exists and we don't expect it to throw errors, so

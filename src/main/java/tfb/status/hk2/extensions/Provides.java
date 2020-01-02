@@ -4,15 +4,22 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import javax.inject.Scope;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PreDestroy;
+import org.jvnet.hk2.annotations.ContractsProvided;
 
 /**
  * An annotation indicating that a method or field is the provider of a service.
- * The contract of the provided service is equal to the return type of that
- * method or the type of that field.
+ *
+ * <p>The contracts of the provided service are, by default, defined by the
+ * {@linkplain Method#getGenericReturnType() method return type} of the
+ * annotated method or the {@linkplain Field#getGenericType() field type} of the
+ * annotated field.  These default contracts can be overridden using {@link
+ * #contractsProvided()}.
  *
  * <p>The scope of the provided service is:
  * <ul>
@@ -29,6 +36,14 @@ import org.glassfish.hk2.api.PreDestroy;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.FIELD })
 public @interface Provides {
+  /**
+   * If non-empty, specifies a list of contracts provided that overrides the
+   * default contracts.  Similar to {@link ContractsProvided}.
+   *
+   * <p>If empty, then the default contracts for the provided type will be used.
+   */
+  Class<?>[] contractsProvided() default {};
+
   /**
    * If non-empty, specifies the name of the method to be invoked when the
    * provided service is being destroyed.  The class whose method is to be
@@ -73,13 +88,3 @@ public @interface Provides {
     PROVIDER
   }
 }
-
-//
-// TODO: Re-examine how contracts of @Provides services are determined.
-//
-//       Are additional contracts picked up from the interfaces that the method
-//       or field type implements?  If not, should they be?
-//
-//       Should there be a mechanism for declaring additional contracts, similar
-//       to @ContractsProvided?
-//

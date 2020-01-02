@@ -29,15 +29,18 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
  */
 final class MethodProvidesDescriptor extends ProvidesDescriptor<Object> {
   private final Method method;
+  private final ImmutableSet<Type> contracts;
   private final Consumer<Object> disposeFunction;
   private final ServiceLocator serviceLocator;
   private final @Nullable ActiveDescriptor<?> serviceDescriptor;
 
   MethodProvidesDescriptor(Method method,
+                           ImmutableSet<Type> contracts,
                            Consumer<Object> disposeFunction,
                            ServiceLocator serviceLocator) {
 
     this.method = Objects.requireNonNull(method);
+    this.contracts = Objects.requireNonNull(contracts);
     this.disposeFunction = Objects.requireNonNull(disposeFunction);
     this.serviceLocator = Objects.requireNonNull(serviceLocator);
     this.serviceDescriptor = null;
@@ -48,11 +51,13 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor<Object> {
   }
 
   MethodProvidesDescriptor(Method method,
+                           ImmutableSet<Type> contracts,
                            Consumer<Object> disposeFunction,
                            ServiceLocator serviceLocator,
                            ActiveDescriptor<?> serviceDescriptor) {
 
     this.method = Objects.requireNonNull(method);
+    this.contracts = Objects.requireNonNull(contracts);
     this.disposeFunction = Objects.requireNonNull(disposeFunction);
     this.serviceLocator = Objects.requireNonNull(serviceLocator);
     this.serviceDescriptor = Objects.requireNonNull(serviceDescriptor);
@@ -174,7 +179,7 @@ final class MethodProvidesDescriptor extends ProvidesDescriptor<Object> {
 
   @Override
   public Set<Type> getContractTypes() {
-    return ImmutableSet.of(method.getGenericReturnType());
+    return contracts;
   }
 
   @Override
