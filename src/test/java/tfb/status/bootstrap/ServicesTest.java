@@ -35,10 +35,10 @@ import org.glassfish.hk2.api.messaging.MessageReceiver;
 import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
 import tfb.status.hk2.extensions.Provides;
+import tfb.status.hk2.extensions.Registers;
 import tfb.status.hk2.extensions.Services;
 
 /**
@@ -1336,38 +1336,37 @@ public final class ServicesTest {
    * Constructs a new set of services to be used in one test.
    */
   private Services newServices() {
-    var binder =
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            addActiveDescriptor(PerLookupService.class);
-            addActiveDescriptor(SingletonService.class);
-            addActiveFactoryDescriptor(NullFactory.class);
-            addActiveDescriptor(ServiceWithContract1.class);
-            addActiveDescriptor(ServiceWithContract2.class);
-            addActiveDescriptor(ServiceWithGenericContract1.class);
-            addActiveDescriptor(ServiceWithGenericContract2.class);
-            addActiveDescriptor(ServiceWithLifecycle.class);
-            addActiveDescriptor(SingletonServiceWithShutdown.class);
-            addActiveFactoryDescriptor(FactoryOfServiceWithShutdown.class);
-            addActiveFactoryDescriptor(FactoryOfSingletonServiceWithShutdown.class);
-            addActiveDescriptor(SubscriberService.class);
-            addActiveDescriptor(ProvidesService.class);
-            addActiveDescriptor(ProvidesSelfFromMethod.class);
-            addActiveDescriptor(ProvidesSelfFromField.class);
-            addActiveDescriptor(UtilityClassProvides.class);
-            addActiveDescriptor(AbstractClassProvides.class);
-            addActiveDescriptor(InterfaceProvides.class);
-            addActiveDescriptor(EnumProvides.class);
-            addActiveDescriptor(EnumProvidesContract.class);
-            addActiveDescriptor(UnsatisfiedDependencies.class);
-            addActiveDescriptor(ProvidesCustomDispose.class);
-            addActiveDescriptor(ProvidesExplicitContracts.class);
-          }
-        };
-
-    return new Services(binder);
+    var services = new Services();
+    services.addClass(ServicesTestClasses.class);
+    return services;
   }
+
+  @Registers({
+      PerLookupService.class,
+      SingletonService.class,
+      NullFactory.class,
+      ServiceWithContract1.class,
+      ServiceWithContract2.class,
+      ServiceWithGenericContract1.class,
+      ServiceWithGenericContract2.class,
+      ServiceWithLifecycle.class,
+      SingletonServiceWithShutdown.class,
+      FactoryOfServiceWithShutdown.class,
+      FactoryOfSingletonServiceWithShutdown.class,
+      SubscriberService.class,
+      ProvidesService.class,
+      ProvidesSelfFromMethod.class,
+      ProvidesSelfFromField.class,
+      UtilityClassProvides.class,
+      AbstractClassProvides.class,
+      InterfaceProvides.class,
+      EnumProvides.class,
+      EnumProvidesContract.class,
+      UnsatisfiedDependencies.class,
+      ProvidesCustomDispose.class,
+      ProvidesExplicitContracts.class
+  })
+  public static final class ServicesTestClasses {}
 
   public static final class PerLookupService {}
 

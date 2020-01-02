@@ -40,6 +40,7 @@ import org.glassfish.hk2.api.ContractIndicator;
 import org.glassfish.hk2.api.DynamicConfiguration;
 import org.glassfish.hk2.api.DynamicConfigurationListener;
 import org.glassfish.hk2.api.DynamicConfigurationService;
+import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.Populator;
@@ -121,8 +122,8 @@ final class ProvidesAnnotationEnabler
   }
 
   /**
-   * Scans all registered service classes for {@link Provides} annotations and
-   * registers the additional services they provide.
+   * Scans all registered service classes for {@link Provides} and {@link
+   * Registers} annotations and registers the additional services they provide.
    */
   private void findAllProvidesAnnotations() {
     // Allow for the possibility that we've been replaced by a different
@@ -141,12 +142,18 @@ final class ProvidesAnnotationEnabler
       Class<?> serviceClass =
           Utilities.getFactoryAwareImplementationClass(serviceDescriptor);
 
-      if (classesFullyAnalyzed.add(serviceClass))
+      if (classesFullyAnalyzed.add(serviceClass)) {
         added +=
             addProvidesDescriptors(
                 serviceClass,
                 serviceDescriptor,
                 configuration);
+
+        added +=
+            addRegistersDescriptors(
+                serviceClass,
+                configuration);
+      }
     }
 
     if (added > 0)
@@ -281,6 +288,43 @@ final class ProvidesAnnotationEnabler
         if (staticFields    != null)    staticFieldsByClass.put(serviceClass, staticFields);
         if (instanceMethods != null) instanceMethodsByClass.put(serviceClass, instanceMethods);
         if (instanceFields  != null)  instanceFieldsByClass.put(serviceClass, instanceFields);
+      }
+    }
+
+    return added;
+  }
+
+  /**
+   * Adds descriptors for each of the service classes mentioned in the {@link
+   * Registers} annotation of the specified service.  Does nothing if the
+   * service has no {@link Registers} annotation.
+   *
+   * @param serviceClass the service class to be scanned for a {@link Registers}
+   *        annotation
+   * @param configuration the configuration to be modified with new descriptors
+   * @return the number of descriptors added as a result of the call
+   */
+  private int addRegistersDescriptors(
+      Class<?> serviceClass,
+      DynamicConfiguration configuration) {
+
+    Objects.requireNonNull(serviceClass);
+    Objects.requireNonNull(configuration);
+
+    int added = 0;
+
+    Registers registers = serviceClass.getAnnotation(Registers.class);
+    if (registers != null) {
+      for (Class<?> registersClass : registers.value()) {
+        added++;
+        if (Factory.class.isAssignableFrom(registersClass)) {
+          // This is safe because of the isAssignableFrom check.
+          @SuppressWarnings("unchecked")
+          var factoryClass = (Class<? extends Factory<Object>>) registersClass;
+          configuration.addActiveFactoryDescriptor(factoryClass);
+        } else {
+          configuration.addActiveDescriptor(registersClass);
+        }
       }
     }
 
@@ -926,11 +970,14 @@ final class ProvidesAnnotationEnabler
               staticFieldsByClass.getOrDefault(rawClass, ImmutableList.of());
         }
 
-        if (staticMethods.isEmpty() && staticFields.isEmpty())
-          // If there are no static @Provides methods or fields, there is no
-          // chance that we would want to handle anything differently from the
-          // default implementation.
+        if (staticMethods.isEmpty()
+            && staticFields.isEmpty()
+            && !rawClass.isAnnotationPresent(Registers.class)) {
+          // If there are no static @Provides methods or fields, and there is no
+          // @Registers annotation, then there is no chance that we would want
+          // to handle anything differently from the default implementation.
           return defaultConfiguration.addActiveDescriptor(rawClass);
+        }
 
         // If there are static @Provides methods or fields, then registering
         // this class has already served a purpose, and so we want to avoid
