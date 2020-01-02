@@ -13,7 +13,6 @@ import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.UnsatisfiedDependencyException;
-import org.glassfish.hk2.utilities.Binder;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 
 /**
@@ -27,23 +26,13 @@ public final class Services {
       ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
   /**
-   * Use the specified binders to register service classes.
-   *
-   * @param binders the binders that register all of this application's service
-   *        classes
+   * Initializes this instance.
    */
-  public Services(Binder... binders) {
-    Objects.requireNonNull(binders);
-
+  public Services() {
     ServiceLocatorUtilities.addClasses(
         serviceLocator,
-        TopicDistributionServiceImpl.class);
-
-    ServiceLocatorUtilities.addClasses(
-        serviceLocator,
+        TopicDistributionServiceImpl.class,
         ProvidesAnnotationEnabler.class);
-
-    ServiceLocatorUtilities.bind(serviceLocator, binders);
   }
 
   /**
