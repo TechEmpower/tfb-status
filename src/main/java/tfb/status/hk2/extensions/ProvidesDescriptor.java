@@ -11,6 +11,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,6 +29,7 @@ import org.glassfish.hk2.api.ProxyForSameScope;
 import org.glassfish.hk2.api.Rank;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.UseProxy;
+import org.glassfish.hk2.utilities.BuilderHelper;
 import org.jvnet.hk2.internal.Collector;
 import org.jvnet.hk2.internal.Utilities;
 
@@ -177,8 +179,15 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
 
   @Override
   public Map<String, List<String>> getMetadata() {
-    // TODO: Is there a standard metadata-gathering algorithm we should use?
-    return ImmutableMap.of();
+    Map<String, List<String>> metadata = new HashMap<>();
+
+    Annotation scope = getScopeAsAnnotation();
+    BuilderHelper.getMetadataValues(scope, metadata);
+
+    for (Annotation qualifier : getQualifierAnnotations())
+      BuilderHelper.getMetadataValues(qualifier, metadata);
+
+    return ImmutableMap.copyOf(metadata);
   }
 
   @Override
