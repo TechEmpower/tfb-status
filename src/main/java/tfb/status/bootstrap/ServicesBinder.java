@@ -1,7 +1,6 @@
 package tfb.status.bootstrap;
 
 import javax.inject.Named;
-import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import tfb.status.handler.AboutPageHandler;
 import tfb.status.handler.AssetsHandler;
