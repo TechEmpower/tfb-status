@@ -1,4 +1,4 @@
-package tfb.status.bootstrap;
+package tfb.status.hk2.extensions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,9 +37,6 @@ import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
-import tfb.status.hk2.extensions.Provides;
-import tfb.status.hk2.extensions.Registers;
-import tfb.status.hk2.extensions.Services;
 
 /**
  * Tests for {@link Services}.
