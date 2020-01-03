@@ -59,7 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Enables the {@link Provides} annotation.
+ * Enables the {@link Provides} and {@link Registers} annotation.
  */
 @Singleton
 @ContractsProvided({
@@ -114,7 +114,7 @@ final class ProvidesAnnotationEnabler
   @Override
   public void configurationChanged() {
     try {
-      findAllProvidesAnnotations();
+      findAllAnnotations();
     } catch (RuntimeException e) {
       logger.error("Uncaught exception from configurationChanged()", e);
       throw e;
@@ -125,7 +125,7 @@ final class ProvidesAnnotationEnabler
    * Scans all registered service classes for {@link Provides} and {@link
    * Registers} annotations and registers the additional services they provide.
    */
-  private void findAllProvidesAnnotations() {
+  private void findAllAnnotations() {
     // Allow for the possibility that we've been replaced by a different
     // configuration service.
     DynamicConfigurationService configurationService =
