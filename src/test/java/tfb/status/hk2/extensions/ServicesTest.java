@@ -1392,6 +1392,125 @@ public final class ServicesTest {
       assertNull(handle.getService());
     }
   }
+  /**
+   * Verifies the lifecycle of a service obtained from a static field that is
+   * annotated with {@link Provides}.
+   */
+  @Test
+  public void testProvidesLifecycleFromStaticField() {
+    Services services = newServices();
+
+    var provider =
+        services.getService(
+            new TypeToken<IterableProvider<ProvidesLifecycleFromStaticField>>() {});
+
+    var handle = provider.getHandle();
+    var root = handle.getService();
+
+    assertTrue(root.wasStarted());
+    assertFalse(root.factory.wasStarted());
+    assertFalse(root.dependency.wasStarted());
+
+    assertFalse(root.wasStopped());
+    assertFalse(root.factory.wasStopped());
+    assertFalse(root.dependency.wasStopped());
+
+    handle.close();
+
+    assertTrue(root.wasStopped());
+    assertFalse(root.factory.wasStopped());
+    assertFalse(root.dependency.wasStopped());
+  }
+
+  /**
+   * Verifies the lifecycle a service obtained from an instance field that is
+   * annotated with {@link Provides}.
+   */
+  @Test
+  public void testProvidesLifecycleFromInstanceField() {
+    Services services = newServices();
+
+    var provider =
+        services.getService(
+            new TypeToken<IterableProvider<ProvidesLifecycleFromInstanceField>>() {});
+
+    var handle = provider.getHandle();
+    var root = handle.getService();
+
+    assertTrue(root.wasStarted());
+    assertTrue(root.factory.wasStarted());
+    assertFalse(root.dependency.wasStarted());
+
+    assertFalse(root.wasStopped());
+    assertFalse(root.factory.wasStopped());
+    assertFalse(root.dependency.wasStopped());
+
+    handle.close();
+
+    assertTrue(root.wasStopped());
+    assertTrue(root.factory.wasStopped());
+    assertFalse(root.dependency.wasStopped());
+  }
+
+  /**
+   * Verifies the lifecycle of a service obtained from a static method that is
+   * annotated with {@link Provides}.
+   */
+  @Test
+  public void testProvidesLifecycleFromStaticMethod() {
+    Services services = newServices();
+
+    var provider =
+        services.getService(
+            new TypeToken<IterableProvider<ProvidesLifecycleFromStaticMethod>>() {});
+
+    var handle = provider.getHandle();
+    var root = handle.getService();
+
+    assertTrue(root.wasStarted());
+    assertFalse(root.factory.wasStarted());
+    assertTrue(root.dependency.wasStarted());
+
+    assertFalse(root.wasStopped());
+    assertFalse(root.factory.wasStopped());
+    assertFalse(root.dependency.wasStopped());
+
+    handle.close();
+
+    assertTrue(root.wasStopped());
+    assertFalse(root.factory.wasStopped());
+    assertTrue(root.dependency.wasStopped());
+  }
+
+  /**
+   * Verifies the lifecycle of a service obtained from an instance method that
+   * is annotated with {@link Provides}.
+   */
+  @Test
+  public void testProvidesLifecycleFromInstanceMethod() {
+    Services services = newServices();
+
+    var provider =
+        services.getService(
+            new TypeToken<IterableProvider<ProvidesLifecycleFromInstanceMethod>>() {});
+
+    var handle = provider.getHandle();
+    var root = handle.getService();
+
+    assertTrue(root.wasStarted());
+    assertTrue(root.factory.wasStarted());
+    assertTrue(root.dependency.wasStarted());
+
+    assertFalse(root.wasStopped());
+    assertFalse(root.factory.wasStopped());
+    assertFalse(root.dependency.wasStopped());
+
+    handle.close();
+
+    assertTrue(root.wasStopped());
+    assertTrue(root.factory.wasStopped());
+    assertTrue(root.dependency.wasStopped());
+  }
 
   /**
    * Constructs a new set of services to be used in one test.
@@ -1424,7 +1543,9 @@ public final class ServicesTest {
       UnsatisfiedDependencies.class,
       ProvidesCustomDispose.class,
       ProvidesExplicitContracts.class,
-      ProvidesNull.class
+      ProvidesNull.class,
+      ProvidesLifecycleFactory.class,
+      ProvidesLifecycleDependency.class
   })
   public static final class ServicesTestClasses {}
 
@@ -2067,4 +2188,73 @@ public final class ServicesTest {
   public static final class NullFromInstanceField {}
   public static final class NullFromStaticMethod {}
   public static final class NullFromInstanceMethod {}
+
+  public static final class ProvidesLifecycleFactory extends ServiceWithLifecycle {
+    @Provides
+    public static final ProvidesLifecycleFromStaticField staticField =
+        new ProvidesLifecycleFromStaticField(new ProvidesLifecycleFactory(),
+                                             new ProvidesLifecycleDependency());
+
+    @Provides
+    public final ProvidesLifecycleFromInstanceField instanceField =
+        new ProvidesLifecycleFromInstanceField(this, new ProvidesLifecycleDependency());
+
+    @Provides
+    public static ProvidesLifecycleFromStaticMethod staticMethod(
+        ProvidesLifecycleDependency dependency) {
+      return new ProvidesLifecycleFromStaticMethod(new ProvidesLifecycleFactory(),
+                                                   dependency);
+    }
+
+    @Provides
+    public ProvidesLifecycleFromInstanceMethod instanceMethod(
+        ProvidesLifecycleDependency dependency) {
+      return new ProvidesLifecycleFromInstanceMethod(this, dependency);
+    }
+  }
+
+  public abstract static class ProvidesLifecycleRoot extends ServiceWithLifecycle {
+    public final ProvidesLifecycleFactory factory;
+    public final ProvidesLifecycleDependency dependency;
+
+    protected ProvidesLifecycleRoot(ProvidesLifecycleFactory factory,
+                                    ProvidesLifecycleDependency dependency) {
+      this.factory = Objects.requireNonNull(factory);
+      this.dependency = Objects.requireNonNull(dependency);
+    }
+  }
+
+  public static final class ProvidesLifecycleDependency extends ServiceWithLifecycle {}
+
+  public static final class ProvidesLifecycleFromStaticField extends ProvidesLifecycleRoot {
+    public ProvidesLifecycleFromStaticField(
+        ProvidesLifecycleFactory factory,
+        ProvidesLifecycleDependency dependency) {
+      super(factory, dependency);
+    }
+  }
+
+  public static final class ProvidesLifecycleFromInstanceField extends ProvidesLifecycleRoot {
+    public ProvidesLifecycleFromInstanceField(
+        ProvidesLifecycleFactory factory,
+        ProvidesLifecycleDependency dependency) {
+      super(factory, dependency);
+    }
+  }
+
+  public static final class ProvidesLifecycleFromStaticMethod extends ProvidesLifecycleRoot {
+    public ProvidesLifecycleFromStaticMethod(
+        ProvidesLifecycleFactory factory,
+        ProvidesLifecycleDependency dependency) {
+      super(factory, dependency);
+    }
+  }
+
+  public static final class ProvidesLifecycleFromInstanceMethod extends ProvidesLifecycleRoot {
+    public ProvidesLifecycleFromInstanceMethod(
+        ProvidesLifecycleFactory factory,
+        ProvidesLifecycleDependency dependency) {
+      super(factory, dependency);
+    }
+  }
 }

@@ -114,6 +114,30 @@ final class InjectUtils {
     return serviceLocator.getServiceHandle(activeDescriptor, injectee);
   }
 
+  static @Nullable Object serviceFromParameter(
+      Parameter parameter,
+      ServiceHandle<?> root,
+      ServiceLocator serviceLocator) {
+
+    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(root);
+    Objects.requireNonNull(parameter);
+
+    Injectee injectee = injecteeFromParameter(parameter);
+
+    ActiveDescriptor<?> activeDescriptor =
+        serviceLocator.getInjecteeDescriptor(injectee);
+
+    if (activeDescriptor == null) {
+      if (!injectee.isOptional())
+        throw new UnsatisfiedDependencyException(injectee);
+
+      return null;
+    }
+
+    return serviceLocator.getService(activeDescriptor, root, injectee);
+  }
+
   static Injectee injecteeFromType(Type type) {
     Objects.requireNonNull(type);
     var injectee = new InjecteeImpl(type);

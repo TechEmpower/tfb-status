@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import javax.inject.Named;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
@@ -42,14 +42,14 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   private final Type implementationType;
   private final ImmutableSet<Type> contracts;
   private final Annotation scope;
-  private final Supplier<T> createFunction;
+  private final Function<ServiceHandle<?>, T> createFunction;
   private final Consumer<T> disposeFunction;
 
   ProvidesDescriptor(AnnotatedElement annotatedElement,
                      Type implementationType,
                      ImmutableSet<Type> contracts,
                      Annotation scope,
-                     Supplier<T> createFunction,
+                     Function<ServiceHandle<?>, T> createFunction,
                      Consumer<T> disposeFunction) {
 
     this.annotatedElement = Objects.requireNonNull(annotatedElement);
@@ -62,7 +62,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
 
   @Override
   public T create(ServiceHandle<?> root) {
-    return createFunction.get();
+    return createFunction.apply(root);
   }
 
   @Override

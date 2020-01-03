@@ -17,9 +17,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Scope;
@@ -59,7 +57,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Enables the {@link Provides} and {@link Registers} annotation.
+ * Enables the {@link Provides} and {@link Registers} annotations.
  */
 @Singleton
 @ContractsProvided({
@@ -375,10 +373,10 @@ final class ProvidesAnnotationEnabler
     Annotation scope =
         getScopeAnnotation(method, contracts, serviceDescriptor);
 
-    Supplier<Object> createFunction =
+    Function<ServiceHandle<?>, Object> createFunction =
         (serviceDescriptor == null)
-            ? () -> createFromStaticMethod(method, serviceLocator)
-            : () -> createFromInstanceMethod(method, serviceLocator, serviceDescriptor);
+            ? root -> createFromStaticMethod(method, root, serviceLocator)
+            : root -> createFromInstanceMethod(method, root, serviceLocator, serviceDescriptor);
 
     Consumer<Object> destroyFunction =
         getDestroyFunction(
@@ -447,10 +445,10 @@ final class ProvidesAnnotationEnabler
     Annotation scope =
         getScopeAnnotation(field, contracts, serviceDescriptor);
 
-    Supplier<Object> createFunction =
+    Function<ServiceHandle<?>, Object> createFunction =
         (serviceDescriptor == null)
-            ? () -> createFromStaticField(field, serviceLocator)
-            : () -> createFromInstanceField(field, serviceLocator, serviceDescriptor);
+            ? root -> createFromStaticField(field, root, serviceLocator)
+            : root -> createFromInstanceField(field, root, serviceLocator, serviceDescriptor);
 
     Consumer<Object> destroyFunction =
         getDestroyFunction(
@@ -622,23 +620,53 @@ final class ProvidesAnnotationEnabler
    * Retrieves an instance of a service by invoking a static method that is
    * annotated with {@link Provides}.
    *
-   * @param method the static method that is annotated with {@link Provides}.
+   * @param method the static method that is annotated with {@link Provides}
+   * @param root the handle for the service that the method provides
    * @param serviceLocator the service locator
    * @return a new instance of the service provided by the method
    * @throws MultiException if the invocation fails
    */
   private static @Nullable Object createFromStaticMethod(
       Method method,
+      ServiceHandle<?> root,
       ServiceLocator serviceLocator) {
 
-    return createFromMethod(method, serviceLocator, null);
+    Objects.requireNonNull(method);
+    Objects.requireNonNull(root);
+    Objects.requireNonNull(serviceLocator);
+
+    Object[] arguments =
+        Arrays.stream(method.getParameters())
+              .map(
+                  parameter ->
+                      InjectUtils.serviceFromParameter(
+                          parameter,
+                          root,
+                          serviceLocator))
+              .toArray(length -> new Object[length]);
+
+    if (!method.canAccess(null))
+      method.setAccessible(true);
+
+    Object provided;
+    try {
+      provided = method.invoke(null, arguments);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      throw new MultiException(e);
+    }
+
+    if (provided != null)
+      serviceLocator.postConstruct(provided);
+
+    return provided;
   }
 
   /**
    * Retrieves an instance of a service by invoking an instance method that is
    * annotated with {@link Provides}.
    *
-   * @param method the instance method that is annotated with {@link Provides}.
+   * @param method the instance method that is annotated with {@link Provides}
+   * @param root the handle for the service that the method provides
    * @param serviceLocator the service locator
    * @param serviceDescriptor the descriptor of the service that defines the
    *        method
@@ -647,112 +675,65 @@ final class ProvidesAnnotationEnabler
    */
   private static @Nullable Object createFromInstanceMethod(
       Method method,
+      ServiceHandle<?> root,
       ServiceLocator serviceLocator,
       ActiveDescriptor<?> serviceDescriptor) {
 
-    return createFromMethod(method, serviceLocator, Objects.requireNonNull(serviceDescriptor));
-  }
-
-  /**
-   * Retrieves an instance of a service by invoking a method that is annotated
-   * with {@link Provides}.
-   *
-   * @param method the method that is annotated with {@link Provides}.
-   * @param serviceLocator the service locator
-   * @param serviceDescriptor the descriptor of the service that defines the
-   *        method, or {@code null} if the method is static
-   * @return a new instance of the service provided by the method
-   * @throws MultiException if the invocation fails
-   */
-  private static @Nullable Object createFromMethod(
-      Method method,
-      ServiceLocator serviceLocator,
-      @Nullable ActiveDescriptor<?> serviceDescriptor) {
-
     Objects.requireNonNull(method);
+    Objects.requireNonNull(root);
     Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(serviceDescriptor);
 
-    List<ServiceHandle<?>> perLookupHandles = new ArrayList<>();
+    Object[] arguments =
+        Arrays.stream(method.getParameters())
+              .map(
+                  parameter ->
+                      InjectUtils.serviceFromParameter(
+                          parameter,
+                          root,
+                          serviceLocator))
+              .toArray(length -> new Object[length]);
 
+    Object service = serviceLocator.getService(serviceDescriptor, root, null);
+    if (!method.canAccess(service))
+      method.setAccessible(true);
+
+    Object provided;
     try {
-      Parameter[] parameters = method.getParameters();
-      Object[] arguments = new Object[parameters.length];
-
-      for (int i = 0; i < parameters.length; i++) {
-        ServiceHandle<?> parameterHandle =
-            InjectUtils.serviceHandleFromParameter(parameters[i], serviceLocator);
-
-        if (parameterHandle == null)
-          arguments[i] = null;
-
-        else {
-          if (parameterHandle.getActiveDescriptor().getScopeAnnotation() == PerLookup.class)
-            perLookupHandles.add(parameterHandle);
-
-          arguments[i] = parameterHandle.getService();
-        }
-      }
-
-      if (serviceDescriptor == null) {
-        if (!method.canAccess(null))
-          method.setAccessible(true);
-
-        Object provided;
-        try {
-          provided = method.invoke(null, arguments);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-          throw new MultiException(e);
-        }
-
-        if (provided != null)
-          serviceLocator.postConstruct(provided);
-
-        return provided;
-      }
-
-      ServiceHandle<?> serviceHandle =
-          serviceLocator.getServiceHandle(serviceDescriptor);
-
-      if (serviceDescriptor.getScopeAnnotation() == PerLookup.class)
-        perLookupHandles.add(serviceHandle);
-
-      Object service = serviceHandle.getService();
-      if (!method.canAccess(service))
-        method.setAccessible(true);
-
-      Object provided;
-      try {
-        provided = method.invoke(service, arguments);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        throw new MultiException(e);
-      }
-
-      if (provided != null)
-        serviceLocator.postConstruct(provided);
-
-      return provided;
-
-    } finally {
-      for (ServiceHandle<?> serviceHandle : perLookupHandles)
-        serviceHandle.close();
+      provided = method.invoke(service, arguments);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      throw new MultiException(e);
     }
+
+    if (provided != null)
+      serviceLocator.postConstruct(provided);
+
+    return provided;
   }
 
   /**
    * Retrieves an instance of a service from a static field that is annotated
    * with {@link Provides}.
    *
-   * @param field the static field that is annotated with {@link Provides}.
+   * @param field the static field that is annotated with {@link Provides}
+   * @param root the handle for the service that the field provides
    * @param serviceLocator the service locator
    * @return the instance of the service that is contained in the field
    * @throws MultiException if reading the field fails
    */
   private static @Nullable Object createFromStaticField(
       Field field,
+      ServiceHandle<?> root,
       ServiceLocator serviceLocator) {
 
     Objects.requireNonNull(field);
+    Objects.requireNonNull(root);
     Objects.requireNonNull(serviceLocator);
+
+    // Ignore the root handle because no other ServiceHandle instances can be
+    // created as a result of this call.  In other words, there is no other
+    // ServiceHandle that must be closed when the handle for this field is
+    // closed.
 
     if (!field.canAccess(null))
       field.setAccessible(true);
@@ -774,7 +755,8 @@ final class ProvidesAnnotationEnabler
    * Retrieves an instance of a service from an instance field that is annotated
    * with {@link Provides}.
    *
-   * @param field the instance field that is annotated with {@link Provides}.
+   * @param field the instance field that is annotated with {@link Provides}
+   * @param root the handle for the service that the field provides
    * @param serviceLocator the service locator
    * @param serviceDescriptor the descriptor of the service that defines the
    *        field
@@ -783,39 +765,30 @@ final class ProvidesAnnotationEnabler
    */
   private static @Nullable Object createFromInstanceField(
       Field field,
+      ServiceHandle<?> root,
       ServiceLocator serviceLocator,
       ActiveDescriptor<?> serviceDescriptor) {
 
     Objects.requireNonNull(field);
+    Objects.requireNonNull(root);
     Objects.requireNonNull(serviceLocator);
     Objects.requireNonNull(serviceDescriptor);
 
-    boolean isPerLookupService =
-        serviceDescriptor.getScopeAnnotation() == PerLookup.class;
+    Object service = serviceLocator.getService(serviceDescriptor, root, null);
+    if (!field.canAccess(service))
+      field.setAccessible(true);
 
-    ServiceHandle<?> serviceHandle =
-        serviceLocator.getServiceHandle(serviceDescriptor);
-
+    Object provided;
     try {
-      Object service = serviceHandle.getService();
-      if (!field.canAccess(service))
-        field.setAccessible(true);
-
-      Object provided;
-      try {
-        provided = field.get(service);
-      } catch (IllegalAccessException e) {
-        throw new MultiException(e);
-      }
-
-      if (provided != null)
-        serviceLocator.postConstruct(provided);
-
-      return provided;
-    } finally {
-      if (isPerLookupService)
-        serviceHandle.close();
+      provided = field.get(service);
+    } catch (IllegalAccessException e) {
+      throw new MultiException(e);
     }
+
+    if (provided != null)
+      serviceLocator.postConstruct(provided);
+
+    return provided;
   }
 
   /**
@@ -1048,7 +1021,7 @@ final class ProvidesAnnotationEnabler
                 rawClass,
                 ImmutableSet.of(), // Provides no contracts, not even itself.
                 ServiceLocatorUtilities.getSingletonAnnotation(),
-                () -> { throw new UnsupportedOperationException(); },
+                root -> { throw new UnsupportedOperationException(); },
                 instance -> { throw new UnsupportedOperationException(); });
 
         return addActiveDescriptor(descriptor);
