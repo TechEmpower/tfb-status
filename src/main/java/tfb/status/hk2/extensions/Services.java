@@ -1,6 +1,7 @@
 package tfb.status.hk2.extensions;
 
 import com.google.common.reflect.TypeToken;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.NoSuchElementException;
@@ -43,19 +44,27 @@ public final class Services {
   }
 
   /**
-   * Adds the specified type as a service.
+   * Registers the specified type as a service.
+   *
+   * @return this {@link Services} instance (for chaining)
    */
-  public void addClass(Class<?> type) {
+  @CanIgnoreReturnValue
+  public Services register(Class<?> type) {
     Objects.requireNonNull(type);
     ServiceLocatorUtilities.addClasses(serviceLocator, type);
+    return this;
   }
 
   /**
-   * Adds the specified instance as a service.
+   * Registers the specified instance as a service.
+   *
+   * @return this {@link Services} instance (for chaining)
    */
-  public void addInstance(Object service) {
+  @CanIgnoreReturnValue
+  public Services registerInstance(Object service) {
     Objects.requireNonNull(service);
     ServiceLocatorUtilities.addOneConstant(serviceLocator, service);
+    return this;
   }
 
   /**

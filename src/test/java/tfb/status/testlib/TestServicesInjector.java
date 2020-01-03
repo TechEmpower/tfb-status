@@ -69,11 +69,8 @@ public final class TestServicesInjector implements ParameterResolver {
   private static final class StoredServices
       implements ExtensionContext.Store.CloseableResource {
 
-    final Services services = new Services();
-
-    StoredServices() {
-      services.addClass(TestServicesBinder.class);
-    }
+    final Services services =
+        new Services().register(TestServicesBinder.class);
 
     @Override
     public void close() {

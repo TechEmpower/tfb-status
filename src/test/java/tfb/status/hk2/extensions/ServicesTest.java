@@ -1333,9 +1333,7 @@ public final class ServicesTest {
    * Constructs a new set of services to be used in one test.
    */
   private Services newServices() {
-    var services = new Services();
-    services.addClass(ServicesTestClasses.class);
-    return services;
+    return new Services().register(ServicesTestClasses.class);
   }
 
   @Registers({
