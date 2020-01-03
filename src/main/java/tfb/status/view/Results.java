@@ -117,6 +117,13 @@ public final class Results {
    */
   public final @Nullable GitInfo git;
 
+  /**
+   * The test metadata, generated during this run (same as test_metadata.json).
+   * Test metadata was not always included in the results, so this will be
+   * {@code null} for old runs.
+   */
+  public final @Nullable ImmutableList<TestDefinition> testMetadata;
+
   @JsonCreator
   public Results(
 
@@ -160,7 +167,10 @@ public final class Results {
       ImmutableList<Integer> concurrencyLevels,
 
       @JsonProperty(value = "git", required = false)
-      @Nullable GitInfo git) {
+      @Nullable GitInfo git,
+
+      @JsonProperty(value = "test_metadata", required = false)
+      @Nullable ImmutableList<TestDefinition> testMetadata) {
 
     this.uuid = uuid;
     this.name = name;
@@ -176,6 +186,7 @@ public final class Results {
     this.queryIntervals = Objects.requireNonNull(queryIntervals);
     this.concurrencyLevels = Objects.requireNonNull(concurrencyLevels);
     this.git = git;
+    this.testMetadata = testMetadata;
   }
 
   /**

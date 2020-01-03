@@ -29,6 +29,7 @@ import tfb.status.handler.LastSeenCommitHandler;
 import tfb.status.handler.RobotsHandler;
 import tfb.status.handler.RootHandler;
 import tfb.status.handler.SaveAttributesHandler;
+import tfb.status.handler.ShareResultsHandler;
 import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
@@ -147,6 +148,10 @@ public final class ServicesBinder extends AbstractBinder {
         .in(Singleton.class);
 
     bindAsContract(LastSeenCommitHandler.class)
+        .to(HttpHandler.class)
+        .in(Singleton.class);
+
+    bindAsContract(ShareResultsHandler.class)
         .to(HttpHandler.class)
         .in(Singleton.class);
 

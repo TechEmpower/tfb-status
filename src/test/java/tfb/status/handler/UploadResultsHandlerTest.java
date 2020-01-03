@@ -124,7 +124,8 @@ public final class UploadResultsHandlerTest {
             /* rawData= */ originalResults.rawData,
             /* queryIntervals= */ originalResults.queryIntervals,
             /* concurrencyLevels= */ originalResults.concurrencyLevels,
-            /* git= */ originalResults.git);
+            /* git= */ originalResults.git,
+            /* testMetadata= */ originalResults.testMetadata);
 
     try (BufferedWriter writer = Files.newBufferedWriter(jsonFile)) {
       objectMapper.writeValue(writer, newResults);
@@ -243,7 +244,8 @@ public final class UploadResultsHandlerTest {
               /* rawData= */ newResults.rawData,
               /* queryIntervals= */ newResults.queryIntervals,
               /* concurrencyLevels= */ newResults.concurrencyLevels,
-              /* git= */ newResults.git);
+              /* git= */ newResults.git,
+              /* testMetadata= */ newResults.testMetadata);
 
       try (BufferedWriter writer = Files.newBufferedWriter(jsonFile)) {
         objectMapper.writeValue(writer, updatedResults);
@@ -312,7 +314,8 @@ public final class UploadResultsHandlerTest {
               /* rawData= */ updatedResults.rawData,
               /* queryIntervals= */ updatedResults.queryIntervals,
               /* concurrencyLevels= */ updatedResults.concurrencyLevels,
-              /* git= */ updatedResults.git);
+              /* git= */ updatedResults.git,
+              /* testMetadata= */ updatedResults.testMetadata);
 
       ZipFiles.findZipEntry(
           /* zipFile= */ zipFile,
