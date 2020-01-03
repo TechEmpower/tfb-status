@@ -14,16 +14,10 @@ final class MutableTickerFactory {
     throw new AssertionError("This class cannot be instantiated");
   }
 
-  @Provides
-  @Singleton
-  public static MutableTicker mutableTicker() {
-    return new MutableTicker();
-  }
-
-  @Provides
+  @Provides(contracts = { Ticker.class, MutableTicker.class })
   @Singleton
   @Rank(1) // Override the default ticker.
-  public static Ticker defaultTicker(MutableTicker mutableTicker) {
-    return mutableTicker;
+  public static MutableTicker mutableTicker() {
+    return new MutableTicker();
   }
 }

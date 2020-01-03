@@ -15,16 +15,10 @@ final class MutableClockFactory  {
     throw new AssertionError("This class cannot be instantiated");
   }
 
-  @Provides
-  @Singleton
-  public static MutableClock mutableClock() {
-    return MutableClock.epochUTC();
-  }
-
-  @Provides
+  @Provides(contracts = { Clock.class, MutableClock.class })
   @Singleton
   @Rank(1) // Override the default clock.
-  public static Clock defaultClock(MutableClock mutableClock) {
-    return mutableClock;
+  public static MutableClock mutableClock() {
+    return MutableClock.epochUTC();
   }
 }
