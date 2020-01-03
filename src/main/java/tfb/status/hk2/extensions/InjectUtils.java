@@ -116,11 +116,10 @@ final class InjectUtils {
 
   static @Nullable Object serviceFromParameter(
       Parameter parameter,
-      ServiceHandle<?> root,
+      @Nullable ServiceHandle<?> root,
       ServiceLocator serviceLocator) {
 
     Objects.requireNonNull(serviceLocator);
-    Objects.requireNonNull(root);
     Objects.requireNonNull(parameter);
 
     Injectee injectee = injecteeFromParameter(parameter);
