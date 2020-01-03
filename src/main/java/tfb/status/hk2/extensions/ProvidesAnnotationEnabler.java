@@ -627,7 +627,7 @@ final class ProvidesAnnotationEnabler
    * @return a new instance of the service provided by the method
    * @throws MultiException if the invocation fails
    */
-  private static Object createFromStaticMethod(
+  private static @Nullable Object createFromStaticMethod(
       Method method,
       ServiceLocator serviceLocator) {
 
@@ -645,7 +645,7 @@ final class ProvidesAnnotationEnabler
    * @return a new instance of the service provided by the method
    * @throws MultiException if the invocation fails
    */
-  private static Object createFromInstanceMethod(
+  private static @Nullable Object createFromInstanceMethod(
       Method method,
       ServiceLocator serviceLocator,
       ActiveDescriptor<?> serviceDescriptor) {
@@ -664,7 +664,7 @@ final class ProvidesAnnotationEnabler
    * @return a new instance of the service provided by the method
    * @throws MultiException if the invocation fails
    */
-  private static Object createFromMethod(
+  private static @Nullable Object createFromMethod(
       Method method,
       ServiceLocator serviceLocator,
       @Nullable ActiveDescriptor<?> serviceDescriptor) {
@@ -704,7 +704,9 @@ final class ProvidesAnnotationEnabler
           throw new MultiException(e);
         }
 
-        serviceLocator.postConstruct(provided);
+        if (provided != null)
+          serviceLocator.postConstruct(provided);
+
         return provided;
       }
 
@@ -725,7 +727,9 @@ final class ProvidesAnnotationEnabler
         throw new MultiException(e);
       }
 
-      serviceLocator.postConstruct(provided);
+      if (provided != null)
+        serviceLocator.postConstruct(provided);
+
       return provided;
 
     } finally {
@@ -743,7 +747,7 @@ final class ProvidesAnnotationEnabler
    * @return the instance of the service that is contained in the field
    * @throws MultiException if reading the field fails
    */
-  private static Object createFromStaticField(
+  private static @Nullable Object createFromStaticField(
       Field field,
       ServiceLocator serviceLocator) {
 
@@ -760,7 +764,9 @@ final class ProvidesAnnotationEnabler
       throw new MultiException(e);
     }
 
-    serviceLocator.postConstruct(provided);
+    if (provided != null)
+      serviceLocator.postConstruct(provided);
+
     return provided;
   }
 
@@ -775,7 +781,7 @@ final class ProvidesAnnotationEnabler
    * @return the instance of the service that is contained in the field
    * @throws MultiException if reading the field fails
    */
-  private static Object createFromInstanceField(
+  private static @Nullable Object createFromInstanceField(
       Field field,
       ServiceLocator serviceLocator,
       ActiveDescriptor<?> serviceDescriptor) {
@@ -802,7 +808,9 @@ final class ProvidesAnnotationEnabler
         throw new MultiException(e);
       }
 
-      serviceLocator.postConstruct(provided);
+      if (provided != null)
+        serviceLocator.postConstruct(provided);
+
       return provided;
     } finally {
       if (isPerLookupService)

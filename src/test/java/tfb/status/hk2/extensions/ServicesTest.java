@@ -1330,6 +1330,70 @@ public final class ServicesTest {
   }
 
   /**
+   * Verifies that {@code null} may be provided from a static field annotated
+   * with {@link Provides}.
+   */
+  @Test
+  public void testProvidesNullFromStaticField() {
+    Services services = newServices();
+
+    IterableProvider<NullFromStaticField> provider =
+        services.getService(new TypeToken<IterableProvider<NullFromStaticField>>() {});
+
+    try (ServiceHandle<NullFromStaticField> handle = provider.getHandle()) {
+      assertNull(handle.getService());
+    }
+  }
+
+  /**
+   * Verifies that {@code null} may be provided from an instance field annotated
+   * with {@link Provides}.
+   */
+  @Test
+  public void testProvidesNullFromInstanceField() {
+    Services services = newServices();
+
+    IterableProvider<NullFromInstanceField> provider =
+        services.getService(new TypeToken<IterableProvider<NullFromInstanceField>>() {});
+
+    try (ServiceHandle<NullFromInstanceField> handle = provider.getHandle()) {
+      assertNull(handle.getService());
+    }
+  }
+
+  /**
+   * Verifies that {@code null} may be provided from a static method annotated
+   * with {@link Provides}.
+   */
+  @Test
+  public void testProvidesNullFromStaticMethod() {
+    Services services = newServices();
+
+    IterableProvider<NullFromStaticMethod> provider =
+        services.getService(new TypeToken<IterableProvider<NullFromStaticMethod>>() {});
+
+    try (ServiceHandle<NullFromStaticMethod> handle = provider.getHandle()) {
+      assertNull(handle.getService());
+    }
+  }
+
+  /**
+   * Verifies that {@code null} may be provided from an instance method
+   * annotated with {@link Provides}.
+   */
+  @Test
+  public void testProvidesNullFromInstanceMethod() {
+    Services services = newServices();
+
+    IterableProvider<NullFromInstanceMethod> provider =
+        services.getService(new TypeToken<IterableProvider<NullFromInstanceMethod>>() {});
+
+    try (ServiceHandle<NullFromInstanceMethod> handle = provider.getHandle()) {
+      assertNull(handle.getService());
+    }
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private Services newServices() {
@@ -1359,7 +1423,8 @@ public final class ServicesTest {
       EnumProvidesContract.class,
       UnsatisfiedDependencies.class,
       ProvidesCustomDispose.class,
-      ProvidesExplicitContracts.class
+      ProvidesExplicitContracts.class,
+      ProvidesNull.class
   })
   public static final class ServicesTestClasses {}
 
@@ -1937,7 +2002,7 @@ public final class ServicesTest {
   public static final class ProvidedWithCustomDisposeFromStaticMethodForFactory extends HasCustomDisposeMethod {}
   public static final class ProvidedWithCustomDisposeFromInstanceMethodForFactory extends HasCustomDisposeMethod {}
 
-  public static class ProvidesExplicitContracts {
+  public static final class ProvidesExplicitContracts {
     @Provides(contracts = ExplicitContractInStaticField.class)
     public static final HasDefaultContractsInStaticField staticField =
         new HasDefaultContractsInStaticField();
@@ -1952,7 +2017,7 @@ public final class ServicesTest {
     }
 
     @Provides(contracts = ExplicitContractInInstanceMethod.class)
-    public final HasDefaultContractsInInstanceMethod instanceMethod() {
+    public HasDefaultContractsInInstanceMethod instanceMethod() {
       return new HasDefaultContractsInInstanceMethod();
     }
   }
@@ -1979,4 +2044,27 @@ public final class ServicesTest {
 
   public static final class HasDefaultContractsInInstanceMethod
       implements DefaultContractInInstanceMethod, ExplicitContractInInstanceMethod {}
+
+  public static final class ProvidesNull {
+    @Provides
+    public static final @Nullable NullFromStaticField staticField = null;
+
+    @Provides
+    public final @Nullable NullFromInstanceField instanceField = null;
+
+    @Provides
+    public static @Nullable NullFromStaticMethod staticMethod() {
+      return null;
+    }
+
+    @Provides
+    public @Nullable NullFromInstanceMethod instanceMethod() {
+      return null;
+    }
+  }
+
+  public static final class NullFromStaticField {}
+  public static final class NullFromInstanceField {}
+  public static final class NullFromStaticMethod {}
+  public static final class NullFromInstanceMethod {}
 }
