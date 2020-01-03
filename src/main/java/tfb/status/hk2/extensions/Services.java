@@ -129,8 +129,9 @@ public final class Services {
   }
 
   /**
-   * Returns {@code true} if a call to {@link #resolveParameter(Parameter)} will
-   * complete without throwing {@link UnsatisfiedDependencyException}.
+   * Returns {@code true} if a call to {@link #resolveParameter(Parameter,
+   * ServiceHandle)} will complete without throwing {@link
+   * UnsatisfiedDependencyException}.
    */
   public boolean supportsParameter(Parameter parameter) {
     return InjectUtils.supportsParameter(parameter, serviceLocator);
@@ -154,10 +155,9 @@ public final class Services {
    *         matching the parameter and the parameter is not annotated with
    *         {@link org.jvnet.hk2.annotations.Optional}
    */
-  public @Nullable Object resolveParameter(Parameter parameter) {
-    ServiceHandle<?> serviceHandle =
-        InjectUtils.serviceHandleFromParameter(parameter, serviceLocator);
+  public @Nullable Object resolveParameter(Parameter parameter,
+                                           @Nullable ServiceHandle<?> root) {
 
-    return (serviceHandle == null) ? null : serviceHandle.getService();
+    return InjectUtils.serviceFromParameter(parameter, root, serviceLocator);
   }
 }
