@@ -1,12 +1,14 @@
 package tfb.status.hk2.extensions;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Qualifier;
@@ -14,6 +16,7 @@ import javax.inject.Scope;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Injectee;
+import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.Self;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
@@ -29,6 +32,52 @@ import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 final class InjectUtils {
   private InjectUtils() {
     throw new AssertionError("This class cannot be instantiated");
+  }
+
+  /**
+   * Returns an instance of the service of the specified type.
+   *
+   * <p>This method may be useful in cases where the service has a generic type.
+   * If the type of the service is a non-generic {@link Class}, use {@link
+   * ServiceLocator#getService(Class, Annotation...)} instead of this method.
+   *
+   * @throws MultiException if a registered services matches the specified type
+   *         but an exception was thrown while retrieving that instance -- if
+   *         the service has unsatisfied dependencies or its constructor throws
+   *         an exception, for example
+   * @throws NoSuchElementException if no registered service matches the
+   *         specified type, or if a registered service does match the specified
+   *         type but the provider of that service provided {@code null}
+   */
+  static <T> T getService(ServiceLocator serviceLocator, TypeToken<T> type) {
+
+    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(type);
+
+    Injectee injectee = injecteeFromType(type.getType());
+
+    ActiveDescriptor<?> activeDescriptor =
+        serviceLocator.getInjecteeDescriptor(injectee);
+
+    if (activeDescriptor == null)
+      throw new NoSuchElementException(
+          "There is no service of type " + type);
+
+    Object service =
+        serviceLocator.getService(
+            activeDescriptor,
+            /* root= */ null,
+            injectee);
+
+    if (service == null)
+      throw new NoSuchElementException(
+          "There is no service of type " + type);
+
+    // This unchecked cast is safe because the injectee was defined with the
+    // caller-specified type.
+    @SuppressWarnings("unchecked")
+    T serviceAsT = (T) service;
+    return serviceAsT;
   }
 
   static Injectee injecteeFromParameter(Parameter parameter) {

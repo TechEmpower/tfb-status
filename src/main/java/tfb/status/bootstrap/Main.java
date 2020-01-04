@@ -1,5 +1,7 @@
 package tfb.status.bootstrap;
 
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import tfb.status.hk2.extensions.Services;
 import tfb.status.service.HttpServer;
 
@@ -39,10 +41,13 @@ public final class Main {
                 + " arguments instead");
     }
 
-    var services =
-        new Services().registerInstance(new ServicesBinder(configFilePath));
+    ServiceLocator serviceLocator = Services.newServiceLocator();
 
-    HttpServer httpServer = services.getService(HttpServer.class);
+    ServiceLocatorUtilities.addOneConstant(
+        serviceLocator,
+        new ServicesBinder(configFilePath));
+
+    HttpServer httpServer = serviceLocator.getService(HttpServer.class);
     httpServer.start();
   }
 }

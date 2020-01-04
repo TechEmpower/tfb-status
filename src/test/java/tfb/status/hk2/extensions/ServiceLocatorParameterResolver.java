@@ -74,16 +74,8 @@ public abstract class ServiceLocatorParameterResolver
 
             /* defaultCreator= */
             key -> {
-              ServiceLocator serviceLocator =
-                  ServiceLocatorUtilities.createAndPopulateServiceLocator();
-
-                ServiceLocatorUtilities.addClasses(
-                    serviceLocator,
-                    TopicDistributionServiceImpl.class,
-                    ProvidesAnnotationEnabler.class);
-
+              ServiceLocator serviceLocator = Services.newServiceLocator();
               ServiceLocatorUtilities.bind(serviceLocator, this);
-
               return new StoredServiceLocator(serviceLocator);
             },
 

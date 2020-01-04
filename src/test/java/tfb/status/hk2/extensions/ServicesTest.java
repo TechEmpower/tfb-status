@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -31,10 +32,12 @@ import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
+import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.messaging.MessageReceiver;
 import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
 
@@ -43,12 +46,13 @@ import org.jvnet.hk2.annotations.Contract;
  */
 public final class ServicesTest {
   /**
-   * Verifies that every invocation of {@link Services#getService(Class)}
-   * returns the same instance when the service has the {@link Singleton} scope.
+   * Verifies that every invocation of {@link ServiceLocator#getService(Class,
+   * Annotation...)} returns the same instance when the service has the {@link
+   * Singleton} scope.
    */
   @Test
   public void testGetSingletonService() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     SingletonService service1 = services.getService(SingletonService.class);
     SingletonService service2 = services.getService(SingletonService.class);
@@ -59,13 +63,13 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that every invocation of {@link Services#getService(Class)}
-   * returns a new instance when the service has the {@link PerLookup} scope,
-   * which is the default scope.
+   * Verifies that every invocation of {@link ServiceLocator#getService(Class,
+   * Annotation...)} returns a new instance when the service has the {@link
+   * PerLookup} scope, which is the default scope.
    */
   @Test
   public void testGetPerLookupService() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     PerLookupService service1 = services.getService(PerLookupService.class);
     PerLookupService service2 = services.getService(PerLookupService.class);
@@ -76,20 +80,17 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#getService(Class)} throws {@link
-   * NoSuchElementException} when there is no service of the specified type.
+   * Verifies that {@link ServiceLocator#getService(Class, Annotation...)}
+   * returns {@code null} when there is no service of the specified type.
    */
   @Test
   public void testGetUnregisteredService() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(UnregisteredService.class));
+    assertNull(services.getService(UnregisteredService.class));
 
     Iterable<UnregisteredService> iterable =
-        services.getService(
-            new TypeToken<Iterable<UnregisteredService>>() {});
+        InjectUtils.getService(services, new TypeToken<Iterable<UnregisteredService>>() {});
 
     Iterator<UnregisteredService> iterator = iterable.iterator();
 
@@ -97,13 +98,13 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#getService(Class)} throws {@link
-   * MultiException} when there is a service of the specified type but it has
-   * unsatisfied dependencies.
+   * Verifies that {@link ServiceLocator#getService(Class, Annotation...)}
+   * throws {@link MultiException} when there is a service of the specified type
+   * but it has unsatisfied dependencies.
    */
   @Test
   public void testGetServiceWithUnsatisfiedDependencies() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     assertThrows(
         MultiException.class,
@@ -111,22 +112,20 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#getService(Class)} throws {@link
-   * NoSuchElementException} when there is a service of the specified type but
-   * its provider provided {@code null}.
+   * Verifies that {@link ServiceLocator#getService(Class, Annotation...)}
+   * returns {@code null} when there is a service of the specified type but its
+   * provider provided {@code null}.
    */
   @Test
   public void testGetNullService() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(NullService.class));
+    assertNull(services.getService(NullService.class));
 
     // Assert that there is one "instance" of the service, but it's null.
     Iterable<NullService> iterable =
-        services.getService(
-            new TypeToken<Iterable<NullService>>() {});
+        InjectUtils.getService(services,
+                               new TypeToken<Iterable<NullService>>() {});
 
     Iterator<NullService> iterator = iterable.iterator();
 
@@ -136,46 +135,47 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
-   * Optional} of a registered service type, and that the returned optional
-   * contains an instance of that service.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
+   * produce an {@link Optional} of a registered service type, and that the
+   * returned optional contains an instance of that service.
    */
   @Test
   public void testGetOptional() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     Optional<PerLookupService> optional =
-        services.getService(new TypeToken<Optional<PerLookupService>>() {});
+        InjectUtils.getService(services, new TypeToken<Optional<PerLookupService>>() {});
 
     assertTrue(optional.isPresent());
   }
 
   /**
-   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
-   * Optional} even when the service type is unregistered, and that the returned
-   * optional is empty.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
+   * produce an {@link Optional} even when the service type is unregistered, and
+   * that the returned optional is empty.
    */
   @Test
   public void testGetUnregisteredOptional() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     Optional<UnregisteredService> optional =
-        services.getService(new TypeToken<Optional<UnregisteredService>>() {});
+        InjectUtils.getService(services, new TypeToken<Optional<UnregisteredService>>() {});
 
     assertTrue(optional.isEmpty());
   }
 
   /**
-   * Verifies that {@link Services#getService(TypeToken)} can produce a {@link
-   * Provider} of a registered service type, and that the returned provider's
-   * {@link Provider#get()} method provides an instance of that service.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
+   * produce a {@link Provider} of a registered service type, and that the
+   * returned provider's {@link Provider#get()} method provides an instance of
+   * that service.
    */
   @Test
   public void testGetProvider() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     Provider<PerLookupService> provider =
-        services.getService(new TypeToken<Provider<PerLookupService>>() {});
+        InjectUtils.getService(services, new TypeToken<Provider<PerLookupService>>() {});
 
     PerLookupService service = provider.get();
 
@@ -183,16 +183,17 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#getService(TypeToken)} can produce a {@link
-   * Provider} even when the service type is unregistered, and that the returned
-   * provider's {@link Provider#get()} method returns {@code null}.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
+   * produce a {@link Provider} even when the service type is unregistered, and
+   * that the returned provider's {@link Provider#get()} method returns {@code
+   * null}.
    */
   @Test
   public void testGetUnregisteredProvider() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     Provider<UnregisteredService> provider =
-        services.getService(new TypeToken<Provider<UnregisteredService>>() {});
+        InjectUtils.getService(services, new TypeToken<Provider<UnregisteredService>>() {});
 
     UnregisteredService service = provider.get();
 
@@ -200,16 +201,18 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
-   * Iterable} of a registered contract type, and that the returned iterable
-   * contains one element for each service registered with that contract.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
+   * produce an {@link Iterable} of a registered contract type, and that the
+   * returned iterable contains one element for each service registered with
+   * that contract.
    */
   @Test
   public void testGetIterable() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     Iterable<SimpleContract> provider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<Iterable<SimpleContract>>() {});
 
     Iterator<SimpleContract> iterator = provider.iterator();
@@ -230,33 +233,35 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
-   * Iterable} even when the service type is unregistered, and that the returned
-   * iterable is empty.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
+   * produce an {@link Iterable} even when the service type is unregistered, and
+   * that the returned iterable is empty.
    */
   @Test
   public void testGetUnregisteredIterable() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     Iterable<UnregisteredService> provider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<Iterable<UnregisteredService>>() {});
 
     assertFalse(provider.iterator().hasNext());
   }
 
   /**
-   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
-   * IterableProvider} of a registered contract type, and that the returned
-   * provider's {@link IterableProvider#iterator()} contains one element for
-   * each service registered with that contract.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
+   * produce an {@link IterableProvider} of a registered contract type, and that
+   * the returned provider's {@link IterableProvider#iterator()} contains one
+   * element for each service registered with that contract.
    */
   @Test
   public void testGetIterableProvider() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<SimpleContract> provider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<SimpleContract>>() {});
 
     Iterator<SimpleContract> iterator = provider.iterator();
@@ -277,40 +282,42 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#getService(TypeToken)} can produce an {@link
-   * IterableProvider} even when the service type is unregistered, and that the
-   * returned provider's {@link IterableProvider#iterator()} is empty.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
+   * produce an {@link IterableProvider} even when the service type is
+   * unregistered, and that the returned provider's {@link
+   * IterableProvider#iterator()} is empty.
    */
   @Test
   public void testGetUnregisteredIterableProvider() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<UnregisteredService> provider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<UnregisteredService>>() {});
 
     assertFalse(provider.iterator().hasNext());
   }
 
   /**
-   * Verifies that {@link Services#getService(TypeToken)} can retrieve services
-   * bound to generic contract types, and that it correctly distinguishes these
-   * services from each other based on the generic type arguments of the
-   * contract.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
+   * retrieve services bound to generic contract types, and that it correctly
+   * distinguishes these services from each other based on the generic type
+   * arguments of the contract.
    */
   @Test
   public void testGetGenericService() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     GenericContract<Integer> service1 =
-        services.getService(new TypeToken<GenericContract<Integer>>() {});
+        InjectUtils.getService(services, new TypeToken<GenericContract<Integer>>() {});
 
     GenericContract<String> service2 =
-        services.getService(new TypeToken<GenericContract<String>>() {});
+        InjectUtils.getService(services, new TypeToken<GenericContract<String>>() {});
 
     assertThrows(
         NoSuchElementException.class,
-        () -> services.getService(new TypeToken<GenericContract<Double>>() {}));
+        () -> InjectUtils.getService(services, new TypeToken<GenericContract<Double>>() {}));
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -320,12 +327,12 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#shutdown()} invokes the {@link
+   * Verifies that {@link ServiceLocator#shutdown()} invokes the {@link
    * PreDestroy#preDestroy()} methods of registered singleton services.
    */
   @Test
   public void testShutdownSingletonService() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     SingletonServiceWithShutdown service =
         services.getService(SingletonServiceWithShutdown.class);
@@ -338,13 +345,13 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Services#shutdown()} invokes the {@link
+   * Verifies that {@link ServiceLocator#shutdown()} invokes the {@link
    * Factory#dispose(Object)} methods of registered factories that produce
    * singleton services.
    */
   @Test
   public void testShutdownSingletonServiceFromFactory() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     SingletonServiceWithShutdownFromFactory service =
         services.getService(SingletonServiceWithShutdownFromFactory.class);
@@ -362,10 +369,11 @@ public final class ServicesTest {
    */
   @Test
   public void testShutdownPerLookupService() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<ServiceWithLifecycle> providers =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ServiceWithLifecycle>>() {});
 
     int loopCount = 2;
@@ -393,10 +401,11 @@ public final class ServicesTest {
    */
   @Test
   public void testShutdownPerLookupServiceFromFactory() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<ServiceWithShutdownFromFactory> providers =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ServiceWithShutdownFromFactory>>() {});
 
     int loopCount = 2;
@@ -424,16 +433,16 @@ public final class ServicesTest {
    */
   @Test
   public void testTopics() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     Topic<String> stringTopic =
-        services.getService(new TypeToken<Topic<String>>() {});
+        InjectUtils.getService(services, new TypeToken<Topic<String>>() {});
 
     Topic<Integer> integerTopic = // subtype of Number, should be seen
-        services.getService(new TypeToken<Topic<Integer>>() {});
+        InjectUtils.getService(services, new TypeToken<Topic<Integer>>() {});
 
     Topic<CharSequence> charSequenceTopic = // should be ignored
-        services.getService(new TypeToken<Topic<CharSequence>>() {});
+        InjectUtils.getService(services, new TypeToken<Topic<CharSequence>>() {});
 
     stringTopic.publish("1");
     integerTopic.publish(2);
@@ -476,7 +485,7 @@ public final class ServicesTest {
    */
   @Test
   public void testServiceThatProvidesAndIsAService() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidesService service =
         services.getService(ProvidesService.class);
@@ -490,7 +499,7 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedByStaticField service =
         services.getService(ProvidedByStaticField.class);
@@ -504,7 +513,7 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceFieldProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedByInstanceField service =
         services.getService(ProvidedByInstanceField.class);
@@ -518,7 +527,7 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedByStaticMethod service =
         services.getService(ProvidedByStaticMethod.class);
@@ -532,7 +541,7 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedByInstanceMethod service =
         services.getService(ProvidedByInstanceMethod.class);
@@ -546,7 +555,7 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodWithParamsProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedByStaticMethodWithParams service =
         services.getService(ProvidedByStaticMethodWithParams.class);
@@ -562,7 +571,7 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodWithParamsProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedByInstanceMethodWithParams service =
         services.getService(ProvidedByInstanceMethodWithParams.class);
@@ -580,7 +589,7 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvidesChain() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     MiddleOfStaticFieldProvidesChain middle =
         services.getService(MiddleOfStaticFieldProvidesChain.class);
@@ -601,7 +610,7 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceFieldProvidesChain() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     MiddleOfInstanceFieldProvidesChain middle =
         services.getService(MiddleOfInstanceFieldProvidesChain.class);
@@ -622,7 +631,7 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodProvidesChain() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     MiddleOfStaticMethodProvidesChain middle =
         services.getService(MiddleOfStaticMethodProvidesChain.class);
@@ -643,7 +652,7 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodProvidesChain() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     MiddleOfInstanceMethodProvidesChain middle =
         services.getService(MiddleOfInstanceMethodProvidesChain.class);
@@ -662,16 +671,16 @@ public final class ServicesTest {
    */
   @Test
   public void testGenericMethodProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     GenericFromProvidesMethod<String> service =
-        services.getService(new TypeToken<GenericFromProvidesMethod<String>>() {});
+        InjectUtils.getService(services, new TypeToken<GenericFromProvidesMethod<String>>() {});
 
     assertNotNull(service);
 
     assertThrows(
         NoSuchElementException.class,
-        () -> services.getService(new TypeToken<GenericFromProvidesMethod<Integer>>() {}));
+        () -> InjectUtils.getService(services, new TypeToken<GenericFromProvidesMethod<Integer>>() {}));
   }
 
   /**
@@ -680,16 +689,16 @@ public final class ServicesTest {
    */
   @Test
   public void testGenericFieldProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     GenericFromProvidesField<String> service =
-        services.getService(new TypeToken<GenericFromProvidesField<String>>() {});
+        InjectUtils.getService(services, new TypeToken<GenericFromProvidesField<String>>() {});
 
     assertNotNull(service);
 
     assertThrows(
         NoSuchElementException.class,
-        () -> services.getService(new TypeToken<GenericFromProvidesField<Integer>>() {}));
+        () -> InjectUtils.getService(services, new TypeToken<GenericFromProvidesField<Integer>>() {}));
   }
 
   /**
@@ -699,7 +708,7 @@ public final class ServicesTest {
    */
   @Test
   public void testServiceProvidesItselfFromField() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidesSelfFromMethod self =
         services.getService(ProvidesSelfFromMethod.class);
@@ -718,7 +727,7 @@ public final class ServicesTest {
    */
   @Test
   public void testServiceProvidesItselfFromMethod() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidesSelfFromMethod self =
         services.getService(ProvidesSelfFromMethod.class);
@@ -737,7 +746,7 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvidesSingletonLifecycle() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedSingletonStaticFieldWithLifecycle service =
         services.getService(ProvidedSingletonStaticFieldWithLifecycle.class);
@@ -762,7 +771,7 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceFieldProvidesSingletonLifecycle() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedSingletonInstanceFieldWithLifecycle service =
         services.getService(ProvidedSingletonInstanceFieldWithLifecycle.class);
@@ -787,7 +796,7 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodProvidesSingletonLifecycle() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedSingletonStaticMethodWithLifecycle service =
         services.getService(ProvidedSingletonStaticMethodWithLifecycle.class);
@@ -812,7 +821,7 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodProvidesSingletonLifecycle() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedSingletonInstanceMethodWithLifecycle service =
         services.getService(ProvidedSingletonInstanceMethodWithLifecycle.class);
@@ -838,7 +847,7 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvidesPerLookupLifecycleWithoutHandle() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle serviceWithoutHandle =
         services.getService(ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle.class);
@@ -865,10 +874,11 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvidesPerLookupLifecycleWithHandle() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<ProvidedPerLookupStaticFieldWithLifecycleWithHandle> serviceProvider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ProvidedPerLookupStaticFieldWithLifecycleWithHandle>>() {});
 
     ServiceHandle<ProvidedPerLookupStaticFieldWithLifecycleWithHandle> serviceHandle =
@@ -893,7 +903,7 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceFieldProvidesPerLookupLifecycle() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedPerLookupInstanceFieldWithLifecycle serviceWithoutHandle =
         services.getService(ProvidedPerLookupInstanceFieldWithLifecycle.class);
@@ -907,7 +917,8 @@ public final class ServicesTest {
         services.getService(ProvidedPerLookupInstanceFieldWithLifecycle.class));
 
     IterableProvider<ProvidedPerLookupInstanceFieldWithLifecycle> serviceProvider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ProvidedPerLookupInstanceFieldWithLifecycle>>() {});
 
     ServiceHandle<ProvidedPerLookupInstanceFieldWithLifecycle> serviceHandle =
@@ -936,7 +947,7 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodProvidesPerLookupLifecycle() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedPerLookupStaticMethodWithLifecycle serviceWithoutHandle =
         services.getService(ProvidedPerLookupStaticMethodWithLifecycle.class);
@@ -950,7 +961,8 @@ public final class ServicesTest {
         services.getService(ProvidedPerLookupStaticMethodWithLifecycle.class));
 
     IterableProvider<ProvidedPerLookupStaticMethodWithLifecycle> serviceProvider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ProvidedPerLookupStaticMethodWithLifecycle>>() {});
 
     ServiceHandle<ProvidedPerLookupStaticMethodWithLifecycle> serviceHandle =
@@ -979,7 +991,7 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodProvidesPerLookupLifecycle() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ProvidedPerLookupInstanceMethodWithLifecycle serviceWithoutHandle =
         services.getService(ProvidedPerLookupInstanceMethodWithLifecycle.class);
@@ -993,7 +1005,8 @@ public final class ServicesTest {
         services.getService(ProvidedPerLookupInstanceMethodWithLifecycle.class));
 
     IterableProvider<ProvidedPerLookupInstanceMethodWithLifecycle> serviceProvider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ProvidedPerLookupInstanceMethodWithLifecycle>>() {});
 
     ServiceHandle<ProvidedPerLookupInstanceMethodWithLifecycle> serviceHandle =
@@ -1022,14 +1035,11 @@ public final class ServicesTest {
    */
   @Test
   public void testUtilityClassProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     assertNotNull(services.getService(FromUtilityClassMethod.class));
     assertNotNull(services.getService(FromUtilityClassField.class));
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(UtilityClassProvides.class));
+    assertNull(services.getService(UtilityClassProvides.class));
   }
 
   /**
@@ -1039,14 +1049,11 @@ public final class ServicesTest {
    */
   @Test
   public void testAbstractClassProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     assertNotNull(services.getService(FromAbstractClassMethod.class));
     assertNotNull(services.getService(FromAbstractClassField.class));
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(AbstractClassProvides.class));
+    assertNull(services.getService(AbstractClassProvides.class));
   }
 
   /**
@@ -1056,14 +1063,11 @@ public final class ServicesTest {
    */
   @Test
   public void testInterfaceProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     assertNotNull(services.getService(FromInterfaceMethod.class));
     assertNotNull(services.getService(FromInterfaceField.class));
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(InterfaceProvides.class));
+    assertNull(services.getService(InterfaceProvides.class));
   }
 
   /**
@@ -1072,10 +1076,10 @@ public final class ServicesTest {
    */
   @Test
   public void testEnumProvides() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<EnumProvides> provider =
-        services.getService(new TypeToken<IterableProvider<EnumProvides>>() {});
+        InjectUtils.getService(services, new TypeToken<IterableProvider<EnumProvides>>() {});
 
     assertEquals(
         EnumSet.allOf(EnumProvides.class),
@@ -1088,17 +1092,17 @@ public final class ServicesTest {
    */
   @Test
   public void testEnumProvidesContracts() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<EnumContract> provider =
-        services.getService(new TypeToken<IterableProvider<EnumContract>>() {});
+        InjectUtils.getService(services, new TypeToken<IterableProvider<EnumContract>>() {});
 
     assertEquals(
         EnumSet.allOf(EnumProvidesContract.class),
         ImmutableSet.copyOf(provider));
 
     IterableProvider<SecondEnumContract> secondProvider =
-        services.getService(new TypeToken<IterableProvider<SecondEnumContract>>() {});
+        InjectUtils.getService(services, new TypeToken<IterableProvider<SecondEnumContract>>() {});
 
     assertEquals(
         EnumSet.allOf(EnumProvidesContract.class),
@@ -1112,7 +1116,7 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeStaticField() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     HasCustomDisposeMethod service = services.getService(
         ProvidedWithCustomDisposeFromStaticField.class);
@@ -1129,7 +1133,7 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeInstanceField() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     HasCustomDisposeMethod service = services.getService(
         ProvidedWithCustomDisposeFromInstanceField.class);
@@ -1146,7 +1150,7 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeStaticMethod() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     HasCustomDisposeMethod service = services.getService(
         ProvidedWithCustomDisposeFromStaticMethod.class);
@@ -1163,7 +1167,7 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeInstanceMethod() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     HasCustomDisposeMethod service = services.getService(
         ProvidedWithCustomDisposeFromInstanceMethod.class);
@@ -1180,7 +1184,7 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeStaticFieldFactoryDestroys() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     HasCustomDisposeMethod service = services.getService(
         ProvidedWithCustomDisposeFromStaticFieldForFactory.class);
@@ -1197,7 +1201,7 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeInstanceFieldFactoryDestroys() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     HasCustomDisposeMethod service = services.getService(
         ProvidedWithCustomDisposeFromInstanceFieldForFactory.class);
@@ -1214,7 +1218,7 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeStaticMethodFactoryDestroys() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     HasCustomDisposeMethod service = services.getService(
         ProvidedWithCustomDisposeFromStaticMethodForFactory.class);
@@ -1231,7 +1235,7 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeInstanceMethodFactoryDestroys() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     HasCustomDisposeMethod service = services.getService(
         ProvidedWithCustomDisposeFromInstanceMethodForFactory.class);
@@ -1247,20 +1251,14 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesExplicitContractsFromStaticField() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ExplicitContractInStaticField service =
         services.getService(ExplicitContractInStaticField.class);
 
     assertTrue(service instanceof HasDefaultContractsInStaticField);
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(HasDefaultContractsInStaticField.class));
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(DefaultContractInStaticField.class));
+    assertNull(services.getService(HasDefaultContractsInStaticField.class));
+    assertNull(services.getService(DefaultContractInStaticField.class));
   }
 
   /**
@@ -1269,20 +1267,14 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesExplicitContractsFromInstanceField() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ExplicitContractInInstanceField service =
         services.getService(ExplicitContractInInstanceField.class);
 
     assertTrue(service instanceof HasDefaultContractsInInstanceField);
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(HasDefaultContractsInInstanceField.class));
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(DefaultContractInInstanceField.class));
+    assertNull(services.getService(HasDefaultContractsInInstanceField.class));
+    assertNull(services.getService(DefaultContractInInstanceField.class));
   }
 
   /**
@@ -1291,20 +1283,14 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesExplicitContractsFromStaticMethod() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ExplicitContractInStaticMethod service =
         services.getService(ExplicitContractInStaticMethod.class);
 
     assertTrue(service instanceof HasDefaultContractsInStaticMethod);
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(HasDefaultContractsInStaticMethod.class));
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(DefaultContractInStaticMethod.class));
+    assertNull(services.getService(HasDefaultContractsInStaticMethod.class));
+    assertNull(services.getService(DefaultContractInStaticMethod.class));
   }
 
   /**
@@ -1313,20 +1299,14 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesExplicitContractsFromInstanceMethod() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     ExplicitContractInInstanceMethod service =
         services.getService(ExplicitContractInInstanceMethod.class);
 
     assertTrue(service instanceof HasDefaultContractsInInstanceMethod);
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(HasDefaultContractsInInstanceMethod.class));
-
-    assertThrows(
-        NoSuchElementException.class,
-        () -> services.getService(DefaultContractInInstanceMethod.class));
+    assertNull(services.getService(HasDefaultContractsInInstanceMethod.class));
+    assertNull(services.getService(DefaultContractInInstanceMethod.class));
   }
 
   /**
@@ -1335,10 +1315,10 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesNullFromStaticField() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<NullFromStaticField> provider =
-        services.getService(new TypeToken<IterableProvider<NullFromStaticField>>() {});
+        InjectUtils.getService(services, new TypeToken<IterableProvider<NullFromStaticField>>() {});
 
     try (ServiceHandle<NullFromStaticField> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -1351,10 +1331,10 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesNullFromInstanceField() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<NullFromInstanceField> provider =
-        services.getService(new TypeToken<IterableProvider<NullFromInstanceField>>() {});
+        InjectUtils.getService(services, new TypeToken<IterableProvider<NullFromInstanceField>>() {});
 
     try (ServiceHandle<NullFromInstanceField> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -1367,10 +1347,10 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesNullFromStaticMethod() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<NullFromStaticMethod> provider =
-        services.getService(new TypeToken<IterableProvider<NullFromStaticMethod>>() {});
+        InjectUtils.getService(services, new TypeToken<IterableProvider<NullFromStaticMethod>>() {});
 
     try (ServiceHandle<NullFromStaticMethod> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -1383,10 +1363,10 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesNullFromInstanceMethod() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     IterableProvider<NullFromInstanceMethod> provider =
-        services.getService(new TypeToken<IterableProvider<NullFromInstanceMethod>>() {});
+        InjectUtils.getService(services, new TypeToken<IterableProvider<NullFromInstanceMethod>>() {});
 
     try (ServiceHandle<NullFromInstanceMethod> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -1398,10 +1378,11 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesLifecycleFromStaticField() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     var provider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ProvidesLifecycleFromStaticField>>() {});
 
     var handle = provider.getHandle();
@@ -1428,10 +1409,11 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesLifecycleFromInstanceField() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     var provider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ProvidesLifecycleFromInstanceField>>() {});
 
     var handle = provider.getHandle();
@@ -1458,10 +1440,11 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesLifecycleFromStaticMethod() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     var provider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ProvidesLifecycleFromStaticMethod>>() {});
 
     var handle = provider.getHandle();
@@ -1488,10 +1471,11 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesLifecycleFromInstanceMethod() {
-    Services services = newServices();
+    ServiceLocator services = newServices();
 
     var provider =
-        services.getService(
+        InjectUtils.getService(
+            services,
             new TypeToken<IterableProvider<ProvidesLifecycleFromInstanceMethod>>() {});
 
     var handle = provider.getHandle();
@@ -1515,8 +1499,10 @@ public final class ServicesTest {
   /**
    * Constructs a new set of services to be used in one test.
    */
-  private Services newServices() {
-    return new Services().register(ServicesTestClasses.class);
+  private ServiceLocator newServices() {
+    ServiceLocator serviceLocator = Services.newServiceLocator();
+    ServiceLocatorUtilities.addClasses(serviceLocator, ServicesTestClasses.class);
+    return serviceLocator;
   }
 
   @Registers({

@@ -1,125 +1,32 @@
 package tfb.status.hk2.extensions;
 
-import com.google.common.reflect.TypeToken;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.lang.reflect.Type;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import org.glassfish.hk2.api.ActiveDescriptor;
-import org.glassfish.hk2.api.Injectee;
-import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 
 /**
- * Manages instance of service classes within this application.
- *
- * @see #getService(Class)
- * @see #shutdown()
+ * Utility methods for working with {@link ServiceLocator}.
  */
 public final class Services {
-  private final ServiceLocator serviceLocator =
-      ServiceLocatorUtilities.createAndPopulateServiceLocator();
+  private Services() {
+    throw new AssertionError("This class cannot be instantiated");
+  }
 
   /**
-   * Initializes this instance.
+   * Returns a new {@link ServiceLocator} instance with {@link Topic}, {@link
+   * Provides}, and {@link Registers} enabled.
    */
-  public Services() {
+  public static ServiceLocator newServiceLocator() {
+    ServiceLocator serviceLocator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    // TODO: Consider making these classes public then removing this method.
     ServiceLocatorUtilities.addClasses(
         serviceLocator,
         TopicDistributionServiceImpl.class,
         ProvidesAnnotationEnabler.class);
+
+    return serviceLocator;
   }
 
-  /**
-   * Shuts down all services.
-   */
-  public void shutdown() {
-    serviceLocator.shutdown();
-  }
-
-  /**
-   * Registers the specified type as a service.
-   *
-   * @return this {@link Services} instance (for chaining)
-   */
-  @CanIgnoreReturnValue
-  public Services register(Class<?> type) {
-    Objects.requireNonNull(type);
-    ServiceLocatorUtilities.addClasses(serviceLocator, type);
-    return this;
-  }
-
-  /**
-   * Registers the specified instance as a service.
-   *
-   * @return this {@link Services} instance (for chaining)
-   */
-  @CanIgnoreReturnValue
-  public Services registerInstance(Object service) {
-    Objects.requireNonNull(service);
-    ServiceLocatorUtilities.addOneConstant(serviceLocator, service);
-    return this;
-  }
-
-  /**
-   * Returns an instance of the service of the specified type.
-   *
-   * @throws MultiException if a registered services matches the specified type
-   *         but an exception was thrown while retrieving that instance -- if
-   *         the service has unsatisfied dependencies or its constructor throws
-   *         an exception, for example
-   * @throws NoSuchElementException if no registered service matches the
-   *         specified type, or if a registered service does match the specified
-   *         type but the provider of that service provided {@code null}
-   */
-  public <T> T getService(Class<T> type) {
-    return type.cast(getService((Type) type));
-  }
-
-  /**
-   * Returns an instance of the service of the specified type.
-   *
-   * <p>This method may be useful in cases where the service has a generic type.
-   * If the type of the service is a non-generic {@link Class}, use {@link
-   * #getService(Class)} instead of this method.
-   *
-   * @throws MultiException if a registered services matches the specified type
-   *         but an exception was thrown while retrieving that instance -- if
-   *         the service has unsatisfied dependencies or its constructor throws
-   *         an exception, for example
-   * @throws NoSuchElementException if no registered service matches the
-   *         specified type, or if a registered service does match the specified
-   *         type but the provider of that service provided {@code null}
-   */
-  public <T> T getService(TypeToken<T> type) {
-    // This unchecked cast is safe because getService(Type) is guaranteed to
-    // return an instance of the correct type.
-    @SuppressWarnings("unchecked")
-    T service = (T) getService(type.getType());
-    return service;
-  }
-
-  private Object getService(Type type) {
-    Injectee injectee = InjectUtils.injecteeFromType(type);
-
-    ActiveDescriptor<?> activeDescriptor =
-        serviceLocator.getInjecteeDescriptor(injectee);
-
-    if (activeDescriptor == null)
-      throw new NoSuchElementException(
-          "There is no service of type " + type);
-
-    Object service =
-        serviceLocator.getService(
-            activeDescriptor,
-            /* root= */ null,
-            injectee);
-
-    if (service == null)
-      throw new NoSuchElementException(
-          "There is no service of type " + type);
-
-    return service;
-  }
 }
