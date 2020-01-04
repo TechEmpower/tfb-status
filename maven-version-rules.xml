@@ -67,6 +67,12 @@
       </ignoreVersions>
     </rule>
 
+    <rule groupId="com.sun.activation" artifactId="jakarta.activation" comparisonMethod="maven">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\-rc[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
     <rule groupId="com.sun.mail" artifactId="javax.mail" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-rc[\d]+</ignoreVersion>
