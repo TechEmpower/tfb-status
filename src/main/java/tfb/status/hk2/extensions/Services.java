@@ -2,18 +2,13 @@ package tfb.status.hk2.extensions;
 
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
-import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.Injectee;
 import org.glassfish.hk2.api.MultiException;
-import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
-import org.glassfish.hk2.api.UnsatisfiedDependencyException;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 
 /**
@@ -126,38 +121,5 @@ public final class Services {
           "There is no service of type " + type);
 
     return service;
-  }
-
-  /**
-   * Returns {@code true} if a call to {@link #resolveParameter(Parameter,
-   * ServiceHandle)} will complete without throwing {@link
-   * UnsatisfiedDependencyException}.
-   */
-  public boolean supportsParameter(Parameter parameter) {
-    return InjectUtils.supportsParameter(parameter, serviceLocator);
-  }
-
-  /**
-   * Returns an instance of the service matching the specified method parameter
-   * or constructor parameter.
-   *
-   * <p>This method returns {@code null} in two scenarios:
-   *
-   * <ul>
-   * <li>There is no registered service matching the parameter, and the
-   *     parameter is annotated with {@link org.jvnet.hk2.annotations.Optional}.
-   * <li>There is a registered service matching the parameter, and the provider
-   *     of that service (such as a {@link Factory#provide()} method) provides
-   *     {@code null}.
-   * </ul>
-   *
-   * @throws UnsatisfiedDependencyException if there is no registered service
-   *         matching the parameter and the parameter is not annotated with
-   *         {@link org.jvnet.hk2.annotations.Optional}
-   */
-  public @Nullable Object resolveParameter(Parameter parameter,
-                                           @Nullable ServiceHandle<?> root) {
-
-    return InjectUtils.serviceFromParameter(parameter, root, serviceLocator);
   }
 }
