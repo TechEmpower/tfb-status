@@ -42,8 +42,9 @@ import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
 
 /**
- * Tests for {@link Services}.
+ * Tests for the classes in this package.
  */
+// TODO: Break this apart into multiple test classes.
 public final class ServicesTest {
   /**
    * Verifies that every invocation of {@link ServiceLocator#getService(Class,
@@ -1500,8 +1501,18 @@ public final class ServicesTest {
    * Constructs a new set of services to be used in one test.
    */
   private ServiceLocator newServices() {
-    ServiceLocator serviceLocator = Services.newServiceLocator();
-    ServiceLocatorUtilities.addClasses(serviceLocator, ServicesTestClasses.class);
+    ServiceLocator serviceLocator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    ServiceLocatorUtilities.bind(
+        serviceLocator,
+        new TopicsModule(),
+        new ProvidesModule());
+
+    ServiceLocatorUtilities.addClasses(
+        serviceLocator,
+        ServicesTestClasses.class);
+
     return serviceLocator;
   }
 

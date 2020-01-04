@@ -1,6 +1,10 @@
 package tfb.status.testlib;
 
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
+import tfb.status.hk2.extensions.ProvidesModule;
 import tfb.status.hk2.extensions.ServiceLocatorParameterResolver;
+import tfb.status.hk2.extensions.TopicsModule;
 
 /**
  * Allows instances of service classes to be injected into test methods as
@@ -20,9 +24,21 @@ import tfb.status.hk2.extensions.ServiceLocatorParameterResolver;
  *   }
  * </pre>
  */
-public final class TestServicesInjector extends ServiceLocatorParameterResolver {
+public final class TestServicesInjector implements ServiceLocatorParameterResolver {
   @Override
-  protected void configure() {
-    addActiveDescriptor(TestServicesBinder.class);
+  public ServiceLocator createServiceLocator() {
+    ServiceLocator serviceLocator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    ServiceLocatorUtilities.bind(
+        serviceLocator,
+        new TopicsModule(),
+        new ProvidesModule());
+
+    ServiceLocatorUtilities.addClasses(
+        serviceLocator,
+        TestServicesBinder.class);
+
+    return serviceLocator;
   }
 }

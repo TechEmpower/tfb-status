@@ -9,20 +9,30 @@ import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.ExtensionContext.Store;
+import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 /**
  * A JUnit 5 extension that resolves parameters of test methods at runtime using
  * a {@link ServiceLocator}.  Subclasses must implement {@link
- * AbstractBinder#configure()} in order to register their services.
+ * #createServiceLocator()}.
  *
  * <p>Example usage:
  * <pre>
  *   class MyExtension extends ServiceLocatorParameterResolver {
  *     &#64;Override
- *     protected void configure() {
- *       addActiveDescriptor(MyService.class);
+ *     public ServiceLocator createServiceLocator() {
+ *       ServiceLocator serviceLocator =
+ *           ServiceLocatorUtilities.createAndPopulateServiceLocator();
+ *
+ *       ServiceLocatorUtilities.addClasses(
+ *           serviceLocator,
+ *           MyService.class);
+ *
+ *       return serviceLocator;
  *     }
  *   }
  *
@@ -38,13 +48,23 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  * @see AbstractBinder
  * @see ParameterResolver
  */
-public abstract class ServiceLocatorParameterResolver
-    extends AbstractBinder
-    implements ParameterResolver {
+public interface ServiceLocatorParameterResolver extends ParameterResolver {
+  /**
+   * Creates a new {@link ServiceLocator} instance.
+   *
+   * <p>This {@link ServiceLocator} will be cached in the {@linkplain
+   * ExtensionContext#getStore(Namespace) store} of the {@linkplain
+   * ExtensionContext#getRoot() root extension context}, meaning that this
+   * method will only be invoked once, and the same {@link ServiceLocator}
+   * instance will be shared between all tests.
+   */
+  // TODO: Tell users to register their services within this method.
+  // TODO: Give users the ability to override the default caching behavior.
+  ServiceLocator createServiceLocator();
 
   @Override
-  public boolean supportsParameter(ParameterContext parameterContext,
-                                   ExtensionContext extensionContext) {
+  default boolean supportsParameter(ParameterContext parameterContext,
+                                    ExtensionContext extensionContext) {
 
     Parameter parameter = parameterContext.getParameter();
     ServiceLocator serviceLocator = getServiceLocator(extensionContext);
@@ -52,8 +72,8 @@ public abstract class ServiceLocatorParameterResolver
   }
 
   @Override
-  public @Nullable Object resolveParameter(ParameterContext parameterContext,
-                                           ExtensionContext extensionContext) {
+  default @Nullable Object resolveParameter(ParameterContext parameterContext,
+                                            ExtensionContext extensionContext) {
 
     Parameter parameter = parameterContext.getParameter();
     ServiceLocator serviceLocator = getServiceLocator(extensionContext);
@@ -64,8 +84,7 @@ public abstract class ServiceLocatorParameterResolver
   private ServiceLocator getServiceLocator(ExtensionContext extensionContext) {
     // Since we use the root context's store, a single set of services is shared
     // between all tests.
-    ExtensionContext.Store store =
-        extensionContext.getRoot().getStore(NAMESPACE);
+    Store store = extensionContext.getRoot().getStore(NAMESPACE);
 
     StoredServiceLocator stored =
         store.getOrComputeIfAbsent(
@@ -74,8 +93,7 @@ public abstract class ServiceLocatorParameterResolver
 
             /* defaultCreator= */
             key -> {
-              ServiceLocator serviceLocator = Services.newServiceLocator();
-              ServiceLocatorUtilities.bind(serviceLocator, this);
+              ServiceLocator serviceLocator = createServiceLocator();
               return new StoredServiceLocator(serviceLocator);
             },
 
@@ -91,7 +109,7 @@ public abstract class ServiceLocatorParameterResolver
     // ServiceHandle to be closed when the test completes.  This allows the
     // per-lookup services that were created for the sake of the test to be
     // closed.
-    ExtensionContext.Store store = extensionContext.getStore(NAMESPACE);
+    Store store = extensionContext.getStore(NAMESPACE);
 
     StoredServiceHandle stored =
         store.getOrComputeIfAbsent(
@@ -120,17 +138,11 @@ public abstract class ServiceLocatorParameterResolver
     return stored.serviceHandle;
   }
 
-  private static final ExtensionContext.Namespace NAMESPACE =
-      ExtensionContext.Namespace.create(ServiceLocatorParameterResolver.class);
+  // TODO: Consider moving these to a package-private utility class.
 
-  /**
-   * Wraps {@link ServiceLocator} in {@link
-   * ExtensionContext.Store.CloseableResource}, ensuring that the locator is
-   * shut down when the store is closed.
-   */
-  private static final class StoredServiceLocator
-      implements ExtensionContext.Store.CloseableResource {
+  Namespace NAMESPACE = Namespace.create(ServiceLocatorParameterResolver.class);
 
+  final class StoredServiceLocator implements CloseableResource {
     final ServiceLocator serviceLocator;
 
     StoredServiceLocator(ServiceLocator serviceLocator) {
@@ -143,14 +155,7 @@ public abstract class ServiceLocatorParameterResolver
     }
   }
 
-  /**
-   * Wraps {@link ServiceHandle} in {@link
-   * ExtensionContext.Store.CloseableResource}, ensuring that the handle is
-   * closed when the store is closed.
-   */
-  private static final class StoredServiceHandle
-      implements ExtensionContext.Store.CloseableResource {
-
+  final class StoredServiceHandle implements CloseableResource {
     final ServiceHandle<?> serviceHandle;
 
     StoredServiceHandle(ServiceHandle<?> serviceHandle) {
