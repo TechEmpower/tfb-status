@@ -3,7 +3,6 @@ package tfb.status.hk2.extensions;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.stream.Collectors.toList;
-import static org.glassfish.hk2.api.messaging.TopicDistributionService.HK2_DEFAULT_TOPIC_DISTRIBUTOR;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -22,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
@@ -36,7 +34,6 @@ import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
-import org.jvnet.hk2.annotations.ContractsProvided;
 import org.jvnet.hk2.internal.Utilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,11 +46,6 @@ import org.slf4j.LoggerFactory;
  * order to deliver messages to them.
  */
 @Singleton
-@Named(HK2_DEFAULT_TOPIC_DISTRIBUTOR)
-@ContractsProvided({
-    TopicDistributionService.class,
-    DynamicConfigurationListener.class
-})
 final class TopicDistributionServiceImpl
     implements TopicDistributionService, DynamicConfigurationListener {
 
