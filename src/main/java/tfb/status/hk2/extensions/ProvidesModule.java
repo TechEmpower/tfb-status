@@ -8,6 +8,6 @@ import org.glassfish.hk2.utilities.binding.AbstractBinder;
 public final class ProvidesModule extends AbstractBinder {
   @Override
   protected void configure() {
-    addActiveDescriptor(ProvidesAnnotationEnabler.class);
+    addActiveDescriptor(ProvidesListener.class);
   }
 }

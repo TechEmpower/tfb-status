@@ -46,15 +46,13 @@ import org.slf4j.LoggerFactory;
  * Enables the {@link Provides} annotation.
  */
 @Singleton
-final class ProvidesAnnotationEnabler
-    implements DynamicConfigurationListener {
-
+final class ProvidesListener implements DynamicConfigurationListener {
   private final ServiceLocator serviceLocator;
   private final Set<Class<?>> classesFullyAnalyzed = ConcurrentHashMap.newKeySet();
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
-  public ProvidesAnnotationEnabler(ServiceLocator serviceLocator) {
+  public ProvidesListener(ServiceLocator serviceLocator) {
     this.serviceLocator = Objects.requireNonNull(serviceLocator);
   }
 
