@@ -2,8 +2,7 @@ package tfb.status.bootstrap;
 
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
-import tfb.status.hk2.extensions.ProvidesModule;
-import tfb.status.hk2.extensions.TopicsModule;
+import tfb.status.hk2.extensions.NoInstancesFilter;
 import tfb.status.service.HttpServer;
 
 /**
@@ -45,12 +44,9 @@ public final class Main {
     ServiceLocator serviceLocator =
         ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
-    ServiceLocatorUtilities.bind(
-        serviceLocator,
-        new TopicsModule(),
-        new ProvidesModule());
+    NoInstancesFilter.enableNoInstancesFilter(serviceLocator);
 
-    ServiceLocatorUtilities.addOneConstant(
+    ServiceLocatorUtilities.bind(
         serviceLocator,
         new ServicesBinder(configFilePath));
 

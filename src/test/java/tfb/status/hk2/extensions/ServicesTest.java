@@ -38,6 +38,7 @@ import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
 
@@ -1504,47 +1505,48 @@ public final class ServicesTest {
     ServiceLocator serviceLocator =
         ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
+    NoInstancesFilter.enableNoInstancesFilter(serviceLocator);
+
     ServiceLocatorUtilities.bind(
         serviceLocator,
-        new TopicsModule(),
-        new ProvidesModule());
-
-    ServiceLocatorUtilities.addClasses(
-        serviceLocator,
-        ServicesTestClasses.class);
+        new ServicesTestBinder());
 
     return serviceLocator;
   }
 
-  @Registers({
-      PerLookupService.class,
-      SingletonService.class,
-      NullFactory.class,
-      ServiceWithContract1.class,
-      ServiceWithContract2.class,
-      ServiceWithGenericContract1.class,
-      ServiceWithGenericContract2.class,
-      ServiceWithLifecycle.class,
-      SingletonServiceWithShutdown.class,
-      FactoryOfServiceWithShutdown.class,
-      FactoryOfSingletonServiceWithShutdown.class,
-      SubscriberService.class,
-      ProvidesService.class,
-      ProvidesSelfFromMethod.class,
-      ProvidesSelfFromField.class,
-      UtilityClassProvides.class,
-      AbstractClassProvides.class,
-      InterfaceProvides.class,
-      EnumProvides.class,
-      EnumProvidesContract.class,
-      UnsatisfiedDependencies.class,
-      ProvidesCustomDispose.class,
-      ProvidesExplicitContracts.class,
-      ProvidesNull.class,
-      ProvidesLifecycleFactory.class,
-      ProvidesLifecycleDependency.class
-  })
-  public static final class ServicesTestClasses {}
+  public static final class ServicesTestBinder extends AbstractBinder {
+    @Override
+    protected void configure() {
+      install(new TopicsModule());
+      install(new ProvidesModule());
+      addActiveDescriptor(PerLookupService.class);
+      addActiveDescriptor(SingletonService.class);
+      addActiveFactoryDescriptor(NullFactory.class);
+      addActiveDescriptor(ServiceWithContract1.class);
+      addActiveDescriptor(ServiceWithContract2.class);
+      addActiveDescriptor(ServiceWithGenericContract1.class);
+      addActiveDescriptor(ServiceWithGenericContract2.class);
+      addActiveDescriptor(ServiceWithLifecycle.class);
+      addActiveDescriptor(SingletonServiceWithShutdown.class);
+      addActiveFactoryDescriptor(FactoryOfServiceWithShutdown.class);
+      addActiveFactoryDescriptor(FactoryOfSingletonServiceWithShutdown.class);
+      addActiveDescriptor(SubscriberService.class);
+      addActiveDescriptor(ProvidesService.class);
+      addActiveDescriptor(ProvidesSelfFromMethod.class);
+      addActiveDescriptor(ProvidesSelfFromField.class);
+      addActiveDescriptor(UtilityClassProvides.class);
+      addActiveDescriptor(AbstractClassProvides.class);
+      addActiveDescriptor(InterfaceProvides.class);
+      addActiveDescriptor(EnumProvides.class);
+      addActiveDescriptor(EnumProvidesContract.class);
+      addActiveDescriptor(UnsatisfiedDependencies.class);
+      addActiveDescriptor(ProvidesCustomDispose.class);
+      addActiveDescriptor(ProvidesExplicitContracts.class);
+      addActiveDescriptor(ProvidesNull.class);
+      addActiveDescriptor(ProvidesLifecycleFactory.class);
+      addActiveDescriptor(ProvidesLifecycleDependency.class);
+    }
+  }
 
   public static final class PerLookupService {}
 
