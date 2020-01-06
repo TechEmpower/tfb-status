@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -271,27 +270,28 @@ final class ProvidesListener implements DynamicConfigurationListener {
    * @param annotatedType the {@link Method#getAnnotatedReturnType()} or the
    *        {@link Field#getAnnotatedType()} of the method or field that is
    *        annotated with {@link Provides}
-   * @param annotatedElement the method or field that is annotated with {@link
+   * @param methodOrField the method or field that is annotated with {@link
    *        Provides}
    * @param contracts the contracts provided by the method or field
    * @param serviceDescriptor the descriptor of the service that defines the
-   *        method or field, in case the scope of that service is relevant, or
-   *        {@code null} if the scope of that service is irrelevant
+   *        method or field, in case the scope of that service is relevant
    */
-  private static Annotation getScopeAnnotation(
+  private static <T extends AccessibleObject & Member> Annotation
+  getScopeAnnotation(
       AnnotatedType annotatedType,
-      AnnotatedElement annotatedElement,
+      T methodOrField,
       Set<Type> contracts,
-      @Nullable ActiveDescriptor<?> serviceDescriptor) {
+      ActiveDescriptor<?> serviceDescriptor) {
 
     Objects.requireNonNull(annotatedType);
-    Objects.requireNonNull(annotatedElement);
+    Objects.requireNonNull(methodOrField);
     Objects.requireNonNull(contracts);
+    Objects.requireNonNull(serviceDescriptor);
 
     if (annotatedType.isAnnotationPresent(Nullable.class))
       return ServiceLocatorUtilities.getPerLookupAnnotation();
 
-    for (Annotation annotation : annotatedElement.getAnnotations())
+    for (Annotation annotation : methodOrField.getAnnotations())
       if (annotation.annotationType().isAnnotationPresent(Scope.class))
         return annotation;
 
@@ -302,7 +302,7 @@ final class ProvidesListener implements DynamicConfigurationListener {
           return annotation;
     }
 
-    if (serviceDescriptor != null) {
+    if (!Modifier.isStatic(methodOrField.getModifiers())) {
       Annotation serviceScope = serviceDescriptor.getScopeAsAnnotation();
       if (serviceScope != null)
         return serviceScope;
@@ -503,13 +503,14 @@ final class ProvidesListener implements DynamicConfigurationListener {
       T providesMethodOrField,
       TypeToken<?> providesType,
       Class<?> serviceClass,
-      @Nullable ActiveDescriptor<?> serviceDescriptor,
+      ActiveDescriptor<?> serviceDescriptor,
       ServiceLocator serviceLocator) {
 
     Objects.requireNonNull(provides);
     Objects.requireNonNull(providesMethodOrField);
     Objects.requireNonNull(providesType);
     Objects.requireNonNull(serviceClass);
+    Objects.requireNonNull(serviceDescriptor);
     Objects.requireNonNull(serviceLocator);
 
     if (provides.destroyMethod().isEmpty())
@@ -580,9 +581,6 @@ final class ProvidesListener implements DynamicConfigurationListener {
             }
           };
 
-        // The calling code should not let this be null if we've reached this
-        // case.
-        Objects.requireNonNull(serviceDescriptor);
         return instance -> {
           boolean isPerLookup =
               serviceDescriptor.getScopeAnnotation() == PerLookup.class;
