@@ -1,5 +1,6 @@
 package tfb.status.hk2.extensions;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -11,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -1499,6 +1502,336 @@ public final class ServicesTest {
   }
 
   /**
+   * Verifies that generic type parameters are carried through a {@link
+   * Provides} chain starting from a static field and ending with a generic
+   * {@link Provides} field.
+   */
+  @Test
+  public void testProvidesGenericTypeParametersStaticFieldToField() {
+    ServiceLocator services = newServices();
+
+    var providerA =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericField<Value1>>() {});
+
+    assertNotNull(providerA);
+    assertNotNull(providerA.value);
+    assertEquals(Value1.class, providerA.value.getClass());
+
+    var providedA = services.getService(Value1.class);
+
+    assertNotNull(providedA);
+    assertEquals(Value1.class, providedA.getClass());
+
+    var providerB =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericField<Value2>>() {});
+
+    assertNotNull(providerB);
+    assertNotNull(providerB.value);
+    assertEquals(Value2.class, providerB.value.getClass());
+
+    var providedB = services.getService(Value2.class);
+
+    assertNotNull(providedB);
+    assertEquals(Value2.class, providedB.getClass());
+  }
+
+  /**
+   * Verifies that generic type parameters are carried through a {@link
+   * Provides} chain starting from an instance field and ending with a generic
+   * {@link Provides} field.
+   */
+  @Test
+  public void testProvidesGenericTypeParametersInstanceFieldToField() {
+    ServiceLocator services = newServices();
+
+    var providerA =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericField<Value3>>() {});
+
+    assertNotNull(providerA);
+    assertNotNull(providerA.value);
+    assertEquals(Value3.class, providerA.value.getClass());
+
+    var providedA = services.getService(Value3.class);
+
+    assertNotNull(providedA);
+    assertEquals(Value3.class, providedA.getClass());
+
+    var providerB =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericField<Value4>>() {});
+
+    assertNotNull(providerB);
+    assertNotNull(providerB.value);
+    assertEquals(Value4.class, providerB.value.getClass());
+
+    var providedB = services.getService(Value4.class);
+
+    assertNotNull(providedB);
+    assertEquals(Value4.class, providedB.getClass());
+  }
+
+  /**
+   * Verifies that generic type parameters are carried through a {@link
+   * Provides} chain starting from a static method and ending with a generic
+   * {@link Provides} field.
+   */
+  @Test
+  public void testProvidesGenericTypeParametersStaticMethodToField() {
+    ServiceLocator services = newServices();
+
+    var providerA =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericField<Value5>>() {});
+
+    assertNotNull(providerA);
+    assertNotNull(providerA.value);
+    assertEquals(Value5.class, providerA.value.getClass());
+
+    var providedA = services.getService(Value5.class);
+
+    assertNotNull(providedA);
+    assertEquals(Value5.class, providedA.getClass());
+
+    var providerB =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericField<Value6>>() {});
+
+    assertNotNull(providerB);
+    assertNotNull(providerB.value);
+    assertEquals(Value6.class, providerB.value.getClass());
+
+    var providedB = services.getService(Value6.class);
+
+    assertNotNull(providedB);
+    assertEquals(Value6.class, providedB.getClass());
+  }
+
+  /**
+   * Verifies that generic type parameters are carried through a {@link
+   * Provides} chain starting from an instance method and ending with a generic
+   * {@link Provides} field.
+   */
+  @Test
+  public void testProvidesGenericTypeParametersInstanceMethodToField() {
+    ServiceLocator services = newServices();
+
+    var providerA =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericField<Value7>>() {});
+
+    assertNotNull(providerA);
+    assertNotNull(providerA.value);
+    assertEquals(Value7.class, providerA.value.getClass());
+
+    var providedA = services.getService(Value7.class);
+
+    assertNotNull(providedA);
+    assertEquals(Value7.class, providedA.getClass());
+
+    var providerB =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericField<Value8>>() {});
+
+    assertNotNull(providerB);
+    assertNotNull(providerB.value);
+    assertEquals(Value8.class, providerB.value.getClass());
+
+    var providedB = services.getService(Value8.class);
+
+    assertNotNull(providedB);
+    assertEquals(Value8.class, providedB.getClass());
+  }
+
+  /**
+   * Verifies that generic type parameters are carried through a {@link
+   * Provides} chain starting from a static field and ending with a generic
+   * {@link Provides} method.
+   */
+  @Test
+  public void testProvidesGenericTypeParametersStaticFieldToMethod() {
+    ServiceLocator services = newServices();
+
+    var providerA =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericMethod<Value9>>() {});
+
+    assertNotNull(providerA);
+    assertNotNull(providerA.getValue());
+    assertEquals(Value9.class, providerA.getValue().getClass());
+
+    var providedA = services.getService(Value9.class);
+
+    assertNotNull(providedA);
+    assertEquals(Value9.class, providedA.getClass());
+
+    var providerB =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericMethod<Value10>>() {});
+
+    assertNotNull(providerB);
+    assertNotNull(providerB.getValue());
+    assertEquals(Value10.class, providerB.getValue().getClass());
+
+    var providedB = services.getService(Value10.class);
+
+    assertNotNull(providedB);
+    assertEquals(Value10.class, providedB.getClass());
+  }
+
+  /**
+   * Verifies that generic type parameters are carried through a {@link
+   * Provides} chain starting from an instance field and ending with a generic
+   * {@link Provides} method.
+   */
+  @Test
+  public void testProvidesGenericTypeParametersInstanceFieldToMethod() {
+    ServiceLocator services = newServices();
+
+    var providerA =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericMethod<Value11>>() {});
+
+    assertNotNull(providerA);
+    assertNotNull(providerA.getValue());
+    assertEquals(Value11.class, providerA.getValue().getClass());
+
+    var providedA = services.getService(Value11.class);
+
+    assertNotNull(providedA);
+    assertEquals(Value11.class, providedA.getClass());
+
+    var providerB =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericMethod<Value12>>() {});
+
+    assertNotNull(providerB);
+    assertNotNull(providerB.getValue());
+    assertEquals(Value12.class, providerB.getValue().getClass());
+
+    var providedB = services.getService(Value12.class);
+
+    assertNotNull(providedB);
+    assertEquals(Value12.class, providedB.getClass());
+  }
+
+  /**
+   * Verifies that generic type parameters are carried through a {@link
+   * Provides} chain starting from a static method and ending with a generic
+   * {@link Provides} method.
+   */
+  @Test
+  public void testProvidesGenericTypeParametersStaticMethodToMethod() {
+    ServiceLocator services = newServices();
+
+    var providerA =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericMethod<Value13>>() {});
+
+    assertNotNull(providerA);
+    assertNotNull(providerA.getValue());
+    assertEquals(Value13.class, providerA.getValue().getClass());
+
+    var providedA = services.getService(Value13.class);
+
+    assertNotNull(providedA);
+    assertEquals(Value13.class, providedA.getClass());
+
+    var providerB =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericMethod<Value14>>() {});
+
+    assertNotNull(providerB);
+    assertNotNull(providerB.getValue());
+    assertEquals(Value14.class, providerB.getValue().getClass());
+
+    var providedB = services.getService(Value14.class);
+
+    assertNotNull(providedB);
+    assertEquals(Value14.class, providedB.getClass());
+  }
+
+  /**
+   * Verifies that generic type parameters are carried through a {@link
+   * Provides} chain starting from an instance method and ending with a generic
+   * {@link Provides} method.
+   */
+  @Test
+  public void testProvidesGenericTypeParametersInstanceMethodToMethod() {
+    ServiceLocator services = newServices();
+
+    var providerA =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericMethod<Value15>>() {});
+
+    assertNotNull(providerA);
+    assertNotNull(providerA.getValue());
+    assertEquals(Value15.class, providerA.getValue().getClass());
+
+    var providedA = services.getService(Value15.class);
+
+    assertNotNull(providedA);
+    assertEquals(Value15.class, providedA.getClass());
+
+    var providerB =
+        InjectUtils.getService(
+            services,
+            new TypeToken<ProvidesGenericMethod<Value16>>() {});
+
+    assertNotNull(providerB);
+    assertNotNull(providerB.getValue());
+    assertEquals(Value16.class, providerB.getValue().getClass());
+
+    var providedB = services.getService(Value16.class);
+
+    assertNotNull(providedB);
+    assertEquals(Value16.class, providedB.getClass());
+  }
+
+  /**
+   * Verifies that generic type parameters are carried through a {@link
+   * Provides} chain where a {@link Contract} interface is involved.
+   */
+  @Test
+  public void testProvidesGenericContractTypeParameters() {
+    ServiceLocator services = newServices();
+
+    var boxes =
+        InjectUtils.getService(
+            services,
+            new TypeToken<IterableProvider<BoxFromGenericProvidesContract<String>>>() {});
+
+    assertEquals(4, boxes.getSize());
+
+    assertEquals(
+        Set.of(
+            "staticField",
+            "instanceField",
+            "staticMethod",
+            "instanceMethod"),
+        Streams.stream(boxes)
+               .map(box -> box.value)
+               .collect(toSet()));
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private ServiceLocator newServices() {
@@ -1545,6 +1878,8 @@ public final class ServicesTest {
       addActiveDescriptor(ProvidesNull.class);
       addActiveDescriptor(ProvidesLifecycleFactory.class);
       addActiveDescriptor(ProvidesLifecycleDependency.class);
+      addActiveDescriptor(GenericTypeParameterChains.class);
+      addActiveDescriptor(ProvidesGenericContracts.class);
     }
   }
 
@@ -2254,6 +2589,172 @@ public final class ServicesTest {
         ProvidesLifecycleFactory factory,
         ProvidesLifecycleDependency dependency) {
       super(factory, dependency);
+    }
+  }
+
+  public static final class Value1 {}
+  public static final class Value2 {}
+  public static final class Value3 {}
+  public static final class Value4 {}
+  public static final class Value5 {}
+  public static final class Value6 {}
+  public static final class Value7 {}
+  public static final class Value8 {}
+  public static final class Value9 {}
+  public static final class Value10 {}
+  public static final class Value11 {}
+  public static final class Value12 {}
+  public static final class Value13 {}
+  public static final class Value14 {}
+  public static final class Value15 {}
+  public static final class Value16 {}
+
+  public static final class ProvidesGenericField<T> {
+    @Provides
+    public final T value;
+
+    ProvidesGenericField(T value) {
+      this.value = Objects.requireNonNull(value);
+    }
+  }
+
+  public static final class ProvidesGenericMethod<T> {
+    private final T value;
+
+    ProvidesGenericMethod(T value) {
+      this.value = Objects.requireNonNull(value);
+    }
+
+    @Provides
+    public T getValue() {
+      return value;
+    }
+  }
+
+  public static final class GenericTypeParameterChains {
+    @Provides
+    public static ProvidesGenericField<Value1> staticFieldToFieldA =
+        new ProvidesGenericField<>(new Value1());
+
+    @Provides
+    public static ProvidesGenericField<Value2> staticFieldToFieldB =
+        new ProvidesGenericField<>(new Value2());
+
+    @Provides
+    public ProvidesGenericField<Value3> instanceFieldToFieldA =
+        new ProvidesGenericField<>(new Value3());
+
+    @Provides
+    public ProvidesGenericField<Value4> instanceFieldToFieldB =
+        new ProvidesGenericField<>(new Value4());
+
+    @Provides
+    public static ProvidesGenericField<Value5> staticMethodToFieldA() {
+      return new ProvidesGenericField<>(new Value5());
+    }
+
+    @Provides
+    public static ProvidesGenericField<Value6> staticMethodToFieldB() {
+      return new ProvidesGenericField<>(new Value6());
+    }
+
+    @Provides
+    public ProvidesGenericField<Value7> instanceMethodToFieldA() {
+      return new ProvidesGenericField<>(new Value7());
+    }
+
+    @Provides
+    public ProvidesGenericField<Value8> instanceMethodToFieldB() {
+      return new ProvidesGenericField<>(new Value8());
+    }
+
+    @Provides
+    public static ProvidesGenericMethod<Value9> staticFieldToMethodA =
+        new ProvidesGenericMethod<>(new Value9());
+
+    @Provides
+    public static ProvidesGenericMethod<Value10> staticFieldToMethodB =
+        new ProvidesGenericMethod<>(new Value10());
+
+    @Provides
+    public ProvidesGenericMethod<Value11> instanceFieldToMethodA =
+        new ProvidesGenericMethod<>(new Value11());
+
+    @Provides
+    public ProvidesGenericMethod<Value12> instanceFieldToMethodB =
+        new ProvidesGenericMethod<>(new Value12());
+
+    @Provides
+    public static ProvidesGenericMethod<Value13> staticMethodToMethodA() {
+      return new ProvidesGenericMethod<>(new Value13());
+    }
+
+    @Provides
+    public static ProvidesGenericMethod<Value14> staticMethodToMethodB() {
+      return new ProvidesGenericMethod<>(new Value14());
+    }
+
+    @Provides
+    public ProvidesGenericMethod<Value15> instanceMethodToMethodA() {
+      return new ProvidesGenericMethod<>(new Value15());
+    }
+
+    @Provides
+    public ProvidesGenericMethod<Value16> instanceMethodToMethodB() {
+      return new ProvidesGenericMethod<>(new Value16());
+    }
+  }
+
+  public static final class BoxFromGenericProvidesContract<T> {
+    public final T value;
+
+    BoxFromGenericProvidesContract(T value) {
+      this.value = Objects.requireNonNull(value);
+    }
+  }
+
+  @Contract
+  public interface GenericProvidesContract<T> {
+    @Provides
+    default BoxFromGenericProvidesContract<T> getBox() {
+      return new BoxFromGenericProvidesContract<>(getValue());
+    }
+
+    T getValue();
+  }
+
+  public static final class GenericProvidesClassWithContract<T>
+      implements GenericProvidesContract<T> {
+
+    private final T value;
+
+    GenericProvidesClassWithContract(T value) {
+      this.value = Objects.requireNonNull(value);
+    }
+
+    @Override
+    public T getValue() {
+      return value;
+    }
+  }
+
+  public static final class ProvidesGenericContracts {
+    @Provides
+    public static GenericProvidesClassWithContract<String> staticField =
+        new GenericProvidesClassWithContract<>("staticField");
+
+    @Provides
+    public GenericProvidesClassWithContract<String> instanceField =
+        new GenericProvidesClassWithContract<>("instanceField");
+
+    @Provides
+    public static GenericProvidesClassWithContract<String> staticMethod() {
+      return new GenericProvidesClassWithContract<>("staticMethod");
+    }
+
+    @Provides
+    public GenericProvidesClassWithContract<String> instanceMethod() {
+      return new GenericProvidesClassWithContract<>("instanceMethod");
     }
   }
 }
