@@ -9,17 +9,31 @@ import java.lang.reflect.Method;
 import javax.inject.Scope;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PerLookup;
+import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.jvnet.hk2.annotations.ContractsProvided;
 
 /**
  * An annotation indicating that a method or field is the provider of a service.
  *
+ * <h2>Contracts</h2>
+ *
  * <p>The contracts of the provided service are, by default, defined by the
  * {@linkplain Method#getGenericReturnType() method return type} of the
  * annotated method or the {@linkplain Field#getGenericType() field type} of the
  * annotated field.  These default contracts can be overridden using {@link
  * #contracts()}.
+ *
+ * <h2>Lifecycle</h2>
+ *
+ * <p>The providing class is responsible for initializing the provided service.
+ * The system will not automatically invoke a {@link
+ * PostConstruct#postConstruct()} method declared by the provided service.
+ *
+ * <p>The teardown behavior of the provided service may be customized.  See
+ * {@link #destroyMethod()}.
+ *
+ * <h2>Scope</h2>
  *
  * <p>The scope of the provided service is:
  * <ul>

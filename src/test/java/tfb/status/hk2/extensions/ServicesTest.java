@@ -754,7 +754,7 @@ public final class ServicesTest {
         services.getService(ProvidedSingletonStaticFieldWithLifecycle.class);
 
     assertNotNull(service);
-    assertTrue(service.wasStarted());
+    assertFalse(service.wasStarted());
     assertFalse(service.wasStopped());
 
     assertSame(
@@ -779,7 +779,7 @@ public final class ServicesTest {
         services.getService(ProvidedSingletonInstanceFieldWithLifecycle.class);
 
     assertNotNull(service);
-    assertTrue(service.wasStarted());
+    assertFalse(service.wasStarted());
     assertFalse(service.wasStopped());
 
     assertSame(
@@ -804,7 +804,7 @@ public final class ServicesTest {
         services.getService(ProvidedSingletonStaticMethodWithLifecycle.class);
 
     assertNotNull(service);
-    assertTrue(service.wasStarted());
+    assertFalse(service.wasStarted());
     assertFalse(service.wasStopped());
 
     assertSame(
@@ -829,7 +829,7 @@ public final class ServicesTest {
         services.getService(ProvidedSingletonInstanceMethodWithLifecycle.class);
 
     assertNotNull(service);
-    assertTrue(service.wasStarted());
+    assertFalse(service.wasStarted());
     assertFalse(service.wasStopped());
 
     assertSame(
@@ -855,7 +855,7 @@ public final class ServicesTest {
         services.getService(ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle.class);
 
     assertNotNull(serviceWithoutHandle);
-    assertTrue(serviceWithoutHandle.wasStarted());
+    assertFalse(serviceWithoutHandle.wasStarted());
     assertFalse(serviceWithoutHandle.wasStopped());
 
     // Avoid making any assumptions regarding the sameness of this instance and
@@ -890,7 +890,7 @@ public final class ServicesTest {
         serviceHandle.getService();
 
     assertNotNull(serviceWithHandle);
-    assertTrue(serviceWithHandle.wasStarted());
+    assertFalse(serviceWithHandle.wasStarted());
     assertFalse(serviceWithHandle.wasStopped());
 
     serviceHandle.close();
@@ -911,7 +911,7 @@ public final class ServicesTest {
         services.getService(ProvidedPerLookupInstanceFieldWithLifecycle.class);
 
     assertNotNull(serviceWithoutHandle);
-    assertTrue(serviceWithoutHandle.wasStarted());
+    assertFalse(serviceWithoutHandle.wasStarted());
     assertFalse(serviceWithoutHandle.wasStopped());
 
     assertNotSame(
@@ -930,7 +930,7 @@ public final class ServicesTest {
         serviceHandle.getService();
 
     assertNotNull(serviceWitHandle);
-    assertTrue(serviceWitHandle.wasStarted());
+    assertFalse(serviceWitHandle.wasStarted());
     assertFalse(serviceWitHandle.wasStopped());
 
     serviceHandle.close();
@@ -955,7 +955,7 @@ public final class ServicesTest {
         services.getService(ProvidedPerLookupStaticMethodWithLifecycle.class);
 
     assertNotNull(serviceWithoutHandle);
-    assertTrue(serviceWithoutHandle.wasStarted());
+    assertFalse(serviceWithoutHandle.wasStarted());
     assertFalse(serviceWithoutHandle.wasStopped());
 
     assertNotSame(
@@ -974,7 +974,7 @@ public final class ServicesTest {
         serviceHandle.getService();
 
     assertNotNull(serviceWitHandle);
-    assertTrue(serviceWitHandle.wasStarted());
+    assertFalse(serviceWitHandle.wasStarted());
     assertFalse(serviceWitHandle.wasStopped());
 
     serviceHandle.close();
@@ -999,7 +999,7 @@ public final class ServicesTest {
         services.getService(ProvidedPerLookupInstanceMethodWithLifecycle.class);
 
     assertNotNull(serviceWithoutHandle);
-    assertTrue(serviceWithoutHandle.wasStarted());
+    assertFalse(serviceWithoutHandle.wasStarted());
     assertFalse(serviceWithoutHandle.wasStopped());
 
     assertNotSame(
@@ -1018,7 +1018,7 @@ public final class ServicesTest {
         serviceHandle.getService();
 
     assertNotNull(serviceWitHandle);
-    assertTrue(serviceWitHandle.wasStarted());
+    assertFalse(serviceWitHandle.wasStarted());
     assertFalse(serviceWitHandle.wasStopped());
 
     serviceHandle.close();
@@ -1390,7 +1390,7 @@ public final class ServicesTest {
     var handle = provider.getHandle();
     var root = handle.getService();
 
-    assertTrue(root.wasStarted());
+    assertFalse(root.wasStarted());
     assertFalse(root.factory.wasStarted());
     assertFalse(root.dependency.wasStarted());
 
@@ -1421,7 +1421,7 @@ public final class ServicesTest {
     var handle = provider.getHandle();
     var root = handle.getService();
 
-    assertTrue(root.wasStarted());
+    assertFalse(root.wasStarted());
     assertTrue(root.factory.wasStarted());
     assertFalse(root.dependency.wasStarted());
 
@@ -1452,7 +1452,7 @@ public final class ServicesTest {
     var handle = provider.getHandle();
     var root = handle.getService();
 
-    assertTrue(root.wasStarted());
+    assertFalse(root.wasStarted());
     assertFalse(root.factory.wasStarted());
     assertTrue(root.dependency.wasStarted());
 
@@ -1483,7 +1483,7 @@ public final class ServicesTest {
     var handle = provider.getHandle();
     var root = handle.getService();
 
-    assertTrue(root.wasStarted());
+    assertFalse(root.wasStarted());
     assertTrue(root.factory.wasStarted());
     assertTrue(root.dependency.wasStarted());
 

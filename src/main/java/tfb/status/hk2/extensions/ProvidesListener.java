@@ -347,9 +347,6 @@ final class ProvidesListener implements DynamicConfigurationListener {
         throw new MultiException(e);
       }
 
-      if (provided != null)
-        serviceLocator.postConstruct(provided);
-
       return provided;
     };
   }
@@ -395,9 +392,6 @@ final class ProvidesListener implements DynamicConfigurationListener {
         throw new MultiException(e);
       }
 
-      if (provided != null)
-        serviceLocator.postConstruct(provided);
-
       return provided;
     };
   }
@@ -433,9 +427,6 @@ final class ProvidesListener implements DynamicConfigurationListener {
         throw new MultiException(e);
       }
 
-      if (provided != null)
-        serviceLocator.postConstruct(provided);
-
       return provided;
     };
   }
@@ -470,9 +461,6 @@ final class ProvidesListener implements DynamicConfigurationListener {
       } catch (IllegalAccessException e) {
         throw new MultiException(e);
       }
-
-      if (provided != null)
-        serviceLocator.postConstruct(provided);
 
       return provided;
     };
