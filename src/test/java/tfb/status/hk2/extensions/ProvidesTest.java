@@ -1901,6 +1901,9 @@ public final class ProvidesTest {
   public static final class FromUtilityClassField {}
 
   public abstract static class AbstractClassProvides {
+    // Dodge complaints from static analysis about this class.
+    abstract String dummy();
+
     @Provides
     public static FromAbstractClassMethod method() {
       return new FromAbstractClassMethod();
@@ -1915,6 +1918,9 @@ public final class ProvidesTest {
   public static final class FromAbstractClassField {}
 
   public interface InterfaceProvides {
+    // Dodge complaints from static analysis about this interface.
+    String dummy();
+
     @Provides
     static FromInterfaceMethod method() {
       return new FromInterfaceMethod();
@@ -2128,6 +2134,7 @@ public final class ProvidesTest {
         new ProvidesLifecycleFromStaticField(new ProvidesLifecycleFactory(),
                                              new ProvidesLifecycleDependency());
 
+    @SuppressWarnings("ConstructorLeaksThis") // We don't care.
     @Provides
     public final ProvidesLifecycleFromInstanceField instanceField =
         new ProvidesLifecycleFromInstanceField(this, new ProvidesLifecycleDependency());
