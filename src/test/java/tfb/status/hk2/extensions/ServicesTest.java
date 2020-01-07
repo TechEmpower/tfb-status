@@ -59,10 +59,10 @@ public final class ServicesTest {
    */
   @Test
   public void testGetSingletonService() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    SingletonService service1 = services.getService(SingletonService.class);
-    SingletonService service2 = services.getService(SingletonService.class);
+    SingletonService service1 = locator.getService(SingletonService.class);
+    SingletonService service2 = locator.getService(SingletonService.class);
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -76,10 +76,10 @@ public final class ServicesTest {
    */
   @Test
   public void testGetPerLookupService() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    PerLookupService service1 = services.getService(PerLookupService.class);
-    PerLookupService service2 = services.getService(PerLookupService.class);
+    PerLookupService service1 = locator.getService(PerLookupService.class);
+    PerLookupService service2 = locator.getService(PerLookupService.class);
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -92,12 +92,12 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredService() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    assertNull(services.getService(UnregisteredService.class));
+    assertNull(locator.getService(UnregisteredService.class));
 
     Iterable<UnregisteredService> iterable =
-        InjectUtils.getService(services, new TypeToken<Iterable<UnregisteredService>>() {});
+        InjectUtils.getService(locator, new TypeToken<Iterable<UnregisteredService>>() {});
 
     Iterator<UnregisteredService> iterator = iterable.iterator();
 
@@ -111,11 +111,11 @@ public final class ServicesTest {
    */
   @Test
   public void testGetServiceWithUnsatisfiedDependencies() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     assertThrows(
         MultiException.class,
-        () -> services.getService(UnsatisfiedDependencies.class));
+        () -> locator.getService(UnsatisfiedDependencies.class));
   }
 
   /**
@@ -125,14 +125,15 @@ public final class ServicesTest {
    */
   @Test
   public void testGetNullService() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    assertNull(services.getService(NullService.class));
+    assertNull(locator.getService(NullService.class));
 
     // Assert that there is one "instance" of the service, but it's null.
     Iterable<NullService> iterable =
-        InjectUtils.getService(services,
-                               new TypeToken<Iterable<NullService>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<Iterable<NullService>>() {});
 
     Iterator<NullService> iterator = iterable.iterator();
 
@@ -148,10 +149,12 @@ public final class ServicesTest {
    */
   @Test
   public void testGetOptional() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     Optional<PerLookupService> optional =
-        InjectUtils.getService(services, new TypeToken<Optional<PerLookupService>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<Optional<PerLookupService>>() {});
 
     assertTrue(optional.isPresent());
   }
@@ -163,10 +166,12 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredOptional() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     Optional<UnregisteredService> optional =
-        InjectUtils.getService(services, new TypeToken<Optional<UnregisteredService>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<Optional<UnregisteredService>>() {});
 
     assertTrue(optional.isEmpty());
   }
@@ -179,10 +184,12 @@ public final class ServicesTest {
    */
   @Test
   public void testGetProvider() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     Provider<PerLookupService> provider =
-        InjectUtils.getService(services, new TypeToken<Provider<PerLookupService>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<Provider<PerLookupService>>() {});
 
     PerLookupService service = provider.get();
 
@@ -197,10 +204,12 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredProvider() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     Provider<UnregisteredService> provider =
-        InjectUtils.getService(services, new TypeToken<Provider<UnregisteredService>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<Provider<UnregisteredService>>() {});
 
     UnregisteredService service = provider.get();
 
@@ -215,11 +224,11 @@ public final class ServicesTest {
    */
   @Test
   public void testGetIterable() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     Iterable<SimpleContract> provider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<Iterable<SimpleContract>>() {});
 
     Iterator<SimpleContract> iterator = provider.iterator();
@@ -246,11 +255,11 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredIterable() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     Iterable<UnregisteredService> provider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<Iterable<UnregisteredService>>() {});
 
     assertFalse(provider.iterator().hasNext());
@@ -264,11 +273,11 @@ public final class ServicesTest {
    */
   @Test
   public void testGetIterableProvider() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<SimpleContract> provider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<SimpleContract>>() {});
 
     Iterator<SimpleContract> iterator = provider.iterator();
@@ -296,11 +305,11 @@ public final class ServicesTest {
    */
   @Test
   public void testGetUnregisteredIterableProvider() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<UnregisteredService> provider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<UnregisteredService>>() {});
 
     assertFalse(provider.iterator().hasNext());
@@ -314,17 +323,24 @@ public final class ServicesTest {
    */
   @Test
   public void testGetGenericService() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     GenericContract<Integer> service1 =
-        InjectUtils.getService(services, new TypeToken<GenericContract<Integer>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<GenericContract<Integer>>() {});
 
     GenericContract<String> service2 =
-        InjectUtils.getService(services, new TypeToken<GenericContract<String>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<GenericContract<String>>() {});
 
     assertThrows(
         NoSuchElementException.class,
-        () -> InjectUtils.getService(services, new TypeToken<GenericContract<Double>>() {}));
+        () ->
+            InjectUtils.getService(
+                locator,
+                new TypeToken<GenericContract<Double>>() {}));
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -339,14 +355,14 @@ public final class ServicesTest {
    */
   @Test
   public void testShutdownSingletonService() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     SingletonServiceWithShutdown service =
-        services.getService(SingletonServiceWithShutdown.class);
+        locator.getService(SingletonServiceWithShutdown.class);
 
     assertFalse(service.wasStopped());
 
-    services.shutdown();
+    locator.shutdown();
 
     assertTrue(service.wasStopped());
   }
@@ -358,14 +374,14 @@ public final class ServicesTest {
    */
   @Test
   public void testShutdownSingletonServiceFromFactory() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     SingletonServiceWithShutdownFromFactory service =
-        services.getService(SingletonServiceWithShutdownFromFactory.class);
+        locator.getService(SingletonServiceWithShutdownFromFactory.class);
 
     assertFalse(service.wasStopped());
 
-    services.shutdown();
+    locator.shutdown();
 
     assertTrue(service.wasStopped());
   }
@@ -376,11 +392,11 @@ public final class ServicesTest {
    */
   @Test
   public void testShutdownPerLookupService() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<ServiceWithLifecycle> providers =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ServiceWithLifecycle>>() {});
 
     int loopCount = 2;
@@ -408,11 +424,11 @@ public final class ServicesTest {
    */
   @Test
   public void testShutdownPerLookupServiceFromFactory() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<ServiceWithShutdownFromFactory> providers =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ServiceWithShutdownFromFactory>>() {});
 
     int loopCount = 2;
@@ -440,22 +456,28 @@ public final class ServicesTest {
    */
   @Test
   public void testTopics() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     Topic<String> stringTopic =
-        InjectUtils.getService(services, new TypeToken<Topic<String>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<Topic<String>>() {});
 
     Topic<Integer> integerTopic = // subtype of Number, should be seen
-        InjectUtils.getService(services, new TypeToken<Topic<Integer>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<Topic<Integer>>() {});
 
     Topic<CharSequence> charSequenceTopic = // should be ignored
-        InjectUtils.getService(services, new TypeToken<Topic<CharSequence>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<Topic<CharSequence>>() {});
 
     stringTopic.publish("1");
     integerTopic.publish(2);
     charSequenceTopic.publish("3");
 
-    SubscriberService service = services.getService(SubscriberService.class);
+    SubscriberService service = locator.getService(SubscriberService.class);
 
     assertEquals(
         List.of("1", 2),
@@ -492,10 +514,10 @@ public final class ServicesTest {
    */
   @Test
   public void testServiceThatProvidesAndIsAService() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidesService service =
-        services.getService(ProvidesService.class);
+        locator.getService(ProvidesService.class);
 
     assertNotNull(service);
   }
@@ -506,10 +528,10 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedByStaticField service =
-        services.getService(ProvidedByStaticField.class);
+        locator.getService(ProvidedByStaticField.class);
 
     assertNotNull(service);
   }
@@ -520,10 +542,10 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceFieldProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedByInstanceField service =
-        services.getService(ProvidedByInstanceField.class);
+        locator.getService(ProvidedByInstanceField.class);
 
     assertNotNull(service);
   }
@@ -534,10 +556,10 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedByStaticMethod service =
-        services.getService(ProvidedByStaticMethod.class);
+        locator.getService(ProvidedByStaticMethod.class);
 
     assertNotNull(service);
   }
@@ -548,10 +570,10 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedByInstanceMethod service =
-        services.getService(ProvidedByInstanceMethod.class);
+        locator.getService(ProvidedByInstanceMethod.class);
 
     assertNotNull(service);
   }
@@ -562,10 +584,10 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodWithParamsProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedByStaticMethodWithParams service =
-        services.getService(ProvidedByStaticMethodWithParams.class);
+        locator.getService(ProvidedByStaticMethodWithParams.class);
 
     assertNotNull(service);
     assertNotNull(service.param1);
@@ -578,10 +600,10 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodWithParamsProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedByInstanceMethodWithParams service =
-        services.getService(ProvidedByInstanceMethodWithParams.class);
+        locator.getService(ProvidedByInstanceMethodWithParams.class);
 
     assertNotNull(service);
     assertNotNull(service.param1);
@@ -596,15 +618,15 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvidesChain() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     MiddleOfStaticFieldProvidesChain middle =
-        services.getService(MiddleOfStaticFieldProvidesChain.class);
+        locator.getService(MiddleOfStaticFieldProvidesChain.class);
 
     assertNotNull(middle);
 
     EndOfStaticFieldProvidesChain end =
-        services.getService(EndOfStaticFieldProvidesChain.class);
+        locator.getService(EndOfStaticFieldProvidesChain.class);
 
     assertNotNull(end);
   }
@@ -617,15 +639,15 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceFieldProvidesChain() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     MiddleOfInstanceFieldProvidesChain middle =
-        services.getService(MiddleOfInstanceFieldProvidesChain.class);
+        locator.getService(MiddleOfInstanceFieldProvidesChain.class);
 
     assertNotNull(middle);
 
     EndOfInstanceFieldProvidesChain end =
-        services.getService(EndOfInstanceFieldProvidesChain.class);
+        locator.getService(EndOfInstanceFieldProvidesChain.class);
 
     assertNotNull(end);
   }
@@ -638,15 +660,15 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodProvidesChain() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     MiddleOfStaticMethodProvidesChain middle =
-        services.getService(MiddleOfStaticMethodProvidesChain.class);
+        locator.getService(MiddleOfStaticMethodProvidesChain.class);
 
     assertNotNull(middle);
 
     EndOfStaticMethodProvidesChain end =
-        services.getService(EndOfStaticMethodProvidesChain.class);
+        locator.getService(EndOfStaticMethodProvidesChain.class);
 
     assertNotNull(end);
   }
@@ -659,15 +681,15 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodProvidesChain() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     MiddleOfInstanceMethodProvidesChain middle =
-        services.getService(MiddleOfInstanceMethodProvidesChain.class);
+        locator.getService(MiddleOfInstanceMethodProvidesChain.class);
 
     assertNotNull(middle);
 
     EndOfInstanceMethodProvidesChain end =
-        services.getService(EndOfInstanceMethodProvidesChain.class);
+        locator.getService(EndOfInstanceMethodProvidesChain.class);
 
     assertNotNull(end);
   }
@@ -678,16 +700,21 @@ public final class ServicesTest {
    */
   @Test
   public void testGenericMethodProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     GenericFromProvidesMethod<String> service =
-        InjectUtils.getService(services, new TypeToken<GenericFromProvidesMethod<String>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<GenericFromProvidesMethod<String>>() {});
 
     assertNotNull(service);
 
     assertThrows(
         NoSuchElementException.class,
-        () -> InjectUtils.getService(services, new TypeToken<GenericFromProvidesMethod<Integer>>() {}));
+        () ->
+            InjectUtils.getService(
+                locator,
+                new TypeToken<GenericFromProvidesMethod<Integer>>() {}));
   }
 
   /**
@@ -696,16 +723,21 @@ public final class ServicesTest {
    */
   @Test
   public void testGenericFieldProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     GenericFromProvidesField<String> service =
-        InjectUtils.getService(services, new TypeToken<GenericFromProvidesField<String>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<GenericFromProvidesField<String>>() {});
 
     assertNotNull(service);
 
     assertThrows(
         NoSuchElementException.class,
-        () -> InjectUtils.getService(services, new TypeToken<GenericFromProvidesField<Integer>>() {}));
+        () ->
+            InjectUtils.getService(
+                locator,
+                new TypeToken<GenericFromProvidesField<Integer>>() {}));
   }
 
   /**
@@ -715,10 +747,10 @@ public final class ServicesTest {
    */
   @Test
   public void testServiceProvidesItselfFromField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidesSelfFromMethod self =
-        services.getService(ProvidesSelfFromMethod.class);
+        locator.getService(ProvidesSelfFromMethod.class);
 
     assertNotNull(self);
     assertNotNull(self.nonService);
@@ -734,10 +766,10 @@ public final class ServicesTest {
    */
   @Test
   public void testServiceProvidesItselfFromMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidesSelfFromMethod self =
-        services.getService(ProvidesSelfFromMethod.class);
+        locator.getService(ProvidesSelfFromMethod.class);
 
     assertNotNull(self);
     assertNotNull(self.nonService);
@@ -753,10 +785,10 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvidesSingletonLifecycle() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedSingletonStaticFieldWithLifecycle service =
-        services.getService(ProvidedSingletonStaticFieldWithLifecycle.class);
+        locator.getService(ProvidedSingletonStaticFieldWithLifecycle.class);
 
     assertNotNull(service);
     assertFalse(service.wasStarted());
@@ -764,9 +796,9 @@ public final class ServicesTest {
 
     assertSame(
         service,
-        services.getService(ProvidedSingletonStaticFieldWithLifecycle.class));
+        locator.getService(ProvidedSingletonStaticFieldWithLifecycle.class));
 
-    services.shutdown();
+    locator.shutdown();
 
     assertFalse(service.wasStopped());
   }
@@ -778,10 +810,10 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceFieldProvidesSingletonLifecycle() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedSingletonInstanceFieldWithLifecycle service =
-        services.getService(ProvidedSingletonInstanceFieldWithLifecycle.class);
+        locator.getService(ProvidedSingletonInstanceFieldWithLifecycle.class);
 
     assertNotNull(service);
     assertFalse(service.wasStarted());
@@ -789,9 +821,9 @@ public final class ServicesTest {
 
     assertSame(
         service,
-        services.getService(ProvidedSingletonInstanceFieldWithLifecycle.class));
+        locator.getService(ProvidedSingletonInstanceFieldWithLifecycle.class));
 
-    services.shutdown();
+    locator.shutdown();
 
     assertTrue(service.wasStopped());
   }
@@ -803,10 +835,10 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodProvidesSingletonLifecycle() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedSingletonStaticMethodWithLifecycle service =
-        services.getService(ProvidedSingletonStaticMethodWithLifecycle.class);
+        locator.getService(ProvidedSingletonStaticMethodWithLifecycle.class);
 
     assertNotNull(service);
     assertFalse(service.wasStarted());
@@ -814,9 +846,9 @@ public final class ServicesTest {
 
     assertSame(
         service,
-        services.getService(ProvidedSingletonStaticMethodWithLifecycle.class));
+        locator.getService(ProvidedSingletonStaticMethodWithLifecycle.class));
 
-    services.shutdown();
+    locator.shutdown();
 
     assertTrue(service.wasStopped());
   }
@@ -828,10 +860,10 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodProvidesSingletonLifecycle() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedSingletonInstanceMethodWithLifecycle service =
-        services.getService(ProvidedSingletonInstanceMethodWithLifecycle.class);
+        locator.getService(ProvidedSingletonInstanceMethodWithLifecycle.class);
 
     assertNotNull(service);
     assertFalse(service.wasStarted());
@@ -839,9 +871,9 @@ public final class ServicesTest {
 
     assertSame(
         service,
-        services.getService(ProvidedSingletonInstanceMethodWithLifecycle.class));
+        locator.getService(ProvidedSingletonInstanceMethodWithLifecycle.class));
 
-    services.shutdown();
+    locator.shutdown();
 
     assertTrue(service.wasStopped());
   }
@@ -854,10 +886,10 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvidesPerLookupLifecycleWithoutHandle() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle serviceWithoutHandle =
-        services.getService(ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle.class);
+        locator.getService(ProvidedPerLookupStaticFieldWithLifecycleWithoutHandle.class);
 
     assertNotNull(serviceWithoutHandle);
     assertFalse(serviceWithoutHandle.wasStarted());
@@ -868,7 +900,7 @@ public final class ServicesTest {
     // new value may be written to the field from time to time.  It doesn't
     // matter to us.
 
-    services.shutdown();
+    locator.shutdown();
 
     assertFalse(serviceWithoutHandle.wasStopped());
   }
@@ -881,11 +913,11 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticFieldProvidesPerLookupLifecycleWithHandle() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<ProvidedPerLookupStaticFieldWithLifecycleWithHandle> serviceProvider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ProvidedPerLookupStaticFieldWithLifecycleWithHandle>>() {});
 
     ServiceHandle<ProvidedPerLookupStaticFieldWithLifecycleWithHandle> serviceHandle =
@@ -910,10 +942,10 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceFieldProvidesPerLookupLifecycle() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedPerLookupInstanceFieldWithLifecycle serviceWithoutHandle =
-        services.getService(ProvidedPerLookupInstanceFieldWithLifecycle.class);
+        locator.getService(ProvidedPerLookupInstanceFieldWithLifecycle.class);
 
     assertNotNull(serviceWithoutHandle);
     assertFalse(serviceWithoutHandle.wasStarted());
@@ -921,11 +953,11 @@ public final class ServicesTest {
 
     assertNotSame(
         serviceWithoutHandle,
-        services.getService(ProvidedPerLookupInstanceFieldWithLifecycle.class));
+        locator.getService(ProvidedPerLookupInstanceFieldWithLifecycle.class));
 
     IterableProvider<ProvidedPerLookupInstanceFieldWithLifecycle> serviceProvider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ProvidedPerLookupInstanceFieldWithLifecycle>>() {});
 
     ServiceHandle<ProvidedPerLookupInstanceFieldWithLifecycle> serviceHandle =
@@ -942,7 +974,7 @@ public final class ServicesTest {
 
     assertTrue(serviceWitHandle.wasStopped());
 
-    services.shutdown();
+    locator.shutdown();
 
     assertFalse(serviceWithoutHandle.wasStopped());
   }
@@ -954,10 +986,10 @@ public final class ServicesTest {
    */
   @Test
   public void testStaticMethodProvidesPerLookupLifecycle() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedPerLookupStaticMethodWithLifecycle serviceWithoutHandle =
-        services.getService(ProvidedPerLookupStaticMethodWithLifecycle.class);
+        locator.getService(ProvidedPerLookupStaticMethodWithLifecycle.class);
 
     assertNotNull(serviceWithoutHandle);
     assertFalse(serviceWithoutHandle.wasStarted());
@@ -965,11 +997,11 @@ public final class ServicesTest {
 
     assertNotSame(
         serviceWithoutHandle,
-        services.getService(ProvidedPerLookupStaticMethodWithLifecycle.class));
+        locator.getService(ProvidedPerLookupStaticMethodWithLifecycle.class));
 
     IterableProvider<ProvidedPerLookupStaticMethodWithLifecycle> serviceProvider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ProvidedPerLookupStaticMethodWithLifecycle>>() {});
 
     ServiceHandle<ProvidedPerLookupStaticMethodWithLifecycle> serviceHandle =
@@ -986,7 +1018,7 @@ public final class ServicesTest {
 
     assertTrue(serviceWitHandle.wasStopped());
 
-    services.shutdown();
+    locator.shutdown();
 
     assertFalse(serviceWithoutHandle.wasStopped());
   }
@@ -998,10 +1030,10 @@ public final class ServicesTest {
    */
   @Test
   public void testInstanceMethodProvidesPerLookupLifecycle() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ProvidedPerLookupInstanceMethodWithLifecycle serviceWithoutHandle =
-        services.getService(ProvidedPerLookupInstanceMethodWithLifecycle.class);
+        locator.getService(ProvidedPerLookupInstanceMethodWithLifecycle.class);
 
     assertNotNull(serviceWithoutHandle);
     assertFalse(serviceWithoutHandle.wasStarted());
@@ -1009,11 +1041,11 @@ public final class ServicesTest {
 
     assertNotSame(
         serviceWithoutHandle,
-        services.getService(ProvidedPerLookupInstanceMethodWithLifecycle.class));
+        locator.getService(ProvidedPerLookupInstanceMethodWithLifecycle.class));
 
     IterableProvider<ProvidedPerLookupInstanceMethodWithLifecycle> serviceProvider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ProvidedPerLookupInstanceMethodWithLifecycle>>() {});
 
     ServiceHandle<ProvidedPerLookupInstanceMethodWithLifecycle> serviceHandle =
@@ -1030,7 +1062,7 @@ public final class ServicesTest {
 
     assertTrue(serviceWitHandle.wasStopped());
 
-    services.shutdown();
+    locator.shutdown();
 
     assertFalse(serviceWithoutHandle.wasStopped());
   }
@@ -1042,11 +1074,11 @@ public final class ServicesTest {
    */
   @Test
   public void testUtilityClassProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    assertNotNull(services.getService(FromUtilityClassMethod.class));
-    assertNotNull(services.getService(FromUtilityClassField.class));
-    assertNull(services.getService(UtilityClassProvides.class));
+    assertNotNull(locator.getService(FromUtilityClassMethod.class));
+    assertNotNull(locator.getService(FromUtilityClassField.class));
+    assertNull(locator.getService(UtilityClassProvides.class));
   }
 
   /**
@@ -1056,11 +1088,11 @@ public final class ServicesTest {
    */
   @Test
   public void testAbstractClassProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    assertNotNull(services.getService(FromAbstractClassMethod.class));
-    assertNotNull(services.getService(FromAbstractClassField.class));
-    assertNull(services.getService(AbstractClassProvides.class));
+    assertNotNull(locator.getService(FromAbstractClassMethod.class));
+    assertNotNull(locator.getService(FromAbstractClassField.class));
+    assertNull(locator.getService(AbstractClassProvides.class));
   }
 
   /**
@@ -1070,11 +1102,11 @@ public final class ServicesTest {
    */
   @Test
   public void testInterfaceProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    assertNotNull(services.getService(FromInterfaceMethod.class));
-    assertNotNull(services.getService(FromInterfaceField.class));
-    assertNull(services.getService(InterfaceProvides.class));
+    assertNotNull(locator.getService(FromInterfaceMethod.class));
+    assertNotNull(locator.getService(FromInterfaceField.class));
+    assertNull(locator.getService(InterfaceProvides.class));
   }
 
   /**
@@ -1083,10 +1115,12 @@ public final class ServicesTest {
    */
   @Test
   public void testEnumProvides() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<EnumProvides> provider =
-        InjectUtils.getService(services, new TypeToken<IterableProvider<EnumProvides>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<IterableProvider<EnumProvides>>() {});
 
     assertEquals(
         EnumSet.allOf(EnumProvides.class),
@@ -1099,17 +1133,21 @@ public final class ServicesTest {
    */
   @Test
   public void testEnumProvidesContracts() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<EnumContract> provider =
-        InjectUtils.getService(services, new TypeToken<IterableProvider<EnumContract>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<IterableProvider<EnumContract>>() {});
 
     assertEquals(
         EnumSet.allOf(EnumProvidesContract.class),
         ImmutableSet.copyOf(provider));
 
     IterableProvider<SecondEnumContract> secondProvider =
-        InjectUtils.getService(services, new TypeToken<IterableProvider<SecondEnumContract>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<IterableProvider<SecondEnumContract>>() {});
 
     assertEquals(
         EnumSet.allOf(EnumProvidesContract.class),
@@ -1125,13 +1163,13 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeStaticField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    HasCustomDisposeMethod service = services.getService(
-        ProvidedWithCustomDisposeFromStaticField.class);
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromStaticField.class);
 
     assertFalse(service.isClosed());
-    services.shutdown();
+    locator.shutdown();
     assertFalse(service.isClosed());
   }
 
@@ -1144,13 +1182,13 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeInstanceField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    HasCustomDisposeMethod service = services.getService(
-        ProvidedWithCustomDisposeFromInstanceField.class);
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromInstanceField.class);
 
     assertFalse(service.isClosed());
-    services.shutdown();
+    locator.shutdown();
     assertTrue(service.isClosed());
   }
 
@@ -1163,13 +1201,13 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeStaticMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    HasCustomDisposeMethod service = services.getService(
-        ProvidedWithCustomDisposeFromStaticMethod.class);
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromStaticMethod.class);
 
     assertFalse(service.isClosed());
-    services.shutdown();
+    locator.shutdown();
     assertTrue(service.isClosed());
   }
 
@@ -1182,13 +1220,13 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeInstanceMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    HasCustomDisposeMethod service = services.getService(
-        ProvidedWithCustomDisposeFromInstanceMethod.class);
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromInstanceMethod.class);
 
     assertFalse(service.isClosed());
-    services.shutdown();
+    locator.shutdown();
     assertTrue(service.isClosed());
   }
 
@@ -1201,13 +1239,13 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeStaticFieldFactoryDestroys() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    HasCustomDisposeMethod service = services.getService(
-        ProvidedWithCustomDisposeFromStaticFieldForFactory.class);
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromStaticFieldForFactory.class);
 
     assertFalse(service.isClosed());
-    services.shutdown();
+    locator.shutdown();
     assertFalse(service.isClosed());
   }
 
@@ -1220,13 +1258,13 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeInstanceFieldFactoryDestroys() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    HasCustomDisposeMethod service = services.getService(
-        ProvidedWithCustomDisposeFromInstanceFieldForFactory.class);
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromInstanceFieldForFactory.class);
 
     assertFalse(service.isClosed());
-    services.shutdown();
+    locator.shutdown();
     assertTrue(service.isClosed());
   }
 
@@ -1239,13 +1277,13 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeStaticMethodFactoryDestroys() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    HasCustomDisposeMethod service = services.getService(
-        ProvidedWithCustomDisposeFromStaticMethodForFactory.class);
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromStaticMethodForFactory.class);
 
     assertFalse(service.isClosed());
-    services.shutdown();
+    locator.shutdown();
     assertTrue(service.isClosed());
   }
 
@@ -1258,13 +1296,13 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesCustomDisposeInstanceMethodFactoryDestroys() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    HasCustomDisposeMethod service = services.getService(
-        ProvidedWithCustomDisposeFromInstanceMethodForFactory.class);
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromInstanceMethodForFactory.class);
 
     assertFalse(service.isClosed());
-    services.shutdown();
+    locator.shutdown();
     assertTrue(service.isClosed());
   }
 
@@ -1274,14 +1312,14 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesExplicitContractsFromStaticField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ExplicitContractInStaticField service =
-        services.getService(ExplicitContractInStaticField.class);
+        locator.getService(ExplicitContractInStaticField.class);
 
     assertTrue(service instanceof HasDefaultContractsInStaticField);
-    assertNull(services.getService(HasDefaultContractsInStaticField.class));
-    assertNull(services.getService(DefaultContractInStaticField.class));
+    assertNull(locator.getService(HasDefaultContractsInStaticField.class));
+    assertNull(locator.getService(DefaultContractInStaticField.class));
   }
 
   /**
@@ -1290,14 +1328,14 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesExplicitContractsFromInstanceField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ExplicitContractInInstanceField service =
-        services.getService(ExplicitContractInInstanceField.class);
+        locator.getService(ExplicitContractInInstanceField.class);
 
     assertTrue(service instanceof HasDefaultContractsInInstanceField);
-    assertNull(services.getService(HasDefaultContractsInInstanceField.class));
-    assertNull(services.getService(DefaultContractInInstanceField.class));
+    assertNull(locator.getService(HasDefaultContractsInInstanceField.class));
+    assertNull(locator.getService(DefaultContractInInstanceField.class));
   }
 
   /**
@@ -1306,14 +1344,14 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesExplicitContractsFromStaticMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ExplicitContractInStaticMethod service =
-        services.getService(ExplicitContractInStaticMethod.class);
+        locator.getService(ExplicitContractInStaticMethod.class);
 
     assertTrue(service instanceof HasDefaultContractsInStaticMethod);
-    assertNull(services.getService(HasDefaultContractsInStaticMethod.class));
-    assertNull(services.getService(DefaultContractInStaticMethod.class));
+    assertNull(locator.getService(HasDefaultContractsInStaticMethod.class));
+    assertNull(locator.getService(DefaultContractInStaticMethod.class));
   }
 
   /**
@@ -1322,14 +1360,14 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesExplicitContractsFromInstanceMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     ExplicitContractInInstanceMethod service =
-        services.getService(ExplicitContractInInstanceMethod.class);
+        locator.getService(ExplicitContractInInstanceMethod.class);
 
     assertTrue(service instanceof HasDefaultContractsInInstanceMethod);
-    assertNull(services.getService(HasDefaultContractsInInstanceMethod.class));
-    assertNull(services.getService(DefaultContractInInstanceMethod.class));
+    assertNull(locator.getService(HasDefaultContractsInInstanceMethod.class));
+    assertNull(locator.getService(DefaultContractInInstanceMethod.class));
   }
 
   /**
@@ -1338,10 +1376,12 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesNullFromStaticField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<NullFromStaticField> provider =
-        InjectUtils.getService(services, new TypeToken<IterableProvider<NullFromStaticField>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<IterableProvider<NullFromStaticField>>() {});
 
     try (ServiceHandle<NullFromStaticField> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -1354,10 +1394,12 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesNullFromInstanceField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<NullFromInstanceField> provider =
-        InjectUtils.getService(services, new TypeToken<IterableProvider<NullFromInstanceField>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<IterableProvider<NullFromInstanceField>>() {});
 
     try (ServiceHandle<NullFromInstanceField> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -1370,10 +1412,12 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesNullFromStaticMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<NullFromStaticMethod> provider =
-        InjectUtils.getService(services, new TypeToken<IterableProvider<NullFromStaticMethod>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<IterableProvider<NullFromStaticMethod>>() {});
 
     try (ServiceHandle<NullFromStaticMethod> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -1386,10 +1430,12 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesNullFromInstanceMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     IterableProvider<NullFromInstanceMethod> provider =
-        InjectUtils.getService(services, new TypeToken<IterableProvider<NullFromInstanceMethod>>() {});
+        InjectUtils.getService(
+            locator,
+            new TypeToken<IterableProvider<NullFromInstanceMethod>>() {});
 
     try (ServiceHandle<NullFromInstanceMethod> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -1402,15 +1448,17 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesLifecycleFromStaticField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var provider =
+    IterableProvider<ProvidesLifecycleFromStaticField> provider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ProvidesLifecycleFromStaticField>>() {});
 
-    var handle = provider.getHandle();
-    var root = handle.getService();
+    ServiceHandle<ProvidesLifecycleFromStaticField> handle =
+        provider.getHandle();
+
+    ProvidesLifecycleFromStaticField root = handle.getService();
 
     assertFalse(root.wasStarted());
     assertFalse(root.factory.wasStarted());
@@ -1433,15 +1481,17 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesLifecycleFromInstanceField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var provider =
+    IterableProvider<ProvidesLifecycleFromInstanceField> provider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ProvidesLifecycleFromInstanceField>>() {});
 
-    var handle = provider.getHandle();
-    var root = handle.getService();
+    ServiceHandle<ProvidesLifecycleFromInstanceField> handle =
+        provider.getHandle();
+
+    ProvidesLifecycleFromInstanceField root = handle.getService();
 
     assertFalse(root.wasStarted());
     assertTrue(root.factory.wasStarted());
@@ -1464,15 +1514,17 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesLifecycleFromStaticMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var provider =
+    IterableProvider<ProvidesLifecycleFromStaticMethod> provider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ProvidesLifecycleFromStaticMethod>>() {});
 
-    var handle = provider.getHandle();
-    var root = handle.getService();
+    ServiceHandle<ProvidesLifecycleFromStaticMethod> handle =
+        provider.getHandle();
+
+    ProvidesLifecycleFromStaticMethod root = handle.getService();
 
     assertFalse(root.wasStarted());
     assertFalse(root.factory.wasStarted());
@@ -1495,15 +1547,17 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesLifecycleFromInstanceMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var provider =
+    IterableProvider<ProvidesLifecycleFromInstanceMethod> provider =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<ProvidesLifecycleFromInstanceMethod>>() {});
 
-    var handle = provider.getHandle();
-    var root = handle.getService();
+    ServiceHandle<ProvidesLifecycleFromInstanceMethod> handle =
+        provider.getHandle();
+
+    ProvidesLifecycleFromInstanceMethod root = handle.getService();
 
     assertFalse(root.wasStarted());
     assertTrue(root.factory.wasStarted());
@@ -1527,32 +1581,32 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesGenericTypeParametersStaticFieldToField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var providerA =
+    ProvidesGenericField<Value1> providerA =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericField<Value1>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.value);
     assertEquals(Value1.class, providerA.value.getClass());
 
-    var providedA = services.getService(Value1.class);
+    Value1 providedA = locator.getService(Value1.class);
 
     assertNotNull(providedA);
     assertEquals(Value1.class, providedA.getClass());
 
-    var providerB =
+    ProvidesGenericField<Value2> providerB =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericField<Value2>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.value);
     assertEquals(Value2.class, providerB.value.getClass());
 
-    var providedB = services.getService(Value2.class);
+    Value2 providedB = locator.getService(Value2.class);
 
     assertNotNull(providedB);
     assertEquals(Value2.class, providedB.getClass());
@@ -1565,32 +1619,32 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesGenericTypeParametersInstanceFieldToField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var providerA =
+    ProvidesGenericField<Value3> providerA =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericField<Value3>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.value);
     assertEquals(Value3.class, providerA.value.getClass());
 
-    var providedA = services.getService(Value3.class);
+    Value3 providedA = locator.getService(Value3.class);
 
     assertNotNull(providedA);
     assertEquals(Value3.class, providedA.getClass());
 
-    var providerB =
+    ProvidesGenericField<Value4> providerB =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericField<Value4>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.value);
     assertEquals(Value4.class, providerB.value.getClass());
 
-    var providedB = services.getService(Value4.class);
+    Value4 providedB = locator.getService(Value4.class);
 
     assertNotNull(providedB);
     assertEquals(Value4.class, providedB.getClass());
@@ -1603,32 +1657,32 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesGenericTypeParametersStaticMethodToField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var providerA =
+    ProvidesGenericField<Value5> providerA =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericField<Value5>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.value);
     assertEquals(Value5.class, providerA.value.getClass());
 
-    var providedA = services.getService(Value5.class);
+    Value5 providedA = locator.getService(Value5.class);
 
     assertNotNull(providedA);
     assertEquals(Value5.class, providedA.getClass());
 
-    var providerB =
+    ProvidesGenericField<Value6> providerB =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericField<Value6>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.value);
     assertEquals(Value6.class, providerB.value.getClass());
 
-    var providedB = services.getService(Value6.class);
+    Value6 providedB = locator.getService(Value6.class);
 
     assertNotNull(providedB);
     assertEquals(Value6.class, providedB.getClass());
@@ -1641,32 +1695,32 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesGenericTypeParametersInstanceMethodToField() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var providerA =
+    ProvidesGenericField<Value7> providerA =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericField<Value7>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.value);
     assertEquals(Value7.class, providerA.value.getClass());
 
-    var providedA = services.getService(Value7.class);
+    Value7 providedA = locator.getService(Value7.class);
 
     assertNotNull(providedA);
     assertEquals(Value7.class, providedA.getClass());
 
-    var providerB =
+    ProvidesGenericField<Value8> providerB =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericField<Value8>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.value);
     assertEquals(Value8.class, providerB.value.getClass());
 
-    var providedB = services.getService(Value8.class);
+    Value8 providedB = locator.getService(Value8.class);
 
     assertNotNull(providedB);
     assertEquals(Value8.class, providedB.getClass());
@@ -1679,32 +1733,32 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesGenericTypeParametersStaticFieldToMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var providerA =
+    ProvidesGenericMethod<Value9> providerA =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericMethod<Value9>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.getValue());
     assertEquals(Value9.class, providerA.getValue().getClass());
 
-    var providedA = services.getService(Value9.class);
+    Value9 providedA = locator.getService(Value9.class);
 
     assertNotNull(providedA);
     assertEquals(Value9.class, providedA.getClass());
 
-    var providerB =
+    ProvidesGenericMethod<Value10> providerB =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericMethod<Value10>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.getValue());
     assertEquals(Value10.class, providerB.getValue().getClass());
 
-    var providedB = services.getService(Value10.class);
+    Value10 providedB = locator.getService(Value10.class);
 
     assertNotNull(providedB);
     assertEquals(Value10.class, providedB.getClass());
@@ -1717,32 +1771,32 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesGenericTypeParametersInstanceFieldToMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var providerA =
+    ProvidesGenericMethod<Value11> providerA =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericMethod<Value11>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.getValue());
     assertEquals(Value11.class, providerA.getValue().getClass());
 
-    var providedA = services.getService(Value11.class);
+    Value11 providedA = locator.getService(Value11.class);
 
     assertNotNull(providedA);
     assertEquals(Value11.class, providedA.getClass());
 
-    var providerB =
+    ProvidesGenericMethod<Value12> providerB =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericMethod<Value12>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.getValue());
     assertEquals(Value12.class, providerB.getValue().getClass());
 
-    var providedB = services.getService(Value12.class);
+    Value12 providedB = locator.getService(Value12.class);
 
     assertNotNull(providedB);
     assertEquals(Value12.class, providedB.getClass());
@@ -1755,32 +1809,32 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesGenericTypeParametersStaticMethodToMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var providerA =
+    ProvidesGenericMethod<Value13> providerA =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericMethod<Value13>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.getValue());
     assertEquals(Value13.class, providerA.getValue().getClass());
 
-    var providedA = services.getService(Value13.class);
+    Value13 providedA = locator.getService(Value13.class);
 
     assertNotNull(providedA);
     assertEquals(Value13.class, providedA.getClass());
 
-    var providerB =
+    ProvidesGenericMethod<Value14> providerB =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericMethod<Value14>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.getValue());
     assertEquals(Value14.class, providerB.getValue().getClass());
 
-    var providedB = services.getService(Value14.class);
+    Value14 providedB = locator.getService(Value14.class);
 
     assertNotNull(providedB);
     assertEquals(Value14.class, providedB.getClass());
@@ -1793,32 +1847,32 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesGenericTypeParametersInstanceMethodToMethod() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var providerA =
+    ProvidesGenericMethod<Value15> providerA =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericMethod<Value15>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.getValue());
     assertEquals(Value15.class, providerA.getValue().getClass());
 
-    var providedA = services.getService(Value15.class);
+    Value15 providedA = locator.getService(Value15.class);
 
     assertNotNull(providedA);
     assertEquals(Value15.class, providedA.getClass());
 
-    var providerB =
+    ProvidesGenericMethod<Value16> providerB =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ProvidesGenericMethod<Value16>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.getValue());
     assertEquals(Value16.class, providerB.getValue().getClass());
 
-    var providedB = services.getService(Value16.class);
+    Value16 providedB = locator.getService(Value16.class);
 
     assertNotNull(providedB);
     assertEquals(Value16.class, providedB.getClass());
@@ -1830,11 +1884,11 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesGenericContractTypeParameters() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    var boxes =
+    IterableProvider<BoxFromGenericProvidesContract<String>> boxes =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<BoxFromGenericProvidesContract<String>>>() {});
 
     assertEquals(4, boxes.getSize());
@@ -1858,7 +1912,7 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesOverrideMethodNoDuplicates() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
     Set<String> expected =
         Set.of(
@@ -1867,9 +1921,9 @@ public final class ServicesTest {
             "staticMethod",
             "instanceMethod");
 
-    var overrides =
+    IterableProvider<OverrideBoxFromGenericProvidesContract<String>> overrides =
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<IterableProvider<OverrideBoxFromGenericProvidesContract<String>>>() {});
 
     assertEquals(expected.size(), overrides.getSize());
@@ -1899,41 +1953,37 @@ public final class ServicesTest {
    */
   @Test
   public void testProvidesStaticMethodGenericsNotInheritedFromClass() {
-    ServiceLocator services = newServices();
+    ServiceLocator locator = newServiceLocator();
 
-    assertNotNull(services.getService(LinksToStaticGenericProvider.class));
+    assertNotNull(locator.getService(LinksToStaticGenericProvider.class));
 
     assertNotNull(
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<StaticGenericProvider<String>>() {}));
 
     assertNotNull(
         InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ParamFromStaticGenericTest<String>>() {}));
 
     assertThrows(
         NoSuchElementException.class,
         () -> InjectUtils.getService(
-            services,
+            locator,
             new TypeToken<ReturnFromStaticGenericTest<String>>() {}));
   }
 
   /**
    * Constructs a new set of services to be used in one test.
    */
-  private ServiceLocator newServices() {
-    ServiceLocator serviceLocator =
+  private ServiceLocator newServiceLocator() {
+    ServiceLocator locator =
         ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
-    NoInstancesFilter.enableNoInstancesFilter(serviceLocator);
-
-    ServiceLocatorUtilities.bind(
-        serviceLocator,
-        new ServicesTestBinder());
-
-    return serviceLocator;
+    NoInstancesFilter.enableNoInstancesFilter(locator);
+    ServiceLocatorUtilities.bind(locator, new ServicesTestBinder());
+    return locator;
   }
 
   public static final class ServicesTestBinder extends AbstractBinder {
