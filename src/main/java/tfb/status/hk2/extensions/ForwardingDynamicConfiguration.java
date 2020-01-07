@@ -6,7 +6,6 @@ import org.glassfish.hk2.api.DynamicConfiguration;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.FactoryDescriptors;
 import org.glassfish.hk2.api.Filter;
-import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.TwoPhaseResource;
 
 /**
@@ -41,38 +40,32 @@ interface ForwardingDynamicConfiguration extends DynamicConfiguration {
   }
 
   @Override
-  default <T> ActiveDescriptor<T> addActiveDescriptor(ActiveDescriptor<T> activeDescriptor)
-      throws IllegalArgumentException {
+  default <T> ActiveDescriptor<T> addActiveDescriptor(ActiveDescriptor<T> activeDescriptor) {
     return delegate().addActiveDescriptor(activeDescriptor);
   }
 
   @Override
-  default <T> ActiveDescriptor<T> addActiveDescriptor(ActiveDescriptor<T> activeDescriptor, boolean requiresDeepCopy)
-      throws IllegalArgumentException {
+  default <T> ActiveDescriptor<T> addActiveDescriptor(ActiveDescriptor<T> activeDescriptor, boolean requiresDeepCopy) {
     return delegate().addActiveDescriptor(activeDescriptor, requiresDeepCopy);
   }
 
   @Override
-  default <T> ActiveDescriptor<T> addActiveDescriptor(Class<T> rawClass)
-      throws MultiException, IllegalArgumentException {
+  default <T> ActiveDescriptor<T> addActiveDescriptor(Class<T> rawClass) {
     return delegate().addActiveDescriptor(rawClass);
   }
 
   @Override
-  default <T> FactoryDescriptors addActiveFactoryDescriptor(Class<? extends Factory<T>> rawFactoryClass)
-      throws MultiException, IllegalArgumentException {
+  default <T> FactoryDescriptors addActiveFactoryDescriptor(Class<? extends Factory<T>> rawFactoryClass) {
     return delegate().addActiveFactoryDescriptor(rawFactoryClass);
   }
 
   @Override
-  default void addUnbindFilter(Filter unbindFilter)
-      throws IllegalArgumentException {
+  default void addUnbindFilter(Filter unbindFilter) {
     delegate().addUnbindFilter(unbindFilter);
   }
 
   @Override
-  default void addIdempotentFilter(Filter... idempotentFilter)
-      throws IllegalArgumentException {
+  default void addIdempotentFilter(Filter... idempotentFilter) {
     delegate().addIdempotentFilter(idempotentFilter);
   }
 
@@ -82,7 +75,7 @@ interface ForwardingDynamicConfiguration extends DynamicConfiguration {
   }
 
   @Override
-  default void commit() throws MultiException {
+  default void commit() {
     delegate().commit();
   }
 }
