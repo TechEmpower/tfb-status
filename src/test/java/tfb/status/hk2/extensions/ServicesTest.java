@@ -16,6 +16,7 @@ import com.google.common.collect.Streams;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -42,6 +43,7 @@ import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
 
@@ -1863,6 +1865,45 @@ public final class ServicesTest {
   }
 
   /**
+   * Verifies that when a generic provider {@code class Foo<T>} declares a
+   * static method {@code <T> static Bar<T> bar(...)} that also uses a type
+   * variable, and that static method is with {@link Provides}, and a narrower
+   * type of the provider class {@code Foo<String>} has been provided somewhere,
+   * that the type of service provided by the static method isn't also wrongly
+   * narrowed to {@code Bar<String>}.  In that case, the static method's
+   * contract type should still be {@code Bar<T>}, since its generic type
+   * variable {@code T} is distinct from the {@code T} in {@code class Foo<T>}
+   * even though they are both named "T".
+   *
+   * <p>Also verifies that the {@link Provides} analysis doesn't fail when it
+   * encounters generic type variables like {@code T}.  A previous
+   * implementation of {@link Provides} relied on {@link
+   * ReflectionHelper#getAllTypes(Type)}, which did fail in this case.
+   */
+  @Test
+  public void testProvidesStaticMethodGenericsNotInheritedFromClass() {
+    ServiceLocator services = newServices();
+
+    assertNotNull(services.getService(LinksToStaticGenericProvider.class));
+
+    assertNotNull(
+        InjectUtils.getService(
+            services,
+            new TypeToken<StaticGenericProvider<String>>() {}));
+
+    assertNotNull(
+        InjectUtils.getService(
+            services,
+            new TypeToken<ParamFromStaticGenericTest<String>>() {}));
+
+    assertThrows(
+        NoSuchElementException.class,
+        () -> InjectUtils.getService(
+            services,
+            new TypeToken<ReturnFromStaticGenericTest<String>>() {}));
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private ServiceLocator newServices() {
@@ -1911,6 +1952,7 @@ public final class ServicesTest {
       addActiveDescriptor(ProvidesLifecycleDependency.class);
       addActiveDescriptor(GenericTypeParameterChains.class);
       addActiveDescriptor(ProvidesGenericContracts.class);
+      addActiveDescriptor(LinksToStaticGenericProvider.class);
     }
   }
 
@@ -2805,6 +2847,43 @@ public final class ServicesTest {
     @Provides
     public GenericProvidesClassWithContract<String> instanceMethod() {
       return new GenericProvidesClassWithContract<>("instanceMethod");
+    }
+  }
+
+  public static final class ReturnFromStaticGenericTest<T> {
+    public final T value;
+
+    ReturnFromStaticGenericTest(T value) {
+      this.value = Objects.requireNonNull(value);
+    }
+  }
+
+  public static final class ParamFromStaticGenericTest<T> {
+    public final T value;
+
+    ParamFromStaticGenericTest(T value) {
+      this.value = Objects.requireNonNull(value);
+    }
+  }
+
+  public static final class LinksToStaticGenericProvider {
+    @Provides
+    public StaticGenericProvider<String> getIt() {
+      return new StaticGenericProvider<String>();
+    }
+  }
+
+  public static final class StaticGenericProvider<T> {
+    @Provides
+    public ParamFromStaticGenericTest<String> param() {
+      return new ParamFromStaticGenericTest<>("hello");
+    }
+
+    @Provides
+    // not the same <T>
+    public static <T> ReturnFromStaticGenericTest<T> staticMethod(
+        ParamFromStaticGenericTest<T> param) {
+      return new ReturnFromStaticGenericTest<>(param.value);
     }
   }
 }

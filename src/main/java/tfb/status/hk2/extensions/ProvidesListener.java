@@ -256,9 +256,10 @@ final class ProvidesListener implements DynamicConfigurationListener {
       return ImmutableSet.copyOf(explicit.value());
 
     return Stream.concat(Stream.of(providesType.getType()),
-                         ReflectionHelper.getAllTypes(providesType.getType())
-                                         .stream()
-                                         .filter(t -> isContract(t)))
+                         providesType.getTypes()
+                                     .stream()
+                                     .map(t -> t.getType())
+                                     .filter(t -> isContract(t)))
                  .collect(toImmutableSet());
   }
 
