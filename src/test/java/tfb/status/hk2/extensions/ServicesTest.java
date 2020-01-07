@@ -17,10 +17,8 @@ import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,10 +35,6 @@ import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
-import org.glassfish.hk2.api.messaging.MessageReceiver;
-import org.glassfish.hk2.api.messaging.SubscribeTo;
-import org.glassfish.hk2.api.messaging.Topic;
-import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
@@ -448,64 +442,6 @@ public final class ServicesTest {
 
     // Assert that we saw one service during each iteration of the loop.
     assertEquals(loopCount, serviceCount);
-  }
-
-  /**
-   * Verifies that {@link Topic#publish(Object)} distributes the message to all
-   * subscribers.  Verifies the existence of a {@link TopicDistributionService}.
-   */
-  @Test
-  public void testTopics() {
-    ServiceLocator locator = newServiceLocator();
-
-    Topic<String> stringTopic =
-        InjectUtils.getService(
-            locator,
-            new TypeToken<Topic<String>>() {});
-
-    Topic<Integer> integerTopic = // subtype of Number, should be seen
-        InjectUtils.getService(
-            locator,
-            new TypeToken<Topic<Integer>>() {});
-
-    Topic<CharSequence> charSequenceTopic = // should be ignored
-        InjectUtils.getService(
-            locator,
-            new TypeToken<Topic<CharSequence>>() {});
-
-    stringTopic.publish("1");
-    integerTopic.publish(2);
-    charSequenceTopic.publish("3");
-
-    SubscriberService service = locator.getService(SubscriberService.class);
-
-    assertEquals(
-        List.of("1", 2),
-        service.getMessages());
-
-    List<ServiceWithLifecycle> service1List = service.getService1List();
-    List<SingletonServiceWithShutdown> service2List = service.getService2List();
-
-    List<Boolean> serviced1WasShutdown = service.getService1WasShutdown();
-    List<Boolean> serviced2WasShutdown = service.getService2WasShutdown();
-
-    assertEquals(2, service1List.size());
-    assertEquals(2, service2List.size());
-
-    assertEquals(2, serviced1WasShutdown.size());
-    assertEquals(2, serviced2WasShutdown.size());
-
-    assertFalse(serviced1WasShutdown.get(0));
-    assertFalse(serviced1WasShutdown.get(1));
-    assertTrue(service1List.get(0).wasStopped());
-    assertTrue(service1List.get(1).wasStopped());
-    assertNotSame(service1List.get(0), service1List.get(1));
-
-    assertFalse(serviced2WasShutdown.get(0));
-    assertFalse(serviced2WasShutdown.get(1));
-    assertFalse(service2List.get(0).wasStopped());
-    assertFalse(service2List.get(1).wasStopped());
-    assertSame(service2List.get(0), service2List.get(1));
   }
 
   /**
@@ -1989,7 +1925,6 @@ public final class ServicesTest {
   public static final class ServicesTestBinder extends AbstractBinder {
     @Override
     protected void configure() {
-      install(new TopicsModule());
       install(new ProvidesModule());
       addActiveDescriptor(PerLookupService.class);
       addActiveDescriptor(SingletonService.class);
@@ -2002,7 +1937,6 @@ public final class ServicesTest {
       addActiveDescriptor(SingletonServiceWithShutdown.class);
       addActiveFactoryDescriptor(FactoryOfServiceWithShutdown.class);
       addActiveFactoryDescriptor(FactoryOfSingletonServiceWithShutdown.class);
-      addActiveDescriptor(SubscriberService.class);
       addActiveDescriptor(ProvidesService.class);
       addActiveDescriptor(ProvidesSelfFromMethod.class);
       addActiveDescriptor(ProvidesSelfFromField.class);
@@ -2145,55 +2079,6 @@ public final class ServicesTest {
     @Override
     public void dispose(NullService instance) {
       // Do nothing.
-    }
-  }
-
-  @Singleton
-  @MessageReceiver({ String.class, Number.class })
-  public static final class SubscriberService {
-    @GuardedBy("this")
-    private List<Object> messages = new ArrayList<>();
-
-    @GuardedBy("this")
-    private List<ServiceWithLifecycle> service1List = new ArrayList<>();
-
-    @GuardedBy("this")
-    private List<SingletonServiceWithShutdown> service2List = new ArrayList<>();
-
-    @GuardedBy("this")
-    private List<Boolean> service1WasShutdown = new ArrayList<>();
-
-    @GuardedBy("this")
-    private List<Boolean> service2WasShutdown = new ArrayList<>();
-
-    public synchronized void onEvent(@SubscribeTo Object message,
-                                     ServiceWithLifecycle service1,
-                                     SingletonServiceWithShutdown service2) {
-      messages.add(message);
-      service1List.add(service1);
-      service2List.add(service2);
-      service1WasShutdown.add(service1.wasStopped());
-      service2WasShutdown.add(service2.wasStopped());
-    }
-
-    public synchronized List<Object> getMessages() {
-      return new ArrayList<>(messages);
-    }
-
-    public synchronized List<ServiceWithLifecycle> getService1List() {
-      return new ArrayList<>(service1List);
-    }
-
-    public synchronized List<SingletonServiceWithShutdown> getService2List() {
-      return new ArrayList<>(service2List);
-    }
-
-    public synchronized List<Boolean> getService1WasShutdown() {
-      return new ArrayList<>(service1WasShutdown);
-    }
-
-    public synchronized List<Boolean> getService2WasShutdown() {
-      return new ArrayList<>(service2WasShutdown);
     }
   }
 
