@@ -30,8 +30,7 @@ import org.glassfish.hk2.api.Rank;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.UseProxy;
 import org.glassfish.hk2.utilities.BuilderHelper;
-import org.jvnet.hk2.internal.Collector;
-import org.jvnet.hk2.internal.Utilities;
+import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 
 /**
  * An {@link ActiveDescriptor} for a service whose annotations come from some
@@ -103,14 +102,8 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
 
   @Override
   public Set<Annotation> getQualifierAnnotations() {
-    Collector collector = new Collector();
-    Set<Annotation> qualifiers =
-        Utilities.getAllQualifiers(
-            annotatedElement,
-            getName(),
-            collector);
-    collector.throwIfErrors();
-    return ImmutableSet.copyOf(qualifiers);
+    return ImmutableSet.copyOf(
+        ReflectionHelper.getQualifierAnnotations(annotatedElement));
   }
 
   @Override
