@@ -438,6 +438,7 @@
                    we're not running on Java 7 or Android. -->
               -Xep:Java7ApiChecker:OFF
               -Xep:AndroidJdkLibsChecker:OFF
+              -Xep:StaticOrDefaultInterfaceMethod:OFF
 
               <!-- These checks seem interesting but they either throw
                    exceptions or report too many false positives.
@@ -447,6 +448,9 @@
               -Xep:NullableDereference:OFF
               -Xep:PreferJavaTimeOverload:OFF
               -Xep:ConstructorInvokesOverridable:OFF
+              -Xep:TryFailRefactoring:OFF
+              -Xep:MutableMethodReturnType:OFF
+              -Xep:NoFunctionalReturnType:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
