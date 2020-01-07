@@ -16,6 +16,27 @@ import org.jvnet.hk2.annotations.ContractsProvided;
 /**
  * An annotation indicating that a method or field is the provider of a service.
  *
+ * Example usage:
+ *
+ * <pre>
+ *   public class MyService {
+ *     &#64;Inject
+ *     public MyService( ... ) { ... }
+ *
+ *     &#64;Provides
+ *     public OtherService other() {
+ *       return new OtherService( ... );
+ *     }
+ *   }
+ *
+ *   ServiceLocator locator =
+ *       ServiceLocatorUtilities.createAndPopulateServiceLocator();
+ *
+ *   ServiceLocatorUtilities.bind(locator, new ProvidesModule());
+ *   ServiceLocatorUtilities.addClasses(locator, MyService.class);
+ *   OtherService other = locator.getService(OtherService.class);
+ * </pre>
+ *
  * <h2>Contracts</h2>
  *
  * <p>The contracts of the provided service are, by default, defined by the
@@ -26,12 +47,14 @@ import org.jvnet.hk2.annotations.ContractsProvided;
  *
  * <h2>Lifecycle</h2>
  *
- * <p>The providing class is responsible for initializing the provided service.
- * The system will not automatically invoke a {@link
+ * <p>The providing class is responsible for initializing instances of the
+ * provided service.  The system will not automatically invoke a {@link
  * PostConstruct#postConstruct()} method declared by the provided service.
  *
- * <p>The teardown behavior of the provided service may be customized.  See
- * {@link #destroyMethod()}.
+ * <p>If the annotated member is not a static field, then disposal of the
+ * provided service may be customized.  See {@link #disposeMethod()}.  If the
+ * annotated member is a static field, then the provided service will not
+ * undergo automatic disposal.
  *
  * <h2>Scope</h2>
  *
@@ -59,45 +82,48 @@ public @interface Provides {
   Class<?>[] contracts() default {};
 
   /**
-   * If non-empty, specifies the name of the method to be invoked when the
-   * provided service is being destroyed.  The class whose method is to be
-   * invoked is specified by {@link #destroyedBy()}.
+   * If non-empty, specifies the name of the method to be invoked when disposing
+   * of an instance of the provided service.  The class whose method is to be
+   * invoked is specified by {@link #disposalHandledBy()}.
    *
    * <p>If empty, then the default pre-destroy behavior for the provided type
    * will be used.  If the provided type implements {@link PreDestroy} for
    * example, then its {@link PreDestroy#preDestroy()} method will be invoked.
-   */
-  String destroyMethod() default "";
-
-  /**
-   * Specifies who is responsible for destroying instances of the provided
-   * service, assuming that {@link #destroyMethod()} is non-empty.  If {@link
-   * #destroyMethod()} is empty then this value is ignored.
    *
-   * <p>See {@link Destroyer} for definitions of the possible values.
+   * <p>This value is ignored when this annotation is applied to a static field.
    */
-  Destroyer destroyedBy() default Destroyer.PROVIDED_INSTANCE;
+  String disposeMethod() default "";
 
   /**
-   * Specifies who is responsible for destroying instances of a service.
+   * Specifies who is responsible for the disposal of instances of the provided
+   * service, assuming that {@link #disposeMethod()} is non-empty.  If {@link
+   * #disposeMethod()} is empty then this value is ignored.
+   *
+   * <p>See {@link DisposalHandledBy} for definitions of the possible values.
    */
-  enum Destroyer {
+  DisposalHandledBy disposalHandledBy()
+      default DisposalHandledBy.PROVIDED_INSTANCE;
+
+  /**
+   * Specifies who is responsible for the disposal of instances of a service.
+   */
+  enum DisposalHandledBy {
     /**
-     * The instance of the service that is provided is responsible for
-     * destroying itself.  {@link #destroyMethod()} names a non-static,
-     * zero-parameter, public method of the provided service type.
+     * The instance of the service that is provided is responsible for its own
+     * disposal.  {@link #disposeMethod()} names a non-static, zero-parameter,
+     * public method of the provided service type.
      */
     PROVIDED_INSTANCE,
 
     /**
-     * The instance or class that provides the service -- the one declaring a
-     * method or field annotated with {@link Provides} -- is responsible for
-     * destroying instances of the provided service.  {@link #destroyMethod()}
-     * names a public method of the providing class that accepts one parameter,
-     * where the type of that parameter is a supertype of the provided service
-     * type.  If the method or field annotated with {@link Provides} is static,
-     * then the destroy method must also be static.  Otherwise the destroy
-     * method must be non-static.
+     * The instance or class that provides the service &mdash; the one declaring
+     * a method or field annotated with {@link Provides} &mdash; is responsible
+     * for the disposal of instances of the provided service.  {@link
+     * #disposeMethod()} names a public method of the providing class that
+     * accepts one parameter, where the type of that parameter is a supertype of
+     * the provided service type.  If the method or field annotated with {@link
+     * Provides} is static, then the dispose method must also be static.
+     * Otherwise the dispose method must be non-static.
      */
     PROVIDER
   }

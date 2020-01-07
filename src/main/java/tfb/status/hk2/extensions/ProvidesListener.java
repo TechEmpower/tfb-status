@@ -37,7 +37,6 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 import org.jvnet.hk2.annotations.Contract;
 import org.jvnet.hk2.annotations.ContractsProvided;
-import org.jvnet.hk2.internal.Utilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,19 +45,19 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 final class ProvidesListener implements DynamicConfigurationListener {
-  private final ServiceLocator serviceLocator;
-  private final ProviderCache seen = new ProviderCache();
+  private final ServiceLocator locator;
+  private final ProvidersSeen seen = new ProvidersSeen();
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
-  public ProvidesListener(ServiceLocator serviceLocator) {
-    this.serviceLocator = Objects.requireNonNull(serviceLocator);
+  public ProvidesListener(ServiceLocator locator) {
+    this.locator = Objects.requireNonNull(locator);
   }
 
   @Override
   public void configurationChanged() {
     try {
-      findAllAnnotations();
+      findProvidesAnnotations();
     } catch (RuntimeException e) {
       logger.error("Uncaught exception from configurationChanged()", e);
       throw e;
@@ -69,17 +68,17 @@ final class ProvidesListener implements DynamicConfigurationListener {
    * Scans all registered service classes for {@link Provides} annotations and
    * registers the additional services they provide.
    */
-  private void findAllAnnotations() {
+  private void findProvidesAnnotations() {
     DynamicConfigurationService configurationService =
-        serviceLocator.getService(DynamicConfigurationService.class);
+        locator.getService(DynamicConfigurationService.class);
 
     DynamicConfiguration configuration =
         configurationService.createDynamicConfiguration();
 
     int added = 0;
 
-    for (ActiveDescriptor<?> provider : serviceLocator.getDescriptors(any -> true)) {
-      provider = serviceLocator.reifyDescriptor(provider);
+    for (ActiveDescriptor<?> provider : locator.getDescriptors(any -> true)) {
+      provider = locator.reifyDescriptor(provider);
       added += addDescriptors(provider, configuration);
     }
 
@@ -89,16 +88,15 @@ final class ProvidesListener implements DynamicConfigurationListener {
 
   /**
    * Adds descriptors for each of the methods and fields annotated with {@link
-   * Provides} in the specified service.
+   * Provides} in the specified service.  This method is idempotent.
    *
-   * @param providerDescriptor the descriptor of the service advertising {@code
-   *        providerType} as a contract
+   * @param providerDescriptor the descriptor of the service which may contain
+   *        {@link Provides} annotations
    * @param configuration the configuration to be modified with new descriptors
    * @return the number of descriptors added as a result of the call
    */
-  private int addDescriptors(
-      ActiveDescriptor<?> providerDescriptor,
-      DynamicConfiguration configuration) {
+  private int addDescriptors(ActiveDescriptor<?> providerDescriptor,
+                             DynamicConfiguration configuration) {
 
     Objects.requireNonNull(providerDescriptor);
     Objects.requireNonNull(configuration);
@@ -107,53 +105,53 @@ final class ProvidesListener implements DynamicConfigurationListener {
       return 0;
 
     TypeToken<?> providerType =
-        TypeToken.of(getImplementationType(providerDescriptor));
+        TypeToken.of(providerDescriptor.getImplementationType());
 
     int added = 0;
 
     for (Method method : providerType.getRawType().getMethods()) {
-      Provides provides = method.getAnnotation(Provides.class);
-      if (provides == null)
+      Provides providesAnnotation = method.getAnnotation(Provides.class);
+      if (providesAnnotation == null)
         continue;
 
       if (!seen.add(providerDescriptor, method))
         continue;
 
-      TypeToken<?> providesType =
+      TypeToken<?> providedType =
           providerType.resolveType(method.getGenericReturnType());
 
-      ImmutableSet<Type> providesContracts =
+      ImmutableSet<Type> providedContracts =
           getContracts(
-              provides,
-              providesType);
+              providesAnnotation,
+              providedType);
 
-      Annotation scope =
+      Annotation scopeAnnotation =
           getScopeAnnotation(
               providerDescriptor,
               method.getAnnotatedReturnType(),
               method,
-              providesContracts);
+              providedContracts);
 
       Function<ServiceHandle<?>, Object> createFunction =
           Modifier.isStatic(method.getModifiers())
-              ? getCreateFunctionFromStaticMethod(method, serviceLocator)
-              : getCreateFunctionFromInstanceMethod(providerDescriptor, method, serviceLocator);
+              ? getCreateFunctionFromStaticMethod(method, locator)
+              : getCreateFunctionFromInstanceMethod(providerDescriptor, method, locator);
 
       Consumer<Object> disposeFunction =
           getDisposeFunction(
               providerDescriptor,
-              provides,
+              providesAnnotation,
               method,
-              providesType,
+              providedType,
               providerType,
-              serviceLocator);
+              locator);
 
       configuration.addActiveDescriptor(
           new ProvidesDescriptor<>(
               method,
-              providesType.getType(),
-              providesContracts,
-              scope,
+              providedType.getType(),
+              providedContracts,
+              scopeAnnotation,
               createFunction,
               disposeFunction));
 
@@ -161,48 +159,48 @@ final class ProvidesListener implements DynamicConfigurationListener {
     }
 
     for (Field field : providerType.getRawType().getFields()) {
-      Provides provides = field.getAnnotation(Provides.class);
-      if (provides == null)
+      Provides providesAnnotation = field.getAnnotation(Provides.class);
+      if (providesAnnotation == null)
         continue;
 
       if (!seen.add(providerDescriptor, field))
         continue;
 
-      TypeToken<?> providesType =
+      TypeToken<?> providedType =
           providerType.resolveType(field.getGenericType());
 
-      ImmutableSet<Type> providesContracts =
+      ImmutableSet<Type> providedContracts =
           getContracts(
-              provides,
-              providesType);
+              providesAnnotation,
+              providedType);
 
-      Annotation scope =
+      Annotation scopeAnnotation =
           getScopeAnnotation(
               providerDescriptor,
               field.getAnnotatedType(),
               field,
-              providesContracts);
+              providedContracts);
 
       Function<ServiceHandle<?>, Object> createFunction =
           Modifier.isStatic(field.getModifiers())
-              ? getCreateFunctionFromStaticField(field, serviceLocator)
-              : getCreateFunctionFromInstanceField(providerDescriptor, field, serviceLocator);
+              ? getCreateFunctionFromStaticField(field, locator)
+              : getCreateFunctionFromInstanceField(providerDescriptor, field, locator);
 
       Consumer<Object> disposeFunction =
           getDisposeFunction(
               providerDescriptor,
-              provides,
+              providesAnnotation,
               field,
-              providesType,
+              providedType,
               providerType,
-              serviceLocator);
+              locator);
 
       configuration.addActiveDescriptor(
           new ProvidesDescriptor<>(
               field,
-              providesType.getType(),
-              providesContracts,
-              scope,
+              providedType.getType(),
+              providedContracts,
+              scopeAnnotation,
               createFunction,
               disposeFunction));
 
@@ -212,51 +210,37 @@ final class ProvidesListener implements DynamicConfigurationListener {
     return added;
   }
 
-  private static Type getImplementationType(ActiveDescriptor<?> descriptor) {
-    Objects.requireNonNull(descriptor);
-    switch (descriptor.getDescriptorType()) {
-      case CLASS:
-        return descriptor.getImplementationType();
-      case PROVIDE_METHOD:
-        return Utilities.getFactoryProductionType(
-            descriptor.getImplementationClass());
-    }
-    throw new AssertionError(
-        "Unknown descriptor type: " + descriptor.getDescriptorType());
-  }
-
   /**
    * Returns the set of contracts defined by a method or field that is annotated
    * with {@link Provides}.
    *
-   * @param provides the {@link Provides} annotation on the method or field
-   * @param providesType the {@link Method#getGenericReturnType()} of the
+   * @param providesAnnotation the {@link Provides} annotation on the method or field
+   * @param providedType the {@link Method#getGenericReturnType()} of the
    *        annotated method or the {@link Field#getGenericType()} of the
    *        annotated field
    */
-  private static ImmutableSet<Type> getContracts(
-      Provides provides,
-      TypeToken<?> providesType) {
+  private static ImmutableSet<Type> getContracts(Provides providesAnnotation,
+                                                 TypeToken<?> providedType) {
 
-    Objects.requireNonNull(provides);
-    Objects.requireNonNull(providesType);
+    Objects.requireNonNull(providesAnnotation);
+    Objects.requireNonNull(providedType);
 
-    if (provides.contracts().length > 0)
-      return ImmutableSet.copyOf(provides.contracts());
+    if (providesAnnotation.contracts().length > 0)
+      return ImmutableSet.copyOf(providesAnnotation.contracts());
 
     // This block of code reproduces the behavior of
     // org.jvnet.hk2.internal.Utilities#getAutoAdvertisedTypes(Type)
 
-    Class<?> rawClass = ReflectionHelper.getRawClass(providesType.getType());
+    Class<?> rawClass = ReflectionHelper.getRawClass(providedType.getType());
     if (rawClass == null)
-      return ImmutableSet.of(providesType.getType());
+      return ImmutableSet.of(providedType.getType());
 
     ContractsProvided explicit = rawClass.getAnnotation(ContractsProvided.class);
     if (explicit != null)
       return ImmutableSet.copyOf(explicit.value());
 
-    return Stream.concat(Stream.of(providesType.getType()),
-                         providesType.getTypes()
+    return Stream.concat(Stream.of(providedType.getType()),
+                         providedType.getTypes()
                                      .stream()
                                      .map(t -> t.getType())
                                      .filter(t -> isContract(t)))
@@ -292,40 +276,39 @@ final class ProvidesListener implements DynamicConfigurationListener {
    *
    * @param providerDescriptor the descriptor of the service that defines the
    *        method or field, in case the scope of that service is relevant
-   * @param providesAnnotatedType the {@link Method#getAnnotatedReturnType()} or
+   * @param annotatedProvidedType the {@link Method#getAnnotatedReturnType()} or
    *        the {@link Field#getAnnotatedType()} of the method or field that is
    *        annotated with {@link Provides}
-   * @param providesMethodOrField the method or field that is annotated with
+   * @param providerMethodOrField the method or field that is annotated with
    *        {@link Provides}
-   * @param providesContracts the contracts provided by the method or field
+   * @param providedContracts the contracts provided by the method or field
    */
   private static <T extends AccessibleObject & Member> Annotation
-  getScopeAnnotation(
-      ActiveDescriptor<?> providerDescriptor,
-      AnnotatedType providesAnnotatedType,
-      T providesMethodOrField,
-      Set<Type> providesContracts) {
+  getScopeAnnotation(ActiveDescriptor<?> providerDescriptor,
+                     AnnotatedType annotatedProvidedType,
+                     T providerMethodOrField,
+                     Set<Type> providedContracts) {
 
     Objects.requireNonNull(providerDescriptor);
-    Objects.requireNonNull(providesAnnotatedType);
-    Objects.requireNonNull(providesMethodOrField);
-    Objects.requireNonNull(providesContracts);
+    Objects.requireNonNull(annotatedProvidedType);
+    Objects.requireNonNull(providerMethodOrField);
+    Objects.requireNonNull(providedContracts);
 
-    if (providesAnnotatedType.isAnnotationPresent(Nullable.class))
+    if (annotatedProvidedType.isAnnotationPresent(Nullable.class))
       return ServiceLocatorUtilities.getPerLookupAnnotation();
 
-    for (Annotation annotation : providesMethodOrField.getAnnotations())
+    for (Annotation annotation : providerMethodOrField.getAnnotations())
       if (annotation.annotationType().isAnnotationPresent(Scope.class))
         return annotation;
 
-    for (Type contract : providesContracts) {
+    for (Type contract : providedContracts) {
       Class<?> rawType = TypeToken.of(contract).getRawType();
       for (Annotation annotation : rawType.getAnnotations())
         if (annotation.annotationType().isAnnotationPresent(Scope.class))
           return annotation;
     }
 
-    if (!Modifier.isStatic(providesMethodOrField.getModifiers())) {
+    if (!Modifier.isStatic(providerMethodOrField.getModifiers())) {
       Annotation providerScopeAnnotation =
           providerDescriptor.getScopeAsAnnotation();
 
@@ -341,15 +324,13 @@ final class ProvidesListener implements DynamicConfigurationListener {
    * method that is annotated with {@link Provides}.
    *
    * @param method the static method that is annotated with {@link Provides}
-   * @param serviceLocator the service locator
+   * @param locator the service locator
    */
   private static Function<ServiceHandle<?>, Object>
-  getCreateFunctionFromStaticMethod(
-      Method method,
-      ServiceLocator serviceLocator) {
+  getCreateFunctionFromStaticMethod(Method method, ServiceLocator locator) {
 
     Objects.requireNonNull(method);
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
 
     return (ServiceHandle<?> root) -> {
       Object[] arguments =
@@ -359,7 +340,7 @@ final class ProvidesListener implements DynamicConfigurationListener {
                         InjectUtils.serviceFromParameter(
                             parameter,
                             root,
-                            serviceLocator))
+                            locator))
                 .toArray(length -> new Object[length]);
 
       if (!method.canAccess(null))
@@ -383,17 +364,16 @@ final class ProvidesListener implements DynamicConfigurationListener {
    * @param providerDescriptor the descriptor of the service that defines the
    *        method
    * @param method the instance method that is annotated with {@link Provides}
-   * @param serviceLocator the service locator
+   * @param locator the service locator
    */
   private static Function<ServiceHandle<?>, Object>
-  getCreateFunctionFromInstanceMethod(
-      ActiveDescriptor<?> providerDescriptor,
-      Method method,
-      ServiceLocator serviceLocator) {
+  getCreateFunctionFromInstanceMethod(ActiveDescriptor<?> providerDescriptor,
+                                      Method method,
+                                      ServiceLocator locator) {
 
     Objects.requireNonNull(providerDescriptor);
     Objects.requireNonNull(method);
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
 
     return (ServiceHandle<?> root) -> {
       Object[] arguments =
@@ -403,11 +383,11 @@ final class ProvidesListener implements DynamicConfigurationListener {
                         InjectUtils.serviceFromParameter(
                             parameter,
                             root,
-                            serviceLocator))
+                            locator))
                 .toArray(length -> new Object[length]);
 
       Object provider =
-          serviceLocator.getService(providerDescriptor, root, null);
+          locator.getService(providerDescriptor, root, null);
 
       if (!method.canAccess(provider))
         method.setAccessible(true);
@@ -428,22 +408,15 @@ final class ProvidesListener implements DynamicConfigurationListener {
    * field that is annotated with {@link Provides}.
    *
    * @param field the static field that is annotated with {@link Provides}
-   * @param serviceLocator the service locator
+   * @param locator the service locator
    */
   private static Function<ServiceHandle<?>, Object>
-  getCreateFunctionFromStaticField(
-      Field field,
-      ServiceLocator serviceLocator) {
+  getCreateFunctionFromStaticField(Field field, ServiceLocator locator) {
 
     Objects.requireNonNull(field);
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
 
     return (ServiceHandle<?> root) -> {
-      // Ignore the root handle because no other ServiceHandle instances can be
-      // created as a result of this call.  In other words, there is no other
-      // ServiceHandle that must be closed when the handle for this field is
-      // closed.
-
       if (!field.canAccess(null))
         field.setAccessible(true);
 
@@ -465,21 +438,19 @@ final class ProvidesListener implements DynamicConfigurationListener {
    * @param providerDescriptor the descriptor of the service that defines the
    *        field
    * @param field the instance field that is annotated with {@link Provides}
-   * @param serviceLocator the service locator
+   * @param locator the service locator
    */
   private static Function<ServiceHandle<?>, Object>
-  getCreateFunctionFromInstanceField(
-      ActiveDescriptor<?> providerDescriptor,
-      Field field,
-      ServiceLocator serviceLocator) {
+  getCreateFunctionFromInstanceField(ActiveDescriptor<?> providerDescriptor,
+                                     Field field,
+                                     ServiceLocator locator) {
 
     Objects.requireNonNull(providerDescriptor);
     Objects.requireNonNull(field);
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
 
     return (ServiceHandle<?> root) -> {
-      Object provider =
-          serviceLocator.getService(providerDescriptor, root, null);
+      Object provider = locator.getService(providerDescriptor, root, null);
 
       if (!field.canAccess(provider))
         field.setAccessible(true);
@@ -496,67 +467,72 @@ final class ProvidesListener implements DynamicConfigurationListener {
   }
 
   /**
-   * Returns a function that destroys instances of services that were retrieved
-   * from a method or field annotated with {@link Provides}.
+   * Returns a function that disposes of instances of services that were
+   * retrieved from a method or field annotated with {@link Provides}.
    *
    * @param providerDescriptor the descriptor of the service that defines the
    *        method or field
-   * @param provides the {@link Provides} annotation on the method or field
-   * @param providesMethodOrField the method or field that is annotated with
+   * @param providesAnnotation the {@link Provides} annotation on the method or
+   *        field
+   * @param providerMethodOrField the method or field that is annotated with
    *        {@link Provides}
-   * @param providesType the {@link Method#getGenericReturnType()} or {@link
+   * @param providedType the {@link Method#getGenericReturnType()} or {@link
    *        Field#getGenericType()}
    * @param providerType the type of the service that defines the method or
    *        field
-   * @param serviceLocator the service locator
+   * @param locator the service locator
    * @throws MultiException if the {@link Provides} annotation has a non-empty
-   *         {@link Provides#destroyMethod()} and the method it specifies is not
-   *         found
+   *         {@link Provides#disposeMethod()} and the method it specifies is not
+   *         found or the annotated member is a static field
    */
   private static <T extends AccessibleObject & Member> Consumer<Object>
-  getDisposeFunction(
-      ActiveDescriptor<?> providerDescriptor,
-      Provides provides,
-      T providesMethodOrField,
-      TypeToken<?> providesType,
-      TypeToken<?> providerType,
-      ServiceLocator serviceLocator) {
+  getDisposeFunction(ActiveDescriptor<?> providerDescriptor,
+                     Provides providesAnnotation,
+                     T providerMethodOrField,
+                     TypeToken<?> providedType,
+                     TypeToken<?> providerType,
+                     ServiceLocator locator) {
 
     Objects.requireNonNull(providerDescriptor);
-    Objects.requireNonNull(provides);
-    Objects.requireNonNull(providesMethodOrField);
-    Objects.requireNonNull(providesType);
+    Objects.requireNonNull(providesAnnotation);
+    Objects.requireNonNull(providerMethodOrField);
+    Objects.requireNonNull(providedType);
     Objects.requireNonNull(providerType);
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
 
-    if (provides.destroyMethod().isEmpty())
-      return instance -> serviceLocator.preDestroy(instance);
+    boolean isStatic =
+        Modifier.isStatic(providerMethodOrField.getModifiers());
 
-    switch (provides.destroyedBy()) {
+    if (isStatic && providerMethodOrField instanceof Field)
+      return instance -> {};
+
+    if (providesAnnotation.disposeMethod().isEmpty())
+      return instance -> locator.preDestroy(instance);
+
+    switch (providesAnnotation.disposalHandledBy()) {
       case PROVIDED_INSTANCE: {
-        Method destroyMethod =
-            Arrays.stream(providesType.getRawType().getMethods())
-                  .filter(method -> method.getName().equals(provides.destroyMethod()))
+        Method disposeMethod =
+            Arrays.stream(providedType.getRawType().getMethods())
+                  .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> !Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 0)
                   .findAny()
-                  .orElse(null);
-
-        if (destroyMethod == null)
-          throw new MultiException(
-              new NoSuchMethodException(
-                  "Destroy method "
-                      + provides
-                      + " on "
-                      + providesMethodOrField
-                      + " not found"));
+                  .orElseThrow(
+                      () ->
+                          new MultiException(
+                              new NoSuchMethodException(
+                                  "Dispose method "
+                                      + providesAnnotation
+                                      + " on "
+                                      + providerMethodOrField
+                                      + " not found")));
 
         return instance -> {
-          if (!destroyMethod.canAccess(instance))
-            destroyMethod.setAccessible(true);
+          if (!disposeMethod.canAccess(instance))
+            disposeMethod.setAccessible(true);
 
           try {
-            destroyMethod.invoke(instance);
+            disposeMethod.invoke(instance);
           } catch (IllegalAccessException | InvocationTargetException e) {
             throw new MultiException(e);
           }
@@ -564,34 +540,31 @@ final class ProvidesListener implements DynamicConfigurationListener {
       }
 
       case PROVIDER: {
-        boolean isStatic = Modifier.isStatic(providesMethodOrField.getModifiers());
-
-        Method destroyMethod =
+        Method disposeMethod =
             Arrays.stream(providerType.getRawType().getMethods())
-                  .filter(method -> method.getName().equals(provides.destroyMethod()))
+                  .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> isStatic == Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 1)
                   .filter(method -> providerType.resolveType(method.getGenericParameterTypes()[0])
-                                                .isSupertypeOf(providesType))
+                                                .isSupertypeOf(providedType))
                   .findAny()
-                  .orElse(null);
-
-        if (destroyMethod == null)
-          throw new MultiException(
-              new NoSuchMethodException(
-                  "Destroy method "
-                      + provides
-                      + " on "
-                      + providesMethodOrField
-                      + " not found"));
+                  .orElseThrow(
+                      () ->
+                          new MultiException(
+                              new NoSuchMethodException(
+                                  "Dispose method "
+                                      + providesAnnotation
+                                      + " on "
+                                      + providerMethodOrField
+                                      + " not found")));
 
         if (isStatic)
           return instance -> {
-            if (!destroyMethod.canAccess(null))
-              destroyMethod.setAccessible(true);
+            if (!disposeMethod.canAccess(null))
+              disposeMethod.setAccessible(true);
 
             try {
-              destroyMethod.invoke(null, instance);
+              disposeMethod.invoke(null, instance);
             } catch (IllegalAccessException | InvocationTargetException e) {
               throw new MultiException(e);
             }
@@ -602,14 +575,14 @@ final class ProvidesListener implements DynamicConfigurationListener {
               providerDescriptor.getScopeAnnotation() == PerLookup.class;
 
           ServiceHandle<?> providerHandle =
-              serviceLocator.getServiceHandle(providerDescriptor);
+              locator.getServiceHandle(providerDescriptor);
 
           try {
             Object provider = providerHandle.getService();
-            if (!destroyMethod.canAccess(provider))
-              destroyMethod.setAccessible(true);
+            if (!disposeMethod.canAccess(provider))
+              disposeMethod.setAccessible(true);
 
-            destroyMethod.invoke(provider, instance);
+            disposeMethod.invoke(provider, instance);
           } catch (IllegalAccessException | InvocationTargetException e) {
             throw new MultiException(e);
           } finally {
@@ -622,64 +595,76 @@ final class ProvidesListener implements DynamicConfigurationListener {
 
     throw new AssertionError(
         "Unknown "
-            + Provides.Destroyer.class.getSimpleName()
-            + " value "
-            + provides.destroyedBy());
+            + Provides.DisposalHandledBy.class.getSimpleName()
+            + " value: "
+            + providesAnnotation.disposalHandledBy());
   }
 
-  private static final class ProviderCache {
-    private final Set<ProviderCacheKey> cache = ConcurrentHashMap.newKeySet();
+  /**
+   * Remembers which {@link Provides} sources have already been seen so that
+   * duplicate descriptors won't be added for any given source.
+   */
+  private static final class ProvidersSeen {
+    private final Set<CacheKey> cache = ConcurrentHashMap.newKeySet();
 
+    /**
+     * Modifies this cache to remember that the specified provider has been
+     * seen.  Returns {@code true} if the provider was not seen before.
+     */
     boolean add(ActiveDescriptor<?> provider) {
       Objects.requireNonNull(provider);
-
-      ProviderCacheKey key =
-          new ProviderCacheKey(provider, null);
-
+      CacheKey key = new CacheKey(provider, null);
       return cache.add(key);
     }
 
-    boolean add(ActiveDescriptor<?> provider, Member member) {
+    /**
+     * Modifies this cache to remember that the specified method or field of the
+     * specified provider has been seen.  Returns {@code true} if the method or
+     * field was not seen before.
+     */
+    boolean add(ActiveDescriptor<?> provider, Member methodOrField) {
       Objects.requireNonNull(provider);
-      Objects.requireNonNull(member);
+      Objects.requireNonNull(methodOrField);
 
-      ProviderCacheKey key =
-          Modifier.isStatic(member.getModifiers())
-              ? new ProviderCacheKey(null, member)
-              : new ProviderCacheKey(provider, member);
+      CacheKey key =
+          Modifier.isStatic(methodOrField.getModifiers())
+              ? new CacheKey(null, methodOrField)
+              : new CacheKey(provider, methodOrField);
 
       return cache.add(key);
     }
-  }
 
-  private static final class ProviderCacheKey {
-    private final @Nullable ActiveDescriptor<?> provider;
-    private final @Nullable Member member;
+    private static final class CacheKey {
+      private final @Nullable ActiveDescriptor<?> provider;
+      private final @Nullable Member methodOrField;
 
-    ProviderCacheKey(@Nullable ActiveDescriptor<?> provider, @Nullable Member member) {
-      this.provider = provider;
-      this.member = member;
-    }
+      CacheKey(@Nullable ActiveDescriptor<?> provider,
+               @Nullable Member methodOrField) {
 
-    @Override
-    public boolean equals(Object object) {
-      if (object == this) {
-        return true;
-      } else if (!(object instanceof ProviderCacheKey)) {
-        return false;
-      } else {
-        ProviderCacheKey that = (ProviderCacheKey) object;
-        return Objects.equals(this.provider, that.provider)
-            && Objects.equals(this.member, that.member);
+        this.provider = provider;
+        this.methodOrField = methodOrField;
       }
-    }
 
-    @Override
-    public int hashCode() {
-      int hash = 1;
-      hash = 31 * hash + Objects.hashCode(provider);
-      hash = 31 * hash + Objects.hashCode(member);
-      return hash;
+      @Override
+      public boolean equals(Object object) {
+        if (object == this) {
+          return true;
+        } else if (!(object instanceof CacheKey)) {
+          return false;
+        } else {
+          CacheKey that = (CacheKey) object;
+          return Objects.equals(this.provider, that.provider)
+              && Objects.equals(this.methodOrField, that.methodOrField);
+        }
+      }
+
+      @Override
+      public int hashCode() {
+        int hash = 1;
+        hash = 31 * hash + Objects.hashCode(provider);
+        hash = 31 * hash + Objects.hashCode(methodOrField);
+        return hash;
+      }
     }
   }
 }

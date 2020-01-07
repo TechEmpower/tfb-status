@@ -768,7 +768,7 @@ public final class ServicesTest {
 
     services.shutdown();
 
-    assertTrue(service.wasStopped());
+    assertFalse(service.wasStopped());
   }
 
   /**
@@ -900,7 +900,7 @@ public final class ServicesTest {
 
     serviceHandle.close();
 
-    assertTrue(serviceWithHandle.wasStopped());
+    assertFalse(serviceWithHandle.wasStopped());
   }
 
   /**
@@ -1117,9 +1117,11 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
-   * provided type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on a static field.
+   * Verifies that {@link Provides#disposeMethod()} cannot specify a method of
+   * the provided type to be invoked at the end of the service's lifecycle when
+   * the {@link Provides} annotation is on a static field and {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDED_INSTANCE}.
    */
   @Test
   public void testProvidesCustomDisposeStaticField() {
@@ -1130,13 +1132,15 @@ public final class ServicesTest {
 
     assertFalse(service.isClosed());
     services.shutdown();
-    assertTrue(service.isClosed());
+    assertFalse(service.isClosed());
   }
 
   /**
-   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
    * provided type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on an instance field.
+   * {@link Provides} annotation is on an instance field and {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDED_INSTANCE}.
    */
   @Test
   public void testProvidesCustomDisposeInstanceField() {
@@ -1151,9 +1155,11 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
    * provided type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on a static method.
+   * {@link Provides} annotation is on a static method and {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDED_INSTANCE}.
    */
   @Test
   public void testProvidesCustomDisposeStaticMethod() {
@@ -1168,9 +1174,11 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
    * provided type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on an instance method.
+   * {@link Provides} annotation is on an instance method and {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDED_INSTANCE}.
    */
   @Test
   public void testProvidesCustomDisposeInstanceMethod() {
@@ -1185,9 +1193,11 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
-   * provider type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on a static field.
+   * Verifies that {@link Provides#disposeMethod()} cannot specify a method of
+   * the provider type to be invoked at the end of the service's lifecycle when
+   * the {@link Provides} annotation is on a static field and {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDER}.
    */
   @Test
   public void testProvidesCustomDisposeStaticFieldFactoryDestroys() {
@@ -1198,13 +1208,15 @@ public final class ServicesTest {
 
     assertFalse(service.isClosed());
     services.shutdown();
-    assertTrue(service.isClosed());
+    assertFalse(service.isClosed());
   }
 
   /**
-   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
    * provider type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on a static field.
+   * {@link Provides} annotation is on a static field and {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDER}.
    */
   @Test
   public void testProvidesCustomDisposeInstanceFieldFactoryDestroys() {
@@ -1219,9 +1231,11 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
    * provider type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on a static field.
+   * {@link Provides} annotation is on a static field and {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDER}.
    */
   @Test
   public void testProvidesCustomDisposeStaticMethodFactoryDestroys() {
@@ -1236,9 +1250,11 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link Provides#destroyMethod()} may specify a method of the
+   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
    * provider type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on a static field.
+   * {@link Provides} annotation is on a static field and {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDER}.
    */
   @Test
   public void testProvidesCustomDisposeInstanceMethodFactoryDestroys() {
@@ -1379,6 +1395,7 @@ public final class ServicesTest {
       assertNull(handle.getService());
     }
   }
+
   /**
    * Verifies the lifecycle of a service obtained from a static field that is
    * annotated with {@link Provides}.
@@ -1405,7 +1422,7 @@ public final class ServicesTest {
 
     handle.close();
 
-    assertTrue(root.wasStopped());
+    assertFalse(root.wasStopped());
     assertFalse(root.factory.wasStopped());
     assertFalse(root.dependency.wasStopped());
   }
@@ -2440,59 +2457,61 @@ public final class ServicesTest {
   }
 
   public static final class ProvidesCustomDispose {
-    @Provides(destroyMethod = "customDisposeMethod")
+    @Provides(
+        disposeMethod = "customDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
     @Singleton
     public static final ProvidedWithCustomDisposeFromStaticField staticField =
         new ProvidedWithCustomDisposeFromStaticField();
 
     @Provides(
-        destroyMethod = "staticDestroyMethod",
-        destroyedBy = Provides.Destroyer.PROVIDER)
+        disposeMethod = "staticDestroyMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
     @Singleton
     public static final ProvidedWithCustomDisposeFromStaticFieldForFactory staticFieldForFactory =
         new ProvidedWithCustomDisposeFromStaticFieldForFactory();
 
     @Provides(
-        destroyMethod = "customDisposeMethod",
-        destroyedBy = Provides.Destroyer.PROVIDED_INSTANCE)
+        disposeMethod = "customDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
     @Singleton
     public final ProvidedWithCustomDisposeFromInstanceField instanceField =
         new ProvidedWithCustomDisposeFromInstanceField();
 
     @Provides(
-        destroyMethod = "instanceDestroyMethod",
-        destroyedBy = Provides.Destroyer.PROVIDER)
+        disposeMethod = "instanceDestroyMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
     @Singleton
     public final ProvidedWithCustomDisposeFromInstanceFieldForFactory instanceFieldForFactory =
         new ProvidedWithCustomDisposeFromInstanceFieldForFactory();
 
     @Provides(
-        destroyMethod = "customDisposeMethod",
-        destroyedBy = Provides.Destroyer.PROVIDED_INSTANCE)
+        disposeMethod = "customDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
     @Singleton
     public static ProvidedWithCustomDisposeFromStaticMethod staticMethod() {
       return new ProvidedWithCustomDisposeFromStaticMethod();
     }
 
     @Provides(
-        destroyMethod = "staticDestroyMethod",
-        destroyedBy = Provides.Destroyer.PROVIDER)
+        disposeMethod = "staticDestroyMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
     @Singleton
     public static ProvidedWithCustomDisposeFromStaticMethodForFactory staticMethodForFactory() {
       return new ProvidedWithCustomDisposeFromStaticMethodForFactory();
     }
 
     @Provides(
-        destroyMethod = "customDisposeMethod",
-        destroyedBy = Provides.Destroyer.PROVIDED_INSTANCE)
+        disposeMethod = "customDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
     @Singleton
     public ProvidedWithCustomDisposeFromInstanceMethod instanceMethod() {
       return new ProvidedWithCustomDisposeFromInstanceMethod();
     }
 
     @Provides(
-        destroyMethod = "instanceDestroyMethod",
-        destroyedBy = Provides.Destroyer.PROVIDER)
+        disposeMethod = "instanceDestroyMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
     @Singleton
     public ProvidedWithCustomDisposeFromInstanceMethodForFactory instanceMethodForFactory() {
       return new ProvidedWithCustomDisposeFromInstanceMethodForFactory();

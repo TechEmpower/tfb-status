@@ -41,21 +41,21 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   private final AnnotatedElement annotatedElement;
   private final Type implementationType;
   private final ImmutableSet<Type> contracts;
-  private final Annotation scope;
+  private final Annotation scopeAnnotation;
   private final Function<ServiceHandle<?>, T> createFunction;
   private final Consumer<T> disposeFunction;
 
   ProvidesDescriptor(AnnotatedElement annotatedElement,
                      Type implementationType,
                      ImmutableSet<Type> contracts,
-                     Annotation scope,
+                     Annotation scopeAnnotation,
                      Function<ServiceHandle<?>, T> createFunction,
                      Consumer<T> disposeFunction) {
 
     this.annotatedElement = Objects.requireNonNull(annotatedElement);
     this.implementationType = Objects.requireNonNull(implementationType);
     this.contracts = Objects.requireNonNull(contracts);
-    this.scope = Objects.requireNonNull(scope);
+    this.scopeAnnotation = Objects.requireNonNull(scopeAnnotation);
     this.createFunction = Objects.requireNonNull(createFunction);
     this.disposeFunction = Objects.requireNonNull(disposeFunction);
   }
@@ -93,7 +93,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
 
   @Override
   public Annotation getScopeAsAnnotation() {
-    return scope;
+    return scopeAnnotation;
   }
 
   @Override

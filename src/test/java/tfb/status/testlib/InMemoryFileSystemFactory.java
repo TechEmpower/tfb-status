@@ -21,7 +21,7 @@ final class InMemoryFileSystemFactory {
     throw new AssertionError("This class cannot be instantiated");
   }
 
-  @Provides(destroyMethod = "close")
+  @Provides(disposeMethod = "close")
   @Singleton
   @Rank(1) // Override the default file system.
   public static FileSystem inMemoryFileSystem() throws IOException {
