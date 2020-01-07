@@ -34,7 +34,6 @@ import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
-import org.jvnet.hk2.internal.Utilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,8 +180,6 @@ final class TopicDistributionServiceImpl
     try {
       findNewSubscribers();
     } catch (RuntimeException e) {
-      // The contract of DynamicConfigurationListener states that exceptions
-      // thrown from this method are ignored.  If we don't log it, no one will.
       logger.error("Uncaught exception from configurationChanged()", e);
       throw e;
     }
@@ -209,7 +206,7 @@ final class TopicDistributionServiceImpl
             .flatMap(
                 serviceDescriptor -> {
                   Class<?> serviceClass =
-                      Utilities.getFactoryAwareImplementationClass(serviceDescriptor);
+                      serviceDescriptor.getImplementationClass();
 
                   if (!classesAnalyzed.add(serviceClass))
                     return Stream.empty();
@@ -331,10 +328,9 @@ final class TopicDistributionServiceImpl
           MessageReceiver.class.getSimpleName());
     }
 
-    var qualifiers = new ImmutableSet.Builder<Annotation>();
-    for (Annotation annotation : parameter.getAnnotations())
-      if (ReflectionHelper.isAnnotationAQualifier(annotation))
-        qualifiers.add(annotation);
+    ImmutableSet<Annotation> qualifiers =
+        ImmutableSet.copyOf(
+            ReflectionHelper.getQualifierAnnotations(parameter));
 
     Unqualified unqualified = parameter.getAnnotation(Unqualified.class);
 
@@ -342,7 +338,7 @@ final class TopicDistributionServiceImpl
         method,
         parameterIndex,
         parameterType,
-        qualifiers.build(),
+        qualifiers,
         unqualified,
         permittedTypes,
         activeDescriptor);
