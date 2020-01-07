@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import java.lang.annotation.Annotation;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -33,21 +32,30 @@ import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
 
 /**
- * Tests for the classes in this package.
+ * Tests for {@link InjectUtils}.
+ *
+ * These tests focus on the {@link InjectUtils#getService(ServiceLocator,
+ * TypeToken)} method since we rely on that method heavily on other tests.
  */
-// TODO: Break this apart into multiple test classes.
-public final class ServicesTest {
+public final class InjectUtilsTest {
   /**
-   * Verifies that every invocation of {@link ServiceLocator#getService(Class,
-   * Annotation...)} returns the same instance when the service has the {@link
-   * Singleton} scope.
+   * Verifies that every invocation of {@link
+   * InjectUtils#getService(ServiceLocator, TypeToken)} returns the same
+   * instance when the service has the {@link Singleton} scope.
    */
   @Test
   public void testGetSingletonService() {
     ServiceLocator locator = newServiceLocator();
 
-    SingletonService service1 = locator.getService(SingletonService.class);
-    SingletonService service2 = locator.getService(SingletonService.class);
+    SingletonService service1 =
+        InjectUtils.getService(
+            locator,
+            new TypeToken<SingletonService>() {});
+
+    SingletonService service2 =
+        InjectUtils.getService(
+            locator,
+            new TypeToken<SingletonService>() {});
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -55,16 +63,24 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that every invocation of {@link ServiceLocator#getService(Class,
-   * Annotation...)} returns a new instance when the service has the {@link
-   * PerLookup} scope, which is the default scope.
+   * Verifies that every invocation of {@link
+   * InjectUtils#getService(ServiceLocator, TypeToken)} returns a new instance
+   * when the service has the {@link PerLookup} scope, which is the default
+   * scope.
    */
   @Test
   public void testGetPerLookupService() {
     ServiceLocator locator = newServiceLocator();
 
-    PerLookupService service1 = locator.getService(PerLookupService.class);
-    PerLookupService service2 = locator.getService(PerLookupService.class);
+    PerLookupService service1 =
+        InjectUtils.getService(
+            locator,
+            new TypeToken<PerLookupService>() {});
+
+    PerLookupService service2 =
+        InjectUtils.getService(
+            locator,
+            new TypeToken<PerLookupService>() {});
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -72,14 +88,20 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link ServiceLocator#getService(Class, Annotation...)}
-   * returns {@code null} when there is no service of the specified type.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)}
+   * throws {@link NoSuchElementException} when there is no service of the
+   * specified type.
    */
   @Test
   public void testGetUnregisteredService() {
     ServiceLocator locator = newServiceLocator();
 
-    assertNull(locator.getService(UnregisteredService.class));
+    assertThrows(
+        NoSuchElementException.class,
+        () ->
+            InjectUtils.getService(
+                locator,
+                new TypeToken<UnregisteredService>() {}));
 
     Iterable<UnregisteredService> iterable =
         InjectUtils.getService(
@@ -92,7 +114,7 @@ public final class ServicesTest {
   }
 
   /**
-   * Verifies that {@link ServiceLocator#getService(Class, Annotation...)}
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)}
    * throws {@link MultiException} when there is a service of the specified type
    * but it has unsatisfied dependencies.
    */
@@ -100,22 +122,29 @@ public final class ServicesTest {
   public void testGetServiceWithUnsatisfiedDependencies() {
     ServiceLocator locator = newServiceLocator();
 
-    // foo
     assertThrows(
         MultiException.class,
-        () -> locator.getService(UnsatisfiedDependencies.class));
+        () ->
+            InjectUtils.getService(
+                locator,
+                new TypeToken<UnsatisfiedDependencies>() {}));
   }
 
   /**
-   * Verifies that {@link ServiceLocator#getService(Class, Annotation...)}
-   * returns {@code null} when there is a service of the specified type but its
-   * provider provided {@code null}.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)}
+   * throws {@link NoSuchElementException} when there is a service of the
+   * specified type but its provider provided {@code null}.
    */
   @Test
   public void testGetNullService() {
     ServiceLocator locator = newServiceLocator();
 
-    assertNull(locator.getService(NullService.class));
+    assertThrows(
+        NoSuchElementException.class,
+        () ->
+            InjectUtils.getService(
+                locator,
+                new TypeToken<NullService>() {}));
 
     // Assert that there is one "instance" of the service, but it's null.
     Iterable<NullService> iterable =
@@ -346,7 +375,9 @@ public final class ServicesTest {
     ServiceLocator locator = newServiceLocator();
 
     SingletonServiceWithShutdown service =
-        locator.getService(SingletonServiceWithShutdown.class);
+        InjectUtils.getService(
+            locator,
+            new TypeToken<SingletonServiceWithShutdown>() {});
 
     assertFalse(service.wasStopped());
 
@@ -365,7 +396,9 @@ public final class ServicesTest {
     ServiceLocator locator = newServiceLocator();
 
     SingletonServiceWithShutdownFromFactory service =
-        locator.getService(SingletonServiceWithShutdownFromFactory.class);
+        InjectUtils.getService(
+            locator,
+            new TypeToken<SingletonServiceWithShutdownFromFactory>() {});
 
     assertFalse(service.wasStopped());
 
@@ -445,11 +478,11 @@ public final class ServicesTest {
     ServiceLocator locator =
         ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
-    ServiceLocatorUtilities.bind(locator, new ServicesTestBinder());
+    ServiceLocatorUtilities.bind(locator, new InjectUtilsTestBinder());
     return locator;
   }
 
-  public static final class ServicesTestBinder extends AbstractBinder {
+  public static final class InjectUtilsTestBinder extends AbstractBinder {
     @Override
     protected void configure() {
       addActiveDescriptor(PerLookupService.class);
