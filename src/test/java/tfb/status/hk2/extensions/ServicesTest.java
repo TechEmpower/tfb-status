@@ -1832,6 +1832,37 @@ public final class ServicesTest {
   }
 
   /**
+   * Verifies that when a {@link Contract} interface has a {@link Provides}
+   * method, and then a concrete service class overrides that method and the
+   * overridden method is also implemented with {@link Provides}, that they are
+   * considered to be the same method and not counted as distinct providers.
+   */
+  @Test
+  public void testProvidesOverrideMethodNoDuplicates() {
+    ServiceLocator services = newServices();
+
+    Set<String> expected =
+        Set.of(
+            "staticField",
+            "instanceField",
+            "staticMethod",
+            "instanceMethod");
+
+    var overrides =
+        InjectUtils.getService(
+            services,
+            new TypeToken<IterableProvider<OverrideBoxFromGenericProvidesContract<String>>>() {});
+
+    assertEquals(expected.size(), overrides.getSize());
+
+    assertEquals(
+        expected,
+        Streams.stream(overrides)
+               .map(box -> box.value)
+               .collect(toSet()));
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private ServiceLocator newServices() {
@@ -2713,11 +2744,24 @@ public final class ServicesTest {
     }
   }
 
+  public static final class OverrideBoxFromGenericProvidesContract<T> {
+    public final T value;
+
+    OverrideBoxFromGenericProvidesContract(T value) {
+      this.value = Objects.requireNonNull(value);
+    }
+  }
+
   @Contract
   public interface GenericProvidesContract<T> {
     @Provides
     default BoxFromGenericProvidesContract<T> getBox() {
       return new BoxFromGenericProvidesContract<>(getValue());
+    }
+
+    @Provides
+    default OverrideBoxFromGenericProvidesContract<T> getOverrideBox() {
+      return new OverrideBoxFromGenericProvidesContract<>(getValue());
     }
 
     T getValue();
@@ -2735,6 +2779,12 @@ public final class ServicesTest {
     @Override
     public T getValue() {
       return value;
+    }
+
+    @Override
+    @Provides
+    public OverrideBoxFromGenericProvidesContract<T> getOverrideBox() {
+      return new OverrideBoxFromGenericProvidesContract<>(getValue());
     }
   }
 

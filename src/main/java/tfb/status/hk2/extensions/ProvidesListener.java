@@ -26,7 +26,6 @@ import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.ContractIndicator;
-import org.glassfish.hk2.api.DescriptorType;
 import org.glassfish.hk2.api.DynamicConfiguration;
 import org.glassfish.hk2.api.DynamicConfigurationListener;
 import org.glassfish.hk2.api.DynamicConfigurationService;
@@ -38,6 +37,7 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 import org.jvnet.hk2.annotations.Contract;
 import org.jvnet.hk2.annotations.ContractsProvided;
+import org.jvnet.hk2.internal.Utilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +47,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 final class ProvidesListener implements DynamicConfigurationListener {
   private final ServiceLocator serviceLocator;
-  private final Set<ActiveDescriptor<?>> providersSeen = ConcurrentHashMap.newKeySet();
-  private final ProvidedMemberCache membersSeen = new ProvidedMemberCache();
+  private final ProviderCache seen = new ProviderCache();
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
@@ -81,26 +80,7 @@ final class ProvidesListener implements DynamicConfigurationListener {
 
     for (ActiveDescriptor<?> provider : serviceLocator.getDescriptors(any -> true)) {
       provider = serviceLocator.reifyDescriptor(provider);
-
-      if (!providersSeen.add(provider))
-        continue;
-
-      // TODO: Handle Factory types.
-      if (provider.getDescriptorType() == DescriptorType.PROVIDE_METHOD)
-        continue;
-
-      Set<Type> contracts = provider.getContractTypes();
-
-      // Allow descriptors from NoInstancesFilter.
-      if (contracts.isEmpty())
-        contracts = Set.of(provider.getImplementationType());
-
-      for (Type contract : contracts)
-        added +=
-            addDescriptors(
-                provider,
-                TypeToken.of(contract),
-                configuration);
+      added += addDescriptors(provider, configuration);
     }
 
     if (added > 0)
@@ -113,18 +93,21 @@ final class ProvidesListener implements DynamicConfigurationListener {
    *
    * @param providerDescriptor the descriptor of the service advertising {@code
    *        providerType} as a contract
-   * @param providerType the type to be scanned for {@link Provides} annotations
    * @param configuration the configuration to be modified with new descriptors
    * @return the number of descriptors added as a result of the call
    */
   private int addDescriptors(
       ActiveDescriptor<?> providerDescriptor,
-      TypeToken<?> providerType,
       DynamicConfiguration configuration) {
 
     Objects.requireNonNull(providerDescriptor);
-    Objects.requireNonNull(providerType);
     Objects.requireNonNull(configuration);
+
+    if (!seen.add(providerDescriptor))
+      return 0;
+
+    TypeToken<?> providerType =
+        TypeToken.of(getImplementationType(providerDescriptor));
 
     int added = 0;
 
@@ -133,7 +116,7 @@ final class ProvidesListener implements DynamicConfigurationListener {
       if (provides == null)
         continue;
 
-      if (!membersSeen.add(providerDescriptor, method))
+      if (!seen.add(providerDescriptor, method))
         continue;
 
       TypeToken<?> providesType =
@@ -182,7 +165,7 @@ final class ProvidesListener implements DynamicConfigurationListener {
       if (provides == null)
         continue;
 
-      if (!membersSeen.add(providerDescriptor, field))
+      if (!seen.add(providerDescriptor, field))
         continue;
 
       TypeToken<?> providesType =
@@ -227,6 +210,19 @@ final class ProvidesListener implements DynamicConfigurationListener {
     }
 
     return added;
+  }
+
+  private static Type getImplementationType(ActiveDescriptor<?> descriptor) {
+    Objects.requireNonNull(descriptor);
+    switch (descriptor.getDescriptorType()) {
+      case CLASS:
+        return descriptor.getImplementationType();
+      case PROVIDE_METHOD:
+        return Utilities.getFactoryProductionType(
+            descriptor.getImplementationClass());
+    }
+    throw new AssertionError(
+        "Unknown descriptor type: " + descriptor.getDescriptorType());
   }
 
   /**
@@ -630,41 +626,50 @@ final class ProvidesListener implements DynamicConfigurationListener {
             + provides.destroyedBy());
   }
 
-  private static final class ProvidedMemberCache {
-    private final Set<ProvidedMember> cache = ConcurrentHashMap.newKeySet();
+  private static final class ProviderCache {
+    private final Set<ProviderCacheKey> cache = ConcurrentHashMap.newKeySet();
+
+    boolean add(ActiveDescriptor<?> provider) {
+      Objects.requireNonNull(provider);
+
+      ProviderCacheKey key =
+          new ProviderCacheKey(provider, null);
+
+      return cache.add(key);
+    }
 
     boolean add(ActiveDescriptor<?> provider, Member member) {
       Objects.requireNonNull(provider);
       Objects.requireNonNull(member);
 
-      ProvidedMember key =
+      ProviderCacheKey key =
           Modifier.isStatic(member.getModifiers())
-              ? new ProvidedMember(null, member)
-              : new ProvidedMember(provider, member);
+              ? new ProviderCacheKey(null, member)
+              : new ProviderCacheKey(provider, member);
 
       return cache.add(key);
     }
   }
 
-  private static final class ProvidedMember {
+  private static final class ProviderCacheKey {
     private final @Nullable ActiveDescriptor<?> provider;
-    private final Member member;
+    private final @Nullable Member member;
 
-    ProvidedMember(@Nullable ActiveDescriptor<?> provider, Member member) {
+    ProviderCacheKey(@Nullable ActiveDescriptor<?> provider, @Nullable Member member) {
       this.provider = provider;
-      this.member = Objects.requireNonNull(member);
+      this.member = member;
     }
 
     @Override
     public boolean equals(Object object) {
       if (object == this) {
         return true;
-      } else if (!(object instanceof ProvidedMember)) {
+      } else if (!(object instanceof ProviderCacheKey)) {
         return false;
       } else {
-        ProvidedMember that = (ProvidedMember) object;
+        ProviderCacheKey that = (ProviderCacheKey) object;
         return Objects.equals(this.provider, that.provider)
-            && this.member.equals(that.member);
+            && Objects.equals(this.member, that.member);
       }
     }
 
@@ -672,7 +677,7 @@ final class ProvidesListener implements DynamicConfigurationListener {
     public int hashCode() {
       int hash = 1;
       hash = 31 * hash + Objects.hashCode(provider);
-      hash = 31 * hash + member.hashCode();
+      hash = 31 * hash + Objects.hashCode(member);
       return hash;
     }
   }
