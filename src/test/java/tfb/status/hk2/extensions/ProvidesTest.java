@@ -1513,11 +1513,11 @@ public final class ProvidesTest {
         ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
     NoInstancesFilter.enableNoInstancesFilter(locator);
-    ServiceLocatorUtilities.bind(locator, new ServicesTestBinder());
+    ServiceLocatorUtilities.bind(locator, new ProvidesTestBinder());
     return locator;
   }
 
-  public static final class ServicesTestBinder extends AbstractBinder {
+  public static final class ProvidesTestBinder extends AbstractBinder {
     @Override
     protected void configure() {
       install(new ProvidesModule());
