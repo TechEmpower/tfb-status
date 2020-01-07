@@ -147,19 +147,19 @@ public final class TopicsTest {
   @MessageReceiver({ String.class, Number.class })
   public static final class SubscriberService {
     @GuardedBy("this")
-    private List<Object> messages = new ArrayList<>();
+    private final List<Object> messages = new ArrayList<>();
 
     @GuardedBy("this")
-    private List<ServiceWithLifecycle> service1List = new ArrayList<>();
+    private final List<ServiceWithLifecycle> service1List = new ArrayList<>();
 
     @GuardedBy("this")
-    private List<SingletonServiceWithShutdown> service2List = new ArrayList<>();
+    private final List<SingletonServiceWithShutdown> service2List = new ArrayList<>();
 
     @GuardedBy("this")
-    private List<Boolean> service1WasShutdown = new ArrayList<>();
+    private final List<Boolean> service1WasShutdown = new ArrayList<>();
 
     @GuardedBy("this")
-    private List<Boolean> service2WasShutdown = new ArrayList<>();
+    private final List<Boolean> service2WasShutdown = new ArrayList<>();
 
     public synchronized void onEvent(@SubscribeTo Object message,
                                      ServiceWithLifecycle service1,
