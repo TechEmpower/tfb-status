@@ -9,8 +9,6 @@ import org.glassfish.hk2.api.DynamicConfigurationService;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.jvnet.hk2.annotations.Contract;
-import org.jvnet.hk2.internal.ServiceLocatorImpl;
-import org.jvnet.hk2.internal.Utilities;
 
 /**
  * Matches service classes that do not provide instances of themselves through
@@ -20,10 +18,8 @@ import org.jvnet.hk2.internal.Utilities;
  * {@linkplain DefaultFilter default filter}, which matches abstract classes and
  * classes with no public constructors.
  *
- * <p>When this filter matches a class, it is implied that {@linkplain
- * Utilities#createAutoDescriptor(Class, ServiceLocatorImpl) automatic
- * descriptor creation} must not occur for that class.  Instead, the descriptor
- * created for the class must disallow the {@linkplain
+ * <p>When this filter matches a class, it is implied that the {@link
+ * ActiveDescriptor} for the class must disallow the {@linkplain
  * ActiveDescriptor#create(ServiceHandle) creation of instances} and must
  * advertise no {@linkplain Descriptor#getAdvertisedContracts() contracts}.
  *
@@ -56,8 +52,8 @@ public interface NoInstancesFilter {
    * Enables the default {@link NoInstancesFilter}.
    *
    * <p>This method replaces the default {@link DynamicConfigurationService} of
-   * the service locator.  Therefore, this method should be invoked prior to any
-   * other configuration that might rely on the {@link NoInstancesFilter} being
+   * the service locator.  Therefore, this method must be invoked prior to any
+   * other configuration that relies on the {@link NoInstancesFilter} being
    * applied.  In other words, the filter will not be applied to classes that
    * were already added to the service locator or that were already added to an
    * {@linkplain DynamicConfiguration#commit() uncommitted} {@link
@@ -65,10 +61,10 @@ public interface NoInstancesFilter {
    *
    * <p>This method is idempotent.
    */
-  static void enableNoInstancesFilter(ServiceLocator serviceLocator) {
-    Objects.requireNonNull(serviceLocator);
+  static void enableNoInstancesFilter(ServiceLocator locator) {
+    Objects.requireNonNull(locator);
     InjectUtils.addClassesIdempotent(
-        serviceLocator,
+        locator,
         NoInstancesFilter.DefaultFilter.class,
         NoInstancesService.class);
   }
