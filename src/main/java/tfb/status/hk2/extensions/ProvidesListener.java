@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
@@ -128,7 +127,6 @@ final class ProvidesListener implements DynamicConfigurationListener {
       Annotation scopeAnnotation =
           getScopeAnnotation(
               providerDescriptor,
-              method.getAnnotatedReturnType(),
               method,
               providedContracts);
 
@@ -177,7 +175,6 @@ final class ProvidesListener implements DynamicConfigurationListener {
       Annotation scopeAnnotation =
           getScopeAnnotation(
               providerDescriptor,
-              field.getAnnotatedType(),
               field,
               providedContracts);
 
@@ -276,26 +273,18 @@ final class ProvidesListener implements DynamicConfigurationListener {
    *
    * @param providerDescriptor the descriptor of the service that defines the
    *        method or field, in case the scope of that service is relevant
-   * @param annotatedProvidedType the {@link Method#getAnnotatedReturnType()} or
-   *        the {@link Field#getAnnotatedType()} of the method or field that is
-   *        annotated with {@link Provides}
    * @param providerMethodOrField the method or field that is annotated with
    *        {@link Provides}
    * @param providedContracts the contracts provided by the method or field
    */
   private static <T extends AccessibleObject & Member> Annotation
   getScopeAnnotation(ActiveDescriptor<?> providerDescriptor,
-                     AnnotatedType annotatedProvidedType,
                      T providerMethodOrField,
                      Set<Type> providedContracts) {
 
     Objects.requireNonNull(providerDescriptor);
-    Objects.requireNonNull(annotatedProvidedType);
     Objects.requireNonNull(providerMethodOrField);
     Objects.requireNonNull(providedContracts);
-
-    if (annotatedProvidedType.isAnnotationPresent(Nullable.class))
-      return ServiceLocatorUtilities.getPerLookupAnnotation();
 
     for (Annotation annotation : providerMethodOrField.getAnnotations())
       if (annotation.annotationType().isAnnotationPresent(Scope.class))

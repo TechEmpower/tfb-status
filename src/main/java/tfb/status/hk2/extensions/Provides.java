@@ -7,7 +7,6 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import javax.inject.Scope;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
@@ -60,11 +59,10 @@ import org.jvnet.hk2.annotations.ContractsProvided;
  *
  * <p>The scope of the provided service is:
  * <ul>
- * <li>{@link PerLookup} if the method or field is {@link Nullable}.
- * <li>Otherwise, the {@link Scope} annotation on the method or field, if
- *     present.
- * <li>Otherwise, the {@link Scope} annotation on the method return type or the
- *     field type, if present.
+ * <li>The {@link Scope} annotation on the method or field, if present.
+ * <li>Otherwise, the {@link Scope} annotation on the {@linkplain
+ *     Method#getReturnType() method return type} or the {@linkplain
+ *     Field#getType() field type}, if present.
  * <li>Otherwise, if the method or field is non-static, the scope of the
  *     containing service.
  * <li>Otherwise, {@link PerLookup}.
