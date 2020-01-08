@@ -36,8 +36,6 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 import org.jvnet.hk2.annotations.Contract;
 import org.jvnet.hk2.annotations.ContractsProvided;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Enables the {@link Provides} annotation.
@@ -46,7 +44,6 @@ import org.slf4j.LoggerFactory;
 final class ProvidesListener implements DynamicConfigurationListener {
   private final ServiceLocator locator;
   private final ProvidersSeen seen = new ProvidersSeen();
-  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
   public ProvidesListener(ServiceLocator locator) {
@@ -55,19 +52,6 @@ final class ProvidesListener implements DynamicConfigurationListener {
 
   @Override
   public void configurationChanged() {
-    try {
-      findProvidesAnnotations();
-    } catch (RuntimeException e) {
-      logger.error("Uncaught exception from configurationChanged()", e);
-      throw e;
-    }
-  }
-
-  /**
-   * Scans all registered service classes for {@link Provides} annotations and
-   * registers the additional services they provide.
-   */
-  private void findProvidesAnnotations() {
     DynamicConfigurationService configurationService =
         locator.getService(DynamicConfigurationService.class);
 
