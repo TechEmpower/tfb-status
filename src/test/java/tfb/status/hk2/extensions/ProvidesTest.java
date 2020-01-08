@@ -20,9 +20,11 @@ import java.util.EnumSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
@@ -1506,6 +1508,46 @@ public final class ProvidesTest {
   }
 
   /**
+   * Verifies that if  {@link ProvidesListener#getFilter()} is not overridden,
+   * then the implementation classes of all services are scanned for {@link
+   * Provides} annotations.
+   */
+  @Test
+  public void testDefaultFilter() {
+    ServiceLocator locator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        FilteredProvider.class,
+        UnfilteredProvider.class);
+    assertNotNull(locator.getService(FilteredProvider.class));
+    assertNotNull(locator.getService(UnfilteredProvider.class));
+    assertNotNull(locator.getService(FromFilteredProvider.class));
+    assertNotNull(locator.getService(FromUnfilteredProvider.class));
+  }
+
+  /**
+   * Verifies that if {@link ProvidesListener#getFilter()} is overridden, then
+   * that filter restricts the set of services whose implementation classes are
+   * scanned for {@link Provides} annotations.
+   */
+  @Test
+  public void testOverriddenFilter() {
+    ServiceLocator locator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        FilteredProvidesListener.class,
+        FilteredProvider.class,
+        UnfilteredProvider.class);
+    assertNotNull(locator.getService(FilteredProvider.class));
+    assertNotNull(locator.getService(UnfilteredProvider.class));
+    assertNull(locator.getService(FromFilteredProvider.class));
+    assertNotNull(locator.getService(FromUnfilteredProvider.class));
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private ServiceLocator newServiceLocator() {
@@ -1520,7 +1562,7 @@ public final class ProvidesTest {
   public static final class ProvidesTestBinder extends AbstractBinder {
     @Override
     protected void configure() {
-      install(new ProvidesModule());
+      addActiveDescriptor(ProvidesListener.class);
       addActiveDescriptor(PerLookupService.class);
       addActiveDescriptor(SingletonService.class);
       addActiveDescriptor(ServiceWithContract1.class);
@@ -2417,6 +2459,36 @@ public final class ProvidesTest {
     public static <T> ReturnFromStaticGenericTest<T> staticMethod(
         ParamFromStaticGenericTest<T> param) {
       return new ReturnFromStaticGenericTest<>(param.value);
+    }
+  }
+
+  public static final class FilteredProvider {
+    @Provides
+    public FromFilteredProvider service() {
+      return new FromFilteredProvider();
+    }
+  }
+
+  public static final class UnfilteredProvider {
+    @Provides
+    public FromUnfilteredProvider service() {
+      return new FromUnfilteredProvider();
+    }
+  }
+
+  public static final class FromFilteredProvider {}
+  public static final class FromUnfilteredProvider {}
+
+  @Singleton
+  public static final class FilteredProvidesListener extends ProvidesListener {
+    @Inject
+    public FilteredProvidesListener(ServiceLocator locator) {
+      super(locator);
+    }
+
+    @Override
+    protected Filter getFilter() {
+      return d -> !d.getImplementation().equals(FilteredProvider.class.getName());
     }
   }
 }

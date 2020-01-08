@@ -25,9 +25,11 @@ import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.ContractIndicator;
+import org.glassfish.hk2.api.Descriptor;
 import org.glassfish.hk2.api.DynamicConfiguration;
 import org.glassfish.hk2.api.DynamicConfigurationListener;
 import org.glassfish.hk2.api.DynamicConfigurationService;
+import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.ServiceHandle;
@@ -41,7 +43,7 @@ import org.jvnet.hk2.annotations.ContractsProvided;
  * Enables the {@link Provides} annotation.
  */
 @Singleton
-final class ProvidesListener implements DynamicConfigurationListener {
+public class ProvidesListener implements DynamicConfigurationListener {
   private final ServiceLocator locator;
   private final ProvidersSeen seen = new ProvidersSeen();
 
@@ -50,8 +52,36 @@ final class ProvidesListener implements DynamicConfigurationListener {
     this.locator = Objects.requireNonNull(locator);
   }
 
+  /**
+   * Matches services whose {@linkplain Descriptor#getImplementation()
+   * implementation} classes are scanned for {@link Provides} annotations.
+   *
+   * <p>The default filter matches all services.  Override this method to permit
+   * a smaller subset of services.  For example:
+   *
+   * <pre>
+   *   &#64;Singleton
+   *   public class FilteredProvidesListener extends ProvidesListener {
+   *     &#64;Inject
+   *     public FilteredProvidesListener(ServiceLocator locator) {
+   *       super(locator);
+   *     }
+   *
+   *     &#64;Override
+   *     protected Filter getFilter() {
+   *       return d -&gt; d.getImplementation().startsWith("com.example.");
+   *     }
+   *   }
+   * </pre>
+   */
+  protected Filter getFilter() {
+    return any -> true;
+  }
+
   @Override
   public void configurationChanged() {
+    Filter filter = getFilter();
+
     DynamicConfigurationService configurationService =
         locator.getService(DynamicConfigurationService.class);
 
@@ -60,7 +90,7 @@ final class ProvidesListener implements DynamicConfigurationListener {
 
     int added = 0;
 
-    for (ActiveDescriptor<?> provider : locator.getDescriptors(any -> true)) {
+    for (ActiveDescriptor<?> provider : locator.getDescriptors(filter)) {
       provider = locator.reifyDescriptor(provider);
       added += addDescriptors(provider, configuration);
     }
