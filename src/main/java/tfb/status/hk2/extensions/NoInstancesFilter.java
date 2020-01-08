@@ -23,7 +23,7 @@ import org.jvnet.hk2.annotations.Contract;
  * ActiveDescriptor#create(ServiceHandle) creation of instances} and must
  * advertise no {@linkplain Descriptor#getAdvertisedContracts() contracts}.
  *
- * <p>This class may be useful in combination with {@link ProvidesModule}, for
+ * <p>This class may be useful in combination with {@link ProvidesListener}, for
  * example, to permit registration of classes that do not provide themselves as
  * a service but that provide other services by way of static members annotated
  * with {@link Provides}.

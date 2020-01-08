@@ -16,7 +16,7 @@ import tfb.status.handler.SaveAttributesHandler;
 import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
-import tfb.status.hk2.extensions.ProvidesModule;
+import tfb.status.hk2.extensions.ProvidesListener;
 import tfb.status.hk2.extensions.TopicsModule;
 import tfb.status.service.ApplicationConfigFactory;
 import tfb.status.service.Authenticator;
@@ -51,13 +51,13 @@ public final class ServicesBinder extends AbstractBinder {
   @Override
   protected void configure() {
     install(new TopicsModule());
-    install(new ProvidesModule());
 
     if (configFilePath != null)
       bind(configFilePath)
           .to(String.class)
           .named(ApplicationConfigFactory.CONFIG_FILE_PATH);
 
+    addActiveDescriptor(ProvidesListener.class);
     addActiveDescriptor(ApplicationConfigFactory.class);
     addActiveDescriptor(ObjectMapperFactory.class);
     addActiveDescriptor(ClockFactory.class);
