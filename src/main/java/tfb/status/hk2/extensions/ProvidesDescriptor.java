@@ -1,10 +1,8 @@
 package tfb.status.hk2.extensions;
 
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static java.util.stream.Collectors.toUnmodifiableMap;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
@@ -39,21 +37,21 @@ import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   private final AnnotatedElement annotatedElement;
   private final Type implementationType;
-  private final ImmutableSet<Type> contracts;
+  private final Set<Type> contracts;
   private final Annotation scopeAnnotation;
   private final Function<ServiceHandle<?>, T> createFunction;
   private final Consumer<T> disposeFunction;
 
   ProvidesDescriptor(AnnotatedElement annotatedElement,
                      Type implementationType,
-                     ImmutableSet<Type> contracts,
+                     Set<Type> contracts,
                      Annotation scopeAnnotation,
                      Function<ServiceHandle<?>, T> createFunction,
                      Consumer<T> disposeFunction) {
 
     this.annotatedElement = Objects.requireNonNull(annotatedElement);
     this.implementationType = Objects.requireNonNull(implementationType);
-    this.contracts = Objects.requireNonNull(contracts);
+    this.contracts = Set.copyOf(Objects.requireNonNull(contracts));
     this.scopeAnnotation = Objects.requireNonNull(scopeAnnotation);
     this.createFunction = Objects.requireNonNull(createFunction);
     this.disposeFunction = Objects.requireNonNull(disposeFunction);
@@ -102,13 +100,13 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
 
   @Override
   public Set<Annotation> getQualifierAnnotations() {
-    return ImmutableSet.copyOf(
+    return Set.copyOf(
         ReflectionHelper.getQualifierAnnotations(annotatedElement));
   }
 
   @Override
   public List<Injectee> getInjectees() {
-    return ImmutableList.of();
+    return List.of();
   }
 
   @Override
@@ -133,7 +131,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
         .map(contract -> TypeToken.of(contract))
         .map(contract -> contract.getRawType())
         .map(contract -> contract.getName())
-        .collect(toImmutableSet());
+        .collect(toUnmodifiableSet());
   }
 
   @Override
@@ -157,7 +155,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
         .stream()
         .map(annotation -> annotation.annotationType())
         .map(annotationType -> annotationType.getName())
-        .collect(toImmutableSet());
+        .collect(toUnmodifiableSet());
   }
 
   @Override
@@ -180,7 +178,12 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
     for (Annotation qualifier : getQualifierAnnotations())
       BuilderHelper.getMetadataValues(qualifier, metadata);
 
-    return ImmutableMap.copyOf(metadata);
+    return metadata.entrySet()
+                   .stream()
+                   .collect(
+                       toUnmodifiableMap(
+                           entry -> entry.getKey(),
+                           entry -> List.copyOf(entry.getValue())));
   }
 
   @Override
