@@ -6,6 +6,7 @@ import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.PerLookup;
 import tfb.status.hk2.extensions.Provides;
 
 /**
@@ -55,8 +56,17 @@ public final class ApplicationConfig {
    * The configuration for outbound emails, or {@code null} if outbound emails
    * are disabled.  See {@link EmailConfig}.
    */
-  @Provides
   public final @Nullable EmailConfig email;
+
+  // We can't annotate the `email` field directly with @Provides.  The scope it
+  // would inherit from this class is @Singleton, and @Singleton doesn't support
+  // null values.  We want the scope of the field to be @PerLookup, which does
+  // support null values, but @PerLookup can't target fields.
+  @Provides
+  @PerLookup
+  public @Nullable EmailConfig email() {
+    return email;
+  }
 
   public ApplicationConfig(HttpServerConfig http,
                            AssetsConfig assets,
