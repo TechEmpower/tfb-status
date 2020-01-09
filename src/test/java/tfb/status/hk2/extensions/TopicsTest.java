@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +13,7 @@ import javax.inject.Singleton;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.api.messaging.MessageReceiver;
 import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
@@ -37,17 +37,17 @@ public final class TopicsTest {
     Topic<String> stringTopic =
         InjectUtils.getService(
             locator,
-            new TypeToken<Topic<String>>() {});
+            new TypeLiteral<Topic<String>>() {});
 
     Topic<Integer> integerTopic = // subtype of Number, should be seen
         InjectUtils.getService(
             locator,
-            new TypeToken<Topic<Integer>>() {});
+            new TypeLiteral<Topic<Integer>>() {});
 
     Topic<CharSequence> charSequenceTopic = // should be ignored
         InjectUtils.getService(
             locator,
-            new TypeToken<Topic<CharSequence>>() {});
+            new TypeLiteral<Topic<CharSequence>>() {});
 
     stringTopic.publish("1");
     integerTopic.publish(2);

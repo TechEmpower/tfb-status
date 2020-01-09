@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
-import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Retention;
 import java.lang.reflect.Type;
@@ -35,6 +34,7 @@ import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
@@ -243,7 +243,7 @@ public final class ProvidesTest {
     GenericFromProvidesMethod<String> service =
         InjectUtils.getService(
             locator,
-            new TypeToken<GenericFromProvidesMethod<String>>() {});
+            new TypeLiteral<GenericFromProvidesMethod<String>>() {});
 
     assertNotNull(service);
 
@@ -252,7 +252,7 @@ public final class ProvidesTest {
         () ->
             InjectUtils.getService(
                 locator,
-                new TypeToken<GenericFromProvidesMethod<Integer>>() {}));
+                new TypeLiteral<GenericFromProvidesMethod<Integer>>() {}));
   }
 
   /**
@@ -266,7 +266,7 @@ public final class ProvidesTest {
     GenericFromProvidesField<String> service =
         InjectUtils.getService(
             locator,
-            new TypeToken<GenericFromProvidesField<String>>() {});
+            new TypeLiteral<GenericFromProvidesField<String>>() {});
 
     assertNotNull(service);
 
@@ -275,7 +275,7 @@ public final class ProvidesTest {
         () ->
             InjectUtils.getService(
                 locator,
-                new TypeToken<GenericFromProvidesField<Integer>>() {}));
+                new TypeLiteral<GenericFromProvidesField<Integer>>() {}));
   }
 
   /**
@@ -456,7 +456,7 @@ public final class ProvidesTest {
     IterableProvider<ProvidedPerLookupStaticFieldWithLifecycleWithHandle> serviceProvider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ProvidedPerLookupStaticFieldWithLifecycleWithHandle>>() {});
+            new TypeLiteral<IterableProvider<ProvidedPerLookupStaticFieldWithLifecycleWithHandle>>() {});
 
     ServiceHandle<ProvidedPerLookupStaticFieldWithLifecycleWithHandle> serviceHandle =
         serviceProvider.getHandle();
@@ -496,7 +496,7 @@ public final class ProvidesTest {
     IterableProvider<ProvidedPerLookupInstanceFieldWithLifecycle> serviceProvider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ProvidedPerLookupInstanceFieldWithLifecycle>>() {});
+            new TypeLiteral<IterableProvider<ProvidedPerLookupInstanceFieldWithLifecycle>>() {});
 
     ServiceHandle<ProvidedPerLookupInstanceFieldWithLifecycle> serviceHandle =
         serviceProvider.getHandle();
@@ -540,7 +540,7 @@ public final class ProvidesTest {
     IterableProvider<ProvidedPerLookupStaticMethodWithLifecycle> serviceProvider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ProvidedPerLookupStaticMethodWithLifecycle>>() {});
+            new TypeLiteral<IterableProvider<ProvidedPerLookupStaticMethodWithLifecycle>>() {});
 
     ServiceHandle<ProvidedPerLookupStaticMethodWithLifecycle> serviceHandle =
         serviceProvider.getHandle();
@@ -584,7 +584,7 @@ public final class ProvidesTest {
     IterableProvider<ProvidedPerLookupInstanceMethodWithLifecycle> serviceProvider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ProvidedPerLookupInstanceMethodWithLifecycle>>() {});
+            new TypeLiteral<IterableProvider<ProvidedPerLookupInstanceMethodWithLifecycle>>() {});
 
     ServiceHandle<ProvidedPerLookupInstanceMethodWithLifecycle> serviceHandle =
         serviceProvider.getHandle();
@@ -658,7 +658,7 @@ public final class ProvidesTest {
     IterableProvider<EnumProvides> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<EnumProvides>>() {});
+            new TypeLiteral<IterableProvider<EnumProvides>>() {});
 
     assertEquals(
         EnumSet.allOf(EnumProvides.class),
@@ -676,7 +676,7 @@ public final class ProvidesTest {
     IterableProvider<EnumContract> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<EnumContract>>() {});
+            new TypeLiteral<IterableProvider<EnumContract>>() {});
 
     assertEquals(
         EnumSet.allOf(EnumProvidesContract.class),
@@ -685,7 +685,7 @@ public final class ProvidesTest {
     IterableProvider<SecondEnumContract> secondProvider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<SecondEnumContract>>() {});
+            new TypeLiteral<IterableProvider<SecondEnumContract>>() {});
 
     assertEquals(
         EnumSet.allOf(EnumProvidesContract.class),
@@ -919,7 +919,7 @@ public final class ProvidesTest {
     IterableProvider<NullFromStaticField> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<NullFromStaticField>>() {});
+            new TypeLiteral<IterableProvider<NullFromStaticField>>() {});
 
     try (ServiceHandle<NullFromStaticField> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -937,7 +937,7 @@ public final class ProvidesTest {
     IterableProvider<NullFromInstanceField> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<NullFromInstanceField>>() {});
+            new TypeLiteral<IterableProvider<NullFromInstanceField>>() {});
 
     try (ServiceHandle<NullFromInstanceField> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -955,7 +955,7 @@ public final class ProvidesTest {
     IterableProvider<NullFromStaticMethod> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<NullFromStaticMethod>>() {});
+            new TypeLiteral<IterableProvider<NullFromStaticMethod>>() {});
 
     try (ServiceHandle<NullFromStaticMethod> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -973,7 +973,7 @@ public final class ProvidesTest {
     IterableProvider<NullFromInstanceMethod> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<NullFromInstanceMethod>>() {});
+            new TypeLiteral<IterableProvider<NullFromInstanceMethod>>() {});
 
     try (ServiceHandle<NullFromInstanceMethod> handle = provider.getHandle()) {
       assertNull(handle.getService());
@@ -991,7 +991,7 @@ public final class ProvidesTest {
     IterableProvider<ProvidesLifecycleFromStaticField> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ProvidesLifecycleFromStaticField>>() {});
+            new TypeLiteral<IterableProvider<ProvidesLifecycleFromStaticField>>() {});
 
     ServiceHandle<ProvidesLifecycleFromStaticField> handle =
         provider.getHandle();
@@ -1024,7 +1024,7 @@ public final class ProvidesTest {
     IterableProvider<ProvidesLifecycleFromInstanceField> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ProvidesLifecycleFromInstanceField>>() {});
+            new TypeLiteral<IterableProvider<ProvidesLifecycleFromInstanceField>>() {});
 
     ServiceHandle<ProvidesLifecycleFromInstanceField> handle =
         provider.getHandle();
@@ -1057,7 +1057,7 @@ public final class ProvidesTest {
     IterableProvider<ProvidesLifecycleFromStaticMethod> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ProvidesLifecycleFromStaticMethod>>() {});
+            new TypeLiteral<IterableProvider<ProvidesLifecycleFromStaticMethod>>() {});
 
     ServiceHandle<ProvidesLifecycleFromStaticMethod> handle =
         provider.getHandle();
@@ -1090,7 +1090,7 @@ public final class ProvidesTest {
     IterableProvider<ProvidesLifecycleFromInstanceMethod> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ProvidesLifecycleFromInstanceMethod>>() {});
+            new TypeLiteral<IterableProvider<ProvidesLifecycleFromInstanceMethod>>() {});
 
     ServiceHandle<ProvidesLifecycleFromInstanceMethod> handle =
         provider.getHandle();
@@ -1124,7 +1124,7 @@ public final class ProvidesTest {
     ProvidesGenericField<Value1> providerA =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericField<Value1>>() {});
+            new TypeLiteral<ProvidesGenericField<Value1>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.value);
@@ -1138,7 +1138,7 @@ public final class ProvidesTest {
     ProvidesGenericField<Value2> providerB =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericField<Value2>>() {});
+            new TypeLiteral<ProvidesGenericField<Value2>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.value);
@@ -1162,7 +1162,7 @@ public final class ProvidesTest {
     ProvidesGenericField<Value3> providerA =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericField<Value3>>() {});
+            new TypeLiteral<ProvidesGenericField<Value3>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.value);
@@ -1176,7 +1176,7 @@ public final class ProvidesTest {
     ProvidesGenericField<Value4> providerB =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericField<Value4>>() {});
+            new TypeLiteral<ProvidesGenericField<Value4>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.value);
@@ -1200,7 +1200,7 @@ public final class ProvidesTest {
     ProvidesGenericField<Value5> providerA =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericField<Value5>>() {});
+            new TypeLiteral<ProvidesGenericField<Value5>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.value);
@@ -1214,7 +1214,7 @@ public final class ProvidesTest {
     ProvidesGenericField<Value6> providerB =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericField<Value6>>() {});
+            new TypeLiteral<ProvidesGenericField<Value6>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.value);
@@ -1238,7 +1238,7 @@ public final class ProvidesTest {
     ProvidesGenericField<Value7> providerA =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericField<Value7>>() {});
+            new TypeLiteral<ProvidesGenericField<Value7>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.value);
@@ -1252,7 +1252,7 @@ public final class ProvidesTest {
     ProvidesGenericField<Value8> providerB =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericField<Value8>>() {});
+            new TypeLiteral<ProvidesGenericField<Value8>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.value);
@@ -1276,7 +1276,7 @@ public final class ProvidesTest {
     ProvidesGenericMethod<Value9> providerA =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericMethod<Value9>>() {});
+            new TypeLiteral<ProvidesGenericMethod<Value9>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.getValue());
@@ -1290,7 +1290,7 @@ public final class ProvidesTest {
     ProvidesGenericMethod<Value10> providerB =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericMethod<Value10>>() {});
+            new TypeLiteral<ProvidesGenericMethod<Value10>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.getValue());
@@ -1314,7 +1314,7 @@ public final class ProvidesTest {
     ProvidesGenericMethod<Value11> providerA =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericMethod<Value11>>() {});
+            new TypeLiteral<ProvidesGenericMethod<Value11>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.getValue());
@@ -1328,7 +1328,7 @@ public final class ProvidesTest {
     ProvidesGenericMethod<Value12> providerB =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericMethod<Value12>>() {});
+            new TypeLiteral<ProvidesGenericMethod<Value12>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.getValue());
@@ -1352,7 +1352,7 @@ public final class ProvidesTest {
     ProvidesGenericMethod<Value13> providerA =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericMethod<Value13>>() {});
+            new TypeLiteral<ProvidesGenericMethod<Value13>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.getValue());
@@ -1366,7 +1366,7 @@ public final class ProvidesTest {
     ProvidesGenericMethod<Value14> providerB =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericMethod<Value14>>() {});
+            new TypeLiteral<ProvidesGenericMethod<Value14>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.getValue());
@@ -1390,7 +1390,7 @@ public final class ProvidesTest {
     ProvidesGenericMethod<Value15> providerA =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericMethod<Value15>>() {});
+            new TypeLiteral<ProvidesGenericMethod<Value15>>() {});
 
     assertNotNull(providerA);
     assertNotNull(providerA.getValue());
@@ -1404,7 +1404,7 @@ public final class ProvidesTest {
     ProvidesGenericMethod<Value16> providerB =
         InjectUtils.getService(
             locator,
-            new TypeToken<ProvidesGenericMethod<Value16>>() {});
+            new TypeLiteral<ProvidesGenericMethod<Value16>>() {});
 
     assertNotNull(providerB);
     assertNotNull(providerB.getValue());
@@ -1427,7 +1427,7 @@ public final class ProvidesTest {
     IterableProvider<BoxFromGenericProvidesContract<String>> boxes =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<BoxFromGenericProvidesContract<String>>>() {});
+            new TypeLiteral<IterableProvider<BoxFromGenericProvidesContract<String>>>() {});
 
     assertEquals(4, boxes.getSize());
 
@@ -1462,7 +1462,7 @@ public final class ProvidesTest {
     IterableProvider<OverrideBoxFromGenericProvidesContract<String>> overrides =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<OverrideBoxFromGenericProvidesContract<String>>>() {});
+            new TypeLiteral<IterableProvider<OverrideBoxFromGenericProvidesContract<String>>>() {});
 
     assertEquals(expected.size(), overrides.getSize());
 
@@ -1498,18 +1498,18 @@ public final class ProvidesTest {
     assertNotNull(
         InjectUtils.getService(
             locator,
-            new TypeToken<StaticGenericProvider<String>>() {}));
+            new TypeLiteral<StaticGenericProvider<String>>() {}));
 
     assertNotNull(
         InjectUtils.getService(
             locator,
-            new TypeToken<ParamFromStaticGenericTest<String>>() {}));
+            new TypeLiteral<ParamFromStaticGenericTest<String>>() {}));
 
     assertThrows(
         NoSuchElementException.class,
         () -> InjectUtils.getService(
             locator,
-            new TypeToken<ReturnFromStaticGenericTest<String>>() {}));
+            new TypeLiteral<ReturnFromStaticGenericTest<String>>() {}));
   }
 
   /**
@@ -1573,7 +1573,7 @@ public final class ProvidesTest {
     FromConsumesGenericParameter<String> service =
         InjectUtils.getService(
             locator,
-            new TypeToken<FromConsumesGenericParameter<String>> () {});
+            new TypeLiteral<FromConsumesGenericParameter<String>> () {});
 
     assertNotNull(service);
     assertEquals("secret", service.value);
@@ -1725,7 +1725,7 @@ public final class ProvidesTest {
     IterableProvider<ServiceWithLifecycle> providers =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ServiceWithLifecycle>>() {});
+            new TypeLiteral<IterableProvider<ServiceWithLifecycle>>() {});
 
     assertEquals(12, providers.getSize());
 

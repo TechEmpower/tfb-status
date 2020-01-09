@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -26,6 +25,7 @@ import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
@@ -35,12 +35,12 @@ import org.jvnet.hk2.annotations.Contract;
  * Tests for {@link InjectUtils}.
  *
  * These tests focus on the {@link InjectUtils#getService(ServiceLocator,
- * TypeToken)} method since we rely on that method heavily on other tests.
+ * TypeLiteral)} method since we rely on that method heavily on other tests.
  */
 public final class InjectUtilsTest {
   /**
    * Verifies that every invocation of {@link
-   * InjectUtils#getService(ServiceLocator, TypeToken)} returns the same
+   * InjectUtils#getService(ServiceLocator, TypeLiteral)} returns the same
    * instance when the service has the {@link Singleton} scope.
    */
   @Test
@@ -50,12 +50,12 @@ public final class InjectUtilsTest {
     SingletonService service1 =
         InjectUtils.getService(
             locator,
-            new TypeToken<SingletonService>() {});
+            new TypeLiteral<SingletonService>() {});
 
     SingletonService service2 =
         InjectUtils.getService(
             locator,
-            new TypeToken<SingletonService>() {});
+            new TypeLiteral<SingletonService>() {});
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -64,7 +64,7 @@ public final class InjectUtilsTest {
 
   /**
    * Verifies that every invocation of {@link
-   * InjectUtils#getService(ServiceLocator, TypeToken)} returns a new instance
+   * InjectUtils#getService(ServiceLocator, TypeLiteral)} returns a new instance
    * when the service has the {@link PerLookup} scope, which is the default
    * scope.
    */
@@ -75,12 +75,12 @@ public final class InjectUtilsTest {
     PerLookupService service1 =
         InjectUtils.getService(
             locator,
-            new TypeToken<PerLookupService>() {});
+            new TypeLiteral<PerLookupService>() {});
 
     PerLookupService service2 =
         InjectUtils.getService(
             locator,
-            new TypeToken<PerLookupService>() {});
+            new TypeLiteral<PerLookupService>() {});
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -88,7 +88,7 @@ public final class InjectUtilsTest {
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)}
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
    * throws {@link NoSuchElementException} when there is no service of the
    * specified type.
    */
@@ -101,12 +101,12 @@ public final class InjectUtilsTest {
         () ->
             InjectUtils.getService(
                 locator,
-                new TypeToken<UnregisteredService>() {}));
+                new TypeLiteral<UnregisteredService>() {}));
 
     Iterable<UnregisteredService> iterable =
         InjectUtils.getService(
             locator,
-            new TypeToken<Iterable<UnregisteredService>>() {});
+            new TypeLiteral<Iterable<UnregisteredService>>() {});
 
     Iterator<UnregisteredService> iterator = iterable.iterator();
 
@@ -114,7 +114,7 @@ public final class InjectUtilsTest {
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)}
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
    * throws {@link MultiException} when there is a service of the specified type
    * but it has unsatisfied dependencies.
    */
@@ -127,11 +127,11 @@ public final class InjectUtilsTest {
         () ->
             InjectUtils.getService(
                 locator,
-                new TypeToken<UnsatisfiedDependencies>() {}));
+                new TypeLiteral<UnsatisfiedDependencies>() {}));
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)}
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
    * throws {@link NoSuchElementException} when there is a service of the
    * specified type but its provider provided {@code null}.
    */
@@ -144,13 +144,13 @@ public final class InjectUtilsTest {
         () ->
             InjectUtils.getService(
                 locator,
-                new TypeToken<NullService>() {}));
+                new TypeLiteral<NullService>() {}));
 
     // Assert that there is one "instance" of the service, but it's null.
     Iterable<NullService> iterable =
         InjectUtils.getService(
             locator,
-            new TypeToken<Iterable<NullService>>() {});
+            new TypeLiteral<Iterable<NullService>>() {});
 
     Iterator<NullService> iterator = iterable.iterator();
 
@@ -160,8 +160,8 @@ public final class InjectUtilsTest {
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
-   * produce an {@link Optional} of a registered service type, and that the
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
+   * can produce an {@link Optional} of a registered service type, and that the
    * returned optional contains an instance of that service.
    */
   @Test
@@ -171,15 +171,15 @@ public final class InjectUtilsTest {
     Optional<PerLookupService> optional =
         InjectUtils.getService(
             locator,
-            new TypeToken<Optional<PerLookupService>>() {});
+            new TypeLiteral<Optional<PerLookupService>>() {});
 
     assertTrue(optional.isPresent());
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
-   * produce an {@link Optional} even when the service type is unregistered, and
-   * that the returned optional is empty.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
+   * can produce an {@link Optional} even when the service type is unregistered,
+   * and that the returned optional is empty.
    */
   @Test
   public void testGetUnregisteredOptional() {
@@ -188,14 +188,14 @@ public final class InjectUtilsTest {
     Optional<UnregisteredService> optional =
         InjectUtils.getService(
             locator,
-            new TypeToken<Optional<UnregisteredService>>() {});
+            new TypeLiteral<Optional<UnregisteredService>>() {});
 
     assertTrue(optional.isEmpty());
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
-   * produce a {@link Provider} of a registered service type, and that the
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
+   * can produce a {@link Provider} of a registered service type, and that the
    * returned provider's {@link Provider#get()} method provides an instance of
    * that service.
    */
@@ -206,7 +206,7 @@ public final class InjectUtilsTest {
     Provider<PerLookupService> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<Provider<PerLookupService>>() {});
+            new TypeLiteral<Provider<PerLookupService>>() {});
 
     PerLookupService service = provider.get();
 
@@ -214,10 +214,10 @@ public final class InjectUtilsTest {
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
-   * produce a {@link Provider} even when the service type is unregistered, and
-   * that the returned provider's {@link Provider#get()} method returns {@code
-   * null}.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
+   * can produce a {@link Provider} even when the service type is unregistered,
+   * and that the returned provider's {@link Provider#get()} method returns
+   * {@code null}.
    */
   @Test
   public void testGetUnregisteredProvider() {
@@ -226,7 +226,7 @@ public final class InjectUtilsTest {
     Provider<UnregisteredService> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<Provider<UnregisteredService>>() {});
+            new TypeLiteral<Provider<UnregisteredService>>() {});
 
     UnregisteredService service = provider.get();
 
@@ -234,8 +234,8 @@ public final class InjectUtilsTest {
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
-   * produce an {@link Iterable} of a registered contract type, and that the
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
+   * can produce an {@link Iterable} of a registered contract type, and that the
    * returned iterable contains one element for each service registered with
    * that contract.
    */
@@ -246,7 +246,7 @@ public final class InjectUtilsTest {
     Iterable<SimpleContract> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<Iterable<SimpleContract>>() {});
+            new TypeLiteral<Iterable<SimpleContract>>() {});
 
     Iterator<SimpleContract> iterator = provider.iterator();
 
@@ -266,9 +266,9 @@ public final class InjectUtilsTest {
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
-   * produce an {@link Iterable} even when the service type is unregistered, and
-   * that the returned iterable is empty.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
+   * can produce an {@link Iterable} even when the service type is unregistered,
+   * and that the returned iterable is empty.
    */
   @Test
   public void testGetUnregisteredIterable() {
@@ -277,16 +277,16 @@ public final class InjectUtilsTest {
     Iterable<UnregisteredService> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<Iterable<UnregisteredService>>() {});
+            new TypeLiteral<Iterable<UnregisteredService>>() {});
 
     assertFalse(provider.iterator().hasNext());
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
-   * produce an {@link IterableProvider} of a registered contract type, and that
-   * the returned provider's {@link IterableProvider#iterator()} contains one
-   * element for each service registered with that contract.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
+   * can produce an {@link IterableProvider} of a registered contract type, and
+   * that the returned provider's {@link IterableProvider#iterator()} contains
+   * one element for each service registered with that contract.
    */
   @Test
   public void testGetIterableProvider() {
@@ -295,7 +295,7 @@ public final class InjectUtilsTest {
     IterableProvider<SimpleContract> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<SimpleContract>>() {});
+            new TypeLiteral<IterableProvider<SimpleContract>>() {});
 
     Iterator<SimpleContract> iterator = provider.iterator();
 
@@ -315,8 +315,8 @@ public final class InjectUtilsTest {
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
-   * produce an {@link IterableProvider} even when the service type is
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
+   * can produce an {@link IterableProvider} even when the service type is
    * unregistered, and that the returned provider's {@link
    * IterableProvider#iterator()} is empty.
    */
@@ -327,16 +327,16 @@ public final class InjectUtilsTest {
     IterableProvider<UnregisteredService> provider =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<UnregisteredService>>() {});
+            new TypeLiteral<IterableProvider<UnregisteredService>>() {});
 
     assertFalse(provider.iterator().hasNext());
   }
 
   /**
-   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeToken)} can
-   * retrieve services bound to generic contract types, and that it correctly
-   * distinguishes these services from each other based on the generic type
-   * arguments of the contract.
+   * Verifies that {@link InjectUtils#getService(ServiceLocator, TypeLiteral)}
+   * can retrieve services bound to generic contract types, and that it
+   * correctly distinguishes these services from each other based on the generic
+   * type arguments of the contract.
    */
   @Test
   public void testGetGenericService() {
@@ -345,19 +345,19 @@ public final class InjectUtilsTest {
     GenericContract<Integer> service1 =
         InjectUtils.getService(
             locator,
-            new TypeToken<GenericContract<Integer>>() {});
+            new TypeLiteral<GenericContract<Integer>>() {});
 
     GenericContract<String> service2 =
         InjectUtils.getService(
             locator,
-            new TypeToken<GenericContract<String>>() {});
+            new TypeLiteral<GenericContract<String>>() {});
 
     assertThrows(
         NoSuchElementException.class,
         () ->
             InjectUtils.getService(
                 locator,
-                new TypeToken<GenericContract<Double>>() {}));
+                new TypeLiteral<GenericContract<Double>>() {}));
 
     assertNotNull(service1);
     assertNotNull(service2);
@@ -377,7 +377,7 @@ public final class InjectUtilsTest {
     SingletonServiceWithShutdown service =
         InjectUtils.getService(
             locator,
-            new TypeToken<SingletonServiceWithShutdown>() {});
+            new TypeLiteral<SingletonServiceWithShutdown>() {});
 
     assertFalse(service.wasStopped());
 
@@ -398,7 +398,7 @@ public final class InjectUtilsTest {
     SingletonServiceWithShutdownFromFactory service =
         InjectUtils.getService(
             locator,
-            new TypeToken<SingletonServiceWithShutdownFromFactory>() {});
+            new TypeLiteral<SingletonServiceWithShutdownFromFactory>() {});
 
     assertFalse(service.wasStopped());
 
@@ -418,7 +418,7 @@ public final class InjectUtilsTest {
     IterableProvider<ServiceWithLifecycle> providers =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ServiceWithLifecycle>>() {});
+            new TypeLiteral<IterableProvider<ServiceWithLifecycle>>() {});
 
     int loopCount = 2;
     int serviceCount = 0;
@@ -450,7 +450,7 @@ public final class InjectUtilsTest {
     IterableProvider<ServiceWithShutdownFromFactory> providers =
         InjectUtils.getService(
             locator,
-            new TypeToken<IterableProvider<ServiceWithShutdownFromFactory>>() {});
+            new TypeLiteral<IterableProvider<ServiceWithShutdownFromFactory>>() {});
 
     int loopCount = 2;
     int serviceCount = 0;

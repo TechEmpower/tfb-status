@@ -25,6 +25,7 @@ import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.Self;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.api.Unqualified;
 import org.glassfish.hk2.api.UnsatisfiedDependencyException;
 import org.glassfish.hk2.utilities.InjecteeImpl;
@@ -55,7 +56,7 @@ final class InjectUtils {
    *         specified type, or if a registered service does match the specified
    *         type but the provider of that service provided {@code null}
    */
-  static <T> T getService(ServiceLocator locator, TypeToken<T> type) {
+  static <T> T getService(ServiceLocator locator, TypeLiteral<T> type) {
     Objects.requireNonNull(locator);
     Objects.requireNonNull(type);
 
