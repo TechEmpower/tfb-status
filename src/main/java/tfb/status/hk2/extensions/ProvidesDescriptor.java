@@ -63,9 +63,8 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public void dispose(@Nullable T instance) {
-    if (instance != null)
-      disposeFunction.accept(instance);
+  public void dispose(T instance) {
+    disposeFunction.accept(instance);
   }
 
   @Override
@@ -120,7 +119,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public @Nullable String getImplementation() {
+  public String getImplementation() {
     return getImplementationClass().getName();
   }
 

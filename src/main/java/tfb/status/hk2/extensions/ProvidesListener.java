@@ -515,7 +515,10 @@ public class ProvidesListener implements DynamicConfigurationListener {
     Objects.requireNonNull(locator);
 
     if (providesAnnotation.disposeMethod().isEmpty())
-      return instance -> locator.preDestroy(instance);
+      return instance -> {
+        if (instance != null)
+          locator.preDestroy(instance);
+      };
 
     switch (providesAnnotation.disposalHandledBy()) {
       case PROVIDED_INSTANCE: {
@@ -537,6 +540,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
                                       + " not found")));
 
         return instance -> {
+          if (instance == null)
+            return;
+
           if (!disposeMethod.canAccess(instance))
             disposeMethod.setAccessible(true);
 
@@ -573,6 +579,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
         if (isStatic)
           return instance -> {
+            if (instance == null)
+              return;
+
             if (!disposeMethod.canAccess(null))
               disposeMethod.setAccessible(true);
 
@@ -584,6 +593,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
           };
 
         return instance -> {
+          if (instance == null)
+            return;
+
           boolean isPerLookup =
               providerDescriptor.getScopeAnnotation() == PerLookup.class;
 

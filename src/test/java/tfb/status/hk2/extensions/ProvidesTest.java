@@ -1707,6 +1707,36 @@ public final class ProvidesTest {
   }
 
   /**
+   * Verifies that if a service comes from a {@link Provides} method or field
+   * and its type defines lifecycle methods, or the {@link Provides} annotation
+   * defines a custom dispose method, that no errors are thrown when the service
+   * is {@code null}.
+   */
+  @Test
+  public void testNullServicesWithLifecycle() {
+    ServiceLocator locator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        ProvidesNullWithLifecycle.class);
+
+    IterableProvider<ServiceWithLifecycle> providers =
+        InjectUtils.getService(
+            locator,
+            new TypeToken<IterableProvider<ServiceWithLifecycle>>() {});
+
+    assertEquals(12, providers.getSize());
+
+    for (ServiceHandle<ServiceWithLifecycle> handle
+        : providers.handleIterator()) {
+      assertNull(handle.getService());
+      handle.close();
+    }
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private ServiceLocator newServiceLocator() {
@@ -2762,6 +2792,81 @@ public final class ProvidesTest {
     @BetterFindMe
     public String good() {
       return "good";
+    }
+  }
+
+  public static final class ProvidesNullWithLifecycle {
+    @Provides
+    public static final @Nullable ServiceWithLifecycle staticFieldDefaultDispose = null;
+
+    @Provides(
+        disposeMethod = "stop",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
+    public static final @Nullable ServiceWithLifecycle staticFieldProvidedInstanceDisposeMethod = null;
+
+    @Provides(
+        disposeMethod = "staticDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    public static final @Nullable ServiceWithLifecycle staticFieldProviderDisposeMethod = null;
+
+
+    @Provides
+    public final @Nullable ServiceWithLifecycle instanceFieldDefaultDispose = null;
+
+    @Provides(
+        disposeMethod = "stop",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
+    public final @Nullable ServiceWithLifecycle instanceFieldProvidedInstanceDisposeMethod = null;
+
+    @Provides(
+        disposeMethod = "instanceDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    public final @Nullable ServiceWithLifecycle instanceFieldProviderDisposeMethod = null;
+
+    @Provides
+    public static @Nullable ServiceWithLifecycle staticMethodDefaultDispose() {
+      return null;
+    }
+
+    @Provides(
+        disposeMethod = "stop",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
+    public static @Nullable ServiceWithLifecycle staticMethodProvidedInstanceDisposeMethod() {
+      return null;
+    }
+
+    @Provides(
+        disposeMethod = "staticDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    public static @Nullable ServiceWithLifecycle staticMethodProviderDisposeMethod() {
+      return null;
+    }
+
+    @Provides
+    public @Nullable ServiceWithLifecycle instanceMethodDefaultDispose() {
+      return null;
+    }
+
+    @Provides(
+        disposeMethod = "stop",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
+    public @Nullable ServiceWithLifecycle instanceMethodProvidedInstanceDisposeMethod() {
+      return null;
+    }
+
+    @Provides(
+        disposeMethod = "instanceDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    public @Nullable ServiceWithLifecycle instanceMethodProviderDisposeMethod() {
+      return null;
+    }
+
+    public static void staticDisposeMethod(ServiceWithLifecycle instance) {
+      instance.stop();
+    }
+
+    public void instanceDisposeMethod(ServiceWithLifecycle instance) {
+      instance.stop();
     }
   }
 }
