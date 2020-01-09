@@ -68,7 +68,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
 
   @Override
   public Class<?> getImplementationClass() {
-    return InjectUtils.getRawType(implementationType);
+    return TypeUtils.getRawType(implementationType);
   }
 
   @Override
@@ -126,7 +126,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   public Set<String> getAdvertisedContracts() {
     return getContractTypes()
         .stream()
-        .map(contract -> InjectUtils.getRawType(contract))
+        .map(contract -> TypeUtils.getRawType(contract))
         .map(contract -> contract.getName())
         .collect(toUnmodifiableSet());
   }

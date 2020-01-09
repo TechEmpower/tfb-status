@@ -89,12 +89,12 @@ final class Subscriber {
     Objects.requireNonNull(topic);
 
     Type eventType = topic.getTopicType();
-    if (!InjectUtils.isSupertype(parameterType, eventType))
+    if (!TypeUtils.isSupertype(parameterType, eventType))
       return false;
 
     if (!permittedTypes.isEmpty()
         && permittedTypes.stream()
-                         .noneMatch(type -> InjectUtils.isSupertype(type, eventType)))
+                         .noneMatch(type -> TypeUtils.isSupertype(type, eventType)))
       return false;
 
     if (!ReflectionHelper.annotationContainsAll(topic.getTopicQualifiers(),

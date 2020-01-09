@@ -116,7 +116,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
       return 0;
 
     Type providerType = providerDescriptor.getImplementationType();
-    Class<?> providerClass = InjectUtils.getRawType(providerType);
+    Class<?> providerClass = TypeUtils.getRawType(providerType);
 
     int added = 0;
 
@@ -129,22 +129,22 @@ public class ProvidesListener implements DynamicConfigurationListener {
         continue;
 
       Type providedType =
-          InjectUtils.resolveType(
+          TypeUtils.resolveType(
               providerType,
               method.getGenericReturnType());
 
-      if (InjectUtils.containsTypeVariable(providedType))
+      if (TypeUtils.containsTypeVariable(providedType))
         continue;
 
       if (Arrays.stream(method.getParameters())
                 .map(
                     parameter ->
-                        InjectUtils.resolveType(
+                        TypeUtils.resolveType(
                             providerType,
                             parameter.getParameterizedType()))
                 .anyMatch(
                     parameterType ->
-                        InjectUtils.containsTypeVariable(parameterType)))
+                        TypeUtils.containsTypeVariable(parameterType)))
         continue;
 
       Set<Type> providedContracts =
@@ -193,11 +193,11 @@ public class ProvidesListener implements DynamicConfigurationListener {
         continue;
 
       Type providedType =
-          InjectUtils.resolveType(
+          TypeUtils.resolveType(
               providerType,
               field.getGenericType());
 
-      if (InjectUtils.containsTypeVariable(providedType))
+      if (TypeUtils.containsTypeVariable(providedType))
         continue;
 
       Set<Type> providedContracts =
@@ -266,8 +266,8 @@ public class ProvidesListener implements DynamicConfigurationListener {
                    .collect(toUnmodifiableSet());
 
     return Stream.concat(Stream.of(providedType),
-                         InjectUtils.getTypes(providedType)
-                                    .filter(t -> isContract(t)))
+                         TypeUtils.getTypes(providedType)
+                                  .filter(t -> isContract(t)))
                  .collect(toUnmodifiableSet());
   }
 
@@ -318,7 +318,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
         return annotation;
 
     for (Type contract : providedContracts) {
-      Class<?> rawType = InjectUtils.getRawType(contract);
+      Class<?> rawType = TypeUtils.getRawType(contract);
       for (Annotation annotation : rawType.getAnnotations())
         if (annotation.annotationType().isAnnotationPresent(Scope.class))
           return annotation;
@@ -530,7 +530,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
     switch (providesAnnotation.disposalHandledBy()) {
       case PROVIDED_INSTANCE: {
         Method disposeMethod =
-            Arrays.stream(InjectUtils.getRawType(providedType).getMethods())
+            Arrays.stream(TypeUtils.getRawType(providedType).getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> !Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 0)
@@ -566,17 +566,17 @@ public class ProvidesListener implements DynamicConfigurationListener {
             Modifier.isStatic(providerMethod.getModifiers());
 
         Method disposeMethod =
-            Arrays.stream(InjectUtils.getRawType(providerType).getMethods())
+            Arrays.stream(TypeUtils.getRawType(providerType).getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> isStatic == Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 1)
                   .filter(method -> {
                     Type parameterType =
-                        InjectUtils.resolveType(
+                        TypeUtils.resolveType(
                             providerType,
                             method.getGenericParameterTypes()[0]);
 
-                    return InjectUtils.isSupertype(parameterType, providedType);
+                    return TypeUtils.isSupertype(parameterType, providedType);
                   })
                   .findAny()
                   // TODO: Avoid throwing?  This exception will be swallowed.

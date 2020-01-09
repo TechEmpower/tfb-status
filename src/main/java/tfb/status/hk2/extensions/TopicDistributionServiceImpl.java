@@ -306,14 +306,14 @@ final class TopicDistributionServiceImpl
     Parameter parameter = parameters[parameterIndex];
 
     Type parameterType =
-        InjectUtils.resolveType(
+        TypeUtils.resolveType(
             serviceType,
             parameter.getParameterizedType());
 
     if (!permittedTypes.isEmpty()
         && permittedTypes.stream()
                          .noneMatch(
-                             type -> InjectUtils.isSupertype(type, parameterType))) {
+                             type -> TypeUtils.isSupertype(type, parameterType))) {
       logger.warn(
           "Subscriber method {} of service {} will receive no messages "
               + "because its message parameter type {} is not a subtype of "

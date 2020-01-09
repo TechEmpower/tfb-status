@@ -1,7 +1,5 @@
 package tfb.status.hk2.extensions;
 
-import com.google.common.reflect.ImmutableTypeToInstanceMap;
-import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
@@ -14,7 +12,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -86,53 +83,6 @@ final class InjectUtils {
     return serviceAsT;
   }
 
-  static boolean containsTypeVariable(Type type) {
-    Objects.requireNonNull(type);
-
-    // We want to call TypeToken#rejectTypeVariables(), but that method is
-    // package-private.  Instead, call a public method in that package that is
-    // known to call rejectTypeVariables().
-    try {
-      Object ignored = ImmutableTypeToInstanceMap.of().getInstance(TypeToken.of(type));
-    } catch (IllegalArgumentException e) {
-      return true;
-    }
-    return false;
-  }
-
-  static Class<?> getRawType(Type type) {
-    Objects.requireNonNull(type);
-    return TypeToken.of(type).getRawType();
-  }
-
-  static Type resolveType(Type parentType, Type childType) {
-    Objects.requireNonNull(parentType);
-    Objects.requireNonNull(childType);
-    return TypeToken.of(parentType)
-                    .resolveType(childType)
-                    .getType();
-  }
-
-  static Stream<Type> getTypes(Type type) {
-    Objects.requireNonNull(type);
-    return TypeToken.of(type)
-                    .getTypes()
-                    .stream()
-                    .map(token -> token.getType());
-  }
-
-  static boolean isSupertype(Type a, Type b) {
-    Objects.requireNonNull(a);
-    Objects.requireNonNull(b);
-    return TypeToken.of(a).isSupertypeOf(b);
-  }
-
-  static boolean isSubtype(Type a, Type b) {
-    Objects.requireNonNull(a);
-    Objects.requireNonNull(b);
-    return TypeToken.of(a).isSubtypeOf(b);
-  }
-
   static Injectee injecteeFromParameter(Parameter parameter, Type parentType) {
     Objects.requireNonNull(parameter);
     Objects.requireNonNull(parentType);
@@ -144,7 +94,7 @@ final class InjectUtils {
           "parameter " + parameter + " not found in parent " + parent);
 
     Type parameterType =
-        resolveType(
+        TypeUtils.resolveType(
             parentType,
             parameter.getParameterizedType());
 
