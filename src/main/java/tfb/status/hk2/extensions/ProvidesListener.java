@@ -209,14 +209,8 @@ public class ProvidesListener implements DynamicConfigurationListener {
               ? getCreateFunctionFromStaticField(field, locator)
               : getCreateFunctionFromInstanceField(providerDescriptor, field, locator);
 
-      Consumer<Object> disposeFunction =
-          getDisposeFunction(
-              providerDescriptor,
-              providesAnnotation,
-              field,
-              providedType,
-              providerType,
-              locator);
+      // There is no automatic disposal for fields.
+      Consumer<Object> disposeFunction = instance -> {};
 
       configuration.addActiveDescriptor(
           new ProvidesDescriptor<>(
@@ -492,43 +486,33 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
   /**
    * Returns a function that disposes of instances of services that were
-   * retrieved from a method or field annotated with {@link Provides}.
+   * retrieved from a method annotated with {@link Provides}.
    *
    * @param providerDescriptor the descriptor of the service that defines the
-   *        method or field
-   * @param providesAnnotation the {@link Provides} annotation on the method or
-   *        field
-   * @param providerMethodOrField the method or field that is annotated with
-   *        {@link Provides}
-   * @param providedType the {@link Method#getGenericReturnType()} or {@link
-   *        Field#getGenericType()}
-   * @param providerType the type of the service that defines the method or
-   *        field
+   *        method
+   * @param providesAnnotation the {@link Provides} annotation on the method
+   * @param providerMethod the method that is annotated with {@link Provides}
+   * @param providedType the {@link Method#getGenericReturnType()}
+   * @param providerType the type of the service that defines the method
    * @param locator the service locator
    * @throws MultiException if the {@link Provides} annotation has a non-empty
    *         {@link Provides#disposeMethod()} and the method it specifies is not
-   *         found or the annotated member is a static field
+   *         found
    */
   private static <T extends AccessibleObject & Member> Consumer<Object>
   getDisposeFunction(ActiveDescriptor<?> providerDescriptor,
                      Provides providesAnnotation,
-                     T providerMethodOrField,
+                     Method providerMethod,
                      TypeToken<?> providedType,
                      TypeToken<?> providerType,
                      ServiceLocator locator) {
 
     Objects.requireNonNull(providerDescriptor);
     Objects.requireNonNull(providesAnnotation);
-    Objects.requireNonNull(providerMethodOrField);
+    Objects.requireNonNull(providerMethod);
     Objects.requireNonNull(providedType);
     Objects.requireNonNull(providerType);
     Objects.requireNonNull(locator);
-
-    boolean isStatic =
-        Modifier.isStatic(providerMethodOrField.getModifiers());
-
-    if (isStatic && providerMethodOrField instanceof Field)
-      return instance -> {};
 
     if (providesAnnotation.disposeMethod().isEmpty())
       return instance -> locator.preDestroy(instance);
@@ -541,6 +525,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
                   .filter(method -> !Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 0)
                   .findAny()
+                  // TODO: Avoid throwing?  This exception will be swallowed.
                   .orElseThrow(
                       () ->
                           new MultiException(
@@ -548,7 +533,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
                                   "Dispose method "
                                       + providesAnnotation
                                       + " on "
-                                      + providerMethodOrField
+                                      + providerMethod
                                       + " not found")));
 
         return instance -> {
@@ -564,6 +549,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
       }
 
       case PROVIDER: {
+        boolean isStatic =
+            Modifier.isStatic(providerMethod.getModifiers());
+
         Method disposeMethod =
             Arrays.stream(providerType.getRawType().getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
@@ -572,6 +560,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
                   .filter(method -> providerType.resolveType(method.getGenericParameterTypes()[0])
                                                 .isSupertypeOf(providedType))
                   .findAny()
+                  // TODO: Avoid throwing?  This exception will be swallowed.
                   .orElseThrow(
                       () ->
                           new MultiException(
@@ -579,7 +568,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
                                   "Dispose method "
                                       + providesAnnotation
                                       + " on "
-                                      + providerMethodOrField
+                                      + providerMethod
                                       + " not found")));
 
         if (isStatic)

@@ -363,7 +363,7 @@ public final class ProvidesTest {
 
     locator.shutdown();
 
-    assertTrue(service.wasStopped());
+    assertFalse(service.wasStopped());
   }
 
   /**
@@ -510,7 +510,7 @@ public final class ProvidesTest {
 
     serviceHandle.close();
 
-    assertTrue(serviceWitHandle.wasStopped());
+    assertFalse(serviceWitHandle.wasStopped());
 
     locator.shutdown();
 
@@ -712,9 +712,9 @@ public final class ProvidesTest {
   }
 
   /**
-   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
-   * provided type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on an instance field and {@link
+   * Verifies that {@link Provides#disposeMethod()} cannot specify a method of
+   * the provided type to be invoked at the end of the service's lifecycle when
+   * the {@link Provides} annotation is on an instance field and {@link
    * Provides#disposalHandledBy()} is {@link
    * Provides.DisposalHandledBy#PROVIDED_INSTANCE}.
    */
@@ -727,7 +727,7 @@ public final class ProvidesTest {
 
     assertFalse(service.isClosed());
     locator.shutdown();
-    assertTrue(service.isClosed());
+    assertFalse(service.isClosed());
   }
 
   /**
@@ -788,9 +788,9 @@ public final class ProvidesTest {
   }
 
   /**
-   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
-   * provider type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on a static field and {@link
+   * Verifies that {@link Provides#disposeMethod()} cannot specify a method of
+   * the provider type to be invoked at the end of the service's lifecycle when
+   * the {@link Provides} annotation is on an instance field and {@link
    * Provides#disposalHandledBy()} is {@link
    * Provides.DisposalHandledBy#PROVIDER}.
    */
@@ -803,7 +803,7 @@ public final class ProvidesTest {
 
     assertFalse(service.isClosed());
     locator.shutdown();
-    assertTrue(service.isClosed());
+    assertFalse(service.isClosed());
   }
 
   /**
@@ -1041,7 +1041,7 @@ public final class ProvidesTest {
 
     handle.close();
 
-    assertTrue(root.wasStopped());
+    assertFalse(root.wasStopped());
     assertTrue(root.factory.wasStopped());
     assertFalse(root.dependency.wasStopped());
   }

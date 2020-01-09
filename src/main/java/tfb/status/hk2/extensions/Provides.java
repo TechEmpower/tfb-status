@@ -50,10 +50,9 @@ import org.jvnet.hk2.annotations.ContractsProvided;
  * provided service.  The system will not automatically invoke a {@link
  * PostConstruct#postConstruct()} method declared by the provided service.
  *
- * <p>If the annotated member is not a static field, then disposal of the
- * provided service may be customized.  See {@link #disposeMethod()}.  If the
- * annotated member is a static field, then the provided service will not
- * undergo automatic disposal.
+ * <p>If the annotated member is a method, then disposal of the provided service
+ * may be customized.  See {@link #disposeMethod()}.  If the annotated member is
+ * a field, then the provided service will not undergo automatic disposal.
  *
  * <h2>Scope</h2>
  *
@@ -88,7 +87,7 @@ public @interface Provides {
    * will be used.  If the provided type implements {@link PreDestroy} for
    * example, then its {@link PreDestroy#preDestroy()} method will be invoked.
    *
-   * <p>This value is ignored when this annotation is applied to a static field.
+   * <p>This value is ignored when this annotation is applied to a field.
    */
   String disposeMethod() default "";
 
