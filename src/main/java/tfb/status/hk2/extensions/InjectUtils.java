@@ -1,6 +1,7 @@
 package tfb.status.hk2.extensions;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.ImmutableTypeToInstanceMap;
 import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
@@ -81,6 +82,20 @@ final class InjectUtils {
     @SuppressWarnings("unchecked")
     T serviceAsT = (T) service;
     return serviceAsT;
+  }
+
+  static boolean containsTypeVariable(TypeToken<?> type) {
+    Objects.requireNonNull(type);
+
+    // We want to call TypeToken#rejectTypeVariables(), but that method is
+    // package-private.  Instead, call a public method in that package that is
+    // known to call rejectTypeVariables().
+    try {
+      Object ignored = ImmutableTypeToInstanceMap.of().getInstance(type);
+    } catch (IllegalArgumentException e) {
+      return true;
+    }
+    return false;
   }
 
   static Injectee injecteeFromParameter(Parameter parameter,

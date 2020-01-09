@@ -133,6 +133,15 @@ public class ProvidesListener implements DynamicConfigurationListener {
       TypeToken<?> providedType =
           providerType.resolveType(method.getGenericReturnType());
 
+      if (InjectUtils.containsTypeVariable(providedType))
+        continue;
+
+      if (Arrays.stream(method.getParameters())
+                .map(parameter -> parameter.getParameterizedType())
+                .map(parameterType -> providerType.resolveType(parameterType))
+                .anyMatch(parameterType -> InjectUtils.containsTypeVariable(parameterType)))
+        continue;
+
       ImmutableSet<Type> providedContracts =
           getContracts(
               providesAnnotation,
@@ -180,6 +189,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
       TypeToken<?> providedType =
           providerType.resolveType(field.getGenericType());
+
+      if (InjectUtils.containsTypeVariable(providedType))
+        continue;
 
       ImmutableSet<Type> providedContracts =
           getContracts(

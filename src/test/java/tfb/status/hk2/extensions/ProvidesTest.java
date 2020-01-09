@@ -1,8 +1,10 @@
 package tfb.status.hk2.extensions;
 
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -15,12 +17,15 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.lang.annotation.Retention;
 import java.lang.reflect.Type;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
+import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Factory;
@@ -1575,6 +1580,133 @@ public final class ProvidesTest {
   }
 
   /**
+   * Verifies that if a field is annotated with {@link Provides} but its type
+   * contains a type variable that cannot be resolved, then no service is
+   * registered for that field.
+   */
+  @Test
+  public void testUnresolvableTypeVariableInFieldType() {
+    ServiceLocator locator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableInFieldType.class);
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+
+    assertNotEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
+  }
+
+  /**
+   * Verifies that if a static method is annotated with {@link Provides} but its
+   * return type contains a type variable that cannot be resolved, then no
+   * service is registered for that method.
+   */
+  @Test
+  public void testUnresolvableTypeVariableInStaticMethodReturnType() {
+    ServiceLocator locator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableInStaticMethodReturnType.class);
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+
+    assertNotEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
+  }
+
+  /**
+   * Verifies that if an instance method is annotated with {@link Provides} but
+   * its return type contains a type variable that cannot be resolved, then no
+   * service is registered for that method.
+   */
+  @Test
+  public void testUnresolvableTypeVariableInInstanceMethodReturnType() {
+    ServiceLocator locator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableInInstanceMethodReturnType.class);
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+
+    assertNotEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
+  }
+
+  /**
+   * Verifies that if a static method is annotated with {@link Provides} but one
+   * of its parameter types contains a type variable that cannot be resolved,
+   * then no service is registered for that method.
+   */
+  @Test
+  public void testUnresolvableTypeVariableInStaticMethodParameterType() {
+    ServiceLocator locator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableInStaticMethodParameterType.class);
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+
+    assertNotEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
+  }
+
+  /**
+   * Verifies that if an instance method is annotated with {@link Provides} but
+   * one of its parameter types contains a type variable that cannot be
+   * resolved, then no service is registered for that method.
+   */
+  @Test
+  public void testUnresolvableTypeVariableInInstanceMethodParameterType() {
+    ServiceLocator locator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableInInstanceMethodParameterType.class);
+
+    assertNotNull(locator.getService(BetterFindMe.class));
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private ServiceLocator newServiceLocator() {
@@ -2549,6 +2681,87 @@ public final class ProvidesTest {
 
     FromConsumesGenericParameter(T value) {
       this.value = Objects.requireNonNull(value);
+    }
+  }
+
+  @Qualifier
+  @Retention(RUNTIME)
+  public @interface BetterNotFindMe {}
+
+  @Qualifier
+  @Retention(RUNTIME)
+  public @interface BetterFindMe {}
+
+  public static final class UnresolvableTypeVariableInFieldType<T> {
+    @Provides
+    @BetterNotFindMe
+    public final @Nullable T bad = null;
+
+    @Provides
+    @BetterFindMe
+    public final String good = "good";
+  }
+
+  public static final class UnresolvableTypeVariableInStaticMethodReturnType {
+    @Provides
+    @BetterNotFindMe
+    @SuppressWarnings("TypeParameterUnusedInFormals")
+    public static <T> @Nullable T bad() {
+      return null;
+    }
+
+    @Provides
+    @BetterFindMe
+    public static String good() {
+      return "good";
+    }
+
+    // Avoid "utility class with non-private constructor" warnings.
+    public final int x = 2;
+  }
+
+  public static final class UnresolvableTypeVariableInInstanceMethodReturnType<T> {
+    @Provides
+    @BetterNotFindMe
+    public @Nullable T bad() {
+      return null;
+    }
+
+    @Provides
+    @BetterFindMe
+    public String good() {
+      return "good";
+    }
+  }
+
+  public static final class UnresolvableTypeVariableInStaticMethodParameterType {
+    @Provides
+    @BetterNotFindMe
+    public static <T> String bad(T value) {
+      return "bad";
+    }
+
+    @Provides
+    @BetterFindMe
+    public static String good() {
+      return "good";
+    }
+
+    // Avoid "utility class with non-private constructor" warnings.
+    public final int x = 2;
+  }
+
+  public static final class UnresolvableTypeVariableInInstanceMethodParameterType<T> {
+    @Provides
+    @BetterNotFindMe
+    public String bad(T value) {
+      return "bad";
+    }
+
+    @Provides
+    @BetterFindMe
+    public String good() {
+      return "good";
     }
   }
 }
