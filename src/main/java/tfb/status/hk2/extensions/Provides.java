@@ -30,9 +30,10 @@ import org.jvnet.hk2.annotations.ContractsProvided;
  *
  *   ServiceLocator locator =
  *       ServiceLocatorUtilities.createAndPopulateServiceLocator();
- *
- *   ServiceLocatorUtilities.bind(locator, new ProvidesModule());
- *   ServiceLocatorUtilities.addClasses(locator, MyService.class);
+ *   ServiceLocatorUtilities.addClasses(
+ *       locator,
+ *       ProvidesListener.class,
+ *       MyService.class);
  *   OtherService other = locator.getService(OtherService.class);
  * </pre>
  *
@@ -94,7 +95,8 @@ public @interface Provides {
   /**
    * Specifies who is responsible for the disposal of instances of the provided
    * service, assuming that {@link #disposeMethod()} is non-empty.  If {@link
-   * #disposeMethod()} is empty then this value is ignored.
+   * #disposeMethod()} is empty or this annotation is applied to a field, then
+   * this value is ignored.
    *
    * <p>See {@link DisposalHandledBy} for definitions of the possible values.
    */
