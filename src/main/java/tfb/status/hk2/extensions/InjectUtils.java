@@ -1,6 +1,5 @@
 package tfb.status.hk2.extensions;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ImmutableTypeToInstanceMap;
 import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
@@ -9,10 +8,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -54,7 +56,6 @@ final class InjectUtils {
    *         type but the provider of that service provided {@code null}
    */
   static <T> T getService(ServiceLocator locator, TypeToken<T> type) {
-
     Objects.requireNonNull(locator);
     Objects.requireNonNull(type);
 
@@ -84,23 +85,54 @@ final class InjectUtils {
     return serviceAsT;
   }
 
-  static boolean containsTypeVariable(TypeToken<?> type) {
+  static boolean containsTypeVariable(Type type) {
     Objects.requireNonNull(type);
 
     // We want to call TypeToken#rejectTypeVariables(), but that method is
     // package-private.  Instead, call a public method in that package that is
     // known to call rejectTypeVariables().
     try {
-      Object ignored = ImmutableTypeToInstanceMap.of().getInstance(type);
+      Object ignored = ImmutableTypeToInstanceMap.of().getInstance(TypeToken.of(type));
     } catch (IllegalArgumentException e) {
       return true;
     }
     return false;
   }
 
-  static Injectee injecteeFromParameter(Parameter parameter,
-                                        TypeToken<?> parentType) {
+  static Class<?> getRawType(Type type) {
+    Objects.requireNonNull(type);
+    return TypeToken.of(type).getRawType();
+  }
 
+  static Type resolveType(Type parentType, Type childType) {
+    Objects.requireNonNull(parentType);
+    Objects.requireNonNull(childType);
+    return TypeToken.of(parentType)
+                    .resolveType(childType)
+                    .getType();
+  }
+
+  static Stream<Type> getTypes(Type type) {
+    Objects.requireNonNull(type);
+    return TypeToken.of(type)
+                    .getTypes()
+                    .stream()
+                    .map(token -> token.getType());
+  }
+
+  static boolean isSupertype(Type a, Type b) {
+    Objects.requireNonNull(a);
+    Objects.requireNonNull(b);
+    return TypeToken.of(a).isSupertypeOf(b);
+  }
+
+  static boolean isSubtype(Type a, Type b) {
+    Objects.requireNonNull(a);
+    Objects.requireNonNull(b);
+    return TypeToken.of(a).isSubtypeOf(b);
+  }
+
+  static Injectee injecteeFromParameter(Parameter parameter, Type parentType) {
     Objects.requireNonNull(parameter);
     Objects.requireNonNull(parentType);
 
@@ -110,16 +142,18 @@ final class InjectUtils {
       throw new AssertionError(
           "parameter " + parameter + " not found in parent " + parent);
 
-    TypeToken<?> parameterType =
-        parentType.resolveType(parameter.getParameterizedType());
+    Type parameterType =
+        resolveType(
+            parentType,
+            parameter.getParameterizedType());
 
-    var injectee = new InjecteeImpl(parameterType.getType());
+    var injectee = new InjecteeImpl(parameterType);
     injectee.setParent(parent);
     injectee.setPosition(index);
 
     // This block of code reproduces the behavior of
     // org.jvnet.hk2.internal.Utilities#getParamInformation(Annotation[])
-    var qualifiers = new ImmutableSet.Builder<Annotation>();
+    var qualifiers = new LinkedHashSet<Annotation>();
     for (Annotation annotation : parameter.getAnnotations()) {
       if (ReflectionHelper.isAnnotationAQualifier(annotation)) {
         qualifiers.add(annotation);
@@ -131,13 +165,13 @@ final class InjectUtils {
         injectee.setUnqualified((Unqualified) annotation);
       }
     }
-    injectee.setRequiredQualifiers(qualifiers.build());
+    injectee.setRequiredQualifiers(Set.copyOf(qualifiers));
 
     return injectee;
   }
 
   static boolean supportsParameter(Parameter parameter,
-                                   TypeToken<?> parentType,
+                                   Type parentType,
                                    ServiceLocator locator) {
 
     Objects.requireNonNull(parameter);
@@ -169,7 +203,7 @@ final class InjectUtils {
 
   static @Nullable ServiceHandle<?> serviceHandleFromParameter(
       Parameter parameter,
-      TypeToken<?> parentType,
+      Type parentType,
       ServiceLocator locator) {
 
     Objects.requireNonNull(parameter);
@@ -193,7 +227,7 @@ final class InjectUtils {
 
   static @Nullable Object serviceFromParameter(
       Parameter parameter,
-      TypeToken<?> parentType,
+      Type parentType,
       @Nullable ServiceHandle<?> root,
       ServiceLocator locator) {
 

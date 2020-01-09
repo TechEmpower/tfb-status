@@ -1,9 +1,8 @@
 package tfb.status.hk2.extensions;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,12 +36,12 @@ final class Subscriber {
    * that topic's messages won't be delivered to this subscriber.  See also
    * {@link #permittedTypes} for further restrictions on topic types.
    */
-  final TypeToken<?> parameterType;
+  final Type parameterType;
 
   /**
    * The {@link Qualifier} annotations on the method.
    */
-  final ImmutableSet<Annotation> qualifiers;
+  final Set<Annotation> qualifiers;
 
   /**
    * The {@link Unqualified} annotation on the method, or {@code null} if there
@@ -58,7 +57,7 @@ final class Subscriber {
    * type is otherwise compatible (with the message {@link #parameterType} of
    * this subscriber).
    */
-  final ImmutableSet<TypeToken<?>> permittedTypes;
+  final Set<Type> permittedTypes;
 
   /**
    * The descriptor for the service class containing the method.
@@ -67,18 +66,18 @@ final class Subscriber {
 
   Subscriber(Method method,
              int parameterIndex,
-             TypeToken<?> parameterType,
-             ImmutableSet<Annotation> qualifiers,
+             Type parameterType,
+             Set<Annotation> qualifiers,
              @Nullable Unqualified unqualified,
-             ImmutableSet<TypeToken<?>> permittedTypes,
+             Set<Type> permittedTypes,
              ActiveDescriptor<?> serviceDescriptor) {
 
     this.method = Objects.requireNonNull(method);
     this.parameterIndex = parameterIndex;
     this.parameterType = Objects.requireNonNull(parameterType);
-    this.qualifiers = Objects.requireNonNull(qualifiers);
+    this.qualifiers = Set.copyOf(Objects.requireNonNull(qualifiers));
     this.unqualified = unqualified;
-    this.permittedTypes = Objects.requireNonNull(permittedTypes);
+    this.permittedTypes = Set.copyOf(Objects.requireNonNull(permittedTypes));
     this.serviceDescriptor = Objects.requireNonNull(serviceDescriptor);
   }
 
@@ -89,13 +88,13 @@ final class Subscriber {
   boolean isSubscribedTo(Topic<?> topic) {
     Objects.requireNonNull(topic);
 
-    TypeToken<?> eventType = TypeToken.of(topic.getTopicType());
-    if (!parameterType.isSupertypeOf(eventType))
+    Type eventType = topic.getTopicType();
+    if (!InjectUtils.isSupertype(parameterType, eventType))
       return false;
 
     if (!permittedTypes.isEmpty()
         && permittedTypes.stream()
-                         .noneMatch(type -> type.isSupertypeOf(eventType)))
+                         .noneMatch(type -> InjectUtils.isSupertype(type, eventType)))
       return false;
 
     if (!ReflectionHelper.annotationContainsAll(topic.getTopicQualifiers(),

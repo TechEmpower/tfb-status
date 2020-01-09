@@ -3,7 +3,6 @@ package tfb.status.hk2.extensions;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 
-import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
@@ -31,8 +30,8 @@ import org.glassfish.hk2.utilities.BuilderHelper;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 
 /**
- * An {@link ActiveDescriptor} for a service whose annotations come from some
- * {@link AnnotatedElement}, such as a method, field, or class.
+ * An {@link ActiveDescriptor} implementation used by {@link ProvidesListener}
+ * and {@link NoInstancesService}.
  */
 final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   private final AnnotatedElement annotatedElement;
@@ -69,7 +68,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
 
   @Override
   public Class<?> getImplementationClass() {
-    return TypeToken.of(implementationType).getRawType();
+    return InjectUtils.getRawType(implementationType);
   }
 
   @Override
@@ -127,8 +126,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   public Set<String> getAdvertisedContracts() {
     return getContractTypes()
         .stream()
-        .map(contract -> TypeToken.of(contract))
-        .map(contract -> contract.getRawType())
+        .map(contract -> InjectUtils.getRawType(contract))
         .map(contract -> contract.getName())
         .collect(toUnmodifiableSet());
   }

@@ -1,7 +1,7 @@
 package tfb.status.hk2.extensions;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.Objects;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.ActiveDescriptor;
@@ -74,7 +74,7 @@ final class NoInstancesService implements DynamicConfigurationService {
     return new ProvidesDescriptor<>(
         rawClass,
         rawClass,
-        ImmutableSet.of(), // Provides no contracts, not even itself.
+        Set.of(), // Provides no contracts, not even itself.
         ServiceLocatorUtilities.getPerLookupAnnotation(),
         root -> { throw new UnsupportedOperationException(); },
         instance -> { throw new UnsupportedOperationException(); });

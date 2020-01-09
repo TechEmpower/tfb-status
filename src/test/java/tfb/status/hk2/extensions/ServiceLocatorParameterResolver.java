@@ -1,7 +1,7 @@
 package tfb.status.hk2.extensions;
 
-import com.google.common.reflect.TypeToken;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
@@ -64,7 +64,7 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
                                     ExtensionContext extensionContext) {
 
     Parameter parameter = parameterContext.getParameter();
-    TypeToken<?> testType = getTestType(parameterContext, extensionContext);
+    Type testType = getTestType(parameterContext, extensionContext);
     ServiceLocator locator = getServiceLocator(extensionContext);
     return InjectUtils.supportsParameter(parameter, testType, locator);
   }
@@ -74,14 +74,14 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
                                             ExtensionContext extensionContext) {
 
     Parameter parameter = parameterContext.getParameter();
-    TypeToken<?> testType = getTestType(parameterContext, extensionContext);
+    Type testType = getTestType(parameterContext, extensionContext);
     ServiceLocator locator = getServiceLocator(extensionContext);
     ServiceHandle<?> root = getRootServiceHandle(extensionContext);
     return InjectUtils.serviceFromParameter(parameter, testType, root, locator);
   }
 
-  private TypeToken<?> getTestType(ParameterContext parameterContext,
-                                   ExtensionContext extensionContext) {
+  private Type getTestType(ParameterContext parameterContext,
+                           ExtensionContext extensionContext) {
     //
     // This parameter might be declared in an generic base class.
     //
@@ -101,9 +101,8 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
     // that class does not contain the information required to resolve the type
     // variable T.
     //
-    return TypeToken.of(
-        extensionContext.getTestClass().orElseGet(
-            () -> parameterContext.getDeclaringExecutable().getDeclaringClass()));
+    return extensionContext.getTestClass().orElseGet(
+        () -> parameterContext.getDeclaringExecutable().getDeclaringClass());
   }
 
   private ServiceLocator getServiceLocator(ExtensionContext extensionContext) {

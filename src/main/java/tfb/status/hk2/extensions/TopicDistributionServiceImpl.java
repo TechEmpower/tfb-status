@@ -1,18 +1,16 @@
 package tfb.status.hk2.extensions;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toUnmodifiableList;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,7 +51,7 @@ final class TopicDistributionServiceImpl
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @GuardedBy("this")
-  private ImmutableList<Subscriber> allSubscribers = ImmutableList.of();
+  private List<Subscriber> allSubscribers = List.of();
 
   @Inject
   public TopicDistributionServiceImpl(ServiceLocator locator) {
@@ -106,7 +104,7 @@ final class TopicDistributionServiceImpl
           ServiceHandle<?> parameterHandle =
               InjectUtils.serviceHandleFromParameter(
                   parameters[i],
-                  TypeToken.of(subscriber.serviceDescriptor.getImplementationType()),
+                  subscriber.serviceDescriptor.getImplementationType(),
                   locator);
 
           if (parameterHandle == null)
@@ -188,7 +186,7 @@ final class TopicDistributionServiceImpl
     }
   }
 
-  private synchronized ImmutableList<Subscriber> getAllSubscribers() {
+  private synchronized List<Subscriber> getAllSubscribers() {
     return allSubscribers;
   }
 
@@ -198,7 +196,7 @@ final class TopicDistributionServiceImpl
    * SubscribeTo}.
    */
   private void findNewSubscribers() {
-    ImmutableList<Subscriber> newSubscribers =
+    List<Subscriber> newSubscribers =
         locator
             .getDescriptors(
                 descriptor ->
@@ -207,35 +205,30 @@ final class TopicDistributionServiceImpl
             .stream()
             .map(descriptor -> locator.reifyDescriptor(descriptor))
             .flatMap(
-                serviceDescriptor -> {
-                  if (!seen.add(serviceDescriptor))
+                descriptor -> {
+                  if (!seen.add(descriptor))
                     return Stream.empty();
 
-                  TypeToken<?> serviceType =
-                      TypeToken.of(serviceDescriptor.getImplementationType());
-
-                  ImmutableSet<TypeToken<?>> permittedMessageTypes =
-                      serviceDescriptor
+                  Set<Type> permittedMessageTypes =
+                      descriptor
                           .getQualifierAnnotations()
                           .stream()
                           .filter(annotation -> annotation.annotationType() == MessageReceiver.class)
                           .map(annotation -> (MessageReceiver) annotation)
                           .map(annotation -> annotation.value())
                           .flatMap(classes -> Arrays.stream(classes))
-                          .map(clazz -> TypeToken.of(clazz))
-                          .collect(toImmutableSet());
+                          .collect(toUnmodifiableSet());
 
-                  return Arrays
-                      .stream(serviceType.getRawType().getMethods())
-                      .map(
-                          method ->
-                              subscriberFromMethod(
-                                  method,
-                                  permittedMessageTypes,
-                                  serviceDescriptor))
-                      .filter(subscriber -> subscriber != null);
+                  return Arrays.stream(descriptor.getImplementationClass().getMethods())
+                               .map(
+                                   method ->
+                                       subscriberFromMethod(
+                                           method,
+                                           permittedMessageTypes,
+                                           descriptor))
+                               .filter(subscriber -> subscriber != null);
                 })
-            .collect(toImmutableList());
+            .collect(toUnmodifiableList());
 
     if (newSubscribers.isEmpty())
       return;
@@ -249,20 +242,19 @@ final class TopicDistributionServiceImpl
       allSubscribers =
           Stream.concat(allSubscribers.stream(),
                         newSubscribers.stream())
-                .collect(toImmutableList());
+                .collect(toUnmodifiableList());
     }
   }
 
   private @Nullable Subscriber subscriberFromMethod(
       Method method,
-      ImmutableSet<TypeToken<?>> permittedTypes,
+      Set<Type> permittedTypes,
       ActiveDescriptor<?> activeDescriptor) {
 
     if (method.getDeclaringClass() == Object.class)
       return null;
 
-    TypeToken<?> serviceType =
-        TypeToken.of(activeDescriptor.getImplementationType());
+    Type serviceType = activeDescriptor.getImplementationType();
 
     Parameter[] parameters = method.getParameters();
 
@@ -313,13 +305,15 @@ final class TopicDistributionServiceImpl
 
     Parameter parameter = parameters[parameterIndex];
 
-    TypeToken<?> parameterType =
-        TypeToken.of(parameter.getParameterizedType());
+    Type parameterType =
+        InjectUtils.resolveType(
+            serviceType,
+            parameter.getParameterizedType());
 
     if (!permittedTypes.isEmpty()
         && permittedTypes.stream()
                          .noneMatch(
-                             type -> type.isSupertypeOf(parameterType))) {
+                             type -> InjectUtils.isSupertype(type, parameterType))) {
       logger.warn(
           "Subscriber method {} of service {} will receive no messages "
               + "because its message parameter type {} is not a subtype of "
@@ -332,8 +326,8 @@ final class TopicDistributionServiceImpl
           MessageReceiver.class.getSimpleName());
     }
 
-    ImmutableSet<Annotation> qualifiers =
-        ImmutableSet.copyOf(
+    Set<Annotation> qualifiers =
+        Set.copyOf(
             ReflectionHelper.getQualifierAnnotations(parameter));
 
     Unqualified unqualified = parameter.getAnnotation(Unqualified.class);

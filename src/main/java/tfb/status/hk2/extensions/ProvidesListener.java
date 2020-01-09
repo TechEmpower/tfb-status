@@ -1,9 +1,7 @@
 package tfb.status.hk2.extensions;
 
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
@@ -117,12 +115,12 @@ public class ProvidesListener implements DynamicConfigurationListener {
     if (!seen.add(providerDescriptor))
       return 0;
 
-    TypeToken<?> providerType =
-        TypeToken.of(providerDescriptor.getImplementationType());
+    Type providerType = providerDescriptor.getImplementationType();
+    Class<?> providerClass = InjectUtils.getRawType(providerType);
 
     int added = 0;
 
-    for (Method method : providerType.getRawType().getMethods()) {
+    for (Method method : providerClass.getMethods()) {
       Provides providesAnnotation = method.getAnnotation(Provides.class);
       if (providesAnnotation == null)
         continue;
@@ -130,19 +128,26 @@ public class ProvidesListener implements DynamicConfigurationListener {
       if (!seen.add(providerDescriptor, method))
         continue;
 
-      TypeToken<?> providedType =
-          providerType.resolveType(method.getGenericReturnType());
+      Type providedType =
+          InjectUtils.resolveType(
+              providerType,
+              method.getGenericReturnType());
 
       if (InjectUtils.containsTypeVariable(providedType))
         continue;
 
       if (Arrays.stream(method.getParameters())
-                .map(parameter -> parameter.getParameterizedType())
-                .map(parameterType -> providerType.resolveType(parameterType))
-                .anyMatch(parameterType -> InjectUtils.containsTypeVariable(parameterType)))
+                .map(
+                    parameter ->
+                        InjectUtils.resolveType(
+                            providerType,
+                            parameter.getParameterizedType()))
+                .anyMatch(
+                    parameterType ->
+                        InjectUtils.containsTypeVariable(parameterType)))
         continue;
 
-      ImmutableSet<Type> providedContracts =
+      Set<Type> providedContracts =
           getContracts(
               providesAnnotation,
               providedType);
@@ -170,7 +175,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
       configuration.addActiveDescriptor(
           new ProvidesDescriptor<>(
               method,
-              providedType.getType(),
+              providedType,
               providedContracts,
               scopeAnnotation,
               createFunction,
@@ -179,7 +184,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
       added++;
     }
 
-    for (Field field : providerType.getRawType().getFields()) {
+    for (Field field : providerClass.getFields()) {
       Provides providesAnnotation = field.getAnnotation(Provides.class);
       if (providesAnnotation == null)
         continue;
@@ -187,13 +192,15 @@ public class ProvidesListener implements DynamicConfigurationListener {
       if (!seen.add(providerDescriptor, field))
         continue;
 
-      TypeToken<?> providedType =
-          providerType.resolveType(field.getGenericType());
+      Type providedType =
+          InjectUtils.resolveType(
+              providerType,
+              field.getGenericType());
 
       if (InjectUtils.containsTypeVariable(providedType))
         continue;
 
-      ImmutableSet<Type> providedContracts =
+      Set<Type> providedContracts =
           getContracts(
               providesAnnotation,
               providedType);
@@ -215,7 +222,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
       configuration.addActiveDescriptor(
           new ProvidesDescriptor<>(
               field,
-              providedType.getType(),
+              providedType,
               providedContracts,
               scopeAnnotation,
               createFunction,
@@ -236,32 +243,32 @@ public class ProvidesListener implements DynamicConfigurationListener {
    *        annotated method or the {@link Field#getGenericType()} of the
    *        annotated field
    */
-  private static ImmutableSet<Type> getContracts(Provides providesAnnotation,
-                                                 TypeToken<?> providedType) {
+  private static Set<Type> getContracts(Provides providesAnnotation,
+                                        Type providedType) {
 
     Objects.requireNonNull(providesAnnotation);
     Objects.requireNonNull(providedType);
 
     if (providesAnnotation.contracts().length > 0)
-      return ImmutableSet.copyOf(providesAnnotation.contracts());
+      return Arrays.stream(providesAnnotation.contracts())
+                   .collect(toUnmodifiableSet());
 
     // This block of code reproduces the behavior of
     // org.jvnet.hk2.internal.Utilities#getAutoAdvertisedTypes(Type)
 
-    Class<?> rawClass = ReflectionHelper.getRawClass(providedType.getType());
+    Class<?> rawClass = ReflectionHelper.getRawClass(providedType);
     if (rawClass == null)
-      return ImmutableSet.of(providedType.getType());
+      return Set.of(providedType);
 
     ContractsProvided explicit = rawClass.getAnnotation(ContractsProvided.class);
     if (explicit != null)
-      return ImmutableSet.copyOf(explicit.value());
+      return Arrays.stream(explicit.value())
+                   .collect(toUnmodifiableSet());
 
-    return Stream.concat(Stream.of(providedType.getType()),
-                         providedType.getTypes()
-                                     .stream()
-                                     .map(t -> t.getType())
-                                     .filter(t -> isContract(t)))
-                 .collect(toImmutableSet());
+    return Stream.concat(Stream.of(providedType),
+                         InjectUtils.getTypes(providedType)
+                                    .filter(t -> isContract(t)))
+                 .collect(toUnmodifiableSet());
   }
 
   /**
@@ -311,7 +318,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
         return annotation;
 
     for (Type contract : providedContracts) {
-      Class<?> rawType = TypeToken.of(contract).getRawType();
+      Class<?> rawType = InjectUtils.getRawType(contract);
       for (Annotation annotation : rawType.getAnnotations())
         if (annotation.annotationType().isAnnotationPresent(Scope.class))
           return annotation;
@@ -338,7 +345,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
    */
   private static Function<ServiceHandle<?>, Object>
   getCreateFunctionFromStaticMethod(Method method,
-                                    TypeToken<?> providerType,
+                                    Type providerType,
                                     ServiceLocator locator) {
 
     Objects.requireNonNull(method);
@@ -383,7 +390,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
    */
   private static Function<ServiceHandle<?>, Object>
   getCreateFunctionFromInstanceMethod(Method method,
-                                      TypeToken<?> providerType,
+                                      Type providerType,
                                       ActiveDescriptor<?> providerDescriptor,
                                       ServiceLocator locator) {
 
@@ -503,8 +510,8 @@ public class ProvidesListener implements DynamicConfigurationListener {
   getDisposeFunction(ActiveDescriptor<?> providerDescriptor,
                      Provides providesAnnotation,
                      Method providerMethod,
-                     TypeToken<?> providedType,
-                     TypeToken<?> providerType,
+                     Type providedType,
+                     Type providerType,
                      ServiceLocator locator) {
 
     Objects.requireNonNull(providerDescriptor);
@@ -523,7 +530,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
     switch (providesAnnotation.disposalHandledBy()) {
       case PROVIDED_INSTANCE: {
         Method disposeMethod =
-            Arrays.stream(providedType.getRawType().getMethods())
+            Arrays.stream(InjectUtils.getRawType(providedType).getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> !Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 0)
@@ -559,12 +566,18 @@ public class ProvidesListener implements DynamicConfigurationListener {
             Modifier.isStatic(providerMethod.getModifiers());
 
         Method disposeMethod =
-            Arrays.stream(providerType.getRawType().getMethods())
+            Arrays.stream(InjectUtils.getRawType(providerType).getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> isStatic == Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 1)
-                  .filter(method -> providerType.resolveType(method.getGenericParameterTypes()[0])
-                                                .isSupertypeOf(providedType))
+                  .filter(method -> {
+                    Type parameterType =
+                        InjectUtils.resolveType(
+                            providerType,
+                            method.getGenericParameterTypes()[0]);
+
+                    return InjectUtils.isSupertype(parameterType, providedType);
+                  })
                   .findAny()
                   // TODO: Avoid throwing?  This exception will be swallowed.
                   .orElseThrow(
