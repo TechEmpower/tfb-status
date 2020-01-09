@@ -30,10 +30,12 @@ import org.jvnet.hk2.annotations.ContractsProvided;
  *
  *   ServiceLocator locator =
  *       ServiceLocatorUtilities.createAndPopulateServiceLocator();
+ *
  *   ServiceLocatorUtilities.addClasses(
  *       locator,
  *       ProvidesListener.class,
  *       MyService.class);
+ *
  *   OtherService other = locator.getService(OtherService.class);
  * </pre>
  *
@@ -116,13 +118,13 @@ public @interface Provides {
 
     /**
      * The instance or class that provides the service &mdash; the one declaring
-     * a method or field annotated with {@link Provides} &mdash; is responsible
-     * for the disposal of instances of the provided service.  {@link
-     * #disposeMethod()} names a public method of the providing class that
-     * accepts one parameter, where the type of that parameter is a supertype of
-     * the provided service type.  If the method or field annotated with {@link
-     * Provides} is static, then the dispose method must also be static.
-     * Otherwise the dispose method must be non-static.
+     * the method annotated with {@link Provides} &mdash; is responsible for the
+     * disposal of instances of the provided service.  {@link #disposeMethod()}
+     * names a public method of the providing class that accepts one parameter,
+     * where the type of that parameter is a supertype of the provided service
+     * type.  If the method annotated with {@link Provides} is static, then the
+     * dispose method must also be static.  Otherwise the dispose method must be
+     * non-static.
      */
     PROVIDER
   }
