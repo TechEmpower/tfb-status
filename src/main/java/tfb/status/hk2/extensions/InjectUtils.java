@@ -83,8 +83,11 @@ final class InjectUtils {
     return serviceAsT;
   }
 
-  static Injectee injecteeFromParameter(Parameter parameter) {
+  static Injectee injecteeFromParameter(Parameter parameter,
+                                        TypeToken<?> parentType) {
+
     Objects.requireNonNull(parameter);
+    Objects.requireNonNull(parentType);
 
     Executable parent = parameter.getDeclaringExecutable();
     int index = Arrays.asList(parent.getParameters()).indexOf(parameter);
@@ -92,7 +95,10 @@ final class InjectUtils {
       throw new AssertionError(
           "parameter " + parameter + " not found in parent " + parent);
 
-    var injectee = new InjecteeImpl(parameter.getParameterizedType());
+    TypeToken<?> parameterType =
+        parentType.resolveType(parameter.getParameterizedType());
+
+    var injectee = new InjecteeImpl(parameterType.getType());
     injectee.setParent(parent);
     injectee.setPosition(index);
 
@@ -116,9 +122,11 @@ final class InjectUtils {
   }
 
   static boolean supportsParameter(Parameter parameter,
+                                   TypeToken<?> parentType,
                                    ServiceLocator serviceLocator) {
 
     Objects.requireNonNull(parameter);
+    Objects.requireNonNull(parentType);
     Objects.requireNonNull(serviceLocator);
 
     // Dodge an exception that would be thrown by
@@ -134,7 +142,7 @@ final class InjectUtils {
     if (ReflectionHelper.getRawClass(parameter.getParameterizedType()) == null)
       return false;
 
-    Injectee injectee = injecteeFromParameter(parameter);
+    Injectee injectee = injecteeFromParameter(parameter, parentType);
     if (injectee.isOptional())
       return true;
 
@@ -146,12 +154,14 @@ final class InjectUtils {
 
   static @Nullable ServiceHandle<?> serviceHandleFromParameter(
       Parameter parameter,
+      TypeToken<?> parentType,
       ServiceLocator serviceLocator) {
 
-    Objects.requireNonNull(serviceLocator);
     Objects.requireNonNull(parameter);
+    Objects.requireNonNull(parentType);
+    Objects.requireNonNull(serviceLocator);
 
-    Injectee injectee = injecteeFromParameter(parameter);
+    Injectee injectee = injecteeFromParameter(parameter, parentType);
 
     ActiveDescriptor<?> activeDescriptor =
         serviceLocator.getInjecteeDescriptor(injectee);
@@ -168,13 +178,15 @@ final class InjectUtils {
 
   static @Nullable Object serviceFromParameter(
       Parameter parameter,
+      TypeToken<?> parentType,
       @Nullable ServiceHandle<?> root,
       ServiceLocator serviceLocator) {
 
-    Objects.requireNonNull(serviceLocator);
     Objects.requireNonNull(parameter);
+    Objects.requireNonNull(parentType);
+    Objects.requireNonNull(serviceLocator);
 
-    Injectee injectee = injecteeFromParameter(parameter);
+    Injectee injectee = injecteeFromParameter(parameter, parentType);
 
     ActiveDescriptor<?> activeDescriptor =
         serviceLocator.getInjecteeDescriptor(injectee);

@@ -146,8 +146,8 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
       Function<ServiceHandle<?>, Object> createFunction =
           Modifier.isStatic(method.getModifiers())
-              ? getCreateFunctionFromStaticMethod(method, locator)
-              : getCreateFunctionFromInstanceMethod(providerDescriptor, method, locator);
+              ? getCreateFunctionFromStaticMethod(method, providerType, locator)
+              : getCreateFunctionFromInstanceMethod(method, providerType, providerDescriptor, locator);
 
       Consumer<Object> disposeFunction =
           getDisposeFunction(
@@ -327,12 +327,16 @@ public class ProvidesListener implements DynamicConfigurationListener {
    * method that is annotated with {@link Provides}.
    *
    * @param method the static method that is annotated with {@link Provides}
+   * @param providerType the type of the service that defines the method
    * @param locator the service locator
    */
   private static Function<ServiceHandle<?>, Object>
-  getCreateFunctionFromStaticMethod(Method method, ServiceLocator locator) {
+  getCreateFunctionFromStaticMethod(Method method,
+                                    TypeToken<?> providerType,
+                                    ServiceLocator locator) {
 
     Objects.requireNonNull(method);
+    Objects.requireNonNull(providerType);
     Objects.requireNonNull(locator);
 
     return (ServiceHandle<?> root) -> {
@@ -342,6 +346,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
                     parameter ->
                         InjectUtils.serviceFromParameter(
                             parameter,
+                            providerType,
                             root,
                             locator))
                 .toArray(length -> new Object[length]);
@@ -364,17 +369,20 @@ public class ProvidesListener implements DynamicConfigurationListener {
    * Returns a function that creates instances of services by invoking an
    * instance method that is annotated with {@link Provides}.
    *
+   * @param method the instance method that is annotated with {@link Provides}
+   * @param providerType the type of the service that defines the method
    * @param providerDescriptor the descriptor of the service that defines the
    *        method
-   * @param method the instance method that is annotated with {@link Provides}
    * @param locator the service locator
    */
   private static Function<ServiceHandle<?>, Object>
-  getCreateFunctionFromInstanceMethod(ActiveDescriptor<?> providerDescriptor,
-                                      Method method,
+  getCreateFunctionFromInstanceMethod(Method method,
+                                      TypeToken<?> providerType,
+                                      ActiveDescriptor<?> providerDescriptor,
                                       ServiceLocator locator) {
 
     Objects.requireNonNull(providerDescriptor);
+    Objects.requireNonNull(providerType);
     Objects.requireNonNull(method);
     Objects.requireNonNull(locator);
 
@@ -385,6 +393,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
                     parameter ->
                         InjectUtils.serviceFromParameter(
                             parameter,
+                            providerType,
                             root,
                             locator))
                 .toArray(length -> new Object[length]);

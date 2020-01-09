@@ -49,7 +49,7 @@ final class TopicDistributionServiceImpl
     implements TopicDistributionService, DynamicConfigurationListener {
 
   private final ServiceLocator serviceLocator;
-  private final Set<Class<?>> classesAnalyzed = ConcurrentHashMap.newKeySet();
+  private final Set<ActiveDescriptor<?>> seen = ConcurrentHashMap.newKeySet();
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @GuardedBy("this")
@@ -104,7 +104,10 @@ final class TopicDistributionServiceImpl
 
         else {
           ServiceHandle<?> parameterHandle =
-              InjectUtils.serviceHandleFromParameter(parameters[i], serviceLocator);
+              InjectUtils.serviceHandleFromParameter(
+                  parameters[i],
+                  TypeToken.of(subscriber.serviceDescriptor.getImplementationType()),
+                  serviceLocator);
 
           if (parameterHandle == null)
             arguments[i] = null;
@@ -205,11 +208,11 @@ final class TopicDistributionServiceImpl
             .map(descriptor -> serviceLocator.reifyDescriptor(descriptor))
             .flatMap(
                 serviceDescriptor -> {
-                  Class<?> serviceClass =
-                      serviceDescriptor.getImplementationClass();
-
-                  if (!classesAnalyzed.add(serviceClass))
+                  if (!seen.add(serviceDescriptor))
                     return Stream.empty();
+
+                  TypeToken<?> serviceType =
+                      TypeToken.of(serviceDescriptor.getImplementationType());
 
                   ImmutableSet<TypeToken<?>> permittedMessageTypes =
                       serviceDescriptor
@@ -223,13 +226,12 @@ final class TopicDistributionServiceImpl
                           .collect(toImmutableSet());
 
                   return Arrays
-                      .stream(serviceClass.getMethods())
+                      .stream(serviceType.getRawType().getMethods())
                       .map(
                           method ->
                               subscriberFromMethod(
                                   method,
                                   permittedMessageTypes,
-                                  serviceClass,
                                   serviceDescriptor))
                       .filter(subscriber -> subscriber != null);
                 })
@@ -254,11 +256,13 @@ final class TopicDistributionServiceImpl
   private @Nullable Subscriber subscriberFromMethod(
       Method method,
       ImmutableSet<TypeToken<?>> permittedTypes,
-      Class<?> serviceClass,
       ActiveDescriptor<?> activeDescriptor) {
 
     if (method.getDeclaringClass() == Object.class)
       return null;
+
+    TypeToken<?> serviceType =
+        TypeToken.of(activeDescriptor.getImplementationType());
 
     Parameter[] parameters = method.getParameters();
 
@@ -272,7 +276,7 @@ final class TopicDistributionServiceImpl
               "Two @{} parameters in method {} of service {}",
               SubscribeTo.class.getSimpleName(),
               method,
-              serviceClass);
+              serviceType);
           return null;
         }
       }
@@ -283,7 +287,10 @@ final class TopicDistributionServiceImpl
 
     for (int i = 0; i < parameters.length; i++) {
       if (i != parameterIndex
-          && !InjectUtils.supportsParameter(parameters[i], serviceLocator)) {
+          && !InjectUtils.supportsParameter(
+              parameters[i],
+              serviceType,
+              serviceLocator)) {
         // TODO: Should we accept this method anyway?  Is it possible that the
         //       service for this parameter will be registered later?  Even if
         //       not, issuing a warning here may be no better than throwing
@@ -293,7 +300,7 @@ final class TopicDistributionServiceImpl
             parameters[i],
             i,
             method,
-            serviceClass);
+            serviceType);
         return null;
       }
     }
@@ -304,7 +311,7 @@ final class TopicDistributionServiceImpl
           "Subscriber method {} of service {} has non-void return type {}, "
               + "but values returned from subscriber methods are ignored",
           method,
-          serviceClass,
+          serviceType,
           method.getAnnotatedReturnType());
 
     Parameter parameter = parameters[parameterIndex];
@@ -322,7 +329,7 @@ final class TopicDistributionServiceImpl
               + "any of the permitted types {} that were specified in the "
               + "service's @{} qualifier",
           method,
-          serviceClass,
+          serviceType,
           parameterType,
           permittedTypes,
           MessageReceiver.class.getSimpleName());

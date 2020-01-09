@@ -1548,6 +1548,38 @@ public final class ProvidesTest {
   }
 
   /**
+   * Verifies that an instance method annotated with {@link Provides} can
+   * consume a parameter whose type declaration contains a type variable as long
+   * as that type variable can be resolved in the context of the providing
+   * service.
+   */
+  @Test
+  public void testConsumesGenericParameter() {
+    ServiceLocator locator =
+        ServiceLocatorUtilities.createAndPopulateServiceLocator();
+
+    ServiceLocatorUtilities.bind(
+        locator,
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            addActiveDescriptor(ProvidesListener.class);
+            addActiveDescriptor(ProviderOfConsumesGenericParameter.class);
+          }
+        });
+
+    assertEquals("secret", locator.getService(String.class));
+
+    FromConsumesGenericParameter<String> service =
+        InjectUtils.getService(
+            locator,
+            new TypeToken<FromConsumesGenericParameter<String>> () {});
+
+    assertNotNull(service);
+    assertEquals("secret", service.value);
+  }
+
+  /**
    * Constructs a new set of services to be used in one test.
    */
   private ServiceLocator newServiceLocator() {
@@ -2489,6 +2521,39 @@ public final class ProvidesTest {
     @Override
     protected Filter getFilter() {
       return d -> !d.getImplementation().equals(FilteredProvider.class.getName());
+    }
+  }
+
+  public static class ProviderOfConsumesGenericParameter {
+    @Provides
+    public ConsumesGenericParameter<String> provide() {
+      return new ConsumesGenericParameter<>("secret");
+    }
+  }
+
+  public static class ConsumesGenericParameter<T> {
+    private final T value;
+
+    public ConsumesGenericParameter(T value) {
+      this.value = Objects.requireNonNull(value);
+    }
+
+    @Provides
+    public T getValue() {
+      return value;
+    }
+
+    @Provides
+    public FromConsumesGenericParameter<T> consume(T value) {
+      return new FromConsumesGenericParameter<>(value);
+    }
+  }
+
+  public static final class FromConsumesGenericParameter<T> {
+    public final T value;
+
+    FromConsumesGenericParameter(T value) {
+      this.value = Objects.requireNonNull(value);
     }
   }
 }

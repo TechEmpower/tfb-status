@@ -1,5 +1,6 @@
 package tfb.status.hk2.extensions;
 
+import com.google.common.reflect.TypeToken;
 import java.lang.reflect.Parameter;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -67,8 +68,9 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
                                     ExtensionContext extensionContext) {
 
     Parameter parameter = parameterContext.getParameter();
+    TypeToken<?> testType = getTestType(parameterContext, extensionContext);
     ServiceLocator serviceLocator = getServiceLocator(extensionContext);
-    return InjectUtils.supportsParameter(parameter, serviceLocator);
+    return InjectUtils.supportsParameter(parameter, testType, serviceLocator);
   }
 
   @Override
@@ -76,9 +78,36 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
                                             ExtensionContext extensionContext) {
 
     Parameter parameter = parameterContext.getParameter();
+    TypeToken<?> testType = getTestType(parameterContext, extensionContext);
     ServiceLocator serviceLocator = getServiceLocator(extensionContext);
     ServiceHandle<?> root = getRootServiceHandle(extensionContext);
-    return InjectUtils.serviceFromParameter(parameter, root, serviceLocator);
+    return InjectUtils.serviceFromParameter(parameter, testType, root, serviceLocator);
+  }
+
+  private TypeToken<?> getTestType(ParameterContext parameterContext,
+                                   ExtensionContext extensionContext) {
+    //
+    // This parameter might be declared in an generic base class.
+    //
+    //   abstract class AbstractTest<T extends ThingIKnowHowToTest> {
+    //     @Test
+    //     public void testBasicStuff(T service) { ... }
+    //   }
+    //
+    //   class FooTest extends AbstractTest<Foo> { ... }
+    //
+    // If we're running FooTest, and we can obtain a reference to FooTest.class,
+    // then we can resolve the type variable T of testBasicStuff(...) to Foo.
+    // Here, FooTest.class comes from `extensionContext.getTestClass()`.
+    //
+    // If we can't get the test class, the next best thing is the declaring
+    // class of the parameter.  In this example, that is AbstractTest.class, and
+    // that class does not contain the information required to resolve the type
+    // variable T.
+    //
+    return TypeToken.of(
+        extensionContext.getTestClass().orElseGet(
+            () -> parameterContext.getDeclaringExecutable().getDeclaringClass()));
   }
 
   private ServiceLocator getServiceLocator(ExtensionContext extensionContext) {
