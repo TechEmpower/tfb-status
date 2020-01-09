@@ -1558,15 +1558,10 @@ public final class ProvidesTest {
     ServiceLocator locator =
         ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
-    ServiceLocatorUtilities.bind(
+    ServiceLocatorUtilities.addClasses(
         locator,
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            addActiveDescriptor(ProvidesListener.class);
-            addActiveDescriptor(ProviderOfConsumesGenericParameter.class);
-          }
-        });
+        ProvidesListener.class,
+        ProviderOfConsumesGenericParameter.class);
 
     assertEquals("secret", locator.getService(String.class));
 
