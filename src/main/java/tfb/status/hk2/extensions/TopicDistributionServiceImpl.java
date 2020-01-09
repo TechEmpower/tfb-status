@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 final class TopicDistributionServiceImpl
     implements TopicDistributionService, DynamicConfigurationListener {
 
-  private final ServiceLocator serviceLocator;
+  private final ServiceLocator locator;
   private final Set<ActiveDescriptor<?>> seen = ConcurrentHashMap.newKeySet();
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -56,8 +56,8 @@ final class TopicDistributionServiceImpl
   private ImmutableList<Subscriber> allSubscribers = ImmutableList.of();
 
   @Inject
-  public TopicDistributionServiceImpl(ServiceLocator serviceLocator) {
-    this.serviceLocator = Objects.requireNonNull(serviceLocator);
+  public TopicDistributionServiceImpl(ServiceLocator locator) {
+    this.locator = Objects.requireNonNull(locator);
   }
 
   @Override
@@ -107,7 +107,7 @@ final class TopicDistributionServiceImpl
               InjectUtils.serviceHandleFromParameter(
                   parameters[i],
                   TypeToken.of(subscriber.serviceDescriptor.getImplementationType()),
-                  serviceLocator);
+                  locator);
 
           if (parameterHandle == null)
             arguments[i] = null;
@@ -141,7 +141,7 @@ final class TopicDistributionServiceImpl
       }
 
       ServiceHandle<?> serviceHandle =
-          serviceLocator.getServiceHandle(subscriber.serviceDescriptor);
+          locator.getServiceHandle(subscriber.serviceDescriptor);
 
       if (subscriber.serviceDescriptor.getScopeAnnotation() == PerLookup.class)
         perLookupHandles.add(serviceHandle);
@@ -199,13 +199,13 @@ final class TopicDistributionServiceImpl
    */
   private void findNewSubscribers() {
     ImmutableList<Subscriber> newSubscribers =
-        serviceLocator
+        locator
             .getDescriptors(
                 descriptor ->
                     descriptor.getQualifiers().contains(
                         MessageReceiver.class.getName()))
             .stream()
-            .map(descriptor -> serviceLocator.reifyDescriptor(descriptor))
+            .map(descriptor -> locator.reifyDescriptor(descriptor))
             .flatMap(
                 serviceDescriptor -> {
                   if (!seen.add(serviceDescriptor))
@@ -287,10 +287,7 @@ final class TopicDistributionServiceImpl
 
     for (int i = 0; i < parameters.length; i++) {
       if (i != parameterIndex
-          && !InjectUtils.supportsParameter(
-              parameters[i],
-              serviceType,
-              serviceLocator)) {
+          && !InjectUtils.supportsParameter(parameters[i], serviceType, locator)) {
         // TODO: Should we accept this method anyway?  Is it possible that the
         //       service for this parameter will be registered later?  Even if
         //       not, issuing a warning here may be no better than throwing

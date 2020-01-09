@@ -52,22 +52,22 @@ final class InjectUtils {
    *         specified type, or if a registered service does match the specified
    *         type but the provider of that service provided {@code null}
    */
-  static <T> T getService(ServiceLocator serviceLocator, TypeToken<T> type) {
+  static <T> T getService(ServiceLocator locator, TypeToken<T> type) {
 
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
     Objects.requireNonNull(type);
 
     Injectee injectee = injecteeFromType(type.getType());
 
     ActiveDescriptor<?> activeDescriptor =
-        serviceLocator.getInjecteeDescriptor(injectee);
+        locator.getInjecteeDescriptor(injectee);
 
     if (activeDescriptor == null)
       throw new NoSuchElementException(
           "There is no service of type " + type);
 
     Object service =
-        serviceLocator.getService(
+        locator.getService(
             activeDescriptor,
             /* root= */ null,
             injectee);
@@ -123,11 +123,11 @@ final class InjectUtils {
 
   static boolean supportsParameter(Parameter parameter,
                                    TypeToken<?> parentType,
-                                   ServiceLocator serviceLocator) {
+                                   ServiceLocator locator) {
 
     Objects.requireNonNull(parameter);
     Objects.requireNonNull(parentType);
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
 
     // Dodge an exception that would be thrown by
     // org.jvnet.hk2.internal.Utilities#checkLookupType(Class)
@@ -147,7 +147,7 @@ final class InjectUtils {
       return true;
 
     ActiveDescriptor<?> activeDescriptor =
-        serviceLocator.getInjecteeDescriptor(injectee);
+        locator.getInjecteeDescriptor(injectee);
 
     return activeDescriptor != null;
   }
@@ -155,16 +155,16 @@ final class InjectUtils {
   static @Nullable ServiceHandle<?> serviceHandleFromParameter(
       Parameter parameter,
       TypeToken<?> parentType,
-      ServiceLocator serviceLocator) {
+      ServiceLocator locator) {
 
     Objects.requireNonNull(parameter);
     Objects.requireNonNull(parentType);
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
 
     Injectee injectee = injecteeFromParameter(parameter, parentType);
 
     ActiveDescriptor<?> activeDescriptor =
-        serviceLocator.getInjecteeDescriptor(injectee);
+        locator.getInjecteeDescriptor(injectee);
 
     if (activeDescriptor == null) {
       if (!injectee.isOptional())
@@ -173,23 +173,23 @@ final class InjectUtils {
       return null;
     }
 
-    return serviceLocator.getServiceHandle(activeDescriptor, injectee);
+    return locator.getServiceHandle(activeDescriptor, injectee);
   }
 
   static @Nullable Object serviceFromParameter(
       Parameter parameter,
       TypeToken<?> parentType,
       @Nullable ServiceHandle<?> root,
-      ServiceLocator serviceLocator) {
+      ServiceLocator locator) {
 
     Objects.requireNonNull(parameter);
     Objects.requireNonNull(parentType);
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
 
     Injectee injectee = injecteeFromParameter(parameter, parentType);
 
     ActiveDescriptor<?> activeDescriptor =
-        serviceLocator.getInjecteeDescriptor(injectee);
+        locator.getInjecteeDescriptor(injectee);
 
     if (activeDescriptor == null) {
       if (!injectee.isOptional())
@@ -198,7 +198,7 @@ final class InjectUtils {
       return null;
     }
 
-    return serviceLocator.getService(activeDescriptor, root, injectee);
+    return locator.getService(activeDescriptor, root, injectee);
   }
 
   static Injectee injecteeFromType(Type type) {
@@ -224,16 +224,16 @@ final class InjectUtils {
     }
   }
 
-  static void addClassesIdempotent(ServiceLocator serviceLocator,
+  static void addClassesIdempotent(ServiceLocator locator,
                                    Class<?>... classes) {
 
-    Objects.requireNonNull(serviceLocator);
+    Objects.requireNonNull(locator);
     Objects.requireNonNull(classes);
     for (Class<?> c : classes)
       Objects.requireNonNull(c);
 
     try {
-      ServiceLocatorUtilities.addClasses(serviceLocator, true, classes);
+      ServiceLocatorUtilities.addClasses(locator, true, classes);
     } catch (MultiException e) {
       if (!isDuplicateServiceException(e))
         throw e;

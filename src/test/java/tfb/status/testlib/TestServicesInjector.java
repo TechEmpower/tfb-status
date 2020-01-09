@@ -26,15 +26,11 @@ import tfb.status.hk2.extensions.ServiceLocatorParameterResolver;
 public final class TestServicesInjector implements ServiceLocatorParameterResolver {
   @Override
   public ServiceLocator createServiceLocator() {
-    ServiceLocator serviceLocator =
+    ServiceLocator locator =
         ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
-    NoInstancesFilter.enableNoInstancesFilter(serviceLocator);
-
-    ServiceLocatorUtilities.bind(
-        serviceLocator,
-        new TestServicesBinder());
-
-    return serviceLocator;
+    NoInstancesFilter.enableNoInstancesFilter(locator);
+    ServiceLocatorUtilities.bind(locator, new TestServicesBinder());
+    return locator;
   }
 }

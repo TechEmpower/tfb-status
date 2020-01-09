@@ -20,15 +20,15 @@ import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 @Singleton
 @Rank(1) // Override the default DynamicConfigurationService.
 final class NoInstancesService implements DynamicConfigurationService {
-  private final ServiceLocator serviceLocator;
+  private final ServiceLocator locator;
 
   @Inject
-  public NoInstancesService(ServiceLocator serviceLocator) {
-    this.serviceLocator = Objects.requireNonNull(serviceLocator);
+  public NoInstancesService(ServiceLocator locator) {
+    this.locator = Objects.requireNonNull(locator);
   }
 
   private DynamicConfigurationService defaultConfigurationService() {
-    return serviceLocator
+    return locator
         .getAllServiceHandles(DynamicConfigurationService.class)
         .stream()
         .filter(
@@ -43,8 +43,7 @@ final class NoInstancesService implements DynamicConfigurationService {
 
   @Override
   public DynamicConfiguration createDynamicConfiguration() {
-    NoInstancesFilter filter =
-        serviceLocator.getService(NoInstancesFilter.class);
+    NoInstancesFilter filter = locator.getService(NoInstancesFilter.class);
 
     DynamicConfiguration config =
         defaultConfigurationService().createDynamicConfiguration();

@@ -41,16 +41,16 @@ public final class Main {
                 + " arguments instead");
     }
 
-    ServiceLocator serviceLocator =
+    ServiceLocator locator =
         ServiceLocatorUtilities.createAndPopulateServiceLocator();
 
-    NoInstancesFilter.enableNoInstancesFilter(serviceLocator);
+    NoInstancesFilter.enableNoInstancesFilter(locator);
 
     ServiceLocatorUtilities.bind(
-        serviceLocator,
+        locator,
         new ServicesBinder(configFilePath));
 
-    HttpServer httpServer = serviceLocator.getService(HttpServer.class);
+    HttpServer httpServer = locator.getService(HttpServer.class);
     httpServer.start();
   }
 }

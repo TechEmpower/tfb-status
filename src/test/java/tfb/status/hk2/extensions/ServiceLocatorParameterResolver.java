@@ -26,14 +26,10 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  *   class MyExtension extends ServiceLocatorParameterResolver {
  *     &#64;Override
  *     public ServiceLocator createServiceLocator() {
- *       ServiceLocator serviceLocator =
+ *       ServiceLocator locator =
  *           ServiceLocatorUtilities.createAndPopulateServiceLocator();
- *
- *       ServiceLocatorUtilities.addClasses(
- *           serviceLocator,
- *           MyService.class);
- *
- *       return serviceLocator;
+ *       ServiceLocatorUtilities.addClasses(locator, MyService.class);
+ *       return locator;
  *     }
  *   }
  *
@@ -69,8 +65,8 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
 
     Parameter parameter = parameterContext.getParameter();
     TypeToken<?> testType = getTestType(parameterContext, extensionContext);
-    ServiceLocator serviceLocator = getServiceLocator(extensionContext);
-    return InjectUtils.supportsParameter(parameter, testType, serviceLocator);
+    ServiceLocator locator = getServiceLocator(extensionContext);
+    return InjectUtils.supportsParameter(parameter, testType, locator);
   }
 
   @Override
@@ -79,9 +75,9 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
 
     Parameter parameter = parameterContext.getParameter();
     TypeToken<?> testType = getTestType(parameterContext, extensionContext);
-    ServiceLocator serviceLocator = getServiceLocator(extensionContext);
+    ServiceLocator locator = getServiceLocator(extensionContext);
     ServiceHandle<?> root = getRootServiceHandle(extensionContext);
-    return InjectUtils.serviceFromParameter(parameter, testType, root, serviceLocator);
+    return InjectUtils.serviceFromParameter(parameter, testType, root, locator);
   }
 
   private TypeToken<?> getTestType(ParameterContext parameterContext,
@@ -122,14 +118,14 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
 
             /* defaultCreator= */
             key -> {
-              ServiceLocator serviceLocator = createServiceLocator();
-              return new StoredServiceLocator(serviceLocator);
+              ServiceLocator locator = createServiceLocator();
+              return new StoredServiceLocator(locator);
             },
 
             /* requiredType= */
             StoredServiceLocator.class);
 
-    return stored.serviceLocator;
+    return stored.locator;
   }
 
   private ServiceHandle<?> getRootServiceHandle(ExtensionContext extensionContext) {
@@ -147,16 +143,15 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
 
             /* defaultCreator= */
             key -> {
-              ServiceLocator serviceLocator =
-                  getServiceLocator(extensionContext);
+              ServiceLocator locator = getServiceLocator(extensionContext);
 
               ActiveDescriptor<?> activeDescriptor =
                   ServiceLocatorUtilities.addOneConstant(
-                      serviceLocator,
+                      locator,
                       new Object() {});
 
               ServiceHandle<?> serviceHandle =
-                  serviceLocator.getServiceHandle(activeDescriptor);
+                  locator.getServiceHandle(activeDescriptor);
 
               return new StoredServiceHandle(serviceHandle);
             },
@@ -172,15 +167,15 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
   Namespace NAMESPACE = Namespace.create(ServiceLocatorParameterResolver.class);
 
   final class StoredServiceLocator implements CloseableResource {
-    final ServiceLocator serviceLocator;
+    final ServiceLocator locator;
 
-    StoredServiceLocator(ServiceLocator serviceLocator) {
-      this.serviceLocator = Objects.requireNonNull(serviceLocator);
+    StoredServiceLocator(ServiceLocator locator) {
+      this.locator = Objects.requireNonNull(locator);
     }
 
     @Override
     public void close() {
-      serviceLocator.shutdown();
+      locator.shutdown();
     }
   }
 
