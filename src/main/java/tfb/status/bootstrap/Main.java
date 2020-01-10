@@ -1,5 +1,7 @@
 package tfb.status.bootstrap;
 
+import static org.glassfish.hk2.utilities.ServiceLocatorUtilities.createAndPopulateServiceLocator;
+
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import tfb.status.hk2.extensions.NoInstancesFilter;
@@ -41,11 +43,8 @@ public final class Main {
                 + " arguments instead");
     }
 
-    ServiceLocator locator =
-        ServiceLocatorUtilities.createAndPopulateServiceLocator();
-
+    ServiceLocator locator = createAndPopulateServiceLocator();
     NoInstancesFilter.enableNoInstancesFilter(locator);
-
     ServiceLocatorUtilities.bind(
         locator,
         new ServicesBinder(configFilePath));

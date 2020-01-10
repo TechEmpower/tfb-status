@@ -1,5 +1,7 @@
 package tfb.status.testlib;
 
+import static org.glassfish.hk2.utilities.ServiceLocatorUtilities.createAndPopulateServiceLocator;
+
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import tfb.status.hk2.extensions.NoInstancesFilter;
@@ -26,9 +28,7 @@ import tfb.status.hk2.extensions.ServiceLocatorParameterResolver;
 public final class TestServicesInjector implements ServiceLocatorParameterResolver {
   @Override
   public ServiceLocator createServiceLocator() {
-    ServiceLocator locator =
-        ServiceLocatorUtilities.createAndPopulateServiceLocator();
-
+    ServiceLocator locator = createAndPopulateServiceLocator();
     NoInstancesFilter.enableNoInstancesFilter(locator);
     ServiceLocatorUtilities.bind(locator, new TestServicesBinder());
     return locator;
