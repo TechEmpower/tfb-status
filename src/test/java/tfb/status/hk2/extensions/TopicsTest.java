@@ -1,5 +1,6 @@
 package tfb.status.hk2.extensions;
 
+import static org.glassfish.hk2.utilities.ServiceLocatorUtilities.createAndPopulateServiceLocator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -19,7 +20,6 @@ import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -32,7 +32,13 @@ public final class TopicsTest {
    */
   @Test
   public void testTopics() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.bind(locator, new TopicsModule());
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ServiceWithLifecycle.class,
+        SingletonServiceWithShutdown.class,
+        SubscriberService.class);
 
     Topic<String> stringTopic =
         InjectUtils.getService(
@@ -82,27 +88,6 @@ public final class TopicsTest {
     assertFalse(service2List.get(0).wasStopped());
     assertFalse(service2List.get(1).wasStopped());
     assertSame(service2List.get(0), service2List.get(1));
-  }
-
-  /**
-   * Constructs a new set of services to be used in one test.
-   */
-  private ServiceLocator newServiceLocator() {
-    ServiceLocator locator =
-        ServiceLocatorUtilities.createAndPopulateServiceLocator();
-
-    ServiceLocatorUtilities.bind(locator, new TopicsTestBinder());
-    return locator;
-  }
-
-  public static final class TopicsTestBinder extends AbstractBinder {
-    @Override
-    protected void configure() {
-      install(new TopicsModule());
-      addActiveDescriptor(ServiceWithLifecycle.class);
-      addActiveDescriptor(SingletonServiceWithShutdown.class);
-      addActiveDescriptor(SubscriberService.class);
-    }
   }
 
   public static class ServiceWithLifecycle implements PostConstruct, PreDestroy {
