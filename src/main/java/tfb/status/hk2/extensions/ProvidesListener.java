@@ -34,6 +34,7 @@ import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
+import org.glassfish.hk2.utilities.reflection.TypeChecker;
 import org.jvnet.hk2.annotations.Contract;
 import org.jvnet.hk2.annotations.ContractsProvided;
 
@@ -592,7 +593,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
                             providerType,
                             method.getGenericParameterTypes()[0]);
 
-                    return TypeUtils.isSupertype(parameterType, providedType);
+                    return TypeChecker.isRawTypeSafe(
+                        parameterType,
+                        providedType);
                   })
                   .findAny()
                   // TODO: Avoid throwing?  This exception will be swallowed.

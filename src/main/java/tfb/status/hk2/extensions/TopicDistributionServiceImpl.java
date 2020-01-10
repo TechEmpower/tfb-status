@@ -32,6 +32,7 @@ import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.api.messaging.TopicDistributionService;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
+import org.glassfish.hk2.utilities.reflection.TypeChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -313,7 +314,10 @@ final class TopicDistributionServiceImpl
     if (!permittedTypes.isEmpty()
         && permittedTypes.stream()
                          .noneMatch(
-                             type -> TypeUtils.isSupertype(type, parameterType))) {
+                             type ->
+                                 TypeChecker.isRawTypeSafe(
+                                     type,
+                                     parameterType))) {
       logger.warn(
           "Subscriber method {} of service {} will receive no messages "
               + "because its message parameter type {} is not a subtype of "

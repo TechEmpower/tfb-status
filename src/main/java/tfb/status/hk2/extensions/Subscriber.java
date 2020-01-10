@@ -15,6 +15,7 @@ import org.glassfish.hk2.api.Unqualified;
 import org.glassfish.hk2.api.messaging.MessageReceiver;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
+import org.glassfish.hk2.utilities.reflection.TypeChecker;
 
 /**
  * A method that receives messages from a {@link Topic}.
@@ -89,12 +90,16 @@ final class Subscriber {
     Objects.requireNonNull(topic);
 
     Type eventType = topic.getTopicType();
-    if (!TypeUtils.isSupertype(parameterType, eventType))
+    if (!TypeChecker.isRawTypeSafe(parameterType, eventType))
       return false;
 
     if (!permittedTypes.isEmpty()
         && permittedTypes.stream()
-                         .noneMatch(type -> TypeUtils.isSupertype(type, eventType)))
+                         .noneMatch(
+                             type ->
+                                 TypeChecker.isRawTypeSafe(
+                                     type,
+                                     eventType)))
       return false;
 
     if (!ReflectionHelper.annotationContainsAll(topic.getTopicQualifiers(),

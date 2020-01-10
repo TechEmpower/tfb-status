@@ -79,10 +79,4 @@ final class TypeUtils {
                     .resolveType(dependentType)
                     .getType();
   }
-
-  static boolean isSupertype(Type a, Type b) {
-    Objects.requireNonNull(a);
-    Objects.requireNonNull(b);
-    return TypeToken.of(a).isSupertypeOf(b);
-  }
 }
