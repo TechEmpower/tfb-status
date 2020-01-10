@@ -1,6 +1,5 @@
 package tfb.status.hk2.extensions;
 
-import com.google.common.reflect.TypeToken;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -20,13 +19,13 @@ final class TypeUtils {
 
   static boolean containsTypeVariable(Type type) {
     Objects.requireNonNull(type);
-    return new TypeVariableDetector().containsTypeVariable(type);
+    return new TypeVariableDetector().matches(type);
   }
 
   private static final class TypeVariableDetector {
     private final Set<Type> seen = new HashSet<>();
 
-    boolean containsTypeVariable(Type type) {
+    boolean matches(Type type) {
       if (!seen.add(type))
         return false;
 
@@ -40,11 +39,11 @@ final class TypeUtils {
         WildcardType wildcardType = (WildcardType) type;
 
         for (Type lowerBound : wildcardType.getLowerBounds())
-          if (containsTypeVariable(lowerBound))
+          if (matches(lowerBound))
             return true;
 
         for (Type upperBound : wildcardType.getUpperBounds())
-          if (containsTypeVariable(upperBound))
+          if (matches(upperBound))
             return true;
 
         return false;
@@ -53,11 +52,11 @@ final class TypeUtils {
       if (type instanceof ParameterizedType) {
         ParameterizedType parameterizedType = (ParameterizedType) type;
 
-        if (containsTypeVariable(parameterizedType.getOwnerType()))
+        if (matches(parameterizedType.getOwnerType()))
           return true;
 
         for (Type argument : parameterizedType.getActualTypeArguments())
-          if (containsTypeVariable(argument))
+          if (matches(argument))
             return true;
 
         return false;
@@ -65,7 +64,7 @@ final class TypeUtils {
 
       if (type instanceof GenericArrayType) {
         GenericArrayType genericArrayType = (GenericArrayType) type;
-        return containsTypeVariable(genericArrayType.getGenericComponentType());
+        return matches(genericArrayType.getGenericComponentType());
       }
 
       return false;
@@ -75,8 +74,11 @@ final class TypeUtils {
   static Type resolveType(Type contextType, Type dependentType) {
     Objects.requireNonNull(contextType);
     Objects.requireNonNull(dependentType);
-    return TypeToken.of(contextType)
-                    .resolveType(dependentType)
-                    .getType();
+
+    // FIXME: Avoid this dependency on Guava.
+    return com.google.common.reflect.TypeToken
+        .of(contextType)
+        .resolveType(dependentType)
+        .getType();
   }
 }
