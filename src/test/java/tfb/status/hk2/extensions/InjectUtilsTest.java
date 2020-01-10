@@ -1,5 +1,6 @@
 package tfb.status.hk2.extensions;
 
+import static org.glassfish.hk2.utilities.ServiceLocatorUtilities.createAndPopulateServiceLocator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,7 +28,6 @@ import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
 
@@ -45,7 +45,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetSingletonService() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        SingletonService.class);
 
     SingletonService service1 =
         InjectUtils.getService(
@@ -70,7 +73,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetPerLookupService() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        PerLookupService.class);
 
     PerLookupService service1 =
         InjectUtils.getService(
@@ -94,7 +100,7 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetUnregisteredService() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
 
     assertThrows(
         NoSuchElementException.class,
@@ -120,7 +126,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetServiceWithUnsatisfiedDependencies() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        UnsatisfiedDependencies.class);
 
     assertThrows(
         MultiException.class,
@@ -137,7 +146,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetNullService() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        NullFactory.class);
 
     assertThrows(
         NoSuchElementException.class,
@@ -166,7 +178,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetOptional() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        PerLookupService.class);
 
     Optional<PerLookupService> optional =
         InjectUtils.getService(
@@ -183,7 +198,7 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetUnregisteredOptional() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
 
     Optional<UnregisteredService> optional =
         InjectUtils.getService(
@@ -201,7 +216,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetProvider() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        PerLookupService.class);
 
     Provider<PerLookupService> provider =
         InjectUtils.getService(
@@ -221,7 +239,7 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetUnregisteredProvider() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
 
     Provider<UnregisteredService> provider =
         InjectUtils.getService(
@@ -241,7 +259,11 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetIterable() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ServiceWithContract1.class,
+        ServiceWithContract2.class);
 
     Iterable<SimpleContract> provider =
         InjectUtils.getService(
@@ -272,7 +294,7 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetUnregisteredIterable() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
 
     Iterable<UnregisteredService> provider =
         InjectUtils.getService(
@@ -290,7 +312,11 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetIterableProvider() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ServiceWithContract1.class,
+        ServiceWithContract2.class);
 
     IterableProvider<SimpleContract> provider =
         InjectUtils.getService(
@@ -322,7 +348,7 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetUnregisteredIterableProvider() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
 
     IterableProvider<UnregisteredService> provider =
         InjectUtils.getService(
@@ -340,7 +366,11 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testGetGenericService() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ServiceWithGenericContract1.class,
+        ServiceWithGenericContract2.class);
 
     GenericContract<Integer> service1 =
         InjectUtils.getService(
@@ -372,7 +402,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testShutdownSingletonService() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        SingletonServiceWithShutdown.class);
 
     SingletonServiceWithShutdown service =
         InjectUtils.getService(
@@ -393,7 +426,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testShutdownSingletonServiceFromFactory() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        FactoryOfSingletonServiceWithShutdown.class);
 
     SingletonServiceWithShutdownFromFactory service =
         InjectUtils.getService(
@@ -413,7 +449,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testShutdownPerLookupService() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ServiceWithLifecycle.class);
 
     IterableProvider<ServiceWithLifecycle> providers =
         InjectUtils.getService(
@@ -445,7 +484,10 @@ public final class InjectUtilsTest {
    */
   @Test
   public void testShutdownPerLookupServiceFromFactory() {
-    ServiceLocator locator = newServiceLocator();
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        FactoryOfServiceWithShutdown.class);
 
     IterableProvider<ServiceWithShutdownFromFactory> providers =
         InjectUtils.getService(
@@ -469,35 +511,6 @@ public final class InjectUtilsTest {
 
     // Assert that we saw one service during each iteration of the loop.
     assertEquals(loopCount, serviceCount);
-  }
-
-  /**
-   * Constructs a new set of services to be used in one test.
-   */
-  private ServiceLocator newServiceLocator() {
-    ServiceLocator locator =
-        ServiceLocatorUtilities.createAndPopulateServiceLocator();
-
-    ServiceLocatorUtilities.bind(locator, new InjectUtilsTestBinder());
-    return locator;
-  }
-
-  public static final class InjectUtilsTestBinder extends AbstractBinder {
-    @Override
-    protected void configure() {
-      addActiveDescriptor(PerLookupService.class);
-      addActiveDescriptor(SingletonService.class);
-      addActiveFactoryDescriptor(NullFactory.class);
-      addActiveDescriptor(ServiceWithContract1.class);
-      addActiveDescriptor(ServiceWithContract2.class);
-      addActiveDescriptor(ServiceWithGenericContract1.class);
-      addActiveDescriptor(ServiceWithGenericContract2.class);
-      addActiveDescriptor(ServiceWithLifecycle.class);
-      addActiveDescriptor(SingletonServiceWithShutdown.class);
-      addActiveFactoryDescriptor(FactoryOfServiceWithShutdown.class);
-      addActiveFactoryDescriptor(FactoryOfSingletonServiceWithShutdown.class);
-      addActiveDescriptor(UnsatisfiedDependencies.class);
-    }
   }
 
   public static final class PerLookupService {}
