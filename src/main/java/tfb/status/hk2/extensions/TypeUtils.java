@@ -1,9 +1,14 @@
 package tfb.status.hk2.extensions;
 
-import com.google.common.reflect.ImmutableTypeToInstanceMap;
 import com.google.common.reflect.TypeToken;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Utility methods for working with {@link Type}.
@@ -15,16 +20,56 @@ final class TypeUtils {
 
   static boolean containsTypeVariable(Type type) {
     Objects.requireNonNull(type);
+    return new TypeVariableDetector().containsTypeVariable(type);
+  }
 
-    // We want to call TypeToken#rejectTypeVariables(), but that method is
-    // package-private.  Instead, call a public method in that package that is
-    // known to call rejectTypeVariables().
-    try {
-      Object ignored = ImmutableTypeToInstanceMap.of().getInstance(TypeToken.of(type));
-    } catch (IllegalArgumentException e) {
-      return true;
+  private static final class TypeVariableDetector {
+    private final Set<Type> seen = new HashSet<>();
+
+    boolean containsTypeVariable(Type type) {
+      if (!seen.add(type))
+        return false;
+
+      if (type instanceof TypeVariable)
+        return true;
+
+      if (type instanceof Class)
+        return false;
+
+      if (type instanceof WildcardType) {
+        WildcardType wildcardType = (WildcardType) type;
+
+        for (Type lowerBound : wildcardType.getLowerBounds())
+          if (containsTypeVariable(lowerBound))
+            return true;
+
+        for (Type upperBound : wildcardType.getUpperBounds())
+          if (containsTypeVariable(upperBound))
+            return true;
+
+        return false;
+      }
+
+      if (type instanceof ParameterizedType) {
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+
+        if (containsTypeVariable(parameterizedType.getOwnerType()))
+          return true;
+
+        for (Type argument : parameterizedType.getActualTypeArguments())
+          if (containsTypeVariable(argument))
+            return true;
+
+        return false;
+      }
+
+      if (type instanceof GenericArrayType) {
+        GenericArrayType genericArrayType = (GenericArrayType) type;
+        return containsTypeVariable(genericArrayType.getGenericComponentType());
+      }
+
+      return false;
     }
-    return false;
   }
 
   static Type resolveType(Type contextType, Type dependentType) {

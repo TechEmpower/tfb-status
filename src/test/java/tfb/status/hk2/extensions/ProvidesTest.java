@@ -18,6 +18,7 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Retention;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
@@ -1670,8 +1671,8 @@ public final class ProvidesTest {
 
   /**
    * Verifies that if a field is annotated with {@link Provides} but its type
-   * contains a type variable that cannot be resolved, then no service is
-   * registered for that field.
+   * contains a top-level type variable that cannot be resolved, then no service
+   * is registered for that field.
    */
   @Test
   public void testUnresolvableTypeVariableInFieldType() {
@@ -1693,9 +1694,33 @@ public final class ProvidesTest {
   }
 
   /**
+   * Verifies that if a field is annotated with {@link Provides} but its type
+   * contains a type variable that cannot be resolved, where that type variable
+   * is not at the top level, then no service is registered for that field.
+   */
+  @Test
+  public void testUnresolvableTypeVariableDeepInFieldType() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableDeepInFieldType.class);
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+
+    assertNotEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
+  }
+
+  /**
    * Verifies that if a static method is annotated with {@link Provides} but its
-   * return type contains a type variable that cannot be resolved, then no
-   * service is registered for that method.
+   * return type contains a top-level type variable that cannot be resolved,
+   * then no service is registered for that method.
    */
   @Test
   public void testUnresolvableTypeVariableInStaticMethodReturnType() {
@@ -1717,9 +1742,34 @@ public final class ProvidesTest {
   }
 
   /**
+   * Verifies that if a static method is annotated with {@link Provides} but its
+   * return type contains a type variable that cannot be resolved, where that
+   * type variable is not at the top level, then no service is registered for
+   * that method.
+   */
+  @Test
+  public void testUnresolvableTypeVariableDeepInStaticMethodReturnType() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableDeepInStaticMethodReturnType.class);
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+
+    assertNotEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
+  }
+
+  /**
    * Verifies that if an instance method is annotated with {@link Provides} but
-   * its return type contains a type variable that cannot be resolved, then no
-   * service is registered for that method.
+   * its return type contains a top-level type variable that cannot be resolved,
+   * then no service is registered for that method.
    */
   @Test
   public void testUnresolvableTypeVariableInInstanceMethodReturnType() {
@@ -1741,9 +1791,34 @@ public final class ProvidesTest {
   }
 
   /**
+   * Verifies that if an instance method is annotated with {@link Provides} but
+   * its return type contains a type variable that cannot be resolved, where
+   * that type variable is not at the top level, then no service is registered
+   * for that method.
+   */
+  @Test
+  public void testUnresolvableTypeVariableDeepInInstanceMethodReturnType() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableDeepInInstanceMethodReturnType.class);
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+
+    assertNotEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
+  }
+
+  /**
    * Verifies that if a static method is annotated with {@link Provides} but one
-   * of its parameter types contains a type variable that cannot be resolved,
-   * then no service is registered for that method.
+   * of its parameter types contains a top-level type variable that cannot be
+   * resolved, then no service is registered for that method.
    */
   @Test
   public void testUnresolvableTypeVariableInStaticMethodParameterType() {
@@ -1765,9 +1840,34 @@ public final class ProvidesTest {
   }
 
   /**
+   * Verifies that if a static method is annotated with {@link Provides} but one
+   * of its parameter types contains a type variable that cannot be resolved,
+   * where that type variable is not at the top level, then no service is
+   * registered for that method.
+   */
+  @Test
+  public void testUnresolvableTypeVariableDeepInStaticMethodParameterType() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableDeepInStaticMethodParameterType.class);
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+
+    assertNotEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
+  }
+
+  /**
    * Verifies that if an instance method is annotated with {@link Provides} but
-   * one of its parameter types contains a type variable that cannot be
-   * resolved, then no service is registered for that method.
+   * one of its parameter types contains a top-level type variable that cannot
+   * be resolved, then no service is registered for that method.
    */
   @Test
   public void testUnresolvableTypeVariableInInstanceMethodParameterType() {
@@ -1776,6 +1876,28 @@ public final class ProvidesTest {
         locator,
         ProvidesListener.class,
         UnresolvableTypeVariableInInstanceMethodParameterType.class);
+
+    assertNotNull(locator.getService(BetterFindMe.class));
+
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
+  }
+
+  /**
+   * Verifies that if an instance method is annotated with {@link Provides} but
+   * one of its parameter types contains a type variable that cannot be
+   * resolved, where that type variable is not at the top level, then no service
+   * is registered for that method.
+   */
+  @Test
+  public void testUnresolvableTypeVariableDeepInInstanceMethodParameterType() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        UnresolvableTypeVariableDeepInInstanceMethodParameterType.class);
 
     assertNotNull(locator.getService(BetterFindMe.class));
 
@@ -2596,12 +2718,40 @@ public final class ProvidesTest {
     public final String good = "good";
   }
 
+  public static final class UnresolvableTypeVariableDeepInFieldType<T> {
+    @Provides
+    @BetterNotFindMe
+    public final List<List<Map<? super Number, T[]>>> bad = List.of();
+
+    @Provides
+    @BetterFindMe
+    public final String good = "good";
+  }
+
   public static final class UnresolvableTypeVariableInStaticMethodReturnType {
     @Provides
     @BetterNotFindMe
     @SuppressWarnings("TypeParameterUnusedInFormals")
     public static <T> @Nullable T bad() {
       return null;
+    }
+
+    @Provides
+    @BetterFindMe
+    public static String good() {
+      return "good";
+    }
+
+    // Avoid "utility class with non-private constructor" warnings.
+    public final int x = 2;
+  }
+
+  public static final class UnresolvableTypeVariableDeepInStaticMethodReturnType {
+    @Provides
+    @BetterNotFindMe
+    @SuppressWarnings("TypeParameterUnusedInFormals")
+    public static <T> List<List<Map<? super Number, T[]>>> bad() {
+      return List.of();
     }
 
     @Provides
@@ -2628,6 +2778,20 @@ public final class ProvidesTest {
     }
   }
 
+  public static final class UnresolvableTypeVariableDeepInInstanceMethodReturnType<T> {
+    @Provides
+    @BetterNotFindMe
+    public List<List<Map<? super Number, T[]>>> bad() {
+      return List.of();
+    }
+
+    @Provides
+    @BetterFindMe
+    public String good() {
+      return "good";
+    }
+  }
+
   public static final class UnresolvableTypeVariableInStaticMethodParameterType {
     @Provides
     @BetterNotFindMe
@@ -2645,10 +2809,41 @@ public final class ProvidesTest {
     public final int x = 2;
   }
 
+  public static final class UnresolvableTypeVariableDeepInStaticMethodParameterType {
+    @Provides
+    @BetterNotFindMe
+    public static <T> String bad(List<List<Map<? super Number, T[]>>> value) {
+      return "bad";
+    }
+
+    @Provides
+    @BetterFindMe
+    public static String good() {
+      return "good";
+    }
+
+    // Avoid "utility class with non-private constructor" warnings.
+    public final int x = 2;
+  }
+
   public static final class UnresolvableTypeVariableInInstanceMethodParameterType<T> {
     @Provides
     @BetterNotFindMe
     public String bad(T value) {
+      return "bad";
+    }
+
+    @Provides
+    @BetterFindMe
+    public String good() {
+      return "good";
+    }
+  }
+
+  public static final class UnresolvableTypeVariableDeepInInstanceMethodParameterType<T> {
+    @Provides
+    @BetterNotFindMe
+    public String bad(List<List<Map<? super Number, T[]>>> value) {
       return "bad";
     }
 
