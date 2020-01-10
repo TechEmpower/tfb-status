@@ -115,8 +115,8 @@ public class ProvidesListener implements DynamicConfigurationListener {
     if (!seen.add(providerDescriptor))
       return 0;
 
+    Class<?> providerClass = providerDescriptor.getImplementationClass();
     Type providerType = providerDescriptor.getImplementationType();
-    Class<?> providerClass = TypeUtils.getRawType(providerType);
 
     int added = 0;
 
@@ -127,6 +127,8 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
       if (!seen.add(providerDescriptor, method))
         continue;
+
+      Class<?> providedClass = method.getReturnType();
 
       Type providedType =
           TypeUtils.resolveType(
@@ -168,13 +170,16 @@ public class ProvidesListener implements DynamicConfigurationListener {
               providerDescriptor,
               providesAnnotation,
               method,
+              providedClass,
               providedType,
+              providerClass,
               providerType,
               locator);
 
       configuration.addActiveDescriptor(
           new ProvidesDescriptor<>(
               method,
+              providedClass,
               providedType,
               providedContracts,
               scopeAnnotation,
@@ -191,6 +196,8 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
       if (!seen.add(providerDescriptor, field))
         continue;
+
+      Class<?> providedClass = field.getType();
 
       Type providedType =
           TypeUtils.resolveType(
@@ -222,6 +229,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
       configuration.addActiveDescriptor(
           new ProvidesDescriptor<>(
               field,
+              providedClass,
               providedType,
               providedContracts,
               scopeAnnotation,
@@ -266,8 +274,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
                    .collect(toUnmodifiableSet());
 
     return Stream.concat(Stream.of(providedType),
-                         TypeUtils.getTypes(providedType)
-                                  .filter(t -> isContract(t)))
+                         ReflectionHelper.getAllTypes(providedType)
+                                         .stream()
+                                         .filter(t -> isContract(t)))
                  .collect(toUnmodifiableSet());
   }
 
@@ -318,10 +327,11 @@ public class ProvidesListener implements DynamicConfigurationListener {
         return annotation;
 
     for (Type contract : providedContracts) {
-      Class<?> rawType = TypeUtils.getRawType(contract);
-      for (Annotation annotation : rawType.getAnnotations())
-        if (annotation.annotationType().isAnnotationPresent(Scope.class))
-          return annotation;
+      Class<?> rawClass = ReflectionHelper.getRawClass(contract);
+      if (rawClass != null)
+        for (Annotation annotation : rawClass.getAnnotations())
+          if (annotation.annotationType().isAnnotationPresent(Scope.class))
+            return annotation;
     }
 
     if (!Modifier.isStatic(providerMethodOrField.getModifiers())) {
@@ -499,7 +509,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
    *        method
    * @param providesAnnotation the {@link Provides} annotation on the method
    * @param providerMethod the method that is annotated with {@link Provides}
+   * @param providedClass the {@link Method#getReturnType()} ()}
    * @param providedType the {@link Method#getGenericReturnType()}
+   * @param providerClass the class of the service that defines the method
    * @param providerType the type of the service that defines the method
    * @param locator the service locator
    * @throws MultiException if the {@link Provides} annotation has a non-empty
@@ -510,14 +522,18 @@ public class ProvidesListener implements DynamicConfigurationListener {
   getDisposeFunction(ActiveDescriptor<?> providerDescriptor,
                      Provides providesAnnotation,
                      Method providerMethod,
+                     Class<?> providedClass,
                      Type providedType,
+                     Class<?> providerClass,
                      Type providerType,
                      ServiceLocator locator) {
 
     Objects.requireNonNull(providerDescriptor);
     Objects.requireNonNull(providesAnnotation);
     Objects.requireNonNull(providerMethod);
+    Objects.requireNonNull(providedClass);
     Objects.requireNonNull(providedType);
+    Objects.requireNonNull(providerClass);
     Objects.requireNonNull(providerType);
     Objects.requireNonNull(locator);
 
@@ -530,7 +546,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
     switch (providesAnnotation.disposalHandledBy()) {
       case PROVIDED_INSTANCE: {
         Method disposeMethod =
-            Arrays.stream(TypeUtils.getRawType(providedType).getMethods())
+            Arrays.stream(providedClass.getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> !Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 0)
@@ -566,7 +582,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
             Modifier.isStatic(providerMethod.getModifiers());
 
         Method disposeMethod =
-            Arrays.stream(TypeUtils.getRawType(providerType).getMethods())
+            Arrays.stream(providerClass.getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> isStatic == Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 1)

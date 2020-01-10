@@ -4,7 +4,6 @@ import com.google.common.reflect.ImmutableTypeToInstanceMap;
 import com.google.common.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * Utility methods for working with {@link Type}.
@@ -28,11 +27,6 @@ final class TypeUtils {
     return false;
   }
 
-  static Class<?> getRawType(Type type) {
-    Objects.requireNonNull(type);
-    return TypeToken.of(type).getRawType();
-  }
-
   static Type resolveType(Type contextType, Type dependentType) {
     Objects.requireNonNull(contextType);
     Objects.requireNonNull(dependentType);
@@ -41,23 +35,9 @@ final class TypeUtils {
                     .getType();
   }
 
-  static Stream<Type> getTypes(Type type) {
-    Objects.requireNonNull(type);
-    return TypeToken.of(type)
-                    .getTypes()
-                    .stream()
-                    .map(token -> token.getType());
-  }
-
   static boolean isSupertype(Type a, Type b) {
     Objects.requireNonNull(a);
     Objects.requireNonNull(b);
     return TypeToken.of(a).isSupertypeOf(b);
-  }
-
-  static boolean isSubtype(Type a, Type b) {
-    Objects.requireNonNull(a);
-    Objects.requireNonNull(b);
-    return TypeToken.of(a).isSubtypeOf(b);
   }
 }

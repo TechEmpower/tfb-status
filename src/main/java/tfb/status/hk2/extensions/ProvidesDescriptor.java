@@ -35,6 +35,7 @@ import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
  */
 final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   private final AnnotatedElement annotatedElement;
+  private final Class<?> implementationClass;
   private final Type implementationType;
   private final Set<Type> contracts;
   private final Annotation scopeAnnotation;
@@ -42,6 +43,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   private final Consumer<T> disposeFunction;
 
   ProvidesDescriptor(AnnotatedElement annotatedElement,
+                     Class<?> implementationClass,
                      Type implementationType,
                      Set<Type> contracts,
                      Annotation scopeAnnotation,
@@ -49,6 +51,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
                      Consumer<T> disposeFunction) {
 
     this.annotatedElement = Objects.requireNonNull(annotatedElement);
+    this.implementationClass = Objects.requireNonNull(implementationClass);
     this.implementationType = Objects.requireNonNull(implementationType);
     this.contracts = Set.copyOf(Objects.requireNonNull(contracts));
     this.scopeAnnotation = Objects.requireNonNull(scopeAnnotation);
@@ -68,7 +71,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
 
   @Override
   public Class<?> getImplementationClass() {
-    return TypeUtils.getRawType(implementationType);
+    return implementationClass;
   }
 
   @Override
@@ -126,8 +129,9 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   public Set<String> getAdvertisedContracts() {
     return getContractTypes()
         .stream()
-        .map(contract -> TypeUtils.getRawType(contract))
-        .map(contract -> contract.getName())
+        .map(contract -> ReflectionHelper.getRawClass(contract))
+        .filter(contractClass -> contractClass != null)
+        .map(contractClass -> contractClass.getName())
         .collect(toUnmodifiableSet());
   }
 

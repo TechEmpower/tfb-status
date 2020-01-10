@@ -74,6 +74,7 @@ final class NoInstancesService implements DynamicConfigurationService {
     return new ProvidesDescriptor<>(
         rawClass,
         rawClass,
+        rawClass,
         Set.of(), // Provides no contracts, not even itself.
         ServiceLocatorUtilities.getPerLookupAnnotation(),
         root -> { throw new UnsupportedOperationException(); },
