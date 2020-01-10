@@ -8,7 +8,6 @@ import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
@@ -42,20 +41,20 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  *   }
  * </pre>
  *
- * @see AbstractBinder
  * @see ParameterResolver
  */
 public interface ServiceLocatorParameterResolver extends ParameterResolver {
   /**
-   * Creates a new {@link ServiceLocator} instance.
+   * Creates a new {@link ServiceLocator} instance, and registers all services
+   * that may be injected into test method parameters with this {@link
+   * ServiceLocator} instance.
    *
-   * <p>This {@link ServiceLocator} will be cached in the {@linkplain
+   * <p>This {@link ServiceLocator} instance will be cached in the {@linkplain
    * ExtensionContext#getStore(Namespace) store} of the {@linkplain
    * ExtensionContext#getRoot() root extension context}, meaning that this
    * method will only be invoked once, and the same {@link ServiceLocator}
    * instance will be shared between all tests.
    */
-  // TODO: Tell users to register their services within this method.
   // TODO: Give users the ability to override the default caching behavior.
   ServiceLocator createServiceLocator();
 
