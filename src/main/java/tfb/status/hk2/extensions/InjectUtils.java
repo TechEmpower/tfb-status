@@ -25,6 +25,7 @@ import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.api.Unqualified;
 import org.glassfish.hk2.api.UnsatisfiedDependencyException;
+import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.utilities.InjecteeImpl;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
@@ -45,10 +46,21 @@ final class InjectUtils {
    * If the type of the service is a non-generic {@link Class}, use {@link
    * ServiceLocator#getService(Class, Annotation...)} instead of this method.
    *
-   * @throws MultiException if a registered services matches the specified type
-   *         but an exception was thrown while retrieving that instance -- if
-   *         the service has unsatisfied dependencies or its constructor throws
-   *         an exception, for example
+   * <p>This method offers the following advantages over {@link
+   * ServiceLocator#getService(Type, Annotation...)}:
+   *
+   * <ul>
+   * <li>This method is type safe.
+   * <li>This method supports return types such as {@link Iterable}, {@link
+   *     Optional}, and {@link Topic} that are supported in regular injection
+   *     but not supported by {@link ServiceLocator#getService(Type,
+   *     Annotation...)}.
+   * </ul>
+   *
+   * @throws MultiException if a registered service matches the specified type
+   *         but an exception was thrown while retrieving that instance &mdash;
+   *         if the service has unsatisfied dependencies or its constructor
+   *         throws an exception, for example
    * @throws NoSuchElementException if no registered service matches the
    *         specified type, or if a registered service does match the specified
    *         type but the provider of that service provided {@code null}
