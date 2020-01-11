@@ -12,6 +12,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -506,6 +507,10 @@ public class ProvidesListener implements DynamicConfigurationListener {
    * Returns a function that disposes of instances of services that were
    * retrieved from a method annotated with {@link Provides}.
    *
+   * <p>The returned function will throw {@link MultiException} when invoked if
+   * the {@link Provides} annotation has a non-empty {@link
+   * Provides#disposeMethod()} and the method it specifies is not found.
+   *
    * @param providerDescriptor the descriptor of the service that defines the
    *        method
    * @param providesAnnotation the {@link Provides} annotation on the method
@@ -515,9 +520,6 @@ public class ProvidesListener implements DynamicConfigurationListener {
    * @param providerClass the class of the service that defines the method
    * @param providerType the type of the service that defines the method
    * @param locator the service locator
-   * @throws MultiException if the {@link Provides} annotation has a non-empty
-   *         {@link Provides#disposeMethod()} and the method it specifies is not
-   *         found
    */
   private static <T extends AccessibleObject & Member> Consumer<Object>
   getDisposeFunction(ActiveDescriptor<?> providerDescriptor,
@@ -546,24 +548,24 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
     switch (providesAnnotation.disposalHandledBy()) {
       case PROVIDED_INSTANCE: {
-        Method disposeMethod =
+        Optional<Method> specifiedDisposeMethod =
             Arrays.stream(providedClass.getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> !Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 0)
-                  .findAny()
-                  // TODO: Avoid throwing?  This exception will be swallowed.
-                  .orElseThrow(
-                      () ->
-                          new MultiException(
-                              new NoSuchMethodException(
-                                  "Dispose method "
-                                      + providesAnnotation
-                                      + " on "
-                                      + providerMethod
-                                      + " not found")));
+                  .findAny();
 
         return instance -> {
+          Method disposeMethod =
+              specifiedDisposeMethod.orElseThrow(
+                  () -> new MultiException(
+                      new NoSuchMethodException(
+                          "Dispose method "
+                              + providesAnnotation
+                              + " on "
+                              + providerMethod
+                              + " not found")));
+
           if (instance == null)
             return;
 
@@ -582,7 +584,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
         boolean isStatic =
             Modifier.isStatic(providerMethod.getModifiers());
 
-        Method disposeMethod =
+        Optional<Method> specifiedDisposeMethod =
             Arrays.stream(providerClass.getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> isStatic == Modifier.isStatic(method.getModifiers()))
@@ -597,20 +599,20 @@ public class ProvidesListener implements DynamicConfigurationListener {
                         parameterType,
                         providedType);
                   })
-                  .findAny()
-                  // TODO: Avoid throwing?  This exception will be swallowed.
-                  .orElseThrow(
-                      () ->
-                          new MultiException(
-                              new NoSuchMethodException(
-                                  "Dispose method "
-                                      + providesAnnotation
-                                      + " on "
-                                      + providerMethod
-                                      + " not found")));
+                  .findAny();
 
         if (isStatic)
           return instance -> {
+            Method disposeMethod =
+                specifiedDisposeMethod.orElseThrow(
+                    () -> new MultiException(
+                        new NoSuchMethodException(
+                            "Dispose method "
+                                + providesAnnotation
+                                + " on "
+                                + providerMethod
+                                + " not found")));
+
             if (instance == null)
               return;
 
@@ -625,6 +627,16 @@ public class ProvidesListener implements DynamicConfigurationListener {
           };
 
         return instance -> {
+          Method disposeMethod =
+              specifiedDisposeMethod.orElseThrow(
+                  () -> new MultiException(
+                      new NoSuchMethodException(
+                          "Dispose method "
+                              + providesAnnotation
+                              + " on "
+                              + providerMethod
+                              + " not found")));
+
           if (instance == null)
             return;
 
