@@ -3,6 +3,7 @@ package tfb.status.hk2.extensions;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.stream.Collectors.toSet;
 import static org.glassfish.hk2.utilities.ServiceLocatorUtilities.createAndPopulateServiceLocator;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -12,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Retention;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
@@ -28,6 +31,7 @@ import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.IterableProvider;
+import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
@@ -1938,6 +1942,49 @@ public final class ProvidesTest {
     }
   }
 
+  /**
+   * Verifies that an instance method annotated with {@link Provides} may
+   * provide a service of a generic array type.
+   */
+  @Test
+  public void testProvidesGenericArray() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        ProvidesStringArray.class);
+
+    String[][] expected = { new String[] { "hey" } };
+    String[][] actual = locator.getService(String[][].class);
+    assertArrayEquals(expected, actual);
+  }
+
+  /**
+   * Verifies that a wildcard in the generic type parameters of a service coming
+   * from {@link Provides} is treated appropriately.  See the comments near
+   * {@link WrongDisposeMethodParameterType#dispose(Object)} for details.
+   */
+  @Test
+  public void testProvidesWildcardCapture() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        ProvidesWrongDisposeMethodParameterType.class);
+
+    ServiceHandle<Object> handle = locator.getServiceHandle(Object.class);
+
+    Object expected = Optional.of("hello");
+    Object actual = handle.getService();
+    assertEquals(expected, actual);
+
+    MultiException thrown =
+        assertThrows(MultiException.class, () -> handle.close());
+    assertEquals(1, thrown.getErrors().size());
+    assertTrue(thrown.getErrors().get(0) instanceof NoSuchMethodException);
+    assertEquals(expected, actual);
+  }
+
   public static final class ProvidesString {
     @Provides
     public String value() {
@@ -2929,6 +2976,52 @@ public final class ProvidesTest {
 
     public void instanceDisposeMethod(ServiceWithLifecycle instance) {
       instance.stop();
+    }
+  }
+
+  public static final class ProvidesStringArray {
+    @Provides
+    public ProvidesGenericArray<String[]> array() {
+      return new ProvidesGenericArray<String[]>() {
+        @Override
+        public String[][] value() {
+          return new String[][] { new String[] { "hey" } };
+        }
+      };
+    }
+  }
+
+  public abstract static class ProvidesGenericArray<T> {
+    @Provides
+    public abstract T[] value();
+  }
+
+  public static final class ProvidesWrongDisposeMethodParameterType {
+    @Provides
+    public WrongDisposeMethodParameterType<Optional<?>> service() {
+      return new WrongDisposeMethodParameterType<>();
+    }
+  }
+
+  public static final class WrongDisposeMethodParameterType<T> {
+    @Provides(
+        contracts = Object.class,
+        disposeMethod = "dispose",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    public Optional<String> provide() {
+      return Optional.of("hello");
+    }
+
+    // In the context of the provider class, the type of this parameter should
+    // evaluate to something like "Optional<capture#1 of ? extends Object>".
+    // That is not a supertype of the type from our @Provides method, which is
+    // "Optional<String>", so this dispose method won't match.
+    //
+    // If the type of this parameter was wrongly evaluated to "Optional<?>",
+    // which is a supertype of "Optional<String>", then this dispose method
+    // would wrongly match.
+    public void dispose(T instance) {
+      fail("This method should not have been called");
     }
   }
 }
