@@ -1,14 +1,15 @@
 package tfb.status.hk2.extensions;
 
+import static java.util.stream.Collectors.toSet;
 import static org.glassfish.hk2.utilities.ServiceLocatorUtilities.createAndPopulateServiceLocator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.StreamSupport;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.TypeLiteral;
@@ -143,9 +144,14 @@ public final class NoInstancesFilterTest {
             locator,
             new TypeLiteral<IterableProvider<EnumProvides>>() {});
 
+    Set<EnumProvides> expected = EnumSet.allOf(EnumProvides.class);
+
+    assertEquals(expected.size(), provider.getSize());
+
     assertEquals(
-        EnumSet.allOf(EnumProvides.class),
-        Sets.immutableEnumSet(provider));
+        expected,
+        StreamSupport.stream(provider.spliterator(), false)
+                     .collect(toSet()));
   }
 
   /**
@@ -166,18 +172,27 @@ public final class NoInstancesFilterTest {
             locator,
             new TypeLiteral<IterableProvider<EnumContract>>() {});
 
+    Set<EnumProvidesContract> expected =
+        EnumSet.allOf(EnumProvidesContract.class);
+
+    assertEquals(expected.size(), provider.getSize());
+
     assertEquals(
-        EnumSet.allOf(EnumProvidesContract.class),
-        ImmutableSet.copyOf(provider));
+        expected,
+        StreamSupport.stream(provider.spliterator(), false)
+                     .collect(toSet()));
 
     IterableProvider<SecondEnumContract> secondProvider =
         InjectUtils.getService(
             locator,
             new TypeLiteral<IterableProvider<SecondEnumContract>>() {});
 
+    assertEquals(expected.size(), secondProvider.getSize());
+
     assertEquals(
-        EnumSet.allOf(EnumProvidesContract.class),
-        ImmutableSet.copyOf(secondProvider));
+        expected,
+        StreamSupport.stream(secondProvider.spliterator(), false)
+                     .collect(toSet()));
   }
 
   public static final class ParamForProvides1 {}

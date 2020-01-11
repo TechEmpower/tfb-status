@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Retention;
 import java.lang.reflect.Type;
@@ -22,6 +21,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
@@ -1515,17 +1515,20 @@ public final class ProvidesTest {
             locator,
             new TypeLiteral<IterableProvider<BoxFromGenericProvidesContract<String>>>() {});
 
-    assertEquals(4, boxes.getSize());
-
-    assertEquals(
+    Set<String> expected =
         Set.of(
             "staticField",
             "instanceField",
             "staticMethod",
-            "instanceMethod"),
-        Streams.stream(boxes)
-               .map(box -> box.value)
-               .collect(toSet()));
+            "instanceMethod");
+
+    assertEquals(expected.size(), boxes.getSize());
+
+    assertEquals(
+        expected,
+        StreamSupport.stream(boxes.spliterator(), false)
+                     .map(box -> box.value)
+                     .collect(toSet()));
   }
 
   /**
@@ -1558,9 +1561,9 @@ public final class ProvidesTest {
 
     assertEquals(
         expected,
-        Streams.stream(overrides)
-               .map(box -> box.value)
-               .collect(toSet()));
+        StreamSupport.stream(overrides.spliterator(), false)
+                     .map(box -> box.value)
+                     .collect(toSet()));
   }
 
   /**
