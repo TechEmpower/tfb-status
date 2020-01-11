@@ -11,6 +11,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -82,6 +83,12 @@ public class ProvidesListener implements DynamicConfigurationListener {
   public void configurationChanged() {
     Filter filter = getFilter();
 
+    Set<ActiveDescriptor<?>> providers = new LinkedHashSet<>();
+    for (ActiveDescriptor<?> provider : locator.getDescriptors(filter))
+      providers.add(locator.reifyDescriptor(provider));
+
+    seen.retainAll(providers);
+
     DynamicConfigurationService configurationService =
         locator.getService(DynamicConfigurationService.class);
 
@@ -89,11 +96,8 @@ public class ProvidesListener implements DynamicConfigurationListener {
         configurationService.createDynamicConfiguration();
 
     int added = 0;
-
-    for (ActiveDescriptor<?> provider : locator.getDescriptors(filter)) {
-      provider = locator.reifyDescriptor(provider);
+    for (ActiveDescriptor<?> provider : providers)
       added += addDescriptors(provider, configuration);
-    }
 
     if (added > 0)
       configuration.commit();
@@ -675,6 +679,16 @@ public class ProvidesListener implements DynamicConfigurationListener {
    */
   private static final class ProvidersSeen {
     private final Set<CacheKey> cache = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Removes the providers from this cache that are not in the specified set
+     * of providers.
+     */
+    void retainAll(Set<ActiveDescriptor<?>> providers) {
+      Objects.requireNonNull(providers);
+      cache.removeIf(
+          key -> key.provider != null && !providers.contains(key.provider));
+    }
 
     /**
      * Modifies this cache to remember that the specified provider has been
