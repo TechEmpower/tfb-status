@@ -1,6 +1,7 @@
 package tfb.status.hk2.extensions;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.glassfish.hk2.utilities.ServiceLocatorUtilities.createAndPopulateServiceLocator;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -31,10 +32,12 @@ import javax.inject.Named;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
+import org.glassfish.hk2.api.Self;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.TypeLiteral;
@@ -66,6 +69,10 @@ public final class ProvidesTest {
 
     String string = locator.getService(String.class);
     assertEquals("hello", string);
+
+    var handle = locator.getServiceHandle(String.class);
+    handle.getService();
+    handle.close();
   }
 
   /**
@@ -2106,6 +2113,44 @@ public final class ProvidesTest {
     assertEquals(1, stats.singletonDependencyDisposeCounter.get());
   }
 
+  /**
+   * Verifies that {@link Self} may be used to inject the {@link
+   * ActiveDescriptor} of a provided service into the method annotated with
+   * {@link Provides} that provides that service or into the dispose method for
+   * that service.
+   */
+  @Test
+  public void testSelf() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        SeenByUsesSelf.class,
+        UsesSelf.class);
+
+    SeenByUsesSelf seen = locator.getService(SeenByUsesSelf.class);
+
+    assertEquals(List.of(), seen.list);
+
+    ServiceHandle<String> handle = locator.getServiceHandle(String.class);
+
+    assertEquals("hello", handle.getService());
+
+    assertEquals(
+        List.of(UsesSelf.class, String.class),
+        seen.list.stream()
+                 .map(d -> d.getImplementationClass())
+                 .collect(toList()));
+
+    handle.close();
+
+    assertEquals(
+        List.of(UsesSelf.class, String.class, UsesSelf.class, String.class),
+        seen.list.stream()
+                 .map(d -> d.getImplementationClass())
+                 .collect(toList()));
+  }
+
   public static final class ProvidesString {
     @Provides
     public String value() {
@@ -3283,6 +3328,30 @@ public final class ProvidesTest {
     @Override
     public void preDestroy() {
       stats.factoryDisposeCounter.incrementAndGet();
+    }
+  }
+
+  @Singleton
+  public static final class SeenByUsesSelf {
+    public final List<ActiveDescriptor<?>> list = new CopyOnWriteArrayList<>();
+  }
+
+  public static final class UsesSelf {
+    @Inject
+    public UsesSelf(@Self ActiveDescriptor<?> self, SeenByUsesSelf seen) {
+      seen.list.add(self);
+    }
+
+    @Provides(
+        disposeMethod = "dispose",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    public String provide(@Self ActiveDescriptor<?> self, SeenByUsesSelf seen) {
+      seen.list.add(self);
+      return "hello";
+    }
+
+    public void dispose(String instance, @Self ActiveDescriptor<?> self, SeenByUsesSelf seen) {
+      seen.list.add(self);
     }
   }
 }

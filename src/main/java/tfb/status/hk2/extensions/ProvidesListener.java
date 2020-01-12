@@ -15,11 +15,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Scope;
@@ -34,6 +37,7 @@ import org.glassfish.hk2.api.DynamicConfigurationService;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.PerLookup;
+import org.glassfish.hk2.api.Self;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
@@ -41,6 +45,7 @@ import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 import org.glassfish.hk2.utilities.reflection.TypeChecker;
 import org.jvnet.hk2.annotations.Contract;
 import org.jvnet.hk2.annotations.ContractsProvided;
+import org.jvnet.hk2.annotations.Optional;
 
 /**
  * Enables the {@link Provides} annotation.
@@ -168,10 +173,32 @@ public class ProvidesListener implements DynamicConfigurationListener {
               method,
               providedContracts);
 
-      Function<ServiceHandle<?>, Object> createFunction =
-          Modifier.isStatic(method.getModifiers())
-              ? getCreateFunctionFromStaticMethod(method, providerType, locator)
-              : getCreateFunctionFromInstanceMethod(method, providerType, providerDescriptor, locator);
+      AtomicReference<ActiveDescriptor<?>> selfHolder = new AtomicReference<>();
+
+      Supplier<ActiveDescriptor<?>> selfSupplier =
+          () -> {
+            ActiveDescriptor<?> self = selfHolder.get();
+            if (self == null)
+              throw new NoSuchElementException();
+            return self;
+          };
+
+      Function<ServiceHandle<?>, Object> createFunction;
+      if (Modifier.isStatic(method.getModifiers()))
+        createFunction =
+            getCreateFunctionFromStaticMethod(
+                method,
+                providerType,
+                selfSupplier,
+                locator);
+      else
+        createFunction =
+            getCreateFunctionFromInstanceMethod(
+                method,
+                providerType,
+                providerDescriptor,
+                selfSupplier,
+                locator);
 
       Consumer<Object> disposeFunction =
           getDisposeFunction(
@@ -182,20 +209,24 @@ public class ProvidesListener implements DynamicConfigurationListener {
               providedType,
               providerClass,
               providerType,
+              selfSupplier,
               locator);
 
       if (disposeFunction == null)
         continue;
 
-      configuration.addActiveDescriptor(
-          new ProvidesDescriptor<>(
-              method,
-              providedClass,
-              providedType,
-              providedContracts,
-              scopeAnnotation,
-              createFunction,
-              disposeFunction));
+      ActiveDescriptor<?> self =
+          configuration.addActiveDescriptor(
+              new ProvidesDescriptor<>(
+                  method,
+                  providedClass,
+                  providedType,
+                  providedContracts,
+                  scopeAnnotation,
+                  createFunction,
+                  disposeFunction));
+
+      selfHolder.set(self);
 
       added++;
     }
@@ -362,27 +393,34 @@ public class ProvidesListener implements DynamicConfigurationListener {
    *
    * @param method the static method that is annotated with {@link Provides}
    * @param providerType the type of the service that defines the method
+   * @param self supplies the descriptor of the service provided by the method
    * @param locator the service locator
    */
   private static Function<ServiceHandle<?>, Object>
   getCreateFunctionFromStaticMethod(Method method,
                                     Type providerType,
+                                    Supplier<ActiveDescriptor<?>> self,
                                     ServiceLocator locator) {
 
     Objects.requireNonNull(method);
     Objects.requireNonNull(providerType);
+    Objects.requireNonNull(self);
     Objects.requireNonNull(locator);
 
     return (ServiceHandle<?> root) -> {
       Object[] arguments =
           Arrays.stream(method.getParameters())
                 .map(
-                    parameter ->
-                        InjectUtils.serviceFromParameter(
-                            parameter,
-                            providerType,
-                            root,
-                            locator))
+                    parameter -> {
+                      if (isSelf(parameter))
+                        return self.get();
+
+                      return InjectUtils.serviceFromParameter(
+                          parameter,
+                          providerType,
+                          root,
+                          locator);
+                    })
                 .toArray(length -> new Object[length]);
 
       if (!method.canAccess(null))
@@ -407,29 +445,36 @@ public class ProvidesListener implements DynamicConfigurationListener {
    * @param providerType the type of the service that defines the method
    * @param providerDescriptor the descriptor of the service that defines the
    *        method
+   * @param self supplies the descriptor of the service provided by the method
    * @param locator the service locator
    */
   private static Function<ServiceHandle<?>, Object>
   getCreateFunctionFromInstanceMethod(Method method,
                                       Type providerType,
                                       ActiveDescriptor<?> providerDescriptor,
+                                      Supplier<ActiveDescriptor<?>> self,
                                       ServiceLocator locator) {
 
     Objects.requireNonNull(providerDescriptor);
     Objects.requireNonNull(providerType);
     Objects.requireNonNull(method);
+    Objects.requireNonNull(self);
     Objects.requireNonNull(locator);
 
     return (ServiceHandle<?> root) -> {
       Object[] arguments =
           Arrays.stream(method.getParameters())
                 .map(
-                    parameter ->
-                        InjectUtils.serviceFromParameter(
-                            parameter,
-                            providerType,
-                            root,
-                            locator))
+                    parameter -> {
+                      if (isSelf(parameter))
+                        return self.get();
+
+                      return InjectUtils.serviceFromParameter(
+                          parameter,
+                          providerType,
+                          root,
+                          locator);
+                    })
                 .toArray(length -> new Object[length]);
 
       Object provider =
@@ -528,6 +573,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
    * @param providedType the {@link Method#getGenericReturnType()}
    * @param providerClass the class of the service that defines the method
    * @param providerType the type of the service that defines the method
+   * @param self supplies the descriptor of the service provided by the method
    * @param locator the service locator
    */
   private static <T extends AccessibleObject & Member> @Nullable Consumer<Object>
@@ -538,6 +584,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
                      Type providedType,
                      Class<?> providerClass,
                      Type providerType,
+                     Supplier<ActiveDescriptor<?>> self,
                      ServiceLocator locator) {
 
     Objects.requireNonNull(providerDescriptor);
@@ -547,6 +594,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
     Objects.requireNonNull(providedType);
     Objects.requireNonNull(providerClass);
     Objects.requireNonNull(providerType);
+    Objects.requireNonNull(self);
     Objects.requireNonNull(locator);
 
     if (providesAnnotation.disposeMethod().isEmpty())
@@ -619,6 +667,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
               if (i == indexOfArgumentToDispose)
                 arguments[i] = instance;
 
+              else if (isSelf(parameters[i]))
+                arguments[i] = self.get();
+
               else {
                 ServiceHandle<?> parameterHandle =
                     InjectUtils.serviceHandleFromParameter(
@@ -689,6 +740,21 @@ public class ProvidesListener implements DynamicConfigurationListener {
   private static boolean isPerLookup(ServiceHandle<?> handle) {
     Objects.requireNonNull(handle);
     return handle.getActiveDescriptor().getScopeAnnotation() == PerLookup.class;
+  }
+
+  /**
+   * Returns {@code true} if the specified parameter is a {@link Self} injection
+   * point.
+   */
+  private static boolean isSelf(Parameter parameter) {
+    Objects.requireNonNull(parameter);
+    return parameter.isAnnotationPresent(Self.class)
+        && parameter.getType() == ActiveDescriptor.class
+        && !parameter.isAnnotationPresent(Optional.class)
+        && Arrays.stream(parameter.getAnnotations())
+                 .noneMatch(
+                     annotation ->
+                         ReflectionHelper.isAnnotationAQualifier(annotation));
   }
 
   /**
