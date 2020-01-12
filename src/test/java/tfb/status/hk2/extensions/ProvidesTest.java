@@ -799,14 +799,14 @@ public final class ProvidesTest {
   }
 
   /**
-   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
-   * provider type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on a static field and {@link
+   * Verifies that {@link Provides#disposeMethod()} may specify a static method
+   * of the provider type to be invoked at the end of the service's lifecycle
+   * when the {@link Provides} annotation is on a static method and {@link
    * Provides#disposalHandledBy()} is {@link
    * Provides.DisposalHandledBy#PROVIDER}.
    */
   @Test
-  public void testProvidesCustomDisposeStaticMethodFactoryDestroys() {
+  public void testProvidesCustomDisposeStaticMethodToFactoryStaticMethod() {
     ServiceLocator locator = createAndPopulateServiceLocator();
     ServiceLocatorUtilities.addClasses(
         locator,
@@ -814,7 +814,7 @@ public final class ProvidesTest {
         ProvidesCustomDispose.class);
 
     HasCustomDisposeMethod service =
-        locator.getService(ProvidedWithCustomDisposeFromStaticMethodForFactory.class);
+        locator.getService(ProvidedWithCustomDisposeFromStaticMethodToFactoryStaticMethod.class);
 
     assertFalse(service.isClosed());
     locator.shutdown();
@@ -822,14 +822,14 @@ public final class ProvidesTest {
   }
 
   /**
-   * Verifies that {@link Provides#disposeMethod()} may specify a method of the
-   * provider type to be invoked at the end of the service's lifecycle when the
-   * {@link Provides} annotation is on a static field and {@link
-   * Provides#disposalHandledBy()} is {@link
+   * Verifies that {@link Provides#disposeMethod()} may specify an instance
+   * method of the provider type to be invoked at the end of the service's
+   * lifecycle when the {@link Provides} annotation is on a static method and
+   * {@link Provides#disposalHandledBy()} is {@link
    * Provides.DisposalHandledBy#PROVIDER}.
    */
   @Test
-  public void testProvidesCustomDisposeInstanceMethodFactoryDestroys() {
+  public void testProvidesCustomDisposeStaticMethodToFactoryInstanceMethod() {
     ServiceLocator locator = createAndPopulateServiceLocator();
     ServiceLocatorUtilities.addClasses(
         locator,
@@ -837,7 +837,53 @@ public final class ProvidesTest {
         ProvidesCustomDispose.class);
 
     HasCustomDisposeMethod service =
-        locator.getService(ProvidedWithCustomDisposeFromInstanceMethodForFactory.class);
+        locator.getService(ProvidedWithCustomDisposeFromStaticMethodToFactoryInstanceMethod.class);
+
+    assertFalse(service.isClosed());
+    locator.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
+   * Verifies that {@link Provides#disposeMethod()} may specify a static method
+   * of the provider type to be invoked at the end of the service's lifecycle
+   * when the {@link Provides} annotation is on an instance method and {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDER}.
+   */
+  @Test
+  public void testProvidesCustomDisposeInstanceMethodToFactoryStaticMethod() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        ProvidesCustomDispose.class);
+
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromInstanceMethodToFactoryStaticMethod.class);
+
+    assertFalse(service.isClosed());
+    locator.shutdown();
+    assertTrue(service.isClosed());
+  }
+
+  /**
+   * Verifies that {@link Provides#disposeMethod()} may specify an instance
+   * method of the provider type to be invoked at the end of the service's
+   * lifecycle when the {@link Provides} annotation is on an instance method and
+   * {@link Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDER}.
+   */
+  @Test
+  public void testProvidesCustomDisposeInstanceMethodToFactoryInstanceMethod() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        ProvidesCustomDispose.class);
+
+    HasCustomDisposeMethod service =
+        locator.getService(ProvidedWithCustomDisposeFromInstanceMethodToFactoryInstanceMethod.class);
 
     assertFalse(service.isClosed());
     locator.shutdown();
@@ -2273,8 +2319,16 @@ public final class ProvidesTest {
         disposeMethod = "staticDestroyMethod",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
     @Singleton
-    public static ProvidedWithCustomDisposeFromStaticMethodForFactory staticMethodForFactory() {
-      return new ProvidedWithCustomDisposeFromStaticMethodForFactory();
+    public static ProvidedWithCustomDisposeFromStaticMethodToFactoryStaticMethod staticMethodToFactoryStaticMethod() {
+      return new ProvidedWithCustomDisposeFromStaticMethodToFactoryStaticMethod();
+    }
+
+    @Provides(
+        disposeMethod = "instanceDestroyMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    @Singleton
+    public static ProvidedWithCustomDisposeFromStaticMethodToFactoryInstanceMethod staticMethodToFactoryInstanceMethod() {
+      return new ProvidedWithCustomDisposeFromStaticMethodToFactoryInstanceMethod();
     }
 
     @Provides(
@@ -2286,11 +2340,19 @@ public final class ProvidesTest {
     }
 
     @Provides(
+        disposeMethod = "staticDestroyMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    @Singleton
+    public ProvidedWithCustomDisposeFromInstanceMethodToFactoryStaticMethod instanceMethodToFactoryStaticMethod() {
+      return new ProvidedWithCustomDisposeFromInstanceMethodToFactoryStaticMethod();
+    }
+
+    @Provides(
         disposeMethod = "instanceDestroyMethod",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
     @Singleton
-    public ProvidedWithCustomDisposeFromInstanceMethodForFactory instanceMethodForFactory() {
-      return new ProvidedWithCustomDisposeFromInstanceMethodForFactory();
+    public ProvidedWithCustomDisposeFromInstanceMethodToFactoryInstanceMethod instanceMethodToFactoryInstanceMethod() {
+      return new ProvidedWithCustomDisposeFromInstanceMethodToFactoryInstanceMethod();
     }
 
     public static void staticDestroyMethod(HasCustomDisposeMethod instance) {
@@ -2322,8 +2384,10 @@ public final class ProvidesTest {
 
   public static final class ProvidedWithCustomDisposeFromStaticFieldForFactory extends HasCustomDisposeMethod {}
   public static final class ProvidedWithCustomDisposeFromInstanceFieldForFactory extends HasCustomDisposeMethod {}
-  public static final class ProvidedWithCustomDisposeFromStaticMethodForFactory extends HasCustomDisposeMethod {}
-  public static final class ProvidedWithCustomDisposeFromInstanceMethodForFactory extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromStaticMethodToFactoryStaticMethod extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromStaticMethodToFactoryInstanceMethod extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromInstanceMethodToFactoryStaticMethod extends HasCustomDisposeMethod {}
+  public static final class ProvidedWithCustomDisposeFromInstanceMethodToFactoryInstanceMethod extends HasCustomDisposeMethod {}
 
   public static final class ProvidesExplicitContracts {
     @Provides(contracts = ExplicitContractInStaticField.class)

@@ -581,13 +581,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
       }
 
       case PROVIDER: {
-        boolean isStatic =
-            Modifier.isStatic(providerMethod.getModifiers());
-
         Method disposeMethod =
             Arrays.stream(providerClass.getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
-                  .filter(method -> isStatic == Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 1)
                   .filter(method -> {
                     Type parameterType =
@@ -605,7 +601,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
         if (disposeMethod == null)
           return null;
 
-        if (isStatic)
+        if (Modifier.isStatic(disposeMethod.getModifiers()))
           return instance -> {
             if (instance == null)
               return;

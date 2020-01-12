@@ -122,9 +122,7 @@ public @interface Provides {
      * disposal of instances of the provided service.  {@link #disposeMethod()}
      * names a public method of the providing class that accepts one parameter,
      * where the type of that parameter is a supertype of the provided service
-     * type.  If the method annotated with {@link Provides} is static, then the
-     * dispose method must also be static.  Otherwise the dispose method must be
-     * non-static.
+     * type.
      */
     PROVIDER
   }
