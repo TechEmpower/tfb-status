@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.listOf;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.setOf;
 
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Retention;
 import java.lang.reflect.Type;
 import java.util.List;
@@ -33,7 +32,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.IterableProvider;
@@ -2164,10 +2162,10 @@ public final class ProvidesTest {
   public static final class ParamForProvides2 {}
 
   public static class ServiceWithLifecycle implements PostConstruct, PreDestroy {
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private boolean wasStarted = false;
 
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private boolean wasStopped = false;
 
     public synchronized boolean wasStarted() {
@@ -2491,7 +2489,7 @@ public final class ProvidesTest {
   }
 
   public static class HasCustomDisposeMethod {
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private boolean isClosed;
 
     public synchronized boolean isClosed() {
@@ -2560,18 +2558,18 @@ public final class ProvidesTest {
 
   public static final class ProvidesNull {
     @Provides
-    public static final @Nullable NullFromStaticField staticField = null;
+    public static final /*@Nullable*/ NullFromStaticField staticField = null;
 
     @Provides
-    public final @Nullable NullFromInstanceField instanceField = null;
+    public final /*@Nullable*/ NullFromInstanceField instanceField = null;
 
     @Provides
-    public static @Nullable NullFromStaticMethod staticMethod() {
+    public static /*@Nullable*/ NullFromStaticMethod staticMethod() {
       return null;
     }
 
     @Provides
-    public @Nullable NullFromInstanceMethod instanceMethod() {
+    public /*@Nullable*/ NullFromInstanceMethod instanceMethod() {
       return null;
     }
   }
@@ -2947,7 +2945,7 @@ public final class ProvidesTest {
   public static final class UnresolvableTypeVariableInFieldType<T> {
     @Provides
     @BetterNotFindMe
-    public final @Nullable T bad = null;
+    public final /*@Nullable*/ T bad = null;
 
     @Provides
     @BetterFindMe
@@ -2968,7 +2966,7 @@ public final class ProvidesTest {
     @Provides
     @BetterNotFindMe
     @SuppressWarnings("TypeParameterUnusedInFormals")
-    public static <T> @Nullable T bad() {
+    public static <T> /*@Nullable*/ T bad() {
       return null;
     }
 
@@ -3003,7 +3001,7 @@ public final class ProvidesTest {
   public static final class UnresolvableTypeVariableInInstanceMethodReturnType<T> {
     @Provides
     @BetterNotFindMe
-    public @Nullable T bad() {
+    public /*@Nullable*/ T bad() {
       return null;
     }
 
@@ -3092,67 +3090,67 @@ public final class ProvidesTest {
 
   public static final class ProvidesNullWithLifecycle {
     @Provides
-    public static final @Nullable ServiceWithLifecycle staticFieldDefaultDispose = null;
+    public static final /*@Nullable*/ ServiceWithLifecycle staticFieldDefaultDispose = null;
 
     @Provides(
         disposeMethod = "stop",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
-    public static final @Nullable ServiceWithLifecycle staticFieldProvidedInstanceDisposeMethod = null;
+    public static final /*@Nullable*/ ServiceWithLifecycle staticFieldProvidedInstanceDisposeMethod = null;
 
     @Provides(
         disposeMethod = "staticDisposeMethod",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
-    public static final @Nullable ServiceWithLifecycle staticFieldProviderDisposeMethod = null;
+    public static final /*@Nullable*/ ServiceWithLifecycle staticFieldProviderDisposeMethod = null;
 
 
     @Provides
-    public final @Nullable ServiceWithLifecycle instanceFieldDefaultDispose = null;
+    public final /*@Nullable*/ ServiceWithLifecycle instanceFieldDefaultDispose = null;
 
     @Provides(
         disposeMethod = "stop",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
-    public final @Nullable ServiceWithLifecycle instanceFieldProvidedInstanceDisposeMethod = null;
+    public final /*@Nullable*/ ServiceWithLifecycle instanceFieldProvidedInstanceDisposeMethod = null;
 
     @Provides(
         disposeMethod = "instanceDisposeMethod",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
-    public final @Nullable ServiceWithLifecycle instanceFieldProviderDisposeMethod = null;
+    public final /*@Nullable*/ ServiceWithLifecycle instanceFieldProviderDisposeMethod = null;
 
     @Provides
-    public static @Nullable ServiceWithLifecycle staticMethodDefaultDispose() {
+    public static /*@Nullable*/ ServiceWithLifecycle staticMethodDefaultDispose() {
       return null;
     }
 
     @Provides(
         disposeMethod = "stop",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
-    public static @Nullable ServiceWithLifecycle staticMethodProvidedInstanceDisposeMethod() {
+    public static /*@Nullable*/ ServiceWithLifecycle staticMethodProvidedInstanceDisposeMethod() {
       return null;
     }
 
     @Provides(
         disposeMethod = "staticDisposeMethod",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
-    public static @Nullable ServiceWithLifecycle staticMethodProviderDisposeMethod() {
+    public static /*@Nullable*/ ServiceWithLifecycle staticMethodProviderDisposeMethod() {
       return null;
     }
 
     @Provides
-    public @Nullable ServiceWithLifecycle instanceMethodDefaultDispose() {
+    public /*@Nullable*/ ServiceWithLifecycle instanceMethodDefaultDispose() {
       return null;
     }
 
     @Provides(
         disposeMethod = "stop",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDED_INSTANCE)
-    public @Nullable ServiceWithLifecycle instanceMethodProvidedInstanceDisposeMethod() {
+    public /*@Nullable*/ ServiceWithLifecycle instanceMethodProvidedInstanceDisposeMethod() {
       return null;
     }
 
     @Provides(
         disposeMethod = "instanceDisposeMethod",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
-    public @Nullable ServiceWithLifecycle instanceMethodProviderDisposeMethod() {
+    public /*@Nullable*/ ServiceWithLifecycle instanceMethodProviderDisposeMethod() {
       return null;
     }
 

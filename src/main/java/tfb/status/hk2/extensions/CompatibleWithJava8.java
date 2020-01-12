@@ -16,7 +16,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Provides utility methods that were added to the JDK after Java 8.
@@ -30,7 +29,7 @@ final class CompatibleWithJava8 {
    * Java 9's {@code AccessibleObject.canAccess(receiver)}.
    */
   public static <T extends AccessibleObject & Member>
-  boolean canAccess(T member, @Nullable Object receiver) {
+  boolean canAccess(T member, /*@Nullable*/ Object receiver) {
     Objects.requireNonNull(member);
     if (Modifier.isStatic(member.getModifiers())) {
       if (receiver != null) {

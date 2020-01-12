@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.listOf;
 
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Singleton;
@@ -92,10 +91,10 @@ public final class TopicsTest {
   }
 
   public static class ServiceWithLifecycle implements PostConstruct, PreDestroy {
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private boolean wasStarted = false;
 
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private boolean wasStopped = false;
 
     public synchronized boolean wasStarted() {
@@ -132,19 +131,19 @@ public final class TopicsTest {
   @Singleton
   @MessageReceiver({ String.class, Number.class })
   public static final class SubscriberService {
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private final List<Object> messages = new ArrayList<>();
 
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private final List<ServiceWithLifecycle> service1List = new ArrayList<>();
 
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private final List<SingletonServiceWithShutdown> service2List = new ArrayList<>();
 
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private final List<Boolean> service1WasShutdown = new ArrayList<>();
 
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private final List<Boolean> service2WasShutdown = new ArrayList<>();
 
     public synchronized void onEvent(@SubscribeTo Object message,

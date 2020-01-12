@@ -472,6 +472,7 @@
               -->
               -Xep:NullAway:ERROR
               -XepOpt:NullAway:AnnotatedPackages=tfb.status
+              -XepOpt:NullAway:UnannotatedSubPackages=tfb.status.hk2.extensions
 
             </arg>
 

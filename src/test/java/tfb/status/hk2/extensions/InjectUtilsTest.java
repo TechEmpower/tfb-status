@@ -10,14 +10,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.MultiException;
@@ -549,10 +547,10 @@ public final class InjectUtilsTest {
   }
 
   public static class ServiceWithLifecycle implements PostConstruct, PreDestroy {
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private boolean wasStarted = false;
 
-    @GuardedBy("this")
+    /*@GuardedBy("this")*/
     private boolean wasStopped = false;
 
     public synchronized boolean wasStarted() {
@@ -628,7 +626,7 @@ public final class InjectUtilsTest {
 
   public static final class NullFactory implements Factory<NullService> {
     @Override
-    public @Nullable NullService provide() {
+    public /*@Nullable*/ NullService provide() {
       return null;
     }
 

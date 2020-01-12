@@ -6,7 +6,6 @@ import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableList;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableSet;
 
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -22,7 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.DynamicConfigurationListener;
 import org.glassfish.hk2.api.PerLookup;
@@ -51,9 +49,11 @@ final class TopicDistributionServiceImpl
 
   private final ServiceLocator locator;
   private final Set<ActiveDescriptor<?>> seen = ConcurrentHashMap.newKeySet();
+
+  // TODO: Avoid using slf4j in this package.
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @GuardedBy("this")
+  /*@GuardedBy("this")*/
   private List<Subscriber> allSubscribers = listOf();
 
   @Inject
@@ -249,7 +249,7 @@ final class TopicDistributionServiceImpl
     }
   }
 
-  private @Nullable Subscriber subscriberFromMethod(
+  private /*@Nullable*/ Subscriber subscriberFromMethod(
       Method method,
       Set<Type> permittedTypes,
       ActiveDescriptor<?> activeDescriptor) {

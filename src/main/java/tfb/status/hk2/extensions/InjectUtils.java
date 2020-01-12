@@ -15,7 +15,6 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.DuplicateServiceException;
 import org.glassfish.hk2.api.Injectee;
@@ -165,7 +164,7 @@ final class InjectUtils {
     return activeDescriptor != null;
   }
 
-  static @Nullable ServiceHandle<?> serviceHandleFromParameter(
+  static /*@Nullable*/ ServiceHandle<?> serviceHandleFromParameter(
       Parameter parameter,
       Type parentType,
       ServiceLocator locator) {
@@ -189,10 +188,10 @@ final class InjectUtils {
     return locator.getServiceHandle(activeDescriptor, injectee);
   }
 
-  static @Nullable Object serviceFromParameter(
+  static /*@Nullable*/ Object serviceFromParameter(
       Parameter parameter,
       Type parentType,
-      @Nullable ServiceHandle<?> root,
+      /*@Nullable*/ ServiceHandle<?> root,
       ServiceLocator locator) {
 
     Objects.requireNonNull(parameter);
@@ -226,7 +225,7 @@ final class InjectUtils {
    * fails if {@link Injectee#getParent()} is {@code null}.
    */
   private static final class FakeInjecteeParent {
-    @Nullable Object value;
+    /*@Nullable*/ Object value;
     static final Field field;
     static {
       try {

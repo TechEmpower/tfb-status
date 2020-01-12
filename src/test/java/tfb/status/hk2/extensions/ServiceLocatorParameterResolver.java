@@ -3,7 +3,6 @@ package tfb.status.hk2.extensions;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Objects;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
@@ -69,8 +68,8 @@ public interface ServiceLocatorParameterResolver extends ParameterResolver {
   }
 
   @Override
-  default @Nullable Object resolveParameter(ParameterContext parameterContext,
-                                            ExtensionContext extensionContext) {
+  default /*@Nullable*/ Object resolveParameter(ParameterContext parameterContext,
+                                                  ExtensionContext extensionContext) {
 
     Parameter parameter = parameterContext.getParameter();
     Type testType = getTestType(parameterContext, extensionContext);

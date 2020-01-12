@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import javax.inject.Qualifier;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Unqualified;
 import org.glassfish.hk2.api.messaging.MessageReceiver;
@@ -50,7 +49,7 @@ final class Subscriber {
    * The {@link Unqualified} annotation on the method, or {@code null} if there
    * is no such annotation.
    */
-  final @Nullable Unqualified unqualified;
+  final /*@Nullable*/ Unqualified unqualified;
 
   /**
    * The set of types defined in the {@link MessageReceiver} annotation on the
@@ -71,7 +70,7 @@ final class Subscriber {
              int parameterIndex,
              Type parameterType,
              Set<Annotation> qualifiers,
-             @Nullable Unqualified unqualified,
+             /*@Nullable*/ Unqualified unqualified,
              Set<Type> permittedTypes,
              ActiveDescriptor<?> serviceDescriptor) {
 

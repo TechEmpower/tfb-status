@@ -6,7 +6,6 @@ import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableMap;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableSet;
 
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
@@ -19,7 +18,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.inject.Named;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.DescriptorType;
 import org.glassfish.hk2.api.DescriptorVisibility;
@@ -114,12 +112,12 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public @Nullable Long getFactoryServiceId() {
+  public /*@Nullable*/ Long getFactoryServiceId() {
     return null;
   }
 
   @Override
-  public @Nullable Long getFactoryLocatorId() {
+  public /*@Nullable*/ Long getFactoryLocatorId() {
     return null;
   }
 
@@ -144,7 +142,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public @Nullable String getName() {
+  public /*@Nullable*/ String getName() {
     return Arrays.stream(annotatedElement.getAnnotations())
                  .filter(annotation -> annotation.annotationType() == Named.class)
                  .map(annotation -> ((Named) annotation))
@@ -191,14 +189,14 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public @Nullable HK2Loader getLoader() {
+  public /*@Nullable*/ HK2Loader getLoader() {
     return null;
   }
 
-  @GuardedBy("this")
+  /*@GuardedBy("this")*/
   private int ranking = 0;
 
-  @GuardedBy("this")
+  /*@GuardedBy("this")*/
   private boolean initialRankingFound = false;
 
   @Override
@@ -222,13 +220,13 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public @Nullable Boolean isProxiable() {
+  public /*@Nullable*/ Boolean isProxiable() {
     UseProxy useProxy = annotatedElement.getAnnotation(UseProxy.class);
     return (useProxy == null) ? null : useProxy.value();
   }
 
   @Override
-  public @Nullable Boolean isProxyForSameScope() {
+  public /*@Nullable*/ Boolean isProxyForSameScope() {
     ProxyForSameScope proxyForSameScope =
         annotatedElement.getAnnotation(ProxyForSameScope.class);
 
@@ -236,28 +234,28 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
   }
 
   @Override
-  public @Nullable String getClassAnalysisName() {
+  public /*@Nullable*/ String getClassAnalysisName() {
     return null;
   }
 
   @Override
-  public @Nullable Long getServiceId() {
+  public /*@Nullable*/ Long getServiceId() {
     return null;
   }
 
   @Override
-  public @Nullable Long getLocatorId() {
+  public /*@Nullable*/ Long getLocatorId() {
     return null;
   }
 
-  @GuardedBy("this")
-  private @Nullable T cache = null;
+  /*@GuardedBy("this")*/
+  private /*@Nullable*/ T cache = null;
 
-  @GuardedBy("this")
+  /*@GuardedBy("this")*/
   private boolean isCacheSet = false;
 
   @Override
-  public synchronized @Nullable T getCache() {
+  public synchronized /*@Nullable*/ T getCache() {
     if (!isCacheSet)
       throw new IllegalStateException();
 

@@ -29,7 +29,6 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Scope;
 import javax.inject.Singleton;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.ContractIndicator;
 import org.glassfish.hk2.api.Descriptor;
@@ -578,7 +577,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
    * @param self supplies the descriptor of the service provided by the method
    * @param locator the service locator
    */
-  private static <T extends AccessibleObject & Member> @Nullable Consumer<Object>
+  private static <T extends AccessibleObject & Member> /*@Nullable*/ Consumer<Object>
   getDisposeFunction(ActiveDescriptor<?> providerDescriptor,
                      Provides providesAnnotation,
                      Method providerMethod,
@@ -804,18 +803,18 @@ public class ProvidesListener implements DynamicConfigurationListener {
     }
 
     private static final class CacheKey {
-      private final @Nullable ActiveDescriptor<?> provider;
-      private final @Nullable Member methodOrField;
+      private final /*@Nullable*/ ActiveDescriptor<?> provider;
+      private final /*@Nullable*/ Member methodOrField;
 
-      CacheKey(@Nullable ActiveDescriptor<?> provider,
-               @Nullable Member methodOrField) {
+      CacheKey(/*@Nullable*/ ActiveDescriptor<?> provider,
+               /*@Nullable*/ Member methodOrField) {
 
         this.provider = provider;
         this.methodOrField = methodOrField;
       }
 
       @Override
-      public boolean equals(Object object) {
+      public boolean equals(/*@Nullable*/ Object object) {
         if (object == this) {
           return true;
         } else if (!(object instanceof CacheKey)) {

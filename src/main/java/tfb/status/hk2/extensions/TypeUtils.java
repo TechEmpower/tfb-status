@@ -1,4 +1,5 @@
 package tfb.status.hk2.extensions;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Array;
@@ -18,7 +19,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Utility methods for working with {@link Type}.
@@ -473,7 +473,7 @@ final class TypeUtils {
     }
 
     @Override
-    public <T extends Annotation> @Nullable T getAnnotation(Class<T> annotationClass) {
+    public <T extends Annotation> /*@Nullable*/ T getAnnotation(Class<T> annotationClass) {
       Objects.requireNonNull(annotationClass);
       return null;
     }
@@ -494,7 +494,7 @@ final class TypeUtils {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(/*@Nullable*/ Object object) {
       // Require the same class type for equality, and do not equate to other
       // implementations of the interface.  The JDK's implementation does this,
       // meaning that we must do the same in order to preserve symmetry.
@@ -543,7 +543,7 @@ final class TypeUtils {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(/*@Nullable*/ Object object) {
       if (object == this) {
         return true;
       } else if (!(object instanceof WildcardType)) {
@@ -589,11 +589,11 @@ final class TypeUtils {
    * An implementation of {@link ParameterizedType}.
    */
   private static final class ParameterizedTypeImpl implements ParameterizedType {
-    private final @Nullable Type ownerType;
+    private final /*@Nullable*/ Type ownerType;
     private final Class<?> rawType;
     private final Type[] actualTypeArguments;
 
-    ParameterizedTypeImpl(@Nullable Type ownerType,
+    ParameterizedTypeImpl(/*@Nullable*/ Type ownerType,
                           Class<?> rawType,
                           Type[] actualTypeArguments) {
 
@@ -603,7 +603,7 @@ final class TypeUtils {
     }
 
     @Override
-    public @Nullable Type getOwnerType() {
+    public /*@Nullable*/ Type getOwnerType() {
       return ownerType;
     }
 
@@ -618,7 +618,7 @@ final class TypeUtils {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(/*@Nullable*/ Object object) {
       if (object == this) {
         return true;
       } else if (!(object instanceof ParameterizedType)) {
@@ -672,7 +672,7 @@ final class TypeUtils {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(/*@Nullable*/ Object object) {
       if (object == this) {
         return true;
       } else if (!(object instanceof GenericArrayType)) {
