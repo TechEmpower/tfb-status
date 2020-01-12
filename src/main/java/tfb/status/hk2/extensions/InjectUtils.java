@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
 import org.glassfish.hk2.api.ActiveDescriptor;
@@ -110,13 +111,13 @@ final class InjectUtils {
             parentType,
             parameter.getParameterizedType());
 
-    var injectee = new InjecteeImpl(parameterType);
+    InjecteeImpl injectee = new InjecteeImpl(parameterType);
     injectee.setParent(parent);
     injectee.setPosition(index);
 
     // This block of code reproduces the behavior of
     // org.jvnet.hk2.internal.Utilities#getParamInformation(Annotation[])
-    var qualifiers = new LinkedHashSet<Annotation>();
+    Set<Annotation> qualifiers = new LinkedHashSet<>();
     for (Annotation annotation : parameter.getAnnotations()) {
       if (ReflectionHelper.isAnnotationAQualifier(annotation)) {
         qualifiers.add(annotation);
@@ -215,7 +216,7 @@ final class InjectUtils {
 
   static Injectee injecteeFromType(Type type) {
     Objects.requireNonNull(type);
-    var injectee = new InjecteeImpl(type);
+    InjecteeImpl injectee = new InjecteeImpl(type);
     injectee.setParent(FakeInjecteeParent.field);
     return injectee;
   }

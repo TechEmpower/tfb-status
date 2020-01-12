@@ -70,7 +70,7 @@ public final class ProvidesTest {
     String string = locator.getService(String.class);
     assertEquals("hello", string);
 
-    var handle = locator.getServiceHandle(String.class);
+    ServiceHandle<String> handle = locator.getServiceHandle(String.class);
     handle.getService();
     handle.close();
   }
