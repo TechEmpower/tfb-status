@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Retention;
@@ -31,7 +30,6 @@ import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.IterableProvider;
-import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
@@ -1962,7 +1960,7 @@ public final class ProvidesTest {
   /**
    * Verifies that a wildcard in the generic type parameters of a service coming
    * from {@link Provides} is treated appropriately.  See the comments near
-   * {@link WrongDisposeMethodParameterType#dispose(Object)} for details.
+   * {@link WrongDisposeMethodParameterType#disposeBad(Object)} for details.
    */
   @Test
   public void testProvidesWildcardCapture() {
@@ -1972,17 +1970,15 @@ public final class ProvidesTest {
         ProvidesListener.class,
         ProvidesWrongDisposeMethodParameterType.class);
 
-    ServiceHandle<Object> handle = locator.getServiceHandle(Object.class);
+    assertEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterNotFindMe.class.getName())));
 
-    Object expected = Optional.of("hello");
-    Object actual = handle.getService();
-    assertEquals(expected, actual);
-
-    MultiException thrown =
-        assertThrows(MultiException.class, () -> handle.close());
-    assertEquals(1, thrown.getErrors().size());
-    assertTrue(thrown.getErrors().get(0) instanceof NoSuchMethodException);
-    assertEquals(expected, actual);
+    assertNotEquals(
+        List.of(),
+        locator.getDescriptors(
+            d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
   }
 
   public static final class ProvidesString {
@@ -3005,11 +3001,19 @@ public final class ProvidesTest {
 
   public static final class WrongDisposeMethodParameterType<T> {
     @Provides(
-        contracts = Object.class,
-        disposeMethod = "dispose",
+        disposeMethod = "disposeBad",
         disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
-    public Optional<String> provide() {
-      return Optional.of("hello");
+    @BetterNotFindMe
+    public Optional<String> bad() {
+      return Optional.of("bad");
+    }
+
+    @Provides(
+        disposeMethod = "disposeGood",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    @BetterFindMe
+    public Optional<String> good() {
+      return Optional.of("good");
     }
 
     // In the context of the provider class, the type of this parameter should
@@ -3020,8 +3024,9 @@ public final class ProvidesTest {
     // If the type of this parameter was wrongly evaluated to "Optional<?>",
     // which is a supertype of "Optional<String>", then this dispose method
     // would wrongly match.
-    public void dispose(T instance) {
-      fail("This method should not have been called");
-    }
+    public void disposeBad(T instance) {}
+
+    // Demonstrate that Optional<?> is a supertype of Optional<String>.
+    public void disposeGood(Optional<?> instance) {}
   }
 }

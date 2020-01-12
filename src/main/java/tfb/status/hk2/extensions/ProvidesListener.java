@@ -13,7 +13,6 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -181,6 +180,9 @@ public class ProvidesListener implements DynamicConfigurationListener {
               providerClass,
               providerType,
               locator);
+
+      if (disposeFunction == null)
+        continue;
 
       configuration.addActiveDescriptor(
           new ProvidesDescriptor<>(
@@ -525,7 +527,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
    * @param providerType the type of the service that defines the method
    * @param locator the service locator
    */
-  private static <T extends AccessibleObject & Member> Consumer<Object>
+  private static <T extends AccessibleObject & Member> @Nullable Consumer<Object>
   getDisposeFunction(ActiveDescriptor<?> providerDescriptor,
                      Provides providesAnnotation,
                      Method providerMethod,
@@ -552,24 +554,18 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
     switch (providesAnnotation.disposalHandledBy()) {
       case PROVIDED_INSTANCE: {
-        Optional<Method> specifiedDisposeMethod =
+        Method disposeMethod =
             Arrays.stream(providedClass.getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> !Modifier.isStatic(method.getModifiers()))
                   .filter(method -> method.getParameterCount() == 0)
-                  .findAny();
+                  .findAny()
+                  .orElse(null);
+
+        if (disposeMethod == null)
+          return null;
 
         return instance -> {
-          Method disposeMethod =
-              specifiedDisposeMethod.orElseThrow(
-                  () -> new MultiException(
-                      new NoSuchMethodException(
-                          "Dispose method "
-                              + providesAnnotation
-                              + " on "
-                              + providerMethod
-                              + " not found")));
-
           if (instance == null)
             return;
 
@@ -588,7 +584,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
         boolean isStatic =
             Modifier.isStatic(providerMethod.getModifiers());
 
-        Optional<Method> specifiedDisposeMethod =
+        Method disposeMethod =
             Arrays.stream(providerClass.getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
                   .filter(method -> isStatic == Modifier.isStatic(method.getModifiers()))
@@ -603,20 +599,14 @@ public class ProvidesListener implements DynamicConfigurationListener {
                         parameterType,
                         providedType);
                   })
-                  .findAny();
+                  .findAny()
+                  .orElse(null);
+
+        if (disposeMethod == null)
+          return null;
 
         if (isStatic)
           return instance -> {
-            Method disposeMethod =
-                specifiedDisposeMethod.orElseThrow(
-                    () -> new MultiException(
-                        new NoSuchMethodException(
-                            "Dispose method "
-                                + providesAnnotation
-                                + " on "
-                                + providerMethod
-                                + " not found")));
-
             if (instance == null)
               return;
 
@@ -631,16 +621,6 @@ public class ProvidesListener implements DynamicConfigurationListener {
           };
 
         return instance -> {
-          Method disposeMethod =
-              specifiedDisposeMethod.orElseThrow(
-                  () -> new MultiException(
-                      new NoSuchMethodException(
-                          "Dispose method "
-                              + providesAnnotation
-                              + " on "
-                              + providerMethod
-                              + " not found")));
-
           if (instance == null)
             return;
 
