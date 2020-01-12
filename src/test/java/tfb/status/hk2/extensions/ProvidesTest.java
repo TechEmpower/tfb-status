@@ -23,8 +23,11 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -2027,6 +2030,82 @@ public final class ProvidesTest {
             d -> d.getQualifiers().contains(BetterFindMe.class.getName())));
   }
 
+  /**
+   * Verifies that a {@link Provides} annotation may specify a dispose method on
+   * the providing class that accepts multiple parameters.
+   */
+  @Test
+  public void testStaticDisposeMultipleParameters() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        FactoryStats.class,
+        PerLookupFactoryDependency.class,
+        SingletonFactoryDependency.class,
+        ProvidesDisposeMethodWithMultipleParameters.class);
+
+    FactoryStats stats = locator.getService(FactoryStats.class);
+
+    assertEquals(List.of(), stats.valuesProvided);
+    assertEquals(List.of(), stats.valuesDisposed);
+    assertEquals(0, stats.factoryDisposeCounter.get());
+    assertEquals(0, stats.perLookupDependencyInitCounter.get());
+    assertEquals(0, stats.perLookupDependencyDisposeCounter.get());
+    assertEquals(0, stats.singletonDependencyInitCounter.get());
+    assertEquals(0, stats.singletonDependencyDisposeCounter.get());
+
+    try (ServiceHandle<String> handle =
+             locator.getServiceHandle(String.class, "forStaticDisposeMethod")) {
+      assertEquals("1", handle.getService());
+      assertEquals(List.of("1"), stats.valuesProvided);
+      assertEquals(List.of(), stats.valuesDisposed);
+      assertEquals(0, stats.factoryDisposeCounter.get());
+      assertEquals(0, stats.perLookupDependencyInitCounter.get());
+      assertEquals(0, stats.perLookupDependencyDisposeCounter.get());
+      assertEquals(0, stats.singletonDependencyInitCounter.get());
+      assertEquals(0, stats.singletonDependencyDisposeCounter.get());
+    }
+
+    assertEquals(List.of("1"), stats.valuesProvided);
+    assertEquals(List.of("1"), stats.valuesDisposed);
+    assertEquals(0, stats.factoryDisposeCounter.get());
+    assertEquals(1, stats.perLookupDependencyInitCounter.get());
+    assertEquals(1, stats.perLookupDependencyDisposeCounter.get());
+    assertEquals(1, stats.singletonDependencyInitCounter.get());
+    assertEquals(0, stats.singletonDependencyDisposeCounter.get());
+
+    try (ServiceHandle<String> handle =
+             locator.getServiceHandle(String.class, "forInstanceDisposeMethod")) {
+      assertEquals("2", handle.getService());
+      assertEquals(List.of("1", "2"), stats.valuesProvided);
+      assertEquals(List.of("1"), stats.valuesDisposed);
+      assertEquals(0, stats.factoryDisposeCounter.get());
+      assertEquals(1, stats.perLookupDependencyInitCounter.get());
+      assertEquals(1, stats.perLookupDependencyDisposeCounter.get());
+      assertEquals(1, stats.singletonDependencyInitCounter.get());
+      assertEquals(0, stats.singletonDependencyDisposeCounter.get());
+    }
+
+    assertEquals(List.of("1", "2"), stats.valuesProvided);
+    assertEquals(List.of("1", "2"), stats.valuesDisposed);
+    assertEquals(1, stats.factoryDisposeCounter.get());
+    assertEquals(2, stats.perLookupDependencyInitCounter.get());
+    assertEquals(2, stats.perLookupDependencyDisposeCounter.get());
+    assertEquals(1, stats.singletonDependencyInitCounter.get());
+    assertEquals(0, stats.singletonDependencyDisposeCounter.get());
+
+    locator.shutdown();
+
+    assertEquals(List.of("1", "2"), stats.valuesProvided);
+    assertEquals(List.of("1", "2"), stats.valuesDisposed);
+    assertEquals(1, stats.factoryDisposeCounter.get());
+    assertEquals(2, stats.perLookupDependencyInitCounter.get());
+    assertEquals(2, stats.perLookupDependencyDisposeCounter.get());
+    assertEquals(1, stats.singletonDependencyInitCounter.get());
+    assertEquals(1, stats.singletonDependencyDisposeCounter.get());
+  }
+
   public static final class ProvidesString {
     @Provides
     public String value() {
@@ -3092,5 +3171,118 @@ public final class ProvidesTest {
 
     // Demonstrate that Optional<?> is a supertype of Optional<String>.
     public void disposeGood(Optional<?> instance) {}
+  }
+
+  @Singleton
+  public static final class FactoryStats {
+    public final AtomicInteger valueCounter = new AtomicInteger();
+    public final List<String> valuesProvided = new CopyOnWriteArrayList<>();
+    public final List<String> valuesDisposed = new CopyOnWriteArrayList<>();
+    public final AtomicInteger factoryDisposeCounter = new AtomicInteger();
+    public final AtomicInteger perLookupDependencyInitCounter = new AtomicInteger();
+    public final AtomicInteger perLookupDependencyDisposeCounter = new AtomicInteger();
+    public final AtomicInteger singletonDependencyInitCounter = new AtomicInteger();
+    public final AtomicInteger singletonDependencyDisposeCounter = new AtomicInteger();
+  }
+
+  public static final class PerLookupFactoryDependency
+      implements PostConstruct, PreDestroy {
+
+    private final FactoryStats stats;
+
+    @Inject
+    public PerLookupFactoryDependency(FactoryStats stats) {
+      this.stats = Objects.requireNonNull(stats);
+    }
+
+    @Override
+    public void postConstruct() {
+      stats.perLookupDependencyInitCounter.incrementAndGet();
+    }
+
+    @Override
+    public void preDestroy() {
+      stats.perLookupDependencyDisposeCounter.incrementAndGet();
+    }
+  }
+
+  @Singleton
+  public static final class SingletonFactoryDependency
+      implements PostConstruct, PreDestroy {
+
+    private final FactoryStats stats;
+
+    @Inject
+    public SingletonFactoryDependency(FactoryStats stats) {
+      this.stats = Objects.requireNonNull(stats);
+    }
+
+    @Override
+    public void postConstruct() {
+      stats.singletonDependencyInitCounter.incrementAndGet();
+    }
+
+    @Override
+    public void preDestroy() {
+      stats.singletonDependencyDisposeCounter.incrementAndGet();
+    }
+  }
+
+  public static final class ProvidesDisposeMethodWithMultipleParameters
+      implements PreDestroy {
+
+    private final FactoryStats stats;
+
+    @Inject
+    public ProvidesDisposeMethodWithMultipleParameters(FactoryStats stats) {
+      this.stats = Objects.requireNonNull(stats);
+    }
+
+    @Provides(
+        disposeMethod = "staticDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    @Named("forStaticDisposeMethod")
+    public static String provideForStaticDisposeMethod(FactoryStats stats) {
+      String value = String.valueOf(stats.valueCounter.incrementAndGet());
+      stats.valuesProvided.add(value);
+      return value;
+    }
+
+    @Provides(
+        disposeMethod = "instanceDisposeMethod",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    @Named("forInstanceDisposeMethod")
+    public static String provideForInstanceDisposeMethod(FactoryStats stats) {
+      String value = String.valueOf(stats.valueCounter.incrementAndGet());
+      stats.valuesProvided.add(value);
+      return value;
+    }
+
+    public void instanceDisposeMethod(String value,
+                                      FactoryStats stats,
+                                      PerLookupFactoryDependency dependency1,
+                                      SingletonFactoryDependency dependency2) {
+      Objects.requireNonNull(value);
+      Objects.requireNonNull(stats);
+      Objects.requireNonNull(dependency1);
+      Objects.requireNonNull(dependency2);
+      stats.valuesDisposed.add(value);
+    }
+
+    public static void staticDisposeMethod(String value,
+                                           FactoryStats stats,
+                                           PerLookupFactoryDependency dependency1,
+                                           SingletonFactoryDependency dependency2) {
+      Objects.requireNonNull(value);
+      Objects.requireNonNull(stats);
+      Objects.requireNonNull(dependency1);
+      Objects.requireNonNull(dependency2);
+      stats.valuesDisposed.add(value);
+    }
+
+    @Override
+    public void preDestroy() {
+      stats.factoryDisposeCounter.incrementAndGet();
+    }
   }
 }

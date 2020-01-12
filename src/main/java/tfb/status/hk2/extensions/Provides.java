@@ -120,9 +120,9 @@ public @interface Provides {
      * The instance or class that provides the service &mdash; the one declaring
      * the method annotated with {@link Provides} &mdash; is responsible for the
      * disposal of instances of the provided service.  {@link #disposeMethod()}
-     * names a public method of the providing class that accepts one parameter,
-     * where the type of that parameter is a supertype of the provided service
-     * type.
+     * names a public method of the providing class where the type of the first
+     * parameter is a supertype of the provided service type.  The remaining
+     * parameters are injection points for other services.
      */
     PROVIDER
   }

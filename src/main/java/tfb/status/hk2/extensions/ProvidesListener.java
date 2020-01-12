@@ -9,9 +9,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -584,7 +587,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
         Method disposeMethod =
             Arrays.stream(providerClass.getMethods())
                   .filter(method -> method.getName().equals(providesAnnotation.disposeMethod()))
-                  .filter(method -> method.getParameterCount() == 1)
+                  .filter(method -> method.getParameterCount() >= 1)
                   .filter(method -> {
                     Type parameterType =
                         TypeUtils.resolveType(
@@ -601,42 +604,72 @@ public class ProvidesListener implements DynamicConfigurationListener {
         if (disposeMethod == null)
           return null;
 
-        if (Modifier.isStatic(disposeMethod.getModifiers()))
-          return instance -> {
-            if (instance == null)
-              return;
-
-            if (!disposeMethod.canAccess(null))
-              disposeMethod.setAccessible(true);
-
-            try {
-              disposeMethod.invoke(null, instance);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-              throw new MultiException(e);
-            }
-          };
-
         return instance -> {
           if (instance == null)
             return;
 
-          boolean isPerLookup =
-              providerDescriptor.getScopeAnnotation() == PerLookup.class;
-
-          ServiceHandle<?> providerHandle =
-              locator.getServiceHandle(providerDescriptor);
+          List<ServiceHandle<?>> perLookupHandles = new ArrayList<>();
 
           try {
+            int indexOfArgumentToDispose = 0;
+            Parameter[] parameters = disposeMethod.getParameters();
+            Object[] arguments = new Object[parameters.length];
+
+            for (int i = 0; i < parameters.length; i++) {
+              if (i == indexOfArgumentToDispose)
+                arguments[i] = instance;
+
+              else {
+                ServiceHandle<?> parameterHandle =
+                    InjectUtils.serviceHandleFromParameter(
+                        parameters[i],
+                        providerType,
+                        locator);
+
+                if (parameterHandle == null)
+                  arguments[i] = null;
+
+                else {
+                  if (isPerLookup(parameterHandle))
+                    perLookupHandles.add(parameterHandle);
+
+                  arguments[i] = parameterHandle.getService();
+                }
+              }
+            }
+
+            if (Modifier.isStatic(disposeMethod.getModifiers())) {
+              if (!disposeMethod.canAccess(null))
+                disposeMethod.setAccessible(true);
+
+              try {
+                disposeMethod.invoke(null, arguments);
+              } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new MultiException(e);
+              }
+
+              return;
+            }
+
+            ServiceHandle<?> providerHandle =
+                locator.getServiceHandle(providerDescriptor);
+
+            if (isPerLookup(providerHandle))
+              perLookupHandles.add(providerHandle);
+
             Object provider = providerHandle.getService();
             if (!disposeMethod.canAccess(provider))
               disposeMethod.setAccessible(true);
 
-            disposeMethod.invoke(provider, instance);
-          } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new MultiException(e);
+            try {
+              disposeMethod.invoke(provider, arguments);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+              throw new MultiException(e);
+            }
+
           } finally {
-            if (isPerLookup)
-              providerHandle.close();
+            for (ServiceHandle<?> handle : perLookupHandles)
+              handle.close();
           }
         };
       }
@@ -647,6 +680,15 @@ public class ProvidesListener implements DynamicConfigurationListener {
             + Provides.DisposalHandledBy.class.getSimpleName()
             + " value: "
             + providesAnnotation.disposalHandledBy());
+  }
+
+  /**
+   * Returns {@code true} if the specified service handle has {@link PerLookup}
+   * scope.
+   */
+  private static boolean isPerLookup(ServiceHandle<?> handle) {
+    Objects.requireNonNull(handle);
+    return handle.getActiveDescriptor().getScopeAnnotation() == PerLookup.class;
   }
 
   /**
