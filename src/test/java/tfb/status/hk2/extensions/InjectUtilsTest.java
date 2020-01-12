@@ -205,7 +205,7 @@ public final class InjectUtilsTest {
             locator,
             new TypeLiteral<Optional<UnregisteredService>>() {});
 
-    assertTrue(optional.isEmpty());
+    assertFalse(optional.isPresent());
   }
 
   /**

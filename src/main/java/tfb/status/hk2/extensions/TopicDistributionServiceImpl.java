@@ -1,8 +1,10 @@
 package tfb.status.hk2.extensions;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toUnmodifiableList;
-import static java.util.stream.Collectors.toUnmodifiableSet;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.canAccess;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.listOf;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableList;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableSet;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
@@ -52,7 +54,7 @@ final class TopicDistributionServiceImpl
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @GuardedBy("this")
-  private List<Subscriber> allSubscribers = List.of();
+  private List<Subscriber> allSubscribers = listOf();
 
   @Inject
   public TopicDistributionServiceImpl(ServiceLocator locator) {
@@ -68,7 +70,7 @@ final class TopicDistributionServiceImpl
         getAllSubscribers()
             .stream()
             .filter(subscriber -> subscriber.isSubscribedTo(topic))
-            .collect(toList());
+            .collect(toUnmodifiableList());
 
     if (subscribers.isEmpty()) {
       logger.warn(
@@ -121,7 +123,7 @@ final class TopicDistributionServiceImpl
       }
 
       if (Modifier.isStatic(subscriber.method.getModifiers())) {
-        if (!subscriber.method.canAccess(null))
+        if (!canAccess(subscriber.method, null))
           subscriber.method.setAccessible(true);
 
         try {
@@ -156,7 +158,7 @@ final class TopicDistributionServiceImpl
         return;
       }
 
-      if (!subscriber.method.canAccess(service))
+      if (!canAccess(subscriber.method, service))
         subscriber.method.setAccessible(true);
 
       try {
@@ -331,7 +333,7 @@ final class TopicDistributionServiceImpl
     }
 
     Set<Annotation> qualifiers =
-        Set.copyOf(
+        setCopyOf(
             ReflectionHelper.getQualifierAnnotations(parameter));
 
     Unqualified unqualified = parameter.getAnnotation(Unqualified.class);

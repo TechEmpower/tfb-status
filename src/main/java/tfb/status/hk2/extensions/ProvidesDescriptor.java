@@ -1,7 +1,10 @@
 package tfb.status.hk2.extensions;
 
-import static java.util.stream.Collectors.toUnmodifiableMap;
-import static java.util.stream.Collectors.toUnmodifiableSet;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.listCopyOf;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.listOf;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableMap;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableSet;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.annotation.Annotation;
@@ -53,7 +56,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
     this.annotatedElement = Objects.requireNonNull(annotatedElement);
     this.implementationClass = Objects.requireNonNull(implementationClass);
     this.implementationType = Objects.requireNonNull(implementationType);
-    this.contracts = Set.copyOf(Objects.requireNonNull(contracts));
+    this.contracts = setCopyOf(Objects.requireNonNull(contracts));
     this.scopeAnnotation = Objects.requireNonNull(scopeAnnotation);
     this.createFunction = Objects.requireNonNull(createFunction);
     this.disposeFunction = Objects.requireNonNull(disposeFunction);
@@ -101,13 +104,13 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
 
   @Override
   public Set<Annotation> getQualifierAnnotations() {
-    return Set.copyOf(
+    return setCopyOf(
         ReflectionHelper.getQualifierAnnotations(annotatedElement));
   }
 
   @Override
   public List<Injectee> getInjectees() {
-    return List.of();
+    return listOf();
   }
 
   @Override
@@ -184,7 +187,7 @@ final class ProvidesDescriptor<T> implements ActiveDescriptor<T> {
                    .collect(
                        toUnmodifiableMap(
                            entry -> entry.getKey(),
-                           entry -> List.copyOf(entry.getValue())));
+                           entry -> listCopyOf(entry.getValue())));
   }
 
   @Override

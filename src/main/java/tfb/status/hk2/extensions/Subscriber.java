@@ -1,5 +1,7 @@
 package tfb.status.hk2.extensions;
 
+import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -76,9 +78,9 @@ final class Subscriber {
     this.method = Objects.requireNonNull(method);
     this.parameterIndex = parameterIndex;
     this.parameterType = Objects.requireNonNull(parameterType);
-    this.qualifiers = Set.copyOf(Objects.requireNonNull(qualifiers));
+    this.qualifiers = setCopyOf(Objects.requireNonNull(qualifiers));
     this.unqualified = unqualified;
-    this.permittedTypes = Set.copyOf(Objects.requireNonNull(permittedTypes));
+    this.permittedTypes = setCopyOf(Objects.requireNonNull(permittedTypes));
     this.serviceDescriptor = Objects.requireNonNull(serviceDescriptor);
   }
 

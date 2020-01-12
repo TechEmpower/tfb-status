@@ -1,5 +1,7 @@
 package tfb.status.hk2.extensions;
 
+import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
@@ -11,7 +13,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -128,7 +129,7 @@ final class InjectUtils {
         injectee.setUnqualified((Unqualified) annotation);
       }
     }
-    injectee.setRequiredQualifiers(Set.copyOf(qualifiers));
+    injectee.setRequiredQualifiers(setCopyOf(qualifiers));
 
     return injectee;
   }

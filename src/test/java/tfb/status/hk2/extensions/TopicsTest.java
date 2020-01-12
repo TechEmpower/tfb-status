@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.listOf;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.util.ArrayList;
@@ -62,7 +63,7 @@ public final class TopicsTest {
     SubscriberService service = locator.getService(SubscriberService.class);
 
     assertEquals(
-        List.of("1", 2),
+        listOf("1", 2),
         service.getMessages());
 
     List<ServiceWithLifecycle> service1List = service.getService1List();

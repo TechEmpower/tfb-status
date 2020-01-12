@@ -274,7 +274,7 @@ final class TypeUtils {
             combinedBounds.remove(Object.class);
 
           return super.newWildcardCapture(
-              combinedBounds.toArray(length -> new Type[length]));
+              combinedBounds.toArray(new Type[0]));
         }
       };
     }

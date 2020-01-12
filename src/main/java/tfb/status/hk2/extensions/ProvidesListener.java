@@ -1,6 +1,8 @@
 package tfb.status.hk2.extensions;
 
-import static java.util.stream.Collectors.toUnmodifiableSet;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.canAccess;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.setOf;
+import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableSet;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
@@ -308,7 +310,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
     Class<?> rawClass = ReflectionHelper.getRawClass(providedType);
     if (rawClass == null)
-      return Set.of(providedType);
+      return setOf(providedType);
 
     ContractsProvided explicit = rawClass.getAnnotation(ContractsProvided.class);
     if (explicit != null)
@@ -423,7 +425,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
                     })
                 .toArray(length -> new Object[length]);
 
-      if (!method.canAccess(null))
+      if (!canAccess(method, null))
         method.setAccessible(true);
 
       Object provided;
@@ -480,7 +482,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
       Object provider =
           locator.getService(providerDescriptor, root, null);
 
-      if (!method.canAccess(provider))
+      if (!canAccess(method, provider))
         method.setAccessible(true);
 
       Object provided;
@@ -508,7 +510,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
     Objects.requireNonNull(locator);
 
     return (ServiceHandle<?> root) -> {
-      if (!field.canAccess(null))
+      if (!canAccess(field, null))
         field.setAccessible(true);
 
       Object provided;
@@ -543,7 +545,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
     return (ServiceHandle<?> root) -> {
       Object provider = locator.getService(providerDescriptor, root, null);
 
-      if (!field.canAccess(provider))
+      if (!canAccess(field, provider))
         field.setAccessible(true);
 
       Object provided;
@@ -620,7 +622,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
           if (instance == null)
             return;
 
-          if (!disposeMethod.canAccess(instance))
+          if (!canAccess(disposeMethod, instance))
             disposeMethod.setAccessible(true);
 
           try {
@@ -690,7 +692,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
             }
 
             if (Modifier.isStatic(disposeMethod.getModifiers())) {
-              if (!disposeMethod.canAccess(null))
+              if (!canAccess(disposeMethod, null))
                 disposeMethod.setAccessible(true);
 
               try {
@@ -709,7 +711,7 @@ public class ProvidesListener implements DynamicConfigurationListener {
               perLookupHandles.add(providerHandle);
 
             Object provider = providerHandle.getService();
-            if (!disposeMethod.canAccess(provider))
+            if (!canAccess(disposeMethod, provider))
               disposeMethod.setAccessible(true);
 
             try {

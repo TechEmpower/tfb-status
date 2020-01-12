@@ -1,7 +1,9 @@
 package tfb.status.hk2.extensions;
 
+import static tfb.status.hk2.extensions.CompatibleWithJava8.setOf;
+
+import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.ActiveDescriptor;
@@ -38,7 +40,10 @@ final class NoInstancesService implements DynamicConfigurationService {
                     != getClass())
         .map(serviceHandle -> serviceHandle.getService())
         .findAny()
-        .orElseThrow();
+        .orElseThrow(
+            () ->
+                new NoSuchElementException(
+                    "Default configuration service not found"));
   }
 
   @Override
@@ -75,7 +80,7 @@ final class NoInstancesService implements DynamicConfigurationService {
         rawClass,
         rawClass,
         rawClass,
-        Set.of(), // Provides no contracts, not even itself.
+        setOf(), // Provides no contracts, not even itself.
         ServiceLocatorUtilities.getPerLookupAnnotation(),
         root -> { throw new UnsupportedOperationException(); },
         instance -> { throw new UnsupportedOperationException(); });
