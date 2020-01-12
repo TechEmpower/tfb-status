@@ -560,10 +560,8 @@ public class ProvidesListener implements DynamicConfigurationListener {
 
   /**
    * Returns a function that disposes of instances of services that were
-   * retrieved from a method annotated with {@link Provides}.
-   *
-   * <p>The returned function will throw {@link MultiException} when invoked if
-   * the {@link Provides} annotation has a non-empty {@link
+   * retrieved from a method annotated with {@link Provides}.  Returns {@code
+   * null} if the {@link Provides} annotation has a non-empty {@link
    * Provides#disposeMethod()} and the method it specifies is not found.
    *
    * @param providerDescriptor the descriptor of the service that defines the
