@@ -10,11 +10,12 @@ import static tfb.status.hk2.extensions.CompatibleWithJava8.listOf;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceLocator;
-import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.api.messaging.MessageReceiver;
 import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.glassfish.hk2.api.messaging.Topic;
@@ -36,28 +37,16 @@ public final class TopicsTest {
     ServiceLocatorUtilities.bind(locator, new TopicsModule());
     ServiceLocatorUtilities.addClasses(
         locator,
+        Topics.class,
         ServiceWithLifecycle.class,
         SingletonServiceWithShutdown.class,
         SubscriberService.class);
 
-    Topic<String> stringTopic =
-        InjectUtils.getService(
-            locator,
-            new TypeLiteral<Topic<String>>() {});
+    Topics topics = locator.getService(Topics.class);
 
-    Topic<Integer> integerTopic = // subtype of Number, should be seen
-        InjectUtils.getService(
-            locator,
-            new TypeLiteral<Topic<Integer>>() {});
-
-    Topic<CharSequence> charSequenceTopic = // should be ignored
-        InjectUtils.getService(
-            locator,
-            new TypeLiteral<Topic<CharSequence>>() {});
-
-    stringTopic.publish("1");
-    integerTopic.publish(2);
-    charSequenceTopic.publish("3");
+    topics.stringTopic.publish("1");
+    topics.integerTopic.publish(2);
+    topics.charSequenceTopic.publish("3");
 
     SubscriberService service = locator.getService(SubscriberService.class);
 
@@ -88,6 +77,22 @@ public final class TopicsTest {
     assertFalse(service2List.get(0).wasStopped());
     assertFalse(service2List.get(1).wasStopped());
     assertSame(service2List.get(0), service2List.get(1));
+  }
+
+  public static final class Topics {
+    final Topic<String> stringTopic;
+    final Topic<Integer> integerTopic; // subtype of Number, should be seen
+    final Topic<CharSequence> charSequenceTopic; // should be ignored
+
+    @Inject
+    public Topics(Topic<String> stringTopic,
+                  Topic<Integer> integerTopic,
+                  Topic<CharSequence> charSequenceTopic) {
+
+      this.stringTopic = Objects.requireNonNull(stringTopic);
+      this.integerTopic = Objects.requireNonNull(integerTopic);
+      this.charSequenceTopic = Objects.requireNonNull(charSequenceTopic);
+    }
   }
 
   public static class ServiceWithLifecycle implements PostConstruct, PreDestroy {

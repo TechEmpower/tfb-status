@@ -4,15 +4,12 @@ import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
@@ -23,10 +20,8 @@ import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.Self;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
-import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.api.Unqualified;
 import org.glassfish.hk2.api.UnsatisfiedDependencyException;
-import org.glassfish.hk2.api.messaging.Topic;
 import org.glassfish.hk2.utilities.InjecteeImpl;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
@@ -38,62 +33,6 @@ import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 final class InjectUtils {
   private InjectUtils() {
     throw new AssertionError("This class cannot be instantiated");
-  }
-
-  /**
-   * Returns an instance of the service of the specified type.
-   *
-   * <p>This method may be useful in cases where the service has a generic type.
-   * If the type of the service is a non-generic {@link Class}, use {@link
-   * ServiceLocator#getService(Class, Annotation...)} instead of this method.
-   *
-   * <p>This method offers the following advantages over {@link
-   * ServiceLocator#getService(Type, Annotation...)}:
-   *
-   * <ul>
-   * <li>This method is type safe.
-   * <li>This method supports return types such as {@link Iterable}, {@link
-   *     Optional}, and {@link Topic} that are supported in regular injection
-   *     but not supported by {@link ServiceLocator#getService(Type,
-   *     Annotation...)}.
-   * </ul>
-   *
-   * @throws MultiException if a registered service matches the specified type
-   *         but an exception was thrown while retrieving that instance &mdash;
-   *         if the service has unsatisfied dependencies or its constructor
-   *         throws an exception, for example
-   * @throws NoSuchElementException if no registered service matches the
-   *         specified type, or if a registered service does match the specified
-   *         type but the provider of that service provided {@code null}
-   */
-  static <T> T getService(ServiceLocator locator, TypeLiteral<T> type) {
-    Objects.requireNonNull(locator);
-    Objects.requireNonNull(type);
-
-    Injectee injectee = injecteeFromType(type.getType());
-
-    ActiveDescriptor<?> activeDescriptor =
-        locator.getInjecteeDescriptor(injectee);
-
-    if (activeDescriptor == null)
-      throw new NoSuchElementException(
-          "There is no service of type " + type);
-
-    Object service =
-        locator.getService(
-            activeDescriptor,
-            /* root= */ null,
-            injectee);
-
-    if (service == null)
-      throw new NoSuchElementException(
-          "There is no service of type " + type);
-
-    // This unchecked cast is safe because the injectee was defined with the
-    // caller-specified type.
-    @SuppressWarnings("unchecked")
-    T serviceAsT = (T) service;
-    return serviceAsT;
   }
 
   static Injectee injecteeFromParameter(Parameter parameter, Type parentType) {
@@ -212,29 +151,6 @@ final class InjectUtils {
     }
 
     return locator.getService(activeDescriptor, root, injectee);
-  }
-
-  static Injectee injecteeFromType(Type type) {
-    Objects.requireNonNull(type);
-    InjecteeImpl injectee = new InjecteeImpl(type);
-    injectee.setParent(FakeInjecteeParent.field);
-    return injectee;
-  }
-
-  /**
-   * Works around an issue in hk2 where requesting an {@link Optional} service
-   * fails if {@link Injectee#getParent()} is {@code null}.
-   */
-  private static final class FakeInjecteeParent {
-    /*@Nullable*/ Object value;
-    static final Field field;
-    static {
-      try {
-        field = FakeInjecteeParent.class.getDeclaredField("value");
-      } catch (NoSuchFieldException impossible) {
-        throw new AssertionError(impossible);
-      }
-    }
   }
 
   static void addClassesIdempotent(ServiceLocator locator,
