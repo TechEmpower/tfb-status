@@ -2151,6 +2151,220 @@ public final class ProvidesTest {
                  .collect(toList()));
   }
 
+  /**
+   * Verifies that if a class declares a {@link Provides} instance method and
+   * that method's return type is that same class, that only one descriptor is
+   * registered for that class.
+   */
+  @Test
+  public void testDirectMethodLoop() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        DirectMethodLoop.class);
+
+    assertEquals(1, locator.getAllServiceHandles(DirectMethodLoop.class).size());
+
+    // Assert that the loop is remembered across configurations.
+    ServiceLocatorUtilities.addClasses(locator, ProvidesString.class);
+
+    assertEquals(1, locator.getAllServiceHandles(DirectMethodLoop.class).size());
+  }
+
+  /**
+   * Verifies that if a class declares a {@link Provides} instance method and
+   * that method's return type is another service type with a {@link Provides}
+   * instance method, and following this chain of {@link Provides} methods
+   * eventually leads back to the original class, that only one descriptor is
+   * registered for each class.
+   */
+  @Test
+  public void testIndirectMethodLoop() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        StartsIndirectMethodLoop.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsIndirectMethodLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(MethodLoop1.class).size());
+    assertEquals(1, locator.getAllServiceHandles(MethodLoop2.class).size());
+    assertEquals(1, locator.getAllServiceHandles(MethodLoop3.class).size());
+
+    // Assert that the loop is remembered across configurations.
+    ServiceLocatorUtilities.addClasses(locator, ProvidesString.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsIndirectMethodLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(MethodLoop1.class).size());
+    assertEquals(1, locator.getAllServiceHandles(MethodLoop2.class).size());
+    assertEquals(1, locator.getAllServiceHandles(MethodLoop3.class).size());
+  }
+
+  /**
+   * Like {@link #testDirectMethodLoop()}, except that each service in the chain
+   * has a distinct generic type.
+   */
+  @Test
+  public void testDirectGenericMethodLoop() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        StartsDirectGenericMethodLoop.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsDirectGenericMethodLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(DirectGenericMethodLoop.class).size());
+
+    // Assert that the loop is remembered across configurations.
+    ServiceLocatorUtilities.addClasses(locator, ProvidesString.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsDirectGenericMethodLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(DirectGenericMethodLoop.class).size());
+  }
+
+  /**
+   * Like {@link #testIndirectMethodLoop()}, except that each service in the
+   * chain has a distinct generic type.
+   */
+  @Test
+  public void testIndirectGenericMethodLoop() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        StartsIndirectGenericMethodLoop.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsIndirectGenericMethodLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericMethodLoop1.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericMethodLoop2.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericMethodLoop3.class).size());
+
+    // Assert that the loop is remembered across configurations.
+    ServiceLocatorUtilities.addClasses(locator, ProvidesString.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsIndirectGenericMethodLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericMethodLoop1.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericMethodLoop2.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericMethodLoop3.class).size());
+  }
+
+  /**
+   * Like {@link #testDirectMethodLoop()} but for fields instead of methods.
+   */
+  @Test
+  public void testDirectFieldLoop() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        DirectFieldLoop.class);
+
+    assertEquals(1, locator.getAllServiceHandles(DirectFieldLoop.class).size());
+
+    // Assert that the loop is remembered across configurations.
+    ServiceLocatorUtilities.addClasses(locator, ProvidesString.class);
+
+    assertEquals(1, locator.getAllServiceHandles(DirectFieldLoop.class).size());
+  }
+
+  /**
+   * Like {@link #testIndirectMethodLoop()} but for fields instead of methods.
+   */
+  @Test
+  public void testIndirectFieldLoop() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        StartsIndirectFieldLoop.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsIndirectFieldLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(FieldLoop1.class).size());
+    assertEquals(1, locator.getAllServiceHandles(FieldLoop2.class).size());
+    assertEquals(1, locator.getAllServiceHandles(FieldLoop3.class).size());
+
+    // Assert that the loop is remembered across configurations.
+    ServiceLocatorUtilities.addClasses(locator, ProvidesString.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsIndirectFieldLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(FieldLoop1.class).size());
+    assertEquals(1, locator.getAllServiceHandles(FieldLoop2.class).size());
+    assertEquals(1, locator.getAllServiceHandles(FieldLoop3.class).size());
+  }
+
+  /**
+   * Like {@link #testDirectGenericMethodLoop()} but for fields instead of
+   * methods.
+   */
+  @Test
+  public void testDirectGenericFieldLoop() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        StartsDirectGenericFieldLoop.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsDirectGenericFieldLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(DirectGenericFieldLoop.class).size());
+
+    // Assert that the loop is remembered across configurations.
+    ServiceLocatorUtilities.addClasses(locator, ProvidesString.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsDirectGenericFieldLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(DirectGenericFieldLoop.class).size());
+  }
+
+  /**
+   * Like {@link #testIndirectGenericMethodLoop()} but for fields instead of
+   * methods.
+   */
+  @Test
+  public void testIndirectGenericFieldLoop() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        StartsIndirectGenericFieldLoop.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsIndirectGenericFieldLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericFieldLoop1.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericFieldLoop2.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericFieldLoop3.class).size());
+
+    // Assert that the loop is remembered across configurations.
+    ServiceLocatorUtilities.addClasses(locator, ProvidesString.class);
+
+    assertEquals(1, locator.getAllServiceHandles(StartsIndirectGenericFieldLoop.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericFieldLoop1.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericFieldLoop2.class).size());
+    assertEquals(1, locator.getAllServiceHandles(GenericFieldLoop3.class).size());
+  }
+
+  /**
+   * Verifies that there is no infinite feedback loop between two instances of
+   * {@link ProvidesListener}.
+   *
+   * <p>When a service defining a loop through its {@link Provides} annotations
+   * is registered, and an attempt is made to register a second {@link
+   * ProvidesListener}, that could theoretically defeat the loop-prevention
+   * mechanism of the first {@link ProvidesListener}.
+   */
+  @Test
+  public void testFeedbackLoopFromTwoProvidesListeners() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        StartsIndirectMethodLoop.class);
+
+    assertEquals(1, locator.getAllServiceHandles(MethodLoop1.class).size());
+
+    ServiceLocatorUtilities.addClasses(locator, ProvidesListener.class);
+
+    assertEquals(1, locator.getAllServiceHandles(MethodLoop1.class).size());
+  }
+
   public static final class ProvidesString {
     @Provides
     public String value() {
@@ -3353,5 +3567,148 @@ public final class ProvidesTest {
     public void dispose(String instance, @Self ActiveDescriptor<?> self, SeenByUsesSelf seen) {
       seen.list.add(self);
     }
+  }
+
+  public static final class DirectMethodLoop {
+    @Provides
+    public DirectMethodLoop next() {
+      return new DirectMethodLoop();
+    }
+  }
+
+  public static final class StartsIndirectMethodLoop {
+    @Provides
+    public MethodLoop1 start() {
+      return new MethodLoop1();
+    }
+  }
+
+  public static final class MethodLoop1 {
+    @Provides
+    public MethodLoop2 next() {
+      return new MethodLoop2();
+    }
+  }
+
+  public static final class MethodLoop2 {
+    @Provides
+    public MethodLoop3 next() {
+      return new MethodLoop3();
+    }
+  }
+
+  public static final class MethodLoop3 {
+    @Provides
+    public MethodLoop1 next() {
+      return new MethodLoop1();
+    }
+  }
+
+  public static final class StartsDirectGenericMethodLoop {
+    @Provides
+    public DirectGenericMethodLoop<String> start() {
+      return new DirectGenericMethodLoop<>();
+    }
+  }
+
+  public static final class DirectGenericMethodLoop<T> {
+    @Provides
+    public DirectGenericMethodLoop<List<T>> next() {
+      return new DirectGenericMethodLoop<>();
+    }
+  }
+
+  public static final class StartsIndirectGenericMethodLoop {
+    @Provides
+    public GenericMethodLoop1<String> start() {
+      return new GenericMethodLoop1<>();
+    }
+  }
+
+  public static final class GenericMethodLoop1<T> {
+    @Provides
+    public GenericMethodLoop2<List<T>> next() {
+      return new GenericMethodLoop2<>();
+    }
+  }
+
+  public static final class GenericMethodLoop2<T> {
+    @Provides
+    public GenericMethodLoop3<List<T>> next() {
+      return new GenericMethodLoop3<>();
+    }
+  }
+
+  public static final class GenericMethodLoop3<T> {
+    @Provides
+    public GenericMethodLoop1<List<T>> next() {
+      return new GenericMethodLoop1<>();
+    }
+  }
+
+  public static final class DirectFieldLoop {
+    @Provides
+    /*@Nullable*/
+    public DirectFieldLoop next;
+  }
+
+  public static final class StartsIndirectFieldLoop {
+    @Provides
+    /*@Nullable*/
+    public FieldLoop1 start;
+  }
+
+  public static final class FieldLoop1 {
+    @Provides
+    /*@Nullable*/
+    public FieldLoop2 next;
+  }
+
+  public static final class FieldLoop2 {
+    @Provides
+    /*@Nullable*/
+    public FieldLoop3 next;
+  }
+
+  public static final class FieldLoop3 {
+    @Provides
+    /*@Nullable*/
+    public FieldLoop1 next;
+  }
+
+  public static final class StartsDirectGenericFieldLoop {
+    @Provides
+    /*@Nullable*/
+    public DirectGenericFieldLoop<String> start;
+  }
+
+  public static final class DirectGenericFieldLoop<T> {
+    @Provides
+    /*@Nullable*/
+    public DirectGenericFieldLoop<List<T>> next;
+  }
+
+  public static final class StartsIndirectGenericFieldLoop {
+    @Provides
+    /*@Nullable*/
+    public GenericFieldLoop1<String> start;
+  }
+
+  public static final class GenericFieldLoop1<T> {
+    @Provides
+    /*@Nullable*/
+    public GenericFieldLoop2<List<T>> next;
+  }
+
+  public static final class GenericFieldLoop2<T> {
+    @Provides
+    /*@Nullable*/
+    public GenericFieldLoop3<List<T>> next;
+  }
+
+  public static final class GenericFieldLoop3<T> {
+    @Provides
+    /*@Nullable*/
+    public GenericFieldLoop1<List<T>> next;
   }
 }
