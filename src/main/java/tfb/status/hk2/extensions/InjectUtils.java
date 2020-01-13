@@ -8,22 +8,18 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
 import org.glassfish.hk2.api.ActiveDescriptor;
-import org.glassfish.hk2.api.DuplicateServiceException;
 import org.glassfish.hk2.api.Injectee;
-import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.Self;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.Unqualified;
 import org.glassfish.hk2.api.UnsatisfiedDependencyException;
 import org.glassfish.hk2.utilities.InjecteeImpl;
-import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
 
 /**
@@ -151,28 +147,5 @@ final class InjectUtils {
     }
 
     return locator.getService(activeDescriptor, root, injectee);
-  }
-
-  static void addClassesIdempotent(ServiceLocator locator,
-                                   Class<?>... classes) {
-
-    Objects.requireNonNull(locator);
-    Objects.requireNonNull(classes);
-    for (Class<?> c : classes)
-      Objects.requireNonNull(c);
-
-    try {
-      ServiceLocatorUtilities.addClasses(locator, true, classes);
-    } catch (MultiException e) {
-      if (!isDuplicateServiceException(e))
-        throw e;
-    }
-  }
-
-  private static boolean isDuplicateServiceException(MultiException exception) {
-    Objects.requireNonNull(exception);
-    List<Throwable> errors = exception.getErrors();
-    return !errors.isEmpty()
-        && errors.stream().allMatch(e -> e instanceof DuplicateServiceException);
   }
 }
