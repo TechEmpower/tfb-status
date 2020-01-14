@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.listOf;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.setOf;
 
@@ -33,6 +34,7 @@ import javax.inject.Singleton;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.IterableProvider;
+import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.api.PostConstruct;
 import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.Self;
@@ -2315,6 +2317,66 @@ public final class ProvidesTest {
     assertEquals(1, locator.getAllServiceHandles(MethodLoop1.class).size());
   }
 
+  /**
+   * Verifies that a {@link MultiException} is thrown when fetching a service
+   * provided by a {@link Provides} instance method when the provider is null.
+   */
+  @Test
+  public void testProvidesMethodFromNull() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        ProvidesMethodFromNull.class);
+
+    try {
+      locator.getService(String.class);
+      fail("Should have thrown MultiException");
+    } catch (MultiException expected) {}
+  }
+
+  /**
+   * Verifies that a {@link MultiException} is thrown when fetching a service
+   * provided by a {@link Provides} instance field when the provider is null.
+   */
+  @Test
+  public void testProvidesFieldFromNull() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        ProvidesFieldFromNull.class);
+
+    try {
+      locator.getService(String.class);
+      fail("Should have thrown MultiException");
+    } catch (MultiException expected) {}
+  }
+
+  /**
+   * Verifies that a {@link MultiException} is thrown when disposing of a
+   * service provided by a {@link Provides} source whose {@link
+   * Provides#disposalHandledBy()} is {@link
+   * Provides.DisposalHandledBy#PROVIDER} and the provider is null at the time
+   * of disposal.
+   */
+  @Test
+  public void testDisposalHandledByNull() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        DisposalHandledByNull.class);
+
+    ServiceHandle<String> handle = locator.getServiceHandle(String.class);
+    assertEquals("hello", handle.getService());
+
+    try {
+      handle.close();
+      fail("Should have thrown MultiException");
+    } catch (MultiException expected) {}
+  }
+
   public static final class ProvidesString {
     @Provides
     public String value() {
@@ -3660,5 +3722,35 @@ public final class ProvidesTest {
     @Provides
     /*@Nullable*/
     public GenericFieldLoop1<List<T>> next;
+  }
+
+  public static final class ProvidesMethodFromNull {
+    @Provides
+    public /*@Nullable*/ ProvidesString provider() {
+      return null;
+    }
+  }
+
+  public static final class ProvidesFieldFromNull {
+    @Provides
+    public final /*@Nullable*/ ProvidesString provider = null;
+  }
+
+  public static final class DisposalHandledByNull {
+    @Provides
+    public /*@Nullable*/ StaticProvideInstanceDispose provider() {
+      return null;
+    }
+
+    public static final class StaticProvideInstanceDispose {
+      @Provides(
+          disposeMethod = "dispose",
+          disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+      public static String provide() {
+        return "hello";
+      }
+
+      public void dispose(String value) {}
+    }
   }
 }
