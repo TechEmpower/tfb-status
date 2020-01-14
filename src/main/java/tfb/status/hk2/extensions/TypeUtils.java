@@ -647,11 +647,13 @@ final class TypeUtils {
     @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
-      if (ownerType != null) {
+      if (ownerType == null)
+        sb.append(rawType.getName());
+      else {
         sb.append(ownerType.getTypeName());
-        sb.append(".");
+        sb.append("$");
+        sb.append(rawType.getSimpleName());
       }
-      sb.append(rawType.getName());
       if (actualTypeArguments.length == 0)
         return sb.toString();
       StringJoiner joiner = new StringJoiner(", ", "<", ">");
