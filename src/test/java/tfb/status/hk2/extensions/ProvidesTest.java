@@ -18,7 +18,10 @@ import static tfb.status.hk2.extensions.CompatibleWithJava8.listOf;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.setOf;
 
 import java.lang.annotation.Retention;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,6 +46,7 @@ import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.glassfish.hk2.utilities.reflection.ReflectionHelper;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hk2.annotations.Contract;
 
@@ -2377,6 +2381,33 @@ public final class ProvidesTest {
     } catch (MultiException expected) {}
   }
 
+  /**
+   * Verifies that a dispose method may refer to its own {@link
+   * Method#getTypeParameters()} in its {@link
+   * Method#getGenericParameterTypes()} as long as all of the type variables can
+   * be resolved to actual type arguments knowing the actual type of the
+   * service undergoing disposal.
+   */
+  @Test
+  @Disabled("This feature has not been implemented")
+  public void testProvidesTypeArgumentsToDisposeMethod() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    ServiceLocatorUtilities.addClasses(
+        locator,
+        ProvidesListener.class,
+        ProvidesTypeArgumentsToDisposeMethod.class);
+
+    ServiceHandle<ArrayList<String>> handle =
+        locator.getServiceHandle(
+            new TypeLiteral<ArrayList<String>>() {}.getType());
+
+    assertNotNull(handle);
+    ArrayList<String> list = handle.getService();
+    assertEquals(listOf("one", "two", "three"), list);
+    handle.close();
+    assertEquals(listOf("three", "two", "one"), list);
+  }
+
   public static final class ProvidesString {
     @Provides
     public String value() {
@@ -3751,6 +3782,19 @@ public final class ProvidesTest {
       }
 
       public void dispose(String value) {}
+    }
+  }
+
+  public static final class ProvidesTypeArgumentsToDisposeMethod {
+    @Provides(
+        disposeMethod = "dispose",
+        disposalHandledBy = Provides.DisposalHandledBy.PROVIDER)
+    public ArrayList<String> provide() {
+      return new ArrayList<>(listOf("one", "two", "three"));
+    }
+
+    public static <Q> void dispose(List<Q> instance) {
+      Collections.reverse(instance);
     }
   }
 }
