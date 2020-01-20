@@ -1,14 +1,12 @@
 package tfb.status.service;
 
 import static com.google.common.net.MediaType.HTML_UTF_8;
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.IOException;
@@ -88,15 +86,7 @@ public final class RunCompleteMailer {
     Path newZipFile =
         fileStore.resultsDirectory().resolve(results.zipFileName);
 
-    byte[] rawResultsBytes = findResultsBytes(newZipFile);
-    if (rawResultsBytes == null) {
-      logger.warn(
-          "Ignoring new zip file {} because no results.json was found inside",
-          newZipFile);
-      return;
-    }
-
-    maybeSendEmail(newZipFile, rawResultsBytes);
+    maybeSendEmail(newZipFile);
   }
 
   //
@@ -111,7 +101,7 @@ public final class RunCompleteMailer {
   private volatile @Nullable Instant previousEmailTime;
   private final Object emailTimeLock = new Object();
 
-  private void maybeSendEmail(Path newZipFile, byte[] rawResultsBytes) {
+  private void maybeSendEmail(Path newZipFile) {
     synchronized (emailTimeLock) {
       Instant now = clock.instant();
       Instant previous = this.previousEmailTime;
@@ -131,29 +121,56 @@ public final class RunCompleteMailer {
       this.previousEmailTime = now;
     }
 
-    definitelySendEmail(
-        /* newZipFile= */ newZipFile,
-        /* rawResultsBytes= */ rawResultsBytes);
+    definitelySendEmail(newZipFile);
   }
 
-  private void definitelySendEmail(Path newZipFile, byte[] rawResultsBytes) {
+  private void definitelySendEmail(Path newZipFile) {
     Results results;
     try {
-      results = objectMapper.readValue(rawResultsBytes, Results.class);
+      results =
+          ZipFiles.readZipEntry(
+              newZipFile,
+              "results.json",
+              inputStream ->
+                  objectMapper.readValue(inputStream, Results.class));
     } catch (IOException e) {
       logger.warn(
           "Ignoring new zip file {} because of a JSON parse error",
           newZipFile, e);
       return;
     }
+    if (results == null) {
+      logger.warn(
+          "Ignoring new zip file {} because the results.json was not found",
+          newZipFile);
+      return;
+    }
 
-    byte[] testMetadataBytes = findTestMetadataBytes(newZipFile);
     Path previousZipFile = findPreviousZipFile(newZipFile);
 
-    Results previousResults =
-        (previousZipFile == null)
-            ? null
-            : findResults(previousZipFile);
+    Results previousResults;
+    if (previousZipFile == null) {
+      previousResults = null;
+    } else {
+      try {
+        previousResults =
+            ZipFiles.readZipEntry(
+                previousZipFile,
+                "results.json",
+                inputStream ->
+                    objectMapper.readValue(inputStream, Results.class));
+      } catch (IOException e) {
+        logger.warn(
+            "Ignoring previous zip file {} because of a JSON parse error",
+            previousZipFile, e);
+        previousResults = null;
+      }
+      if (previousResults == null) {
+        logger.warn(
+            "Ignoring previous zip file {} because the results.json was not found",
+            previousZipFile);
+      }
+    }
 
     if (previousResults != null
         && !areResultsComparable(results, previousResults)) {
@@ -170,13 +187,10 @@ public final class RunCompleteMailer {
     String textContent =
         prepareEmailBody(
             /* results= */ results,
-            /* previousResults= */ previousResults,
-            /* isTestMetadataPresent= */ testMetadataBytes != null);
+            /* previousResults= */ previousResults);
 
     ImmutableList<DataSource> attachments =
         prepareEmailAttachments(
-            /* rawResultsBytes= */ rawResultsBytes,
-            /* testMetadataBytes= */ testMetadataBytes,
             /* diff= */ diff);
 
     logger.info(
@@ -239,55 +253,8 @@ public final class RunCompleteMailer {
         && a.git.repositoryUrl.equals(b.git.repositoryUrl);
   }
 
-  private byte@Nullable[] findResultsBytes(Path zipFile) {
-    return tryReadZipEntry(
-        /* zipFile= */ zipFile,
-        /* entryPath= */ "results.json",
-        /* entryReader= */ entry -> entry.readAllBytes());
-  }
-
-  private byte@Nullable[] findTestMetadataBytes(Path zipFile) {
-    return tryReadZipEntry(
-        /* zipFile= */ zipFile,
-        /* entryPath= */ "test_metadata.json",
-        /* entryReader= */ entry -> entry.readAllBytes());
-  }
-
-  private @Nullable Results findResults(Path zipFile) {
-    return tryReadZipEntry(
-        /* zipFile= */ zipFile,
-        /* entryPath= */ "results.json",
-        /* entryReader= */ inputStream ->
-                               objectMapper.readValue(inputStream,
-                                                      Results.class));
-  }
-
-  private <T> @Nullable T tryReadZipEntry(
-      Path zipFile,
-      String entryPath,
-      ZipFiles.ZipEntryReader<T> entryReader) {
-
-    T value;
-    try {
-      value = ZipFiles.readZipEntry(zipFile, entryPath, entryReader);
-    } catch (IOException e) {
-      logger.warn(
-          "Error reading {} from zip file {}",
-          entryPath, zipFile, e);
-      return null;
-    }
-
-    if (value == null)
-      logger.warn(
-          "No {} found in zip file {}",
-          entryPath, zipFile);
-
-    return value;
-  }
-
   private String prepareEmailBody(Results results,
-                                  @Nullable Results previousResults,
-                                  boolean isTestMetadataPresent) {
+                                  @Nullable Results previousResults) {
 
     Objects.requireNonNull(results);
 
@@ -311,8 +278,6 @@ public final class RunCompleteMailer {
     sb.append(results.environmentDescription);
     sb.append("\n");
     sb.append("\n");
-    sb.append("The results.json file is attached.\n");
-    sb.append("\n");
 
     if (results.uuid != null) {
       sb.append("Details: ");
@@ -321,11 +286,6 @@ public final class RunCompleteMailer {
       sb.append("\n");
       sb.append("\n");
     }
-
-    if (isTestMetadataPresent)
-      sb.append("The test_metadata.json file is also attached.\n");
-    else
-      sb.append("No test_metadata.json file was included with the results.\n");
 
     sb.append("\n");
     sb.append("Commit id from previous run: ");
@@ -365,24 +325,9 @@ public final class RunCompleteMailer {
   }
 
   private ImmutableList<DataSource> prepareEmailAttachments(
-      byte[] rawResultsBytes,
-      byte@Nullable[] testMetadataBytes,
       @Nullable String diff) {
 
     var attachments = new ImmutableList.Builder<DataSource>();
-
-    attachments.add(
-        emailSender.createAttachment(
-            /* fileName= */ "results.json",
-            /* mediaType= */ JSON_UTF_8,
-            /* fileBytes= */ ByteSource.wrap(rawResultsBytes)));
-
-    if (testMetadataBytes != null)
-      attachments.add(
-          emailSender.createAttachment(
-              /* fileName= */ "test_metadata.json",
-              /* mediaType= */ JSON_UTF_8,
-              /* fileBytes= */ ByteSource.wrap(testMetadataBytes)));
 
     if (diff != null)
       attachments.add(
