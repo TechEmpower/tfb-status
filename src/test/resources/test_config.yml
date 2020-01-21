@@ -13,11 +13,9 @@ email:
 
 assets:
   mode: CLASS_PATH
-  root: assets
 
 mustache:
   mode: CLASS_PATH
-  root: mustache
 
 fileStore:
   root: test_managed_files
@@ -25,3 +23,6 @@ fileStore:
 runProgressMonitor:
   environmentTimeoutSeconds: 1
   maxEnvironments: 100
+
+runCompleteMailer:
+  minSecondsBetweenEmails: 0

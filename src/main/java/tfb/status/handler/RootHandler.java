@@ -8,25 +8,23 @@ import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.Objects;
-import javax.inject.Inject;
+import java.util.Set;
+import javax.inject.Singleton;
 import org.glassfish.hk2.api.IterableProvider;
+import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.undertow.extensions.LazyHandler;
+import tfb.status.handler.routing.AllPaths;
+import tfb.status.handler.routing.ExactPath;
+import tfb.status.handler.routing.PrefixPath;
+import tfb.status.hk2.extensions.Provides;
+import tfb.status.undertow.extensions.HttpHandlers;
 
 /**
  * Handles every incoming HTTP request, routing to other handlers based on path.
- *
- * <p>In order for this root handler to recognize the other handlers, those
- * other handlers must:
- *
- * <ul>
- * <li>Use this application's dependency injection framework to bind themselves
- *     to the {@link HttpHandler} contract.
- * <li>Annotate themselves with either {@link ExactPath} or {@link PrefixPath}.
- * </ul>
  *
  * <p>This handler provides the following features in addition to routing:
  *
@@ -38,71 +36,121 @@ import tfb.status.undertow.extensions.LazyHandler;
  *     such as {@link HttpServerExchange#getInputStream()} and {@link
  *     HttpServerExchange#getOutputStream()}.
  * </ul>
- *
- * @see ExactPath
- * @see PrefixPath
  */
-public final class RootHandler implements HttpHandler {
-  private final HttpHandler delegate;
+public final class RootHandler {
+  private RootHandler() {
+    throw new AssertionError("This class cannot be instantiated");
+  }
 
-  @Inject
-  public RootHandler(IterableProvider<HttpHandler> handlers) {
+  @Provides
+  @Singleton
+  @AllPaths
+  public static HttpHandler rootHandler(IterableProvider<HttpHandler> handlers) {
     Objects.requireNonNull(handlers);
 
     PathHandler pathHandler = new PathHandler();
 
+    handlerLoop:
     for (ServiceHandle<HttpHandler> serviceHandle : handlers.handleIterator()) {
-      Class<?> handlerClass =
+      Set<Annotation> qualifiers =
           serviceHandle.getActiveDescriptor()
-                       .getImplementationClass();
+                       .getQualifierAnnotations();
 
-      ExactPath exactPath = handlerClass.getAnnotation(ExactPath.class);
-      PrefixPath prefixPath = handlerClass.getAnnotation(PrefixPath.class);
+      ExactPath exactPath = null;
+      PrefixPath prefixPath = null;
+
+      for (Annotation annotation : qualifiers) {
+        if (annotation.annotationType() == AllPaths.class) {
+          continue handlerLoop;
+        } else if (annotation.annotationType() == ExactPath.class) {
+          exactPath = (ExactPath) annotation;
+        } else if (annotation.annotationType() == PrefixPath.class) {
+          prefixPath = (PrefixPath) annotation;
+        }
+      }
 
       if (exactPath == null && prefixPath == null)
         throw new InvalidHttpHandlerException(
-            "HTTP handler class "
-                + handlerClass.getName()
-                + " has no @"
+            "HTTP handler has no @"
                 + ExactPath.class.getSimpleName()
                 + " or @"
                 + PrefixPath.class.getSimpleName()
-                + " annotation; it should have one or the other");
+                + " annotation; it should have one or the other.\n"
+                + "Handler info:\n"
+                + "-----------------------------------------\n"
+                + serviceHandle
+                + "\n"
+                + "-----------------------------------------");
 
       if (exactPath != null && prefixPath != null)
         throw new InvalidHttpHandlerException(
-            "HTTP handler class "
-                + handlerClass.getName()
-                + " has both @"
+            "HTTP handler has both @"
                 + ExactPath.class.getSimpleName()
                 + " and @"
                 + PrefixPath.class.getSimpleName()
-                + " annotations; it should have one or the other");
+                + " annotations; it should have one or the other.\n"
+                + "Handler info:\n"
+                + "-----------------------------------------\n"
+                + serviceHandle
+                + "\n"
+                + "-----------------------------------------");
 
-      HttpHandler handler = new LazyHandler(() -> serviceHandle.getService());
-
-      if (exactPath != null)
+      if (exactPath != null) {
+        HttpHandler handler = new ProvidedHandler(handlers.qualifiedWith(exactPath));
         pathHandler.addExactPath(exactPath.value(), handler);
-      else
+      } else {
+        // requireNonNull for NullAway's sake.
+        Objects.requireNonNull(prefixPath);
+        HttpHandler handler = new ProvidedHandler(handlers.qualifiedWith(prefixPath));
         pathHandler.addPrefixPath(prefixPath.value(), handler);
+      }
     }
 
     Logger logger = LoggerFactory.getLogger("http");
 
-    HttpHandler handler = pathHandler;
-
-    handler = newAccessLoggingHandler(handler, logger);
-    handler = new ExceptionLoggingHandler(handler, logger);
-    handler = new BlockingHandler(handler);
-
-    delegate = handler;
+    return HttpHandlers.chain(
+        pathHandler,
+        handler -> newAccessLoggingHandler(handler, logger),
+        handler -> new ExceptionLoggingHandler(handler, logger),
+        handler -> new BlockingHandler(handler));
   }
 
-  @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
+  /**
+   * An HTTP handler that is lazily loaded from an {@link IterableProvider}.
+   * For each incoming request, the handler will be obtained from its {@link
+   * IterableProvider#getHandle()}, that handler will handle the request, and
+   * then {@link ServiceHandle#close()} will be called if the handler has {@link
+   * PerLookup} scope.
+   */
+  private static final class ProvidedHandler implements HttpHandler {
+    final IterableProvider<HttpHandler> provider;
+
+    private ProvidedHandler(IterableProvider<HttpHandler> provider) {
+      this.provider = Objects.requireNonNull(provider);
+    }
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+      ServiceHandle<HttpHandler> serviceHandle = provider.getHandle();
+
+      boolean isPerLookup =
+          serviceHandle.getActiveDescriptor()
+                       .getScopeAnnotation() == PerLookup.class;
+
+      try {
+        HttpHandler handler = serviceHandle.getService();
+        handler.handleRequest(exchange);
+      } finally {
+        if (isPerLookup)
+          serviceHandle.close();
+      }
+    }
   }
 
+  /**
+   * An HTTP handler that logs all incoming requests and that delegates to a
+   * caller-supplied HTTP handler.
+   */
   private static HttpHandler newAccessLoggingHandler(HttpHandler handler,
                                                      Logger logger) {
     Objects.requireNonNull(handler);

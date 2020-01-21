@@ -1,4 +1,4 @@
-package tfb.status.bootstrap;
+package tfb.status.service;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import javax.inject.Singleton;
-import org.glassfish.hk2.api.Factory;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * Provides the {@link Clock} used by this application.
@@ -35,18 +35,16 @@ import org.glassfish.hk2.api.Factory;
  *   <td>{@link Clock#millis()}
  * </table>
  */
-@Singleton
-final class ClockFactory implements Factory<Clock> {
-  @Override
+public final class ClockFactory {
+  private ClockFactory() {
+    throw new AssertionError("This class cannot be instantiated");
+  }
+
+  @Provides
   @Singleton
-  public Clock provide() {
+  public static Clock systemClock() {
     // TODO: Consider using UTC.
     ZoneId zone = ZoneId.of("America/Los_Angeles");
     return Clock.system(zone);
-  }
-
-  @Override
-  public void dispose(Clock instance) {
-    // No cleanup required.
   }
 }

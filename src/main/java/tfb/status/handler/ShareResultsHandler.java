@@ -14,9 +14,11 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.undertow.util.HttpString;
+import tfb.status.handler.routing.PrefixPath;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.ShareResultsUploader;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.Results;
 import tfb.status.view.ShareResultsJsonView;
@@ -41,101 +43,89 @@ import static java.nio.file.StandardOpenOption.READ;
  * the TechEmpower benchmarks site.
  */
 @Singleton
-@PrefixPath("/share-results")
 public class ShareResultsHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final ObjectMapper objectMapper;
+  private final ShareResultsUploader shareResultsUploader;
 
   @Inject
   public ShareResultsHandler(ObjectMapper objectMapper,
                              ShareResultsUploader shareResultsUploader) {
-    HttpHandler uploadHandler = new DisableCacheHandler(
-        new UploadHandler(objectMapper, shareResultsUploader));
+    this.objectMapper = Objects.requireNonNull(objectMapper);
+    this.shareResultsUploader = Objects.requireNonNull(shareResultsUploader);
+  }
 
-    // The files never change, so do not disable caching.
-    HttpHandler viewHandler = new ViewHandler(shareResultsUploader);
-
-    HttpHandler handler = new MethodHandler()
-        .addMethod(POST, uploadHandler)
-        .addMethod(GET, viewHandler);
-
-    handler = new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-
-    delegate = handler;
+  @Provides
+  @Singleton
+  @PrefixPath("/share-results")
+  public HttpHandler shareResultsHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler()
+            .addMethod(GET, handler)
+            .addMethod(POST, new DisableCacheHandler(handler)),
+        handler -> new SetHeaderHandler(handler, ACCESS_CONTROL_ALLOW_ORIGIN, "*"));
   }
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
+    HttpString method = exchange.getRequestMethod();
+
+    if (method.equals(GET)) {
+      handleView(exchange);
+    } else if (method.equals(POST)) {
+      handleUpload(exchange);
+    } else {
+      // This should never happen if the above handlers chain is configured correctly.
+      throw new IllegalArgumentException("Unsupported method: " + method);
+    }
   }
 
   /**
    * Handle POST upload requests. Every valid request gets placed in the share
    * directory as a new file.
    */
-  private static class UploadHandler implements HttpHandler {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final ObjectMapper objectMapper;
-    private final ShareResultsUploader shareResultsUploader;
-
-    UploadHandler(ObjectMapper objectMapper,
-                  ShareResultsUploader shareResultsUploader) {
-      this.objectMapper = Objects.requireNonNull(objectMapper);
-      this.shareResultsUploader = Objects.requireNonNull(shareResultsUploader);
+  private void handleUpload(HttpServerExchange exchange) throws Exception {
+    if (!exchange.getRelativePath().isEmpty()
+        && !exchange.getRelativePath().equals("/")) {
+      exchange.setStatusCode(NOT_FOUND);
+      return;
     }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      if (!exchange.getRelativePath().isEmpty()
-          && !exchange.getRelativePath().equals("/")) {
-        exchange.setStatusCode(NOT_FOUND);
-        return;
-      }
-
-      ShareResultsJsonView success;
-      try {
-         success = shareResultsUploader.upload(exchange.getRequestChannel());
-      } catch (ShareResultsUploader.ShareResultsUploadException e) {
-        exchange.setStatusCode(BAD_REQUEST);
-        return;
-      }
-
-      String json = objectMapper.writeValueAsString(success);
-      exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
-      exchange.getResponseSender().send(json, UTF_8);
+    ShareResultsJsonView success;
+    try {
+      success = shareResultsUploader.upload(exchange.getRequestChannel());
+    } catch (ShareResultsUploader.ShareResultsUploadException e) {
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
     }
+
+    String json = objectMapper.writeValueAsString(success);
+    exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
+    exchange.getResponseSender().send(json, UTF_8);
   }
 
   /**
    * Handles GET requests for view files from the share directory.
    */
-  private static class ViewHandler implements HttpHandler {
-    private final ShareResultsUploader shareResultsUploader;
-
-    private ViewHandler(ShareResultsUploader shareResultsUploader) {
-      this.shareResultsUploader = Objects.requireNonNull(shareResultsUploader);
+  private void handleView(HttpServerExchange exchange) throws Exception {
+    if (exchange.getRelativePath().isEmpty()) {
+      exchange.setStatusCode(NOT_FOUND);
+      return;
     }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      if (exchange.getRelativePath().isEmpty()) {
-        exchange.setStatusCode(NOT_FOUND);
-        return;
-      }
+    // omit leading slash
+    String relativePath = exchange.getRelativePath().substring(1);
 
-      // omit leading slash
-      String relativePath = exchange.getRelativePath().substring(1);
+    shareResultsUploader.getUpload(
+        /* jsonFileName= */ relativePath,
+        /* ifPresent= */ (Path zipEntry) -> {
+          exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
 
-      shareResultsUploader.getUpload(
-          /* jsonFileName= */ relativePath,
-          /* ifPresent= */ (Path zipEntry) -> {
-            exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
-
-            try (ReadableByteChannel in = Files.newByteChannel(zipEntry, READ)) {
-              WritableByteChannel out = exchange.getResponseChannel();
-              ByteStreams.copy(in, out);
-            }
-          },
-          /* ifAbsent= */ () -> exchange.setStatusCode(NOT_FOUND));
-    }
+          try (ReadableByteChannel in = Files.newByteChannel(zipEntry, READ)) {
+            WritableByteChannel out = exchange.getResponseChannel();
+            ByteStreams.copy(in, out);
+          }
+        },
+        /* ifAbsent= */ () -> exchange.setStatusCode(NOT_FOUND));
   }
 }

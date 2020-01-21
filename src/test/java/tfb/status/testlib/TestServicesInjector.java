@@ -1,12 +1,11 @@
 package tfb.status.testlib;
 
-import java.lang.reflect.Parameter;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ParameterContext;
-import org.junit.jupiter.api.extension.ParameterResolver;
-import tfb.status.bootstrap.Services;
-import tfb.status.bootstrap.ServicesBinder;
+import static org.glassfish.hk2.utilities.ServiceLocatorUtilities.createAndPopulateServiceLocator;
+
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
+import tfb.status.hk2.extensions.NoInstancesFilter;
+import tfb.status.hk2.extensions.ServiceLocatorParameterResolver;
 
 /**
  * Allows instances of service classes to be injected into test methods as
@@ -26,57 +25,12 @@ import tfb.status.bootstrap.ServicesBinder;
  *   }
  * </pre>
  */
-public final class TestServicesInjector implements ParameterResolver {
+public final class TestServicesInjector implements ServiceLocatorParameterResolver {
   @Override
-  public boolean supportsParameter(ParameterContext parameterContext,
-                                   ExtensionContext extensionContext) {
-
-    Parameter parameter = parameterContext.getParameter();
-    Services services = getServices(extensionContext);
-    return services.supportsParameter(parameter);
-  }
-
-  @Override
-  public @Nullable Object resolveParameter(ParameterContext parameterContext,
-                                           ExtensionContext extensionContext) {
-
-    Parameter parameter = parameterContext.getParameter();
-    Services services = getServices(extensionContext);
-    return services.resolveParameter(parameter);
-  }
-
-  private Services getServices(ExtensionContext extensionContext) {
-    // Since we use the root context's store, a single set of services is shared
-    // between all tests.
-    ExtensionContext.Store store =
-        extensionContext.getRoot().getStore(NAMESPACE);
-
-    StoredServices stored =
-        store.getOrComputeIfAbsent(
-            /* key= */ StoredServices.class,
-            /* defaultCreator= */ key -> new StoredServices(),
-            /* requiredType= */ StoredServices.class);
-
-    return stored.services;
-  }
-
-  private static final ExtensionContext.Namespace NAMESPACE =
-      ExtensionContext.Namespace.create(TestServicesInjector.class);
-
-  /**
-   * Wraps {@link Services} in {@link ExtensionContext.Store.CloseableResource},
-   * ensuring that the services are shut down when the store is closed.
-   */
-  private static final class StoredServices
-      implements ExtensionContext.Store.CloseableResource {
-
-    final Services services =
-        new Services(new ServicesBinder("test_config.yml"),
-                     new TestServicesBinder());
-
-    @Override
-    public void close() {
-      services.shutdown();
-    }
+  public ServiceLocator createServiceLocator() {
+    ServiceLocator locator = createAndPopulateServiceLocator();
+    NoInstancesFilter.enableNoInstancesFilter(locator);
+    ServiceLocatorUtilities.bind(locator, new TestServicesBinder());
+    return locator;
   }
 }

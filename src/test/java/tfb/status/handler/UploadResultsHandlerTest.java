@@ -10,15 +10,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static tfb.status.testlib.MoreAssertions.assertContains;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -28,7 +24,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -41,10 +36,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import tfb.status.service.RunCompleteMailer;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.MailServer;
+import tfb.status.testlib.ResultsTester;
 import tfb.status.testlib.TestServicesInjector;
-import tfb.status.util.ZipFiles;
 import tfb.status.view.DetailPageView;
 import tfb.status.view.Results;
 
@@ -62,7 +58,7 @@ public final class UploadResultsHandlerTest {
   public void testUpload(HttpTester http,
                          FileSystem fileSystem,
                          ObjectMapper objectMapper,
-
+                         ResultsTester resultsTester,
                          MailServer mailServer)
       throws ExecutionException,
              InterruptedException,
@@ -71,65 +67,16 @@ public final class UploadResultsHandlerTest {
              TimeoutException {
 
     //
-    // Download the original results.
+    // Create new results.
     //
-    // We'll upload slightly altered versions of these original results during
-    // this test.  That's simpler than having to maintain another independent
-    // set of results.
-    //
+
+    Results newResults = resultsTester.newResults();
+    assertNotNull(newResults.uuid);
+
+    String uuid = newResults.uuid;
 
     Path jsonFile = fileSystem.getPath("results_to_upload.json");
-    Path zipFile = fileSystem.getPath("results_to_upload.zip");
-
-    URI jsonUri = http.uri("/raw/results.2019-12-11-13-21-02-404.json");
-    URI zipUri = http.uri("/raw/results.2019-12-16-03-22-48-407.zip");
-
-    HttpResponse<Path> responseToOriginalJson =
-        http.client().send(
-            HttpRequest.newBuilder(jsonUri).build(),
-            HttpResponse.BodyHandlers.ofFile(jsonFile));
-
-    assertEquals(OK, responseToOriginalJson.statusCode());
-
-    HttpResponse<Path> responseToOriginalZip =
-        http.client().send(
-            HttpRequest.newBuilder(zipUri).build(),
-            HttpResponse.BodyHandlers.ofFile(zipFile));
-
-    assertEquals(OK, responseToOriginalZip.statusCode());
-
-    //
-    // Create new results with a different UUID.
-    //
-
-    String uuid = UUID.randomUUID().toString();
-
-    Results originalResults;
-    try (InputStream inputStream = Files.newInputStream(jsonFile)) {
-      originalResults = objectMapper.readValue(inputStream, Results.class);
-    }
-
-    Results newResults =
-        new Results(
-            /* uuid= */ uuid,
-            /* name= */ originalResults.name,
-            /* environmentDescription= */ originalResults.environmentDescription,
-            /* startTime= */ originalResults.startTime,
-            /* completionTime= */ originalResults.completionTime,
-            /* duration= */ originalResults.duration,
-            /* frameworks= */ originalResults.frameworks,
-            /* completed= */ originalResults.completed,
-            /* succeeded= */ originalResults.succeeded,
-            /* failed= */ originalResults.failed,
-            /* rawData= */ originalResults.rawData,
-            /* queryIntervals= */ originalResults.queryIntervals,
-            /* concurrencyLevels= */ originalResults.concurrencyLevels,
-            /* git= */ originalResults.git,
-            /* testMetadata= */ originalResults.testMetadata);
-
-    try (BufferedWriter writer = Files.newBufferedWriter(jsonFile)) {
-      objectMapper.writeValue(writer, newResults);
-    }
+    resultsTester.saveJsonToFile(newResults, jsonFile);
 
     //
     // Confirm the new results don't exist on the server yet.
@@ -247,9 +194,7 @@ public final class UploadResultsHandlerTest {
               /* git= */ newResults.git,
               /* testMetadata= */ newResults.testMetadata);
 
-      try (BufferedWriter writer = Files.newBufferedWriter(jsonFile)) {
-        objectMapper.writeValue(writer, updatedResults);
-      }
+      resultsTester.saveJsonToFile(updatedResults, jsonFile);
 
       //
       // Upload the updated results JSON.
@@ -317,17 +262,8 @@ public final class UploadResultsHandlerTest {
               /* git= */ updatedResults.git,
               /* testMetadata= */ updatedResults.testMetadata);
 
-      ZipFiles.findZipEntry(
-          /* zipFile= */ zipFile,
-          /* entryPath= */ "results.json",
-          /* ifPresent= */
-          (Path zipEntry) -> {
-            try (BufferedWriter writer = Files.newBufferedWriter(zipEntry)) {
-              objectMapper.writeValue(writer, finalResults);
-            }
-          },
-          /* ifAbsent= */
-          () -> fail("The results.zip file should include a results.json"));
+      Path zipFile = fileSystem.getPath("results_to_upload.zip");
+      resultsTester.saveZipToFile(finalResults, zipFile);
 
       //
       // Upload the final results zip.
@@ -378,16 +314,12 @@ public final class UploadResultsHandlerTest {
       //
 
       String subject =
-          UploadResultsHandler.runCompleteEmailSubject(finalResults);
+          RunCompleteMailer.runCompleteEmailSubject(finalResults);
 
       ImmutableList<MimeMessage> messages =
           mailServer.getMessages(m -> m.getSubject().equals(subject));
 
       assertEquals(1, messages.size());
-
-      MimeMessage message = Iterables.getOnlyElement(messages);
-
-      assertEquals(subject, message.getSubject());
 
     } finally {
       updatesWebSocket.abort();

@@ -1,8 +1,27 @@
 <configuration>
 
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%p [%d] %c: %m%n</pattern>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <filter class="tfb.status.testlib.LoggerThresholdFilter">
+      <loggerName>tfb.status.hk2.extensions.TopicDistributionServiceImpl</loggerName>
+      <level>ERROR</level>
+    </filter>
+    <filter class="tfb.status.testlib.LoggerThresholdFilter">
+      <loggerName>tfb.status.service.TaskScheduler</loggerName>
+      <loggerName>http</loggerName>
+      <level>OFF</level>
+    </filter>
+  </appender>
+
   <appender name="TEST_APPENDER" class="tfb.status.testlib.TestAppender" />
 
   <root level="info">
+    <appender-ref ref="STDOUT" />
     <appender-ref ref="TEST_APPENDER" />
   </root>
 

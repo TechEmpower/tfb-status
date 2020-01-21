@@ -9,10 +9,15 @@ import static tfb.status.undertow.extensions.RequestValues.queryParameter;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.DisableCacheHandler;
+import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import tfb.status.handler.routing.ExactPath;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.HomeResultsReader;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.HomePageView.ResultsView;
 
@@ -43,52 +48,49 @@ import tfb.status.view.HomePageView.ResultsView;
  * to consume -- plain text, with no parsing required.
  */
 @Singleton
-@ExactPath("/last-seen-commit")
 public final class LastSeenCommitHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final HomeResultsReader homeResultsReader;
 
   @Inject
   public LastSeenCommitHandler(HomeResultsReader homeResultsReader) {
-    HttpHandler handler = new CoreHandler(homeResultsReader);
-    handler = new MethodHandler().addMethod(GET, handler);
-    delegate = handler;
+    this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
+  }
+
+  @Provides
+  @Singleton
+  @ExactPath("/last-seen-commit")
+  public HttpHandler lastSeenCommitHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
-
-  private static final class CoreHandler implements HttpHandler {
-    private final HomeResultsReader homeResultsReader;
-
-    CoreHandler(HomeResultsReader homeResultsReader) {
-      this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
+    String environment = queryParameter(exchange, "environment");
+    if (environment == null) {
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
     }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      String environment = queryParameter(exchange, "environment");
-      if (environment == null) {
-        exchange.setStatusCode(BAD_REQUEST);
-        return;
-      }
+    ResultsView mostRecent =
+        homeResultsReader
+            .results()
+            .stream()
+            .filter(result -> environment.equals(result.environmentDescription))
+            .findFirst()
+            .orElse(null);
 
-      ResultsView mostRecent =
-          homeResultsReader
-              .results()
-              .stream()
-              .filter(result -> environment.equals(result.environmentDescription))
-              .findFirst()
-              .orElse(null);
-
-      if (mostRecent == null || mostRecent.commitId == null) {
-        exchange.setStatusCode(NO_CONTENT);
-        return;
-      }
-
-      exchange.getResponseHeaders().put(CONTENT_TYPE, PLAIN_TEXT_UTF_8.toString());
-      exchange.getResponseSender().send(mostRecent.commitId);
+    if (mostRecent == null || mostRecent.commitId == null) {
+      exchange.setStatusCode(NO_CONTENT);
+      return;
     }
+
+    exchange.getResponseHeaders().put(
+        CONTENT_TYPE,
+        PLAIN_TEXT_UTF_8.toString());
+
+    exchange.getResponseSender().send(mostRecent.commitId);
   }
 }

@@ -1,4 +1,4 @@
-package tfb.status.bootstrap;
+package tfb.status.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

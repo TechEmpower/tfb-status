@@ -14,9 +14,9 @@ import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import tfb.status.bootstrap.HttpServer;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.service.Authenticator;
+import tfb.status.service.HttpServer;
 
 /**
  * Provides an API for making requests to the local HTTP server during tests.

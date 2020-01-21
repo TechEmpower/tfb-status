@@ -27,31 +27,19 @@ public final class HttpServerConfig {
 
   /**
    * The key store having the certificate for the server, enabling HTTPS, or
-   * {@code null} if the server is using unencrypted HTTP.
-   *
-   * @see KeyStore
+   * {@code null} if the server is using unencrypted HTTP.  See {@link
+   * KeyStore}.
    */
   public final @Nullable KeyStore keyStore;
 
-  @JsonCreator
-  public HttpServerConfig(
-
-      @JsonProperty(value = "host", required = false)
-      @Nullable String host,
-
-      @JsonProperty(value = "port", required = false)
-      @Nullable Integer port,
-
-      @JsonProperty(value = "keyStore", required = false)
-      @Nullable KeyStore keyStore) {
-
-    this.host = Objects.requireNonNullElse(host, DEFAULT_HOST);
-    this.port = Objects.requireNonNullElse(port, DEFAULT_PORT);
+  public HttpServerConfig(String host, int port, @Nullable KeyStore keyStore) {
+    this.host = Objects.requireNonNull(host);
+    this.port = port;
     this.keyStore = keyStore;
   }
 
   @Override
-  public boolean equals(Object object) {
+  public boolean equals(@Nullable Object object) {
     if (object == this) {
       return true;
     } else if (!(object instanceof HttpServerConfig)) {
@@ -73,6 +61,32 @@ public final class HttpServerConfig {
     return hash;
   }
 
+  @JsonCreator
+  public static HttpServerConfig create(
+      @JsonProperty(value = "host", required = false)
+      @Nullable String host,
+
+      @JsonProperty(value = "port", required = false)
+      @Nullable Integer port,
+
+      @JsonProperty(value = "keyStore", required = false)
+      @Nullable KeyStore keyStore) {
+
+    return new HttpServerConfig(
+        /* host= */
+        Objects.requireNonNullElse(host, DEFAULT_HOST),
+
+        /* port= */
+        Objects.requireNonNullElse(port, DEFAULT_PORT),
+
+        /* keyStore= */
+        keyStore);
+  }
+
+  public static HttpServerConfig defaultConfig() {
+    return create(null, null, null);
+  }
+
   private static final String DEFAULT_HOST = "0.0.0.0";
   private static final int DEFAULT_PORT = 80;
 
@@ -91,21 +105,13 @@ public final class HttpServerConfig {
      */
     public final String password;
 
-    @JsonCreator
-    public KeyStore(
-
-        @JsonProperty(value = "path", required = true)
-        String path,
-
-        @JsonProperty(value = "password", required = true)
-        String password) {
-
+    public KeyStore(String path, String password) {
       this.path = Objects.requireNonNull(path);
       this.password = Objects.requireNonNull(password);
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(@Nullable Object object) {
       if (object == this) {
         return true;
       } else if (!(object instanceof KeyStore)) {
@@ -123,6 +129,17 @@ public final class HttpServerConfig {
       hash = 31 * hash + path.hashCode();
       hash = 31 * hash + password.hashCode();
       return hash;
+    }
+
+    @JsonCreator
+    public static KeyStore create(
+        @JsonProperty(value = "path", required = true)
+        String path,
+
+        @JsonProperty(value = "password", required = true)
+        String password) {
+
+      return new KeyStore(path, password);
     }
   }
 }

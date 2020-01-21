@@ -7,12 +7,14 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import java.util.Objects;
 import java.util.stream.Stream;
+import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
  * Provides an API for inspecting log messages during tests.
  */
+@Singleton
 public final class LogTester {
   /**
    * Returns the stream of all logging events that have been recorded during the

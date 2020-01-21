@@ -1,25 +1,26 @@
 package tfb.status.testlib;
 
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import java.util.Objects;
 import java.util.UUID;
 import javax.inject.Singleton;
-import tfb.status.handler.PrefixPath;
+import tfb.status.handler.routing.PrefixPath;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * Forwards requests to HTTP handlers that were {@linkplain
  * #addHandler(HttpHandler) added at runtime} during tests.
  */
 @Singleton
-@PrefixPath("/test")
-public final class TestHandler implements HttpHandler {
+public final class TestHandler {
   private final PathHandler pathHandler = new PathHandler();
 
-  @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    pathHandler.handleRequest(exchange);
+  @Provides
+  @Singleton
+  @PrefixPath("/test")
+  public HttpHandler testHandler() {
+    return pathHandler;
   }
 
   /**

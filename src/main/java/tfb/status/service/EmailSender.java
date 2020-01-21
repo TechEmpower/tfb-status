@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -39,20 +38,17 @@ public final class EmailSender {
   /**
    * Constructs a new email sender with the provided configuration.
    *
-   * @param optionalConfig the configuration for emails, or an empty optional if
-   *        outbound emails should be quietly discarded
+   * @param config the configuration for emails, or {@code null} if outbound
+   *        emails should be quietly discarded
    * @throws IllegalArgumentException if the configuration is invalid
    */
   @Inject
-  public EmailSender(Optional<EmailConfig> optionalConfig) {
-    EmailConfig config = optionalConfig.orElse(null);
-
+  public EmailSender(@Nullable EmailConfig config) {
     if (config != null) {
       verifyHostAndPort(config.host, config.port);
       verifyEmailAddress(config.from);
       verifyEmailAddress(config.to);
     }
-
     this.config = config;
   }
 

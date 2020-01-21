@@ -22,38 +22,16 @@ public final class FileStoreConfig {
 
   public final long maxShareFileSizeBytes;
 
-  @JsonCreator
-  public FileStoreConfig(
-
-      @JsonProperty(value = "root", required = false)
-      @Nullable String root,
-
-      @JsonProperty(value = "max_share_directory_size_bytes", required = false)
-      @Nullable Long maxShareDirectorySizeBytes,
-
-      @JsonProperty(value = "max_share_file_size_bytes", required = false)
-      @Nullable Long maxShareFileSizeBytes) {
-
-    this.root =
-        Objects.requireNonNullElse(
-            root,
-            DEFAULT_ROOT);
-
-    this.maxShareDirectorySizeBytes =
-        Objects.requireNonNullElse(
-            maxShareDirectorySizeBytes,
-            DEFAULT_MAX_SHARE_DIRECTORY_SIZE_BYTES
-        );
-
-    this.maxShareFileSizeBytes =
-        Objects.requireNonNullElse(
-            maxShareFileSizeBytes,
-            DEFAULT_MAX_SHARE_FILE_SIZE_BYTES
-        );
+  public FileStoreConfig(String root,
+                         long maxShareDirectorySizeBytes,
+                         long maxShareFileSizeBytes) {
+    this.root = Objects.requireNonNull(root);
+    this.maxShareDirectorySizeBytes = maxShareDirectorySizeBytes;
+    this.maxShareFileSizeBytes = maxShareFileSizeBytes;
   }
 
   @Override
-  public boolean equals(Object object) {
+  public boolean equals(@Nullable Object object) {
     if (object == this) {
       return true;
     } else if (!(object instanceof FileStoreConfig)) {
@@ -73,6 +51,36 @@ public final class FileStoreConfig {
     hash = 31 * hash + Long.hashCode(maxShareDirectorySizeBytes);
     hash = 31 * hash + Long.hashCode(maxShareFileSizeBytes);
     return hash;
+  }
+
+  @JsonCreator
+  public static FileStoreConfig create(
+      @JsonProperty(value = "root", required = false)
+      @Nullable String root,
+
+      @JsonProperty(value = "max_share_directory_size_bytes", required = false)
+      @Nullable Long maxShareDirectorySizeBytes,
+
+      @JsonProperty(value = "max_share_file_size_bytes", required = false)
+      @Nullable Long maxShareFileSizeBytes) {
+
+    return new FileStoreConfig(
+        /* root= */
+        Objects.requireNonNullElse(
+            root,
+            DEFAULT_ROOT),
+
+        Objects.requireNonNullElse(
+            maxShareDirectorySizeBytes,
+            DEFAULT_MAX_SHARE_DIRECTORY_SIZE_BYTES),
+
+        Objects.requireNonNullElse(
+            maxShareFileSizeBytes,
+            DEFAULT_MAX_SHARE_FILE_SIZE_BYTES));
+  }
+
+  public static FileStoreConfig defaultConfig() {
+    return create(null, null, null);
   }
 
   private static final String DEFAULT_ROOT = "managed_files";

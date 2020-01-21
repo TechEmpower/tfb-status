@@ -4,20 +4,7 @@
 
 (function() {
 
-  let updateEventSource;
   let updateWebSocket;
-
-  function enableSse() {
-    updateEventSource = new EventSource("/updates");
-    updateEventSource.onmessage = handleSseMessage;
-    updateEventSource.onerror = handleSseError;
-  }
-
-  function disableSse() {
-    if (updateEventSource !== undefined) {
-      updateEventSource.close();
-    }
-  }
 
   function enableWebSockets() {
     const protocol = (location.protocol === "https:") ? "wss:" : "ws:";
@@ -37,11 +24,6 @@
     const template = document.createElement("template");
     template.innerHTML = html;
     return template.content;
-  }
-
-  function handleSseMessage(event) {
-    const html = event.data;
-    handleIncomingHtml(html);
   }
 
   function handleWebSocketMessage(event) {
@@ -80,24 +62,11 @@
     tbody.insertBefore(newRow, rows[0]);
   }
 
-  function handleSseError(event) {
-    if (updateEventSource.readyState === 2 /* closed, not reconnecting */) {
-      setTimeout(enableSse, 30000);
-    }
-  }
-
   function handleWebSocketClose(event) {
     setTimeout(enableWebSockets, 30000);
   }
 
-  // TODO: After testing this for a while, probably move to web sockets only.
-  const useWebSockets = !location.search.includes("useSse");
-  if (useWebSockets) {
-    window.addEventListener("load", enableWebSockets);
-    window.addEventListener("beforeunload", disableWebSockets);
-  } else {
-    window.addEventListener("load", enableSse);
-    window.addEventListener("beforeunload", disableSse);
-  }
+  window.addEventListener("load", enableWebSockets);
+  window.addEventListener("beforeunload", disableWebSockets);
 
 })();

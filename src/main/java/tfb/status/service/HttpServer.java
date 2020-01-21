@@ -1,9 +1,10 @@
-package tfb.status.bootstrap;
+package tfb.status.service;
 
 import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
+import io.undertow.server.HttpHandler;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -14,7 +15,7 @@ import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.HttpServerConfig;
-import tfb.status.handler.RootHandler;
+import tfb.status.handler.routing.AllPaths;
 import tfb.status.util.KeyStores;
 
 /**
@@ -33,15 +34,15 @@ public final class HttpServer implements PreDestroy {
 
   @Inject
   public HttpServer(HttpServerConfig config,
-                    RootHandler rootHandler,
+                    @AllPaths HttpHandler handler,
                     FileSystem fileSystem) {
 
     Objects.requireNonNull(config);
-    Objects.requireNonNull(rootHandler);
+    Objects.requireNonNull(handler);
     Objects.requireNonNull(fileSystem);
 
     Undertow.Builder builder = Undertow.builder();
-    builder.setHandler(rootHandler);
+    builder.setHandler(handler);
     builder.setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true);
 
     if (config.keyStore == null)

@@ -10,16 +10,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import javax.inject.Singleton;
-import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.Rank;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * Provides the {@link FileSystem} used by this application during tests.
  */
-@Singleton
-final class InMemoryFileSystemFactory implements Factory<FileSystem> {
-  @Override
+final class InMemoryFileSystemFactory {
+  private InMemoryFileSystemFactory() {
+    throw new AssertionError("This class cannot be instantiated");
+  }
+
+  @Provides(disposeMethod = "close")
   @Singleton
-  public FileSystem provide() {
+  @Rank(1) // Override the default file system.
+  public static FileSystem inMemoryFileSystem() throws IOException {
     FileSystem realFileSystem = FileSystems.getDefault();
     FileSystem fakeFileSystem = Jimfs.newFileSystem(Configuration.unix());
 
@@ -42,19 +47,8 @@ final class InMemoryFileSystemFactory implements Factory<FileSystem> {
               throw new UncheckedIOException(e);
             }
           });
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
     }
 
     return fakeFileSystem;
-  }
-
-  @Override
-  public void dispose(FileSystem instance) {
-    try {
-      instance.close();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 }

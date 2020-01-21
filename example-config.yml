@@ -24,11 +24,9 @@
 
 #assets:
 #  mode: FILE_SYSTEM
-#  root: src/main/resources/assets
 
 #mustache:
 #  mode: FILE_SYSTEM
-#  root: src/main/resources/mustache
 
 #fileStore:
 #  root: managed_files
@@ -44,6 +42,9 @@
 #runProgressMonitor:
 #  environmentTimeoutSeconds: 21600
 #  maxEnvironments: 5
+
+#runCompleteMailer:
+#  minSecondsBetweenEmails: 86400
 
 #urls:
 #  tfbStatus: https://tfb-status.techempower.com

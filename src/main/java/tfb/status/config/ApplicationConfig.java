@@ -6,6 +6,8 @@ import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.PerLookup;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * The parent configuration object for this entire application, containing all
@@ -17,44 +19,115 @@ public final class ApplicationConfig {
   /**
    * See {@link HttpServerConfig}.
    */
+  @Provides
   public final HttpServerConfig http;
 
   /**
    * See {@link AssetsConfig}.
    */
+  @Provides
   public final AssetsConfig assets;
 
   /**
    * See {@link MustacheConfig}.
    */
+  @Provides
   public final MustacheConfig mustache;
 
   /**
    * See {@link FileStoreConfig}.
    */
+  @Provides
   public final FileStoreConfig fileStore;
 
   /**
    * See {@link RunProgressMonitorConfig}.
    */
+  @Provides
   public final RunProgressMonitorConfig runProgressMonitor;
 
   /**
-   * The configuration for outbound emails, or {@code null} if outbound emails
-   * are disabled.
-   *
-   * @see EmailConfig
+   * See {@link RunCompleteMailerConfig}.
    */
-  public final @Nullable EmailConfig email;
+  @Provides
+  public final RunCompleteMailerConfig runCompleteMailer;
 
   /**
    * See {@link UrlsConfig}.
    */
-  public final UrlsConfig urls;
+  @Provides
+  public final UrlsConfig urlsConfig;
+
+  /**
+   * The configuration for outbound emails, or {@code null} if outbound emails
+   * are disabled.  See {@link EmailConfig}.
+   */
+  public final @Nullable EmailConfig email;
+
+  // We can't annotate the `email` field directly with @Provides.  The scope it
+  // would inherit from this class is @Singleton, and @Singleton doesn't support
+  // null values.  We want the scope of the field to be @PerLookup, which does
+  // support null values, but @PerLookup can't target fields.
+  @Provides
+  @PerLookup
+  public @Nullable EmailConfig email() {
+    return email;
+  }
+
+  public ApplicationConfig(HttpServerConfig http,
+                           AssetsConfig assets,
+                           MustacheConfig mustache,
+                           FileStoreConfig fileStore,
+                           RunProgressMonitorConfig runProgressMonitor,
+                           RunCompleteMailerConfig runCompleteMailer,
+                           @Nullable EmailConfig email,
+                           UrlsConfig urlsConfig) {
+
+    this.http = Objects.requireNonNull(http);
+    this.assets = Objects.requireNonNull(assets);
+    this.mustache = Objects.requireNonNull(mustache);
+    this.fileStore = Objects.requireNonNull(fileStore);
+    this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
+    this.runCompleteMailer = Objects.requireNonNull(runCompleteMailer);
+    this.email = email;
+    this.urlsConfig = Objects.requireNonNull(urlsConfig);
+  }
+
+  @Override
+  public boolean equals(@Nullable Object object) {
+    if (object == this) {
+      return true;
+    } else if (!(object instanceof ApplicationConfig)) {
+      return false;
+    } else {
+      ApplicationConfig that = (ApplicationConfig) object;
+      return this.http.equals(that.http)
+          && this.assets.equals(that.assets)
+          && this.mustache.equals(that.mustache)
+          && this.fileStore.equals(that.fileStore)
+          && this.runProgressMonitor.equals(that.runProgressMonitor)
+          && this.runCompleteMailer.equals(that.runCompleteMailer)
+          && Objects.equals(this.email, that.email)
+          && this.urlsConfig.equals(that.urlsConfig);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = 1;
+    hash = 31 * hash + http.hashCode();
+    hash = 31 * hash + assets.hashCode();
+    hash = 31 * hash + mustache.hashCode();
+    hash = 31 * hash + fileStore.hashCode();
+    hash = 31 * hash + runProgressMonitor.hashCode();
+    hash = 31 * hash + runCompleteMailer.hashCode();
+    hash = 31 * hash + Objects.hashCode(email);
+    hash = 31 * hash + urlsConfig.hashCode();
+    return hash;
+  }
 
   @JsonCreator
-  public ApplicationConfig(
-
+  public static ApplicationConfig create(
       @JsonProperty(value = "http", required = false)
       @Nullable HttpServerConfig http,
 
@@ -67,76 +140,59 @@ public final class ApplicationConfig {
       @JsonProperty(value = "fileStore", required = false)
       @Nullable FileStoreConfig fileStore,
 
+      @JsonProperty(value = "runProgressMonitor", required = false)
+      @Nullable RunProgressMonitorConfig runProgressMonitor,
+
+      @JsonProperty(value = "runCompleteMailer", required = false)
+      @Nullable RunCompleteMailerConfig runCompleteMailer,
+
       @JsonProperty(value = "email", required = false)
       @Nullable EmailConfig email,
 
       @JsonProperty(value = "urls", required = false)
-      @Nullable UrlsConfig urls,
+      @Nullable UrlsConfig urls) {
 
-      @JsonProperty(value = "runProgressMonitor", required = false)
-      @Nullable RunProgressMonitorConfig runProgressMonitor) {
-
-    this.http =
+    return new ApplicationConfig(
+        /* http= */
         Objects.requireNonNullElseGet(
             http,
-            () -> new HttpServerConfig(null, null, null));
+            () -> HttpServerConfig.defaultConfig()),
 
-    this.assets =
+        /* assets= */
         Objects.requireNonNullElseGet(
             assets,
-            () -> new AssetsConfig(null, null));
+            () -> AssetsConfig.defaultConfig()),
 
-    this.mustache =
+        /* mustache= */
         Objects.requireNonNullElseGet(
             mustache,
-            () -> new MustacheConfig(null, null));
+            () -> MustacheConfig.defaultConfig()),
 
-    this.fileStore =
+        /* fileStore= */
         Objects.requireNonNullElseGet(
             fileStore,
-            () -> new FileStoreConfig(null, null, null));
+            () -> FileStoreConfig.defaultConfig()),
 
-    this.email = email;
-
-    this.urls =
-        Objects.requireNonNullElseGet(
-          urls,
-          () -> new UrlsConfig(null, null));
-
-    this.runProgressMonitor =
+        /* runProgressMonitor= */
         Objects.requireNonNullElseGet(
             runProgressMonitor,
-            () -> new RunProgressMonitorConfig(null, null));
+            () -> RunProgressMonitorConfig.defaultConfig()),
+
+        /* runCompleteMailer= */
+        Objects.requireNonNullElseGet(
+            runCompleteMailer,
+            () -> RunCompleteMailerConfig.defaultConfig()),
+
+        /* email= */
+        email,
+
+        /* urlsConfig= */
+        Objects.requireNonNullElseGet(
+            urls,
+            () -> new UrlsConfig(null, null)));
   }
 
-  @Override
-  public boolean equals(Object object) {
-    if (object == this) {
-      return true;
-    } else if (!(object instanceof ApplicationConfig)) {
-      return false;
-    } else {
-      ApplicationConfig that = (ApplicationConfig) object;
-      return this.http.equals(that.http)
-          && this.assets.equals(that.assets)
-          && this.mustache.equals(that.mustache)
-          && this.fileStore.equals(that.fileStore)
-          && this.runProgressMonitor.equals(that.runProgressMonitor)
-          && Objects.equals(this.email, that.email)
-          && this.urls.equals(that.urls);
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 1;
-    hash = 31 * hash + http.hashCode();
-    hash = 31 * hash + assets.hashCode();
-    hash = 31 * hash + mustache.hashCode();
-    hash = 31 * hash + fileStore.hashCode();
-    hash = 31 * hash + runProgressMonitor.hashCode();
-    hash = 31 * hash + Objects.hashCode(email);
-    hash = 31 * hash + urls.hashCode();
-    return hash;
+  public static ApplicationConfig defaultConfig() {
+    return create(null, null, null, null, null, null, null, null);
   }
 }

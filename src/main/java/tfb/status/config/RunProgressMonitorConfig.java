@@ -16,7 +16,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 @Singleton
 public final class RunProgressMonitorConfig {
   /**
-   * The number of minutes to wait before assuming that a benchmarking
+   * The number of seconds to wait before assuming that a benchmarking
    * environment has crashed.
    */
   public final long environmentTimeoutSeconds;
@@ -27,28 +27,15 @@ public final class RunProgressMonitorConfig {
    */
   public final int maxEnvironments;
 
-  @JsonCreator
-  public RunProgressMonitorConfig(
+  public RunProgressMonitorConfig(long environmentTimeoutSeconds,
+                                  int maxEnvironments) {
 
-      @JsonProperty(value = "environmentTimeoutSeconds", required = false)
-      @Nullable Long environmentTimeoutSeconds,
-
-      @JsonProperty(value = "maxEnvironments", required = false)
-      @Nullable Integer maxEnvironments) {
-
-    this.environmentTimeoutSeconds =
-        Objects.requireNonNullElse(
-            environmentTimeoutSeconds,
-            DEFAULT_ENVIRONMENT_TIMEOUT_SECONDS);
-
-    this.maxEnvironments =
-        Objects.requireNonNullElse(
-            maxEnvironments,
-            DEFAULT_MAX_ENVIRONMENTS);
+    this.environmentTimeoutSeconds = environmentTimeoutSeconds;
+    this.maxEnvironments = maxEnvironments;
   }
 
   @Override
-  public boolean equals(Object object) {
+  public boolean equals(@Nullable Object object) {
     if (object == this) {
       return true;
     } else if (!(object instanceof RunProgressMonitorConfig)) {
@@ -66,6 +53,30 @@ public final class RunProgressMonitorConfig {
     hash = 31 * hash + Long.hashCode(environmentTimeoutSeconds);
     hash = 31 * hash + Integer.hashCode(maxEnvironments);
     return hash;
+  }
+
+  @JsonCreator
+  public static RunProgressMonitorConfig create(
+      @JsonProperty(value = "environmentTimeoutSeconds", required = false)
+      @Nullable Long environmentTimeoutSeconds,
+
+      @JsonProperty(value = "maxEnvironments", required = false)
+      @Nullable Integer maxEnvironments) {
+
+    return new RunProgressMonitorConfig(
+        /* environmentTimeoutSeconds= */
+        Objects.requireNonNullElse(
+            environmentTimeoutSeconds,
+            DEFAULT_ENVIRONMENT_TIMEOUT_SECONDS),
+
+        /* maxEnvironments= */
+        Objects.requireNonNullElse(
+            maxEnvironments,
+            DEFAULT_MAX_ENVIRONMENTS));
+  }
+
+  public static RunProgressMonitorConfig defaultConfig() {
+    return create(null, null);
   }
 
   private static final long DEFAULT_ENVIRONMENT_TIMEOUT_SECONDS =

@@ -11,13 +11,17 @@ import com.google.common.collect.Maps;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Objects;
 import java.util.Properties;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import tfb.status.handler.routing.ExactPath;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.MustacheRenderer;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.AboutPageView;
 import tfb.status.view.AboutPageView.GitPropertyView;
@@ -26,66 +30,60 @@ import tfb.status.view.AboutPageView.GitPropertyView;
  * Handles requests for the about page.
  */
 @Singleton
-@ExactPath("/about")
 public final class AboutPageHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final MustacheRenderer mustacheRenderer;
 
   @Inject
   public AboutPageHandler(MustacheRenderer mustacheRenderer) {
-    HttpHandler handler = new CoreHandler(mustacheRenderer);
+    this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
+  }
 
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new DisableCacheHandler(handler);
-
-    delegate = handler;
+  @Provides
+  @Singleton
+  @ExactPath("/about")
+  public HttpHandler aboutPageHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
+    ImmutableMap<String, String> gitProperties;
 
-  private static final class CoreHandler implements HttpHandler {
-    private final MustacheRenderer mustacheRenderer;
+    try (InputStream inputStream =
+             Thread.currentThread()
+                   .getContextClassLoader()
+                   .getResourceAsStream("git.properties")) {
 
-    CoreHandler(MustacheRenderer mustacheRenderer) {
-      this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
-    }
+      if (inputStream == null)
+        gitProperties = ImmutableMap.of();
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      ImmutableMap<String, String> gitProperties;
-
-      try (InputStream inputStream =
-               Thread.currentThread()
-                     .getContextClassLoader()
-                     .getResourceAsStream("git.properties")) {
-
-        if (inputStream == null)
-          gitProperties = ImmutableMap.of();
-
-        else {
-          try (var reader = new InputStreamReader(inputStream, UTF_8)) {
-            var props = new Properties();
-            props.load(reader);
-            gitProperties = Maps.fromProperties(props);
-          }
+      else {
+        try (var reader = new InputStreamReader(inputStream, UTF_8)) {
+          var props = new Properties();
+          props.load(reader);
+          gitProperties = Maps.fromProperties(props);
         }
       }
-
-      var aboutPageView =
-          new AboutPageView(
-              /* gitProperties= */
-              gitProperties.entrySet()
-                           .stream()
-                           .map(entry -> new GitPropertyView(
-                               /* name= */ entry.getKey(),
-                               /* value= */ entry.getValue()))
-                           .collect(toImmutableList()));
-
-      String html = mustacheRenderer.render("about.mustache", aboutPageView);
-      exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
-      exchange.getResponseSender().send(html, UTF_8);
     }
+
+    var aboutPageView =
+        new AboutPageView(
+            /* gitProperties= */
+            gitProperties
+                .entrySet()
+                .stream()
+                .map(
+                    entry ->
+                        new GitPropertyView(
+                            /* name= */ entry.getKey(),
+                            /* value= */ entry.getValue()))
+                .collect(toImmutableList()));
+
+    String html = mustacheRenderer.render("about.mustache", aboutPageView);
+    exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
+    exchange.getResponseSender().send(html, UTF_8);
   }
 }

@@ -2,23 +2,23 @@ package tfb.status.testlib;
 
 import java.time.Clock;
 import javax.inject.Singleton;
-import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.Rank;
 import org.threeten.extra.MutableClock;
+import tfb.status.hk2.extensions.Provides;
 
 /**
  * Provides the {@link Clock} used by this application during tests, which is a
  * {@link MutableClock}.
  */
-@Singleton
-final class MutableClockFactory implements Factory<Clock> {
-  @Override
-  @Singleton
-  public Clock provide() {
-    return MutableClock.epochUTC();
+final class MutableClockFactory  {
+  private MutableClockFactory() {
+    throw new AssertionError("This class cannot be instantiated");
   }
 
-  @Override
-  public void dispose(Clock instance) {
-    // No cleanup required.
+  @Provides(contracts = { Clock.class, MutableClock.class })
+  @Singleton
+  @Rank(1) // Override the default clock.
+  public static MutableClock mutableClock() {
+    return MutableClock.epochUTC();
   }
 }

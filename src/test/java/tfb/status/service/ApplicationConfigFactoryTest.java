@@ -1,15 +1,14 @@
-package tfb.status.bootstrap;
+package tfb.status.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import javax.inject.Provider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,22 +18,15 @@ import tfb.status.config.EmailConfig;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.config.MustacheConfig;
+import tfb.status.config.RunCompleteMailerConfig;
 import tfb.status.config.RunProgressMonitorConfig;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
- * Tests for all the {@code *ConfigFactory} classes.
- *
- * @see ApplicationConfigFactory
- * @see HttpServerConfigFactory
- * @see AssetsConfigFactory
- * @see MustacheConfigFactory
- * @see FileStoreConfigFactory
- * @see RunProgressMonitorConfigFactory
- * @see EmailConfigFactory
+ * Tests for {@link ApplicationConfigFactory}.
  */
 @ExtendWith(TestServicesInjector.class)
-public final class ConfigFactoryTest {
+public final class ApplicationConfigFactoryTest {
   /**
    * Verifies that all configuration objects are available for injection.
    */
@@ -46,9 +38,11 @@ public final class ConfigFactoryTest {
       Provider<MustacheConfig> mustacheConfigProvider,
       Provider<FileStoreConfig> fileStoreConfigProvider,
       Provider<RunProgressMonitorConfig> runProgressMonitorConfigProvider,
-      Provider<Optional<EmailConfig>> optionalEmailConfigProvider) {
+      Provider<RunCompleteMailerConfig> runCompleteMailerConfigProvider,
+      Provider<EmailConfig> emailConfigProvider) {
 
     ApplicationConfig config = applicationConfigProvider.get();
+    assertNotNull(config);
 
     assertEquals(
         config.http,
@@ -71,8 +65,12 @@ public final class ConfigFactoryTest {
         runProgressMonitorConfigProvider.get());
 
     assertEquals(
-        Optional.ofNullable(config.email),
-        optionalEmailConfigProvider.get());
+        config.runCompleteMailer,
+        runCompleteMailerConfigProvider.get());
+
+    assertEquals(
+        config.email,
+        emailConfigProvider.get());
   }
 
   /**
@@ -80,20 +78,12 @@ public final class ConfigFactoryTest {
    * is specified.
    */
   @Test
-  public void testNoConfigFile(FileSystem fileSystem,
-                               ObjectMapper objectMapper) {
-
-    var configFactory =
-        new ApplicationConfigFactory(
-            fileSystem,
-            objectMapper,
-            Optional.empty());
-
-    ApplicationConfig config = configFactory.provide();
+  public void testNoConfigFile(ApplicationConfigFactory configFactory)
+      throws IOException {
 
     assertEquals(
-        new ApplicationConfig(null, null, null, null, null, null, null),
-        config);
+        ApplicationConfig.defaultConfig(),
+        configFactory.readConfigFile(null));
   }
 
   /**
@@ -101,8 +91,8 @@ public final class ConfigFactoryTest {
    * file is specified.
    */
   @Test
-  public void testEmptyConfigFile(FileSystem fileSystem,
-                                  ObjectMapper objectMapper)
+  public void testEmptyConfigFile(ApplicationConfigFactory configFactory,
+                                  FileSystem fileSystem)
       throws IOException {
 
     Path file = fileSystem.getPath("empty_config.yml");
@@ -113,17 +103,9 @@ public final class ConfigFactoryTest {
             "# This is a comment line.",
             "# This is another comment line."));
 
-    var configFactory =
-        new ApplicationConfigFactory(
-            fileSystem,
-            objectMapper,
-            Optional.of(file.toString()));
-
-    ApplicationConfig config = configFactory.provide();
-
     assertEquals(
-        new ApplicationConfig(null, null, null, null, null, null, null),
-        config);
+        ApplicationConfig.defaultConfig(),
+        configFactory.readConfigFile(file.toString()));
   }
 
   /**
@@ -131,17 +113,9 @@ public final class ConfigFactoryTest {
    * but that file does not exist.
    */
   @Test
-  public void testMissingConfigFile(FileSystem fileSystem,
-                                    ObjectMapper objectMapper) {
-
-    var configFactory =
-        new ApplicationConfigFactory(
-            fileSystem,
-            objectMapper,
-            Optional.of("missing_file.yml"));
-
+  public void testMissingConfigFile(ApplicationConfigFactory configFactory) {
     assertThrows(
-        RuntimeException.class,
-        () -> configFactory.provide());
+        IOException.class,
+        () -> configFactory.readConfigFile("missing_file.yml"));
   }
 }

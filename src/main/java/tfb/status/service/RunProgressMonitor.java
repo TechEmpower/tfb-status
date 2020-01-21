@@ -2,6 +2,7 @@ package tfb.status.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -12,19 +13,25 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.MessagingException;
 import org.glassfish.hk2.api.PreDestroy;
+import org.glassfish.hk2.api.messaging.MessageReceiver;
+import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.RunProgressMonitorConfig;
+import tfb.status.view.HomePageView.ResultsView;
+import tfb.status.view.UpdatedResultsEvent;
 
 /**
  * Complains over email when a benchmarking environment has stopped sending
  * updates.
  */
 @Singleton
+@MessageReceiver
 public final class RunProgressMonitor implements PreDestroy {
   private final RunProgressMonitorConfig config;
-  private final EmailSender emailSender;
+  private final HomeResultsReader homeResultsReader;
   private final TaskScheduler taskScheduler;
+  private final EmailSender emailSender;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @GuardedBy("this")
@@ -32,12 +39,14 @@ public final class RunProgressMonitor implements PreDestroy {
 
   @Inject
   public RunProgressMonitor(RunProgressMonitorConfig config,
-                            EmailSender emailSender,
-                            TaskScheduler taskScheduler) {
+                            HomeResultsReader homeResultsReader,
+                            TaskScheduler taskScheduler,
+                            EmailSender emailSender) {
 
     this.config = Objects.requireNonNull(config);
-    this.emailSender = Objects.requireNonNull(emailSender);
+    this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
     this.taskScheduler = Objects.requireNonNull(taskScheduler);
+    this.emailSender = Objects.requireNonNull(emailSender);
   }
 
   @Override
@@ -55,16 +64,39 @@ public final class RunProgressMonitor implements PreDestroy {
     environmentToTask.clear();
   }
 
-  /**
-   * Notifies this service that the given environment has made progress on a
-   * run.
-   *
-   * @param environment the name of the environment
-   * @param expectMore {@code true} if this service should expect more progress
-   *        to be made in this same environment
-   */
-  public synchronized void recordProgress(String environment,
-                                          boolean expectMore) {
+  public void onUpdatedResults(@SubscribeTo UpdatedResultsEvent event)
+      throws IOException {
+
+    Objects.requireNonNull(event);
+
+    String uuid = event.uuid;
+    ResultsView results = homeResultsReader.resultsByUuid(uuid);
+    if (results == null) {
+      logger.warn(
+          "Result {} not found... what happened?",
+          uuid);
+      return;
+    }
+
+    String environment = results.environmentDescription;
+    if (environment == null)
+      return;
+
+    // We expect more if (a) a results.json was uploaded but we're still waiting
+    // for the results.zip, or (b) if this is a continuous benchmarking
+    // environment that starts a new run every time it finishes a run.
+    boolean expectMore =
+        (results.zipFileName == null) // case (a)
+            || environment.equals("Citrine"); // case (b)
+    // TODO: It's not great to have "Citrine" hardcoded.  How else can we detect
+    //       that this is a continuous benchmarking environment?
+
+    recordProgress(environment, expectMore);
+  }
+
+  private synchronized void recordProgress(String environment,
+                                           boolean expectMore) {
+
     Objects.requireNonNull(environment);
 
     if (environmentToTask.size() >= config.maxEnvironments
@@ -102,8 +134,6 @@ public final class RunProgressMonitor implements PreDestroy {
   }
 
   private void complain(String environment) {
-    Objects.requireNonNull(environment);
-
     String subject = environmentCrashedEmailSubject(environment);
 
     String textContent =
@@ -119,8 +149,10 @@ public final class RunProgressMonitor implements PreDestroy {
           /* attachments= */ List.of());
     } catch (MessagingException e) {
       logger.warn(
-          "Error sending email regarding lack of progress in environment {}",
-          environment, e);
+          "Error sending email regarding lack of progress in "
+              + "environment {}",
+          environment,
+          e);
     }
   }
 

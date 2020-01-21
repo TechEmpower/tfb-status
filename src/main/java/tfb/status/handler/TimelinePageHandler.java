@@ -26,8 +26,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.handler.routing.PrefixPath;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
+import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
@@ -40,161 +43,158 @@ import tfb.status.view.TimelinePageView.TestTypeOptionView;
  * Handles requests for the timeline page.
  */
 @Singleton
-@PrefixPath("/timeline")
 public final class TimelinePageHandler implements HttpHandler {
-  private final HttpHandler delegate;
+  private final FileStore fileStore;
+  private final MustacheRenderer mustacheRenderer;
+  private final ObjectMapper objectMapper;
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
   public TimelinePageHandler(FileStore fileStore,
                              MustacheRenderer mustacheRenderer,
                              ObjectMapper objectMapper) {
 
-    HttpHandler handler = new CoreHandler(fileStore,
-                                          mustacheRenderer,
-                                          objectMapper);
+    this.fileStore = Objects.requireNonNull(fileStore);
+    this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
+    this.objectMapper = Objects.requireNonNull(objectMapper);
+  }
 
-    handler = new MethodHandler().addMethod(GET, handler);
-    handler = new DisableCacheHandler(handler);
-
-    delegate = handler;
+  @Provides
+  @Singleton
+  @PrefixPath("/timeline")
+  public HttpHandler timelinePageHandler() {
+    return HttpHandlers.chain(
+        this,
+        handler -> new MethodHandler().addMethod(GET, handler),
+        handler -> new DisableCacheHandler(handler));
   }
 
   @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    delegate.handleRequest(exchange);
-  }
+  public void handleRequest(HttpServerExchange exchange) throws IOException {
+    String relativePath = exchange.getRelativePath();
+    Matcher matcher = REQUEST_PATH_PATTERN.matcher(relativePath);
 
-  private static final class CoreHandler implements HttpHandler {
-    private final MustacheRenderer mustacheRenderer;
-    private final ObjectMapper objectMapper;
-    private final FileStore fileStore;
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    CoreHandler(FileStore fileStore,
-                MustacheRenderer mustacheRenderer,
-                ObjectMapper objectMapper) {
-
-      this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
-      this.objectMapper = Objects.requireNonNull(objectMapper);
-      this.fileStore = Objects.requireNonNull(fileStore);
+    if (!matcher.matches()) {
+      exchange.setStatusCode(NOT_FOUND);
+      return;
     }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      String relativePath = exchange.getRelativePath();
-      Matcher matcher = REQUEST_PATH_PATTERN.matcher(relativePath);
+    String selectedFramework = matcher.group("framework");
+    String selectedTestType = matcher.group("testType");
 
-      if (!matcher.matches()) {
-        exchange.setStatusCode(NOT_FOUND);
-        return;
-      }
+    if (!Results.TEST_TYPES.contains(selectedTestType)) {
+      exchange.setStatusCode(NOT_FOUND);
+      return;
+    }
 
-      String selectedFramework = matcher.group("framework");
-      String selectedTestType = matcher.group("testType");
+    var allFrameworks = new HashSet<String>();
+    var missingTestTypes = new HashSet<String>(Results.TEST_TYPES);
+    var dataPoints = new ArrayList<DataPointView>();
 
-      if (!Results.TEST_TYPES.contains(selectedTestType)) {
-        exchange.setStatusCode(NOT_FOUND);
-        return;
-      }
+    try (DirectoryStream<Path> zipFiles =
+             Files.newDirectoryStream(fileStore.resultsDirectory(),
+                                      "*.zip")) {
 
-      var allFrameworks = new HashSet<String>();
-      var missingTestTypes = new HashSet<String>(Results.TEST_TYPES);
-      var dataPoints = new ArrayList<DataPointView>();
+      for (Path zipFile : zipFiles) {
+        Results results;
+        try {
+          results =
+              ZipFiles.readZipEntry(
+                  /* zipFile= */
+                  zipFile,
+                  /* entryPath= */
+                  "results.json",
+                  /* entryReader= */
+                  inputStream ->
+                      objectMapper.readValue(inputStream, Results.class));
+        } catch (IOException e) {
+          logger.warn(
+              "Ignoring results.zip file {} whose results.json file "
+                  + "could not be parsed",
+              zipFile, e);
+          continue;
+        }
 
-      try (DirectoryStream<Path> zipFiles =
-               Files.newDirectoryStream(fileStore.resultsDirectory(),
-                                        "*.zip")) {
+        if (results == null) {
+          logger.warn(
+              "Ignoring results.zip file {} that did not contain a "
+                  + "results.json file",
+              zipFile);
+          continue;
+        }
 
-        for (Path zipFile : zipFiles) {
-          Results results;
-          try {
-            results =
-                ZipFiles.readZipEntry(
-                    /* zipFile= */ zipFile,
-                    /* entryPath= */ "results.json",
-                    /* entryReader= */ inputStream ->
-                                           objectMapper.readValue(inputStream,
-                                                                  Results.class));
-          } catch (IOException e) {
-            logger.warn(
-                "Ignoring results.zip file {} whose results.json file "
-                    + "could not be parsed",
-                zipFile, e);
-            continue;
-          }
+        if (results.startTime == null)
+          // We could try to read the timestamp from somewhere else, but it's
+          // not worth the added complexity.
+          continue;
 
-          if (results == null) {
-            logger.warn(
-                "Ignoring results.zip file {} that did not contain a "
-                    + "results.json file",
-                zipFile);
-            continue;
-          }
+        allFrameworks.addAll(results.frameworks);
 
-          if (results.startTime == null)
-            // We could try to read the timestamp from somewhere else, but it's
-            // not worth the added complexity.
-            continue;
+        missingTestTypes.removeIf(
+            testType ->
+                results.rps(
+                    /* testType= */ testType,
+                    /* framework= */ selectedFramework)
+                != 0);
 
-          allFrameworks.addAll(results.frameworks);
+        double rps =
+            results.rps(
+                /* testType= */ selectedTestType,
+                /* framework= */ selectedFramework);
 
-          missingTestTypes.removeIf(
-              testType -> results.rps(/* testType= */ testType,
-                                      /* framework= */ selectedFramework)
-                          != 0);
-
-          double rps = results.rps(/* testType= */ selectedTestType,
-              /* framework= */ selectedFramework);
-
-          if (rps != 0) {
-            dataPoints.add(
-                new DataPointView(
-                    /* time= */ results.startTime,
-                    /* rps= */ rps));
-          }
+        if (rps != 0) {
+          dataPoints.add(
+              new DataPointView(
+                  /* time= */ results.startTime,
+                  /* rps= */ rps));
         }
       }
-
-      if (!allFrameworks.contains(selectedFramework)) {
-        exchange.setStatusCode(NOT_FOUND);
-        return;
-      }
-
-      dataPoints.sort(comparing(dataPoint -> dataPoint.time));
-
-      ImmutableList<TestTypeOptionView> testTypeOptions =
-          Results.TEST_TYPES
-              .stream()
-              .sorted()
-              .map(testType -> new TestTypeOptionView(
-                  /* testType= */ testType,
-                  /* isPresent= */ !missingTestTypes.contains(testType),
-                  /* isSelected= */ testType.equals(selectedTestType)))
-              .collect(toImmutableList());
-
-      ImmutableList<FrameworkOptionView> frameworkOptions =
-          allFrameworks.stream()
-                       .sorted(String.CASE_INSENSITIVE_ORDER)
-                       .map(framework -> new FrameworkOptionView(
-                           /* framework= */ framework,
-                           /* isSelected= */ framework.equals(selectedFramework)))
-                       .collect(toImmutableList());
-
-      var timelinePageView =
-          new TimelinePageView(
-              /* framework= */ selectedFramework,
-              /* testType= */ selectedTestType,
-              /* dataPoints= */ ImmutableList.copyOf(dataPoints),
-              /* testTypeOptions= */ testTypeOptions,
-              /* frameworkOptions= */ frameworkOptions);
-
-      String html = mustacheRenderer.render("timeline.mustache", timelinePageView);
-      exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
-      exchange.getResponseSender().send(html, UTF_8);
     }
 
-    // Matches "/gemini-mysql/fortune", for example.
-    private static final Pattern REQUEST_PATH_PATTERN =
-        Pattern.compile("^/(?<framework>[\\w-]+)/(?<testType>[\\w-]+)$");
+    if (!allFrameworks.contains(selectedFramework)) {
+      exchange.setStatusCode(NOT_FOUND);
+      return;
+    }
+
+    dataPoints.sort(comparing(dataPoint -> dataPoint.time));
+
+    ImmutableList<TestTypeOptionView> testTypeOptions =
+        Results.TEST_TYPES
+            .stream()
+            .sorted()
+            .map(
+                testType ->
+                    new TestTypeOptionView(
+                        /* testType= */ testType,
+                        /* isPresent= */ !missingTestTypes.contains(testType),
+                        /* isSelected= */ testType.equals(selectedTestType)))
+            .collect(toImmutableList());
+
+    ImmutableList<FrameworkOptionView> frameworkOptions =
+        allFrameworks
+            .stream()
+            .sorted(String.CASE_INSENSITIVE_ORDER)
+            .map(
+                framework ->
+                    new FrameworkOptionView(
+                        /* framework= */ framework,
+                        /* isSelected= */ framework.equals(selectedFramework)))
+            .collect(toImmutableList());
+
+    var timelinePageView =
+        new TimelinePageView(
+            /* framework= */ selectedFramework,
+            /* testType= */ selectedTestType,
+            /* dataPoints= */ ImmutableList.copyOf(dataPoints),
+            /* testTypeOptions= */ testTypeOptions,
+            /* frameworkOptions= */ frameworkOptions);
+
+    String html = mustacheRenderer.render("timeline.mustache", timelinePageView);
+    exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
+    exchange.getResponseSender().send(html, UTF_8);
   }
+
+  // Matches "/gemini-mysql/fortune", for example.
+  private static final Pattern REQUEST_PATH_PATTERN =
+      Pattern.compile("^/(?<framework>[\\w-]+)/(?<testType>[\\w-]+)$");
 }
