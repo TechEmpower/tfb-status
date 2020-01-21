@@ -94,8 +94,9 @@ public class ShareResultsPageHandler implements HttpHandler {
     } else if (GET.equals(exchange.getRequestMethod())) {
       pageView = new ShareResultsPageView();
     } else {
-      exchange.setStatusCode(METHOD_NOT_ALLOWED);
-      return;
+      // This should never happen if the above handlers chain is configured correctly.
+      throw new IllegalArgumentException(
+          "Unsupported method: " + exchange.getRequestMethod());
     }
 
     String html = mustacheRenderer.render("share-results.mustache", pageView);

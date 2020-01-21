@@ -44,7 +44,6 @@ public final class ApplicationConfigFactory {
 
     if (path == null) {
       logger.info("No configuration file; using default configuration");
-
       return ApplicationConfig.defaultConfig();
     }
 

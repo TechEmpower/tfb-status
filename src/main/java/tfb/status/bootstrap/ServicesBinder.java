@@ -93,6 +93,5 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(LastSeenCommitHandler.class);
     addActiveDescriptor(ShareResultsHandler.class);
     addActiveDescriptor(ShareResultsPageHandler.class);
-//>>>>>>> master
   }
 }

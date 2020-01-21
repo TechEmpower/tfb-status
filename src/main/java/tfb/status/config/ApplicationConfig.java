@@ -189,7 +189,7 @@ public final class ApplicationConfig {
         /* urlsConfig= */
         Objects.requireNonNullElseGet(
             urls,
-            () -> new UrlsConfig(null, null)));
+            () -> UrlsConfig.defaultConfig()));
   }
 
   public static ApplicationConfig defaultConfig() {

@@ -70,10 +70,12 @@ public final class FileStoreConfig {
             root,
             DEFAULT_ROOT),
 
+        /* maxShareDirectorySizeBytes= */
         Objects.requireNonNullElse(
             maxShareDirectorySizeBytes,
             DEFAULT_MAX_SHARE_DIRECTORY_SIZE_BYTES),
 
+        /* maxShareFileSizeBytes= */
         Objects.requireNonNullElse(
             maxShareFileSizeBytes,
             DEFAULT_MAX_SHARE_FILE_SIZE_BYTES));

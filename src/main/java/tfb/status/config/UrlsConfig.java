@@ -15,17 +15,9 @@ public class UrlsConfig {
 
   public final String teWeb;
 
-  @JsonCreator
-  public UrlsConfig(
-
-      @JsonProperty(value = "tfbStatus", required = true)
-      @Nullable String tfbStatus,
-
-      @JsonProperty(value = "teWeb", required = true)
-      @Nullable String teWeb) {
-
-    this.tfbStatus = Objects.requireNonNullElse(tfbStatus, DEFAULT_TFB_STATUS);
-    this.teWeb = Objects.requireNonNullElse(teWeb, DEFAULT_TE_WEB);
+  public UrlsConfig(String tfbStatus, String teWeb) {
+    this.tfbStatus = Objects.requireNonNull(tfbStatus);
+    this.teWeb = Objects.requireNonNull(teWeb);
   }
 
   @Override
@@ -51,4 +43,23 @@ public class UrlsConfig {
 
   private static final String DEFAULT_TFB_STATUS = "http://localhost:8080";
   private static final String DEFAULT_TE_WEB = "http://localhost:3000";
+
+  @JsonCreator
+  public static UrlsConfig create(
+      @JsonProperty(value = "tfbStatus", required = true)
+      @Nullable String tfbStatus,
+
+      @JsonProperty(value = "teWeb", required = true)
+      @Nullable String teWeb) {
+    return new UrlsConfig(
+        /* tfbStatus= */
+        Objects.requireNonNullElse(tfbStatus, DEFAULT_TFB_STATUS),
+
+        /* teWeb= */
+        Objects.requireNonNullElse(teWeb, DEFAULT_TE_WEB));
+  }
+
+  public static UrlsConfig defaultConfig() {
+    return create(null, null);
+  }
 }

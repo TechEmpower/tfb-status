@@ -70,9 +70,9 @@ public class ShareResultsHandler implements HttpHandler {
   public void handleRequest(HttpServerExchange exchange) throws Exception {
     HttpString method = exchange.getRequestMethod();
 
-    if (method.equals(GET)) {
+    if (GET.equals(method)) {
       handleView(exchange);
-    } else if (method.equals(POST)) {
+    } else if (POST.equals(method)) {
       handleUpload(exchange);
     } else {
       // This should never happen if the above handlers chain is configured correctly.

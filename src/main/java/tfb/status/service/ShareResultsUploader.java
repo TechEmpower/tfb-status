@@ -40,6 +40,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
 /**
  * A service responsible for handling public uploads of results.json files.
@@ -224,6 +225,23 @@ public class ShareResultsUploader {
     }
   }
 
+  /**
+   * Read an uploaded results file from the share directory of the specified name.
+   * This is intended to read files created through one of this class's upload
+   * methods. Results file uploads are stored in zip files of the same name, and
+   * should always be modified or access through this class.
+   *
+   * @param jsonFileName The requested json file name, of the form
+   *                     "47f93e49-2ffe-4b8e-828a-25513b7d160e.json".
+   * @param ifPresent A consumer to be called with the path to the zip file entry
+   *                  for the json file. If this is invoked, the given path is
+   *                  guaranteed to exist and point to the requested json file,
+   *                  meaning it can be read without further checking.
+   * @param ifAbsent A runnable that is invoked if the upload cannot be found for
+   *                 any reason.
+   * @throws IOException If an error occurs reading or consuming the zip file.
+   * @see #upload(Path)
+   */
   public void getUpload(String jsonFileName,
                         ShareResultsConsumer ifPresent,
                         Runnable ifAbsent)
@@ -274,6 +292,12 @@ public class ShareResultsUploader {
     }
   }
 
+  /**
+   * A consumer to be called with the path to the zip file entry for the json
+   * file. If this is invoked, the given path is guaranteed to exist and
+   * point to the requested json file, meaning it can be read without further
+   * checking.
+   */
   @FunctionalInterface
   public interface ShareResultsConsumer {
     void accept(Path zipEntry) throws IOException;
