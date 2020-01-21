@@ -17,6 +17,7 @@ import tfb.status.config.FileStoreConfig;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.config.MustacheConfig;
 import tfb.status.config.RunProgressMonitorConfig;
+import tfb.status.config.UrlsConfig;
 import tfb.status.handler.AboutPageHandler;
 import tfb.status.handler.AssetsHandler;
 import tfb.status.handler.AttributesPageHandler;
@@ -30,6 +31,7 @@ import tfb.status.handler.RobotsHandler;
 import tfb.status.handler.RootHandler;
 import tfb.status.handler.SaveAttributesHandler;
 import tfb.status.handler.ShareResultsHandler;
+import tfb.status.handler.ShareResultsPageHandler;
 import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
@@ -40,6 +42,7 @@ import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.service.RunProgressMonitor;
+import tfb.status.service.ShareResultsUploader;
 import tfb.status.service.TaskScheduler;
 
 /**
@@ -87,6 +90,10 @@ public final class ServicesBinder extends AbstractBinder {
     bindFactory(EmailConfigFactory.class, Singleton.class)
         .to(new TypeLiteral<Optional<EmailConfig>>() {})
         .in(Singleton.class);
+
+    bindFactory(UrlsConfigFactory.class, Singleton.class)
+            .to(UrlsConfig.class)
+            .in(Singleton.class);
 
     bindFactory(RunProgressMonitorConfigFactory.class, Singleton.class)
         .to(RunProgressMonitorConfig.class)
@@ -155,6 +162,10 @@ public final class ServicesBinder extends AbstractBinder {
         .to(HttpHandler.class)
         .in(Singleton.class);
 
+    bindAsContract(ShareResultsPageHandler.class)
+            .to(HttpHandler.class)
+            .in(Singleton.class);
+
     bindAsContract(Authenticator.class).in(Singleton.class);
     bindAsContract(MustacheRenderer.class).in(Singleton.class);
     bindAsContract(HomeResultsReader.class).in(Singleton.class);
@@ -163,6 +174,7 @@ public final class ServicesBinder extends AbstractBinder {
     bindAsContract(FileStore.class).in(Singleton.class);
     bindAsContract(RunProgressMonitor.class).in(Singleton.class);
     bindAsContract(TaskScheduler.class).in(Singleton.class);
+    bindAsContract(ShareResultsUploader.class).in(Singleton.class);
 
     bindFactory(ObjectMapperFactory.class, Singleton.class)
         .to(ObjectMapper.class)

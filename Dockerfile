@@ -14,7 +14,7 @@ FROM maven:3.6.3-jdk-13 AS base_build_image
 # jdk.zipfs          jdk.nio.zipfs.ZipFileSystemProvider     tfb.status.util.ZipFiles
 # ------------------------------------------------------------------------------
 FROM base_build_image AS build_jre
-RUN jlink --add-modules java.datatransfer,java.logging,java.management,java.naming,java.xml,jdk.crypto.ec,jdk.unsupported,jdk.zipfs \
+RUN jlink --add-modules java.datatransfer,java.logging,java.management,java.naming,java.xml,jdk.crypto.ec,jdk.unsupported,jdk.zipfs,jdk.jdwp.agent \
           --output /opt/jre
 
 # Trick Maven into downloading our dependencies before we copy over our "src"

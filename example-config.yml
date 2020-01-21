@@ -32,6 +32,8 @@
 
 #fileStore:
 #  root: managed_files
+#  max_share_directory_size_bytes: 1000000000
+#  max_share_file_size_bytes: 5000000
 
 #email:
 #  host: mail.techempower.com
@@ -42,3 +44,7 @@
 #runProgressMonitor:
 #  environmentTimeoutSeconds: 21600
 #  maxEnvironments: 5
+
+#urls:
+#  tfbStatus: https://tfb-status.techempower.com
+#  teWeb: https://www.techempower.com

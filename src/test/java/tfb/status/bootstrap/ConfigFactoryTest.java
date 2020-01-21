@@ -92,7 +92,7 @@ public final class ConfigFactoryTest {
     ApplicationConfig config = configFactory.provide();
 
     assertEquals(
-        new ApplicationConfig(null, null, null, null, null, null),
+        new ApplicationConfig(null, null, null, null, null, null, null),
         config);
   }
 
@@ -122,7 +122,7 @@ public final class ConfigFactoryTest {
     ApplicationConfig config = configFactory.provide();
 
     assertEquals(
-        new ApplicationConfig(null, null, null, null, null, null),
+        new ApplicationConfig(null, null, null, null, null, null, null),
         config);
   }
 

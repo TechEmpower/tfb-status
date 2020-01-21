@@ -46,7 +46,7 @@ final class ApplicationConfigFactory implements Factory<ApplicationConfig> {
   public ApplicationConfig provide() {
     if (path == null) {
       logger.info("No configuration file; using default configuration");
-      return new ApplicationConfig(null, null, null, null, null, null);
+      return new ApplicationConfig(null, null, null, null, null, null, null);
     }
 
     Path yamlFile = fileSystem.getPath(path);
@@ -65,7 +65,7 @@ final class ApplicationConfigFactory implements Factory<ApplicationConfig> {
 
     if (tree.isEmpty()) {
       logger.info("Empty configuration file; using default configuration");
-      return new ApplicationConfig(null, null, null, null, null, null);
+      return new ApplicationConfig(null, null, null, null, null, null, null);
     }
 
     try {

@@ -47,6 +47,11 @@ public final class ApplicationConfig {
    */
   public final @Nullable EmailConfig email;
 
+  /**
+   * See {@link UrlsConfig}.
+   */
+  public final UrlsConfig urls;
+
   @JsonCreator
   public ApplicationConfig(
 
@@ -64,6 +69,9 @@ public final class ApplicationConfig {
 
       @JsonProperty(value = "email", required = false)
       @Nullable EmailConfig email,
+
+      @JsonProperty(value = "urls", required = false)
+      @Nullable UrlsConfig urls,
 
       @JsonProperty(value = "runProgressMonitor", required = false)
       @Nullable RunProgressMonitorConfig runProgressMonitor) {
@@ -86,9 +94,14 @@ public final class ApplicationConfig {
     this.fileStore =
         Objects.requireNonNullElseGet(
             fileStore,
-            () -> new FileStoreConfig(null));
+            () -> new FileStoreConfig(null, null, null));
 
     this.email = email;
+
+    this.urls =
+        Objects.requireNonNullElseGet(
+          urls,
+          () -> new UrlsConfig(null, null));
 
     this.runProgressMonitor =
         Objects.requireNonNullElseGet(
@@ -109,7 +122,8 @@ public final class ApplicationConfig {
           && this.mustache.equals(that.mustache)
           && this.fileStore.equals(that.fileStore)
           && this.runProgressMonitor.equals(that.runProgressMonitor)
-          && Objects.equals(this.email, that.email);
+          && Objects.equals(this.email, that.email)
+          && this.urls.equals(that.urls);
     }
   }
 
@@ -122,6 +136,7 @@ public final class ApplicationConfig {
     hash = 31 * hash + fileStore.hashCode();
     hash = 31 * hash + runProgressMonitor.hashCode();
     hash = 31 * hash + Objects.hashCode(email);
+    hash = 31 * hash + urls.hashCode();
     return hash;
   }
 }

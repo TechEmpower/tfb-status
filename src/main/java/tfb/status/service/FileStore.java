@@ -1,6 +1,8 @@
 package tfb.status.service;
 
 import com.google.common.io.MoreFiles;
+
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -54,6 +56,33 @@ public final class FileStore {
 
     announcementFile = root.resolve("announcement.txt");
     createFileIfNecessary(announcementFile);
+  }
+
+  /**
+   * Calculate the size of the specified directory in bytes.
+   */
+  public static long directorySizeBytes(File directory) {
+    Objects.requireNonNull(directory);
+
+    if (!Files.isDirectory(directory.toPath())) {
+      throw new IllegalArgumentException(
+          "The specified File is not a directory: " + directory.toString());
+    }
+
+    long length = 0;
+    File[] files = directory.listFiles();
+
+    if (files != null) {
+      for (File file : files) {
+        if (file.isFile()) {
+          length += file.length();
+        } else {
+          length += directorySizeBytes(file);
+        }
+      }
+    }
+
+    return length;
   }
 
   private static void createDirectoryIfNecessary(Path directory) throws IOException {
