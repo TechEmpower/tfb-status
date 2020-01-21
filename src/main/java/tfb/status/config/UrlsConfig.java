@@ -8,11 +8,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * Configuration for various URLs that the application needs to know about.
+ * These are generally used to generate fully qualified URLs pointing to this
+ * or other sites.
+ */
 @Immutable
 @Singleton
 public class UrlsConfig {
+  /**
+   * The URL of this application, containing the protocol and domain.
+   * Should not end with a slash.
+   */
   public final String tfbStatus;
 
+  /**
+   * The URL of the TechEmpower website, containing the protocol and domain.
+   * Should not end with a slash.
+   */
   public final String teWeb;
 
   public UrlsConfig(String tfbStatus, String teWeb) {

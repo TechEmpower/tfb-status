@@ -12,6 +12,7 @@ FROM maven:3.6.3-jdk-13 AS base_build_image
 # jdk.crypto.ec      sun.security.ec.SunEC                   jakarta.mail (for STARTTLS)
 # jdk.unsupported    sun.misc.Unsafe                         caffeine
 # jdk.zipfs          jdk.nio.zipfs.ZipFileSystemProvider     tfb.status.util.ZipFiles
+# jdk.jdwp.agent                                             remote debugging
 # ------------------------------------------------------------------------------
 FROM base_build_image AS build_jre
 RUN jlink --add-modules java.datatransfer,java.logging,java.management,java.naming,java.xml,jdk.crypto.ec,jdk.unsupported,jdk.zipfs,jdk.jdwp.agent \

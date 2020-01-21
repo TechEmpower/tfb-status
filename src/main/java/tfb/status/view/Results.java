@@ -169,7 +169,7 @@ public final class Results {
       @JsonProperty(value = "git", required = false)
       @Nullable GitInfo git,
 
-      @JsonProperty(value = "test_metadata", required = false)
+      @JsonProperty(value = "testMetadata", required = false)
       @Nullable ImmutableList<TestDefinition> testMetadata) {
 
     this.uuid = uuid;

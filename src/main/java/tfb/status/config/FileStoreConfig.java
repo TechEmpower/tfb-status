@@ -1,11 +1,13 @@
 package tfb.status.config;
 
+import java.util.Objects;
+import javax.inject.Singleton;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
-import java.util.Objects;
-import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import tfb.status.service.FileStore;
 
 /**
  * The configuration for miscellaneous files managed by this application.
@@ -18,8 +20,15 @@ public final class FileStoreConfig {
    */
   public final String root;
 
+  /**
+   * The maximum size of the {@link FileStore#shareDirectory()} in bytes.
+   */
   public final long maxShareDirectorySizeBytes;
 
+  /**
+   * The maximum size of a single file (before zip compression) that can be
+   * uploaded to the {@link FileStore#shareDirectory()} in bytes.
+   */
   public final long maxShareFileSizeBytes;
 
   public FileStoreConfig(String root,

@@ -108,14 +108,14 @@ public class ShareResultsUploader {
   }
 
   /**
-   * Upload the given file containing raw results JSON. This method first validates
-   * the contents of the file, ensuring that it de-serializes to a {@link Results}
-   * object successfully, and that it contains a non-empty {@link Results#testMetadata}.
-   * If validation fails a {@link ShareResultsUploadException} is thrown. This also
-   * validates the size requirements: that the given file isn't too large, and that
-   * the share directory is not full. Otherwise this will create a new zip file in
-   * the {@link FileStore#shareDirectory()} containing the JSON file and return
-   * information about it.
+   * Upload the given file containing raw results JSON. This first validates the
+   * size requirements: that the given file isn't too large, and that the share
+   * directory is not full. This method then validates the contents of the file,
+   * ensuring that it de-serializes to a {@link Results} object successfully,
+   * and that it contains a non-empty {@link Results#testMetadata}. If
+   * validation fails a {@link ShareResultsUploadException} is thrown. Otherwise
+   * this will create a new zip file in the {@link FileStore#shareDirectory()}
+   * containing the JSON file and return information about it.
    *
    * @param tempFile The file containing raw results JSON. After this method returns,
    *                 this file is guaranteed to be deleted.
@@ -229,7 +229,7 @@ public class ShareResultsUploader {
    * Read an uploaded results file from the share directory of the specified name.
    * This is intended to read files created through one of this class's upload
    * methods. Results file uploads are stored in zip files of the same name, and
-   * should always be modified or access through this class.
+   * should always be modified or accessed through this class.
    *
    * @param jsonFileName The requested json file name, of the form
    *                     "47f93e49-2ffe-4b8e-828a-25513b7d160e.json".

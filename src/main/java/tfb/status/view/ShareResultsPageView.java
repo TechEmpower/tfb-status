@@ -8,6 +8,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * A view to hold information about how to render the share results upload page.
+ * Tracks the state of the upload form as well as any upload errors or successes.
+ */
 @Immutable
 public class ShareResultsPageView {
   @Nullable public final String shareType;
