@@ -29,9 +29,15 @@ import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.Methods.POST;
-import static io.undertow.util.StatusCodes.METHOD_NOT_ALLOWED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+/**
+ * The standalone paste bin style page for sharing results files.
+ * Allows anonymous users to upload a results.json file or paste in
+ * the contents of a results.json file in order to share it.
+ *
+ * @see ShareResultsUploader
+ */
 @Singleton
 public class ShareResultsPageHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;
