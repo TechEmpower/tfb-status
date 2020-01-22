@@ -1,28 +1,5 @@
 package tfb.status.handler;
 
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Objects;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteStreams;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.DisableCacheHandler;
-import io.undertow.server.handlers.SetHeaderHandler;
-import io.undertow.util.HttpString;
-import tfb.status.handler.routing.PrefixPath;
-import tfb.status.hk2.extensions.Provides;
-import tfb.status.service.ShareResultsUploader;
-import tfb.status.undertow.extensions.HttpHandlers;
-import tfb.status.undertow.extensions.MethodHandler;
-import tfb.status.view.Results;
-import tfb.status.view.ShareResultsJsonView;
-
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
@@ -32,6 +9,28 @@ import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.READ;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.ByteStreams;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.DisableCacheHandler;
+import io.undertow.server.handlers.SetHeaderHandler;
+import io.undertow.util.HttpString;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import tfb.status.handler.routing.PrefixPath;
+import tfb.status.hk2.extensions.Provides;
+import tfb.status.service.ShareResultsUploader;
+import tfb.status.undertow.extensions.HttpHandlers;
+import tfb.status.undertow.extensions.MethodHandler;
+import tfb.status.view.Results;
+import tfb.status.view.ShareResultsJsonView;
 
 /**
  * Handles requests to share results.json files. This is intended for

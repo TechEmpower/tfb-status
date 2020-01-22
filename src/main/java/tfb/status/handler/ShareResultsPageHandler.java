@@ -1,12 +1,10 @@
 package tfb.status.handler;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import static com.google.common.net.MediaType.HTML_UTF_8;
+import static io.undertow.util.Headers.CONTENT_TYPE;
+import static io.undertow.util.Methods.GET;
+import static io.undertow.util.Methods.POST;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -16,6 +14,13 @@ import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.server.handlers.form.MultiPartParserDefinition;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.MustacheRenderer;
@@ -24,12 +29,6 @@ import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.ShareResultsJsonView;
 import tfb.status.view.ShareResultsPageView;
-
-import static com.google.common.net.MediaType.HTML_UTF_8;
-import static io.undertow.util.Headers.CONTENT_TYPE;
-import static io.undertow.util.Methods.GET;
-import static io.undertow.util.Methods.POST;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * The standalone paste bin style page for sharing results files.

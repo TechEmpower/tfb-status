@@ -1,7 +1,6 @@
 package tfb.status.service;
 
 import com.google.common.io.MoreFiles;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;

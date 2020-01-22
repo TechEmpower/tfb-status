@@ -1,8 +1,7 @@
 package tfb.status.view;
 
-import java.util.Objects;
-
 import com.google.errorprone.annotations.Immutable;
+import java.util.Objects;
 
 /**
  * Represents a successful JSON response when a user uploads a result.json

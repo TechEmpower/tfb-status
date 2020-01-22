@@ -1,5 +1,13 @@
 package tfb.status.service;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.WRITE;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.MoreFiles;
 import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,18 +20,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.MoreFiles;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,15 +34,6 @@ import tfb.status.config.UrlsConfig;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 import tfb.status.view.ShareResultsJsonView;
-
-import static com.google.common.net.MediaType.JSON_UTF_8;
-import static io.undertow.util.Headers.CONTENT_TYPE;
-import static io.undertow.util.StatusCodes.NOT_FOUND;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
 /**
  * A service responsible for handling public uploads of results.json files.
