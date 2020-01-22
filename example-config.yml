@@ -30,8 +30,8 @@
 
 #fileStore:
 #  root: managed_files
-#  max_share_directory_size_bytes: 1000000000
-#  max_share_file_size_bytes: 5000000
+#  maxShareDirectorySizeBytes: 1000000000
+#  maxShareFileSizeBytes: 5000000
 
 #email:
 #  host: mail.techempower.com

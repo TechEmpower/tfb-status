@@ -67,10 +67,10 @@ public final class FileStoreConfig {
       @JsonProperty(value = "root", required = false)
       @Nullable String root,
 
-      @JsonProperty(value = "max_share_directory_size_bytes", required = false)
+      @JsonProperty(value = "maxShareDirectorySizeBytes", required = false)
       @Nullable Long maxShareDirectorySizeBytes,
 
-      @JsonProperty(value = "max_share_file_size_bytes", required = false)
+      @JsonProperty(value = "maxShareFileSizeBytes", required = false)
       @Nullable Long maxShareFileSizeBytes) {
 
     return new FileStoreConfig(
