@@ -42,7 +42,7 @@ import tfb.status.view.ShareResultsJsonView;
  * JSON and also visualize it on the TechEmpower benchmarks site.
  */
 @Singleton
-public class ShareResultsHandler implements HttpHandler {
+public final class ShareResultsHandler implements HttpHandler {
   private final ObjectMapper objectMapper;
   private final ShareResultsUploader shareResultsUploader;
 

@@ -42,7 +42,7 @@ import tfb.status.view.ShareResultsJsonView;
  * should be done through this service.
  */
 @Singleton
-public class ShareResultsUploader {
+public final class ShareResultsUploader {
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final FileStoreConfig fileStoreConfig;
   private final UrlsConfig urlsConfig;
@@ -279,7 +279,7 @@ public class ShareResultsUploader {
    * The {@link #getMessage()} should be a human-readable message indicating
    * the reason.
    */
-  public static class ShareResultsUploadException extends Exception {
+  public static final class ShareResultsUploadException extends Exception {
     ShareResultsUploadException(String message) {
       super(message);
     }

@@ -38,7 +38,7 @@ import tfb.status.view.ShareResultsPageView;
  * @see ShareResultsUploader
  */
 @Singleton
-public class ShareResultsPageHandler implements HttpHandler {
+public final class ShareResultsPageHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;
   private final ShareResultsUploader shareResultsUploader;
 

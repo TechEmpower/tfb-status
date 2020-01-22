@@ -14,7 +14,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 @Immutable
 @Singleton
-public class UrlsConfig {
+public final class UrlsConfig {
   /**
    * The origin of this application, containing the protocol and domain.
    * Should not end with a slash.

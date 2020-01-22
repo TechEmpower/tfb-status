@@ -9,7 +9,7 @@ import java.util.Objects;
  * information about the file and how to view it.
  */
 @Immutable
-public class ShareResultsJsonView {
+public final class ShareResultsJsonView {
   public final String fileName;
   public final String resultsUrl;
   public final String visualizeResultsUrl;

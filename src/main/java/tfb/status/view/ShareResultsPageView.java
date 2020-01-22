@@ -12,7 +12,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * Tracks the state of the upload form as well as any upload errors or successes.
  */
 @Immutable
-public class ShareResultsPageView {
+public final class ShareResultsPageView {
   @Nullable public final String shareType;
   @Nullable public final String pasteResultsJson;
   @Nullable public final ImmutableList<String> errors;
