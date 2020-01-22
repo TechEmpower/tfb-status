@@ -34,13 +34,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.READ;
 
 /**
- * A handler for uploading and viewing results.json files. This is intended for
- * anyone to use, and requires no authentication. POST fully formed and completed
- * results.json files to this handler in order to upload them. The JSON must conform
- * to {@link Results} such that it can deserialize without error, and must have a
- * non-empty {@link Results#testMetadata} array. Upon success, JSON is returned
- * that contains info about how to access the raw JSON and also visualize it on
- * the TechEmpower benchmarks site.
+ * Handles requests to share results.json files. This is intended for
+ * anyone to use, and requires no authentication. POST fully formed and
+ * completed results.json files to this handler in order to upload them. The
+ * JSON must conform to {@link Results} such that it can deserialize without
+ * error, and must have a non-empty {@link Results#testMetadata} array. Upon
+ * success, JSON is returned that contains info about how to access the raw
+ * JSON and also visualize it on the TechEmpower benchmarks site.
  */
 @Singleton
 public class ShareResultsHandler implements HttpHandler {

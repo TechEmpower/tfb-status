@@ -6,7 +6,7 @@ services:
       args:
         SKIP_TESTS: "true"
     ports:
-      - "127.0.0.1:8080:80"
+      - "127.0.0.1:80:80"
       - "127.0.0.1:5005:5005"
     volumes:
       - ./managed_files:/tfbstatus/managed_files

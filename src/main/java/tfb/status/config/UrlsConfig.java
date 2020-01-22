@@ -17,13 +17,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 @Singleton
 public class UrlsConfig {
   /**
-   * The URL of this application, containing the protocol and domain.
+   * The origin of this application, containing the protocol and domain.
    * Should not end with a slash.
    */
   public final String tfbStatus;
 
   /**
-   * The URL of the TechEmpower website, containing the protocol and domain.
+   * The origin of the TechEmpower website, containing the protocol and domain.
    * Should not end with a slash.
    */
   public final String teWeb;
@@ -54,15 +54,15 @@ public class UrlsConfig {
     return hash;
   }
 
-  private static final String DEFAULT_TFB_STATUS = "http://localhost:8080";
-  private static final String DEFAULT_TE_WEB = "http://localhost:3000";
+  private static final String DEFAULT_TFB_STATUS = "https://tfb-status.techempower.com";
+  private static final String DEFAULT_TE_WEB = "https://www.techempower.com";
 
   @JsonCreator
   public static UrlsConfig create(
-      @JsonProperty(value = "tfbStatus", required = true)
+      @JsonProperty(value = "tfbStatus", required = false)
       @Nullable String tfbStatus,
 
-      @JsonProperty(value = "teWeb", required = true)
+      @JsonProperty(value = "teWeb", required = false)
       @Nullable String teWeb) {
     return new UrlsConfig(
         /* tfbStatus= */
