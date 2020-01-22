@@ -7,15 +7,13 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.CharSource;
 import com.google.common.io.MoreFiles;
-import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URLEncoder;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -61,19 +59,19 @@ public final class ShareResultsUploader {
   }
 
   /**
-   * Upload the given raw results JSON string. Creates a {@link ReadableByteChannel}
-   * from the string and passes it to {@link #upload(ReadableByteChannel)}.
+   * Upload the given raw results JSON string. Creates a {@link InputStream}
+   * from the string and passes it to {@link #upload(InputStream)}.
    *
    * @param resultsJson The raw results JSON.
-   * @see #upload(ReadableByteChannel)
+   * @see #upload(InputStream)
    */
   public ShareResultsJsonView upload(String resultsJson)
           throws IOException, ShareResultsUploadException {
     Objects.requireNonNull(resultsJson);
 
-    try (InputStream is = new ByteArrayInputStream(resultsJson.getBytes(UTF_8));
-         ReadableByteChannel in = Channels.newChannel(is)) {
-      return upload(in);
+    try (InputStream is =
+             CharSource.wrap(resultsJson).asByteSource(UTF_8).openStream()) {
+      return upload(is);
     }
   }
 
@@ -84,7 +82,7 @@ public final class ShareResultsUploader {
    * @param in The byte channel containing the raw results JSON.
    * @see #upload(Path)
    */
-  public ShareResultsJsonView upload(ReadableByteChannel in)
+  public ShareResultsJsonView upload(InputStream in)
       throws IOException, ShareResultsUploadException {
     Objects.requireNonNull(in);
 
@@ -92,8 +90,8 @@ public final class ShareResultsUploader {
     Path tempFile = Files.createTempFile(/* prefix= */ "TFB_Share_Upload",
         /* suffix= */ ".json");
 
-    try (WritableByteChannel out =
-             Files.newByteChannel(tempFile, WRITE, APPEND)) {
+    try (OutputStream out =
+             Files.newOutputStream(tempFile, WRITE, APPEND)) {
       ByteStreams.copy(in, out);
     }
 
@@ -110,10 +108,10 @@ public final class ShareResultsUploader {
    * this will create a new zip file in the {@link FileStore#shareDirectory()}
    * containing the JSON file and return information about it.
    *
-   * @param tempFile The file containing raw results JSON. After this method returns,
-   *                 this file is guaranteed to be deleted.
-   * @return A view containing information about the new file if validation passes
-   * and the new zip file was successfully created.
+   * @param tempFile The file containing raw results JSON. After this method
+   *                 returns, this file is guaranteed to be deleted.
+   * @return A view containing information about the new file if validation
+   * passes and the new zip file was successfully created.
    * @throws IOException If any network errors occur.
    * @throws ShareResultsUploadException If validation of the JSON fails.
    */
@@ -165,8 +163,8 @@ public final class ShareResultsUploader {
 
   /**
    * Return null if the JSON file successfully de-serializes to {@link Results}
-   * and has non-empty {@link Results#testMetadata}. Otherwise returns a relevant
-   * error message.
+   * and has non-empty {@link Results#testMetadata}. Otherwise returns a
+   * relevant error message.
    */
   private @Nullable String validateNewFile(Path newJsonFile) {
     Objects.requireNonNull(newJsonFile);
@@ -214,24 +212,26 @@ public final class ShareResultsUploader {
     long shareDirectorySize = FileStore.directorySizeBytes(
         fileStore.shareDirectory().toFile());
     if (shareDirectorySize >= fileStoreConfig.maxShareDirectorySizeBytes) {
-      throw new ShareResultsUploadException("Share uploads has reached max capacity.");
+      throw new ShareResultsUploadException(
+          "Share uploads has reached max capacity.");
     }
   }
 
   /**
-   * Read an uploaded results file from the share directory of the specified name.
-   * This is intended to read files created through one of this class's upload
-   * methods. Results file uploads are stored in zip files of the same name, and
-   * should always be modified or accessed through this class.
+   * Read an uploaded results file from the share directory of the specified
+   * name. This is intended to read files created through one of this class's
+   * upload methods. Results file uploads are stored in zip files of the same
+   * name, and should always be modified or accessed through this class.
    *
    * @param jsonFileName The requested json file name, of the form
    *                     "47f93e49-2ffe-4b8e-828a-25513b7d160e.json".
-   * @param ifPresent A consumer to be called with the path to the zip file entry
-   *                  for the json file. If this is invoked, the given path is
-   *                  guaranteed to exist and point to the requested json file,
-   *                  meaning it can be read without further checking.
-   * @param ifAbsent A runnable that is invoked if the upload cannot be found for
-   *                 any reason.
+   * @param ifPresent A consumer to be called with the path to the zip file
+   *                  entry for the json file. If this is invoked, the given
+   *                  path is guaranteed to exist and point to the requested
+   *                  json file, meaning it can be read without further
+   *                  checking.
+   * @param ifAbsent A runnable that is invoked if the upload cannot be found
+   *                 for any reason.
    * @throws IOException If an error occurs reading or consuming the zip file.
    * @see #upload(Path)
    */
@@ -244,7 +244,7 @@ public final class ShareResultsUploader {
     Objects.requireNonNull(ifPresent);
     Objects.requireNonNull(ifAbsent);
 
-    Matcher matcher = UUID_JSON_FILE.matcher(jsonFileName);
+    Matcher matcher = JSON_FILE.matcher(jsonFileName);
     if (!matcher.matches()) {
       ifAbsent.run();
       return;
@@ -272,7 +272,8 @@ public final class ShareResultsUploader {
         /* ifAbsent= */ ifAbsent);
   }
 
-  private static final Pattern UUID_JSON_FILE = Pattern.compile("^([^./]+)(\\.json)");
+  private static final Pattern JSON_FILE =
+      Pattern.compile("^([^./]+)(\\.json)");
 
   /**
    * An exception indicating that an error occurred during share file upload.

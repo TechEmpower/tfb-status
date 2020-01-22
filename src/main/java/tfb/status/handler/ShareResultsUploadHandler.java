@@ -63,7 +63,7 @@ public final class ShareResultsUploadHandler implements HttpHandler {
   public void handleRequest(HttpServerExchange exchange) throws Exception {
     ShareResultsJsonView success;
     try {
-      success = shareResultsUploader.upload(exchange.getRequestChannel());
+      success = shareResultsUploader.upload(exchange.getInputStream());
     } catch (ShareResultsUploader.ShareResultsUploadException e) {
       logger.info("Error uploading share results", e);
       exchange.setStatusCode(BAD_REQUEST);

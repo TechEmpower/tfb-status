@@ -11,8 +11,8 @@ import com.google.common.io.ByteStreams;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -66,8 +66,8 @@ public class ShareResultsViewHandler implements HttpHandler {
           exchange.getResponseHeaders().put(
               CONTENT_TYPE, JSON_UTF_8.toString());
 
-          try (ReadableByteChannel in = Files.newByteChannel(zipEntry, READ)) {
-            WritableByteChannel out = exchange.getResponseChannel();
+          try (InputStream in = Files.newInputStream(zipEntry, READ)) {
+            OutputStream out = exchange.getOutputStream();
             ByteStreams.copy(in, out);
           }
         },
