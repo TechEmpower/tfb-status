@@ -13,8 +13,9 @@ import tfb.status.handler.LastSeenCommitHandler;
 import tfb.status.handler.RobotsHandler;
 import tfb.status.handler.RootHandler;
 import tfb.status.handler.SaveAttributesHandler;
-import tfb.status.handler.ShareResultsHandler;
 import tfb.status.handler.ShareResultsPageHandler;
+import tfb.status.handler.ShareResultsUploadHandler;
+import tfb.status.handler.ShareResultsViewHandler;
 import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
@@ -91,7 +92,8 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(AttributesPageHandler.class);
     addActiveDescriptor(SaveAttributesHandler.class);
     addActiveDescriptor(LastSeenCommitHandler.class);
-    addActiveDescriptor(ShareResultsHandler.class);
+    addActiveDescriptor(ShareResultsUploadHandler.class);
+    addActiveDescriptor(ShareResultsViewHandler.class);
     addActiveDescriptor(ShareResultsPageHandler.class);
   }
 }

@@ -147,7 +147,7 @@ public final class ShareResultsUploader {
 
       String resultsUrl =
           urlsConfig.tfbStatus
-              + "/share-results/"
+              + "/share-results/view/"
               + URLEncoder.encode(fileName, UTF_8);
       String visualizeResultsUrl =
           urlsConfig.teWeb
