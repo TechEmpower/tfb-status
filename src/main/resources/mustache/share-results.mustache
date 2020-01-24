@@ -20,35 +20,31 @@
 
 <hr/>
 
-{{#success}}
+<div class="success-content">
   <h3>Success!</h3>
   <p>
     The raw results.json can be accessed at
-    <a href="{{resultsUrl}}" target="_blank">
-      {{resultsUrl}}
-    </a>
+    <a class="success-results-json-url" href="" target="_blank"></a>
   </p>
   <p>
     The results can be visualized at
-    <a href="{{visualizeResultsUrl}}" target="_blank">
-      {{visualizeResultsUrl}}
-    </a>
+    <a class="success-visualize-results-url" href="" target="_blank"></a>
   </p>
   <p>
     <strong>Important:</strong> Be sure to save these URLs as they cannot
     be retrieved once you leave this page!
   </p>
   <hr/>
-{{/success}}
+</div>
 
 <form id="share-results-form" method="post" action="" enctype="multipart/form-data">
   <p>
     <label>
-      <input type="radio" name="share-type" value="paste" {{shareTypeValues.paste}}/>
+      <input type="radio" name="share-type" value="paste"/>
       Paste JSON
     </label>
     <label>
-      <input type="radio" name="share-type" value="upload" {{shareTypeValues.upload}}/>
+      <input type="radio" name="share-type" value="upload"/>
       Upload file
     </label>
   </p>
@@ -56,7 +52,7 @@
     <textarea name="paste-results-json"
               id="paste-results-json"
               rows="20"
-              cols="100">{{pasteResultsJson}}</textarea>
+              cols="100"></textarea>
   </p>
   <p class="share-type-section upload">
     <input type="file"
@@ -64,11 +60,7 @@
            id="upload-results-json"/>
   </p>
   <p>
-    <ul class="error-list">
-      {{#errors}}
-        <li>{{.}}</li>
-      {{/errors}}
-    </ul>
+    <ul class="error-list"></ul>
   </p>
   <p>
     <input type="submit"

@@ -7,8 +7,8 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.CharSource;
 import com.google.common.io.MoreFiles;
+import com.google.errorprone.annotations.Immutable;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,31 +59,13 @@ public final class ShareResultsUploader {
   }
 
   /**
-   * Upload the given raw results JSON string. Creates a {@link InputStream}
-   * from the string and passes it to {@link #upload(InputStream)}.
-   *
-   * @param resultsJson The raw results JSON.
-   * @see #upload(InputStream)
-   */
-  public ShareResultsJsonView upload(String resultsJson)
-          throws IOException, ShareResultsUploadException {
-    Objects.requireNonNull(resultsJson);
-
-    try (InputStream is =
-             CharSource.wrap(resultsJson).asByteSource(UTF_8).openStream()) {
-      return upload(is);
-    }
-  }
-
-  /**
    * Upload the given byte channel containing the raw results JSON. Creates
    * a temporary file from the bytes and passes it to {@link #upload(Path)}.
    *
    * @param in The byte channel containing the raw results JSON.
    * @see #upload(Path)
    */
-  public ShareResultsJsonView upload(InputStream in)
-      throws IOException, ShareResultsUploadException {
+  public ShareResultsUploadReport upload(InputStream in) throws IOException {
     Objects.requireNonNull(in);
 
     // Copy the input to a temporary file.
@@ -103,27 +85,25 @@ public final class ShareResultsUploader {
    * size requirements: that the given file isn't too large, and that the share
    * directory is not full. This method then validates the contents of the file,
    * ensuring that it de-serializes to a {@link Results} object successfully,
-   * and that it contains a non-empty {@link Results#testMetadata}. If
-   * validation fails a {@link ShareResultsUploadException} is thrown. Otherwise
-   * this will create a new zip file in the {@link FileStore#shareDirectory()}
-   * containing the JSON file and return information about it.
+   * and that it contains a non-empty {@link Results#testMetadata}.
    *
    * @param tempFile The file containing raw results JSON. After this method
    *                 returns, this file is guaranteed to be deleted.
-   * @return A view containing information about the new file if validation
-   * passes and the new zip file was successfully created.
+   * @return A new {@link ShareResultsUploadReport} instance containing either
+   * error or success information.
    * @throws IOException If any network errors occur.
-   * @throws ShareResultsUploadException If validation of the JSON fails.
    */
-  public ShareResultsJsonView upload(Path tempFile)
-      throws IOException, ShareResultsUploadException {
+  public ShareResultsUploadReport upload(Path tempFile) throws IOException {
     Objects.requireNonNull(tempFile);
 
     try {
-      validateUploadSize(tempFile.toFile().length());
+      String sizeError = validateUploadSize(tempFile.toFile().length());
+      if (sizeError != null) {
+        return new ShareResultsUploadReport(sizeError);
+      }
       String validationError = validateNewFile(tempFile);
       if (validationError != null) {
-        throw new ShareResultsUploadException(validationError);
+        return new ShareResultsUploadReport(validationError);
       }
 
       String shareId = UUID.randomUUID().toString();
@@ -152,21 +132,22 @@ public final class ShareResultsUploader {
               + "/benchmarks/#section=test&shareid="
               + URLEncoder.encode(shareId, UTF_8);
 
-      return new ShareResultsJsonView(
+      ShareResultsJsonView success = new ShareResultsJsonView(
           /* fileName= */ fileName,
           /* resultsUrl= */ resultsUrl,
           /* visualizeResultsUrl= */ visualizeResultsUrl);
+      return new ShareResultsUploadReport(success);
     } finally {
       Files.delete(tempFile);
     }
   }
 
   /**
-   * Return null if the JSON file successfully de-serializes to {@link Results}
+   * Returns null if the JSON file successfully de-serializes to {@link Results}
    * and has non-empty {@link Results#testMetadata}. Otherwise returns a
    * relevant error message.
    */
-  private @Nullable String validateNewFile(Path newJsonFile) {
+  private @Nullable String validateNewFile(Path newJsonFile) throws IOException {
     Objects.requireNonNull(newJsonFile);
 
     try (InputStream inputStream = Files.newInputStream(newJsonFile)) {
@@ -178,28 +159,20 @@ public final class ShareResultsUploader {
     } catch (JsonProcessingException e) {
       logger.warn("Exception processing json file {}", newJsonFile, e);
       return "Invalid results JSON";
-    } catch (IOException e) {
-      logger.warn("Exception reading json file {}", newJsonFile, e);
-      return "Error reading results.";
     }
 
     return null;
   }
 
   /**
-   * Ensure that a results file of the given size isn't too big, and
-   * that the share directory is not full.
-   *
-   * @param resultsJsonSizeBytes The size of the results file to be uploaded,
-   *                             in bytes.
-   * @throws ShareResultsUploadException If the file is too large. or the
-   * share directory is at capacity.
+   * Ensure that a results file of the given size isn't too big, and that the
+   * share directory is not full. Returns null upon success, or a relevant error
+   * message.
    */
-  private void validateUploadSize(long resultsJsonSizeBytes)
-      throws ShareResultsUploadException {
+  private @Nullable String validateUploadSize(long resultsJsonSizeBytes) {
     if (resultsJsonSizeBytes > fileStoreConfig.maxShareFileSizeBytes) {
-      throw new ShareResultsUploadException("Share uploads cannot exceed "
-          + fileStoreConfig.maxShareFileSizeBytes + " bytes.");
+      return "Share uploads cannot exceed "
+          + fileStoreConfig.maxShareFileSizeBytes + " bytes.";
     }
 
     // We are only checking if the share directory is currently under its max
@@ -212,9 +185,10 @@ public final class ShareResultsUploader {
     long shareDirectorySize = FileStore.directorySizeBytes(
         fileStore.shareDirectory().toFile());
     if (shareDirectorySize >= fileStoreConfig.maxShareDirectorySizeBytes) {
-      throw new ShareResultsUploadException(
-          "Share uploads has reached max capacity.");
+      return "Share uploads has reached max capacity.";
     }
+
+    return null;
   }
 
   /**
@@ -276,13 +250,63 @@ public final class ShareResultsUploader {
       Pattern.compile("^([^./]+)(\\.json)");
 
   /**
-   * An exception indicating that an error occurred during share file upload.
-   * The {@link #getMessage()} should be a human-readable message indicating
-   * the reason.
+   * Holds information about whether or not an upload was successful. Use
+   * {@link #isError()} to determine whether it was a success. If there was an
+   * error, use {@link #getErrorMessage()} for a message appropriate for showing
+   * to the user. Otherwise, {@link #getSuccess()} gives information about the
+   * newly uploaded results file.
    */
-  public static final class ShareResultsUploadException extends Exception {
-    ShareResultsUploadException(String message) {
-      super(message);
+  @Immutable
+  public static final class ShareResultsUploadReport {
+    private final @Nullable ShareResultsJsonView success;
+    private final @Nullable String errorMessage;
+
+    /**
+     * Create a successful result with the specified json view.
+     */
+    ShareResultsUploadReport(ShareResultsJsonView success) {
+      this.success = Objects.requireNonNull(success);
+      this.errorMessage = null;
+    }
+
+    /**
+     * Create an error result with the specified error message.
+     */
+    ShareResultsUploadReport(String errorMessage) {
+      this.errorMessage = Objects.requireNonNull(errorMessage);
+      this.success = null;
+    }
+
+    /**
+     * @return {@code true} if the upload failed and you should call
+     * {@link #getErrorMessage()}.
+     */
+    public boolean isError() {
+      return errorMessage != null;
+    }
+
+    /**
+     * @return The error message if there was an error, intended to be shown
+     * to the user.
+     */
+    public String getErrorMessage() {
+      if (errorMessage == null) {
+        throw new IllegalStateException(
+            "Cannot get error message from successful upload result.");
+      }
+      return errorMessage;
+    }
+
+    /**
+     * @return Information about the newly uploaded results file if the upload
+     * was successful.
+     */
+    public ShareResultsJsonView getSuccess() {
+      if (success == null) {
+        throw new IllegalStateException(
+            "Cannot get success info from unsuccessful upload result.");
+      }
+      return success;
     }
   }
 

@@ -14,6 +14,11 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
+import io.undertow.server.handlers.form.EagerFormParsingHandler;
+import io.undertow.server.handlers.form.FormData;
+import io.undertow.server.handlers.form.FormDataParser;
+import io.undertow.server.handlers.form.FormParserFactory;
+import io.undertow.server.handlers.form.MultiPartParserDefinition;
 import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -31,19 +36,20 @@ import tfb.status.view.ShareResultsErrorJsonView;
  * use, it does not require authentication. This handler accepts fully formed
  * and completed results.json uploads.
  *
- * POST the contents of a results.json file in the request body. The JSON must
+ * Submit a multipart/form-data POST request to this handler with the
+ * results.json file included as a value under the name "results". The JSON must
  * conform to {@link Results} such that it can deserialize without error, and
  * must have a non-empty {@link Results#testMetadata} array. Upon success, JSON
  * is returned that contains info about how to access the raw JSON and also
  * visualize it on the TechEmpower benchmarks site.
  */
 @Singleton
-public final class ShareResultsUploadHandler implements HttpHandler {
+public class ShareResultsFormUploadHandler implements HttpHandler {
   private final ObjectMapper objectMapper;
   private final ShareResultsUploader shareResultsUploader;
 
   @Inject
-  public ShareResultsUploadHandler(ObjectMapper objectMapper,
+  public ShareResultsFormUploadHandler(ObjectMapper objectMapper,
                                    ShareResultsUploader shareResultsUploader) {
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.shareResultsUploader = Objects.requireNonNull(shareResultsUploader);
@@ -51,9 +57,16 @@ public final class ShareResultsUploadHandler implements HttpHandler {
 
   @Provides
   @Singleton
-  @ExactPath("/share-results/upload")
-  public HttpHandler shareResultsUploadHandler() {
+  @ExactPath("/share-results/upload/form")
+  public HttpHandler shareResultsFormUploadHandler() {
+    FormParserFactory formParserFactory = FormParserFactory
+        .builder(/* includeDefault= */ false)
+        .addParsers(new MultiPartParserDefinition())
+        .build();
+
     return HttpHandlers.chain(this,
+        handler -> new EagerFormParsingHandler(formParserFactory)
+            .setNext(handler),
         handler -> new MethodHandler().addMethod(POST, handler),
         handler -> new DisableCacheHandler(handler),
         handler -> new SetHeaderHandler(handler,
@@ -63,8 +76,22 @@ public final class ShareResultsUploadHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
+    FormData form = exchange.getAttachment(FormDataParser.FORM_DATA);
+
+    if (form == null) {
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
+    }
+
+    FormData.FormValue upload = form.getFirst("results");
+
+    if (upload == null || !upload.isFileItem()) {
+      exchange.setStatusCode(BAD_REQUEST);
+      return;
+    }
+
     ShareResultsUploader.ShareResultsUploadReport report =
-        shareResultsUploader.upload(exchange.getInputStream());
+        shareResultsUploader.upload(upload.getFileItem().getInputStream());
 
     exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
 
