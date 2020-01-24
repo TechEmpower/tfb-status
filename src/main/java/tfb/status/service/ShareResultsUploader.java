@@ -2,6 +2,7 @@ package tfb.status.service;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -9,19 +10,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.Immutable;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.config.UrlsConfig;
+import tfb.status.util.FileUtils;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 import tfb.status.view.ShareResultsJsonView;
@@ -97,7 +99,7 @@ public final class ShareResultsUploader {
     Objects.requireNonNull(tempFile);
 
     try {
-      String sizeError = validateUploadSize(tempFile.toFile().length());
+      String sizeError = validateUploadSize(Files.size(tempFile));
       if (sizeError != null) {
         return new ShareResultsUploadReport(sizeError);
       }
@@ -113,14 +115,16 @@ public final class ShareResultsUploader {
       Path permanentFile = fileStore.shareDirectory().resolve(zipFileName);
       MoreFiles.createParentDirectories(permanentFile);
 
-      try (FileOutputStream fos = new FileOutputStream(permanentFile.toFile());
-           ZipOutputStream zos = new ZipOutputStream(fos);
-           InputStream in = Files.newInputStream(tempFile)) {
+      try (FileSystem zipFs =
+               FileSystems.newFileSystem(
+                   permanentFile,
+                   Map.of("create", "true"))) {
         // Create a single entry in the zip file for the json file.
-        ZipEntry zipEntry = new ZipEntry(fileName);
-        zos.putNextEntry(zipEntry);
-        ByteStreams.copy(in, zos);
-        zos.closeEntry();
+        Path entry = zipFs.getPath(fileName);
+        try (InputStream in = Files.newInputStream(tempFile);
+             OutputStream out = Files.newOutputStream(entry, CREATE_NEW)) {
+          in.transferTo(out);
+        }
       }
 
       String resultsUrl =
@@ -169,7 +173,8 @@ public final class ShareResultsUploader {
    * share directory is not full. Returns null upon success, or a relevant error
    * message.
    */
-  private @Nullable String validateUploadSize(long resultsJsonSizeBytes) {
+  private @Nullable String validateUploadSize(long resultsJsonSizeBytes)
+      throws IOException {
     if (resultsJsonSizeBytes > fileStoreConfig.maxShareFileSizeBytes) {
       return "Share uploads cannot exceed "
           + fileStoreConfig.maxShareFileSizeBytes + " bytes.";
@@ -182,8 +187,8 @@ public final class ShareResultsUploader {
     // compromise because it means that at most the share directory will exceed
     // the max size by just one large results json file, and we will not accept
     // further uploads after that.
-    long shareDirectorySize = FileStore.directorySizeBytes(
-        fileStore.shareDirectory().toFile());
+    long shareDirectorySize = FileUtils.directorySizeBytes(
+        fileStore.shareDirectory());
     if (shareDirectorySize >= fileStoreConfig.maxShareDirectorySizeBytes) {
       return "Share uploads has reached max capacity.";
     }

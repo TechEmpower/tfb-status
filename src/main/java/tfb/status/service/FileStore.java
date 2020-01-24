@@ -57,33 +57,6 @@ public final class FileStore {
     createFileIfNecessary(announcementFile);
   }
 
-  /**
-   * Calculate the size of the specified directory in bytes.
-   */
-  public static long directorySizeBytes(File directory) {
-    Objects.requireNonNull(directory);
-
-    if (!Files.isDirectory(directory.toPath())) {
-      throw new IllegalArgumentException(
-          "The specified File is not a directory: " + directory.toString());
-    }
-
-    long length = 0;
-    File[] files = directory.listFiles();
-
-    if (files != null) {
-      for (File file : files) {
-        if (file.isFile()) {
-          length += file.length();
-        } else {
-          length += directorySizeBytes(file);
-        }
-      }
-    }
-
-    return length;
-  }
-
   private static void createDirectoryIfNecessary(Path directory) throws IOException {
     Objects.requireNonNull(directory);
     if (!Files.isDirectory(directory)) {
