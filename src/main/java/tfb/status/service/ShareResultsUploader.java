@@ -61,8 +61,8 @@ public final class ShareResultsUploader {
   }
 
   /**
-   * Upload the given byte channel containing the raw results JSON. Creates
-   * a temporary file from the bytes and passes it to {@link #upload(Path)}.
+   * Upload the given byte channel containing the raw results JSON. Creates a
+   * temporary file from the bytes and passes it to {@link #upload(Path)}.
    *
    * @param in The byte channel containing the raw results JSON.
    * @see #upload(Path)
