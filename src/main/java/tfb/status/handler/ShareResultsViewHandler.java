@@ -30,7 +30,7 @@ import tfb.status.undertow.extensions.MethodHandler;
  * @see ShareResultsUploadHandler
  */
 @Singleton
-public class ShareResultsViewHandler implements HttpHandler {
+public final class ShareResultsViewHandler implements HttpHandler {
   private final ShareResultsUploader shareResultsUploader;
 
   @Inject

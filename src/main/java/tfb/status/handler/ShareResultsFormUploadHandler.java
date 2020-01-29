@@ -44,7 +44,7 @@ import tfb.status.view.ShareResultsErrorJsonView;
  * visualize it on the TechEmpower benchmarks site.
  */
 @Singleton
-public class ShareResultsFormUploadHandler implements HttpHandler {
+public final class ShareResultsFormUploadHandler implements HttpHandler {
   private final ObjectMapper objectMapper;
   private final ShareResultsUploader shareResultsUploader;
 

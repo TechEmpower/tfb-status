@@ -10,7 +10,7 @@ import java.util.Objects;
  * file via {@link tfb.status.handler.ShareResultsUploadHandler}.
  */
 @Immutable
-public class ShareResultsErrorJsonView {
+public final class ShareResultsErrorJsonView {
   public final String message;
 
   @JsonCreator

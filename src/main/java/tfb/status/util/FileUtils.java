@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
-public class FileUtils {
+public final class FileUtils {
   private FileUtils() {
     throw new AssertionError("This class cannot be instantiated");
   }
