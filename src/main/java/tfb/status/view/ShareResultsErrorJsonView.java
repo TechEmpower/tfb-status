@@ -1,5 +1,7 @@
 package tfb.status.view;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 
@@ -11,7 +13,10 @@ import java.util.Objects;
 public class ShareResultsErrorJsonView {
   public final String message;
 
-  public ShareResultsErrorJsonView(String message) {
+  @JsonCreator
+  public ShareResultsErrorJsonView(
+      @JsonProperty(value = "message", required = true)
+      String message) {
     this.message = Objects.requireNonNull(message);
   }
 }

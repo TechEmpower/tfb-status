@@ -61,10 +61,10 @@ public final class ShareResultsUploader {
   }
 
   /**
-   * Upload the given byte channel containing the raw results JSON. Creates a
+   * Upload the given input stream containing the raw results JSON. Creates a
    * temporary file from the bytes and passes it to {@link #upload(Path)}.
    *
-   * @param in The byte channel containing the raw results JSON.
+   * @param in The input stream containing the raw results JSON.
    * @see #upload(Path)
    */
   public ShareResultsUploadReport upload(InputStream in) throws IOException {
@@ -151,7 +151,8 @@ public final class ShareResultsUploader {
    * and has non-empty {@link Results#testMetadata}. Otherwise returns a
    * relevant error message.
    */
-  private @Nullable String validateNewFile(Path newJsonFile) throws IOException {
+  private @Nullable String validateNewFile(Path newJsonFile)
+      throws IOException {
     Objects.requireNonNull(newJsonFile);
 
     try (InputStream inputStream = Files.newInputStream(newJsonFile)) {

@@ -1,5 +1,7 @@
 package tfb.status.view;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 
@@ -14,9 +16,17 @@ public final class ShareResultsJsonView {
   public final String resultsUrl;
   public final String visualizeResultsUrl;
 
-  public ShareResultsJsonView(String fileName,
-                              String resultsUrl,
-                              String visualizeResultsUrl) {
+  @JsonCreator
+  public ShareResultsJsonView(
+      @JsonProperty(value = "fileName", required = true)
+      String fileName,
+
+      @JsonProperty(value = "resultsUrl", required = true)
+      String resultsUrl,
+
+      @JsonProperty(value = "visualizeResultsUrl", required = true)
+      String visualizeResultsUrl) {
+
     this.fileName = Objects.requireNonNull(fileName);
     this.resultsUrl = Objects.requireNonNull(resultsUrl);
     this.visualizeResultsUrl = Objects.requireNonNull(visualizeResultsUrl);
