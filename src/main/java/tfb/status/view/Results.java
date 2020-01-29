@@ -121,6 +121,9 @@ public final class Results {
    * The test metadata, generated during this run (same as test_metadata.json).
    * Test metadata was not always included in the results, so this will be
    * {@code null} for old runs.
+   *
+   * <p>This field was added in January 2020 and was not present in results
+   * gathered prior to that date.
    */
   public final @Nullable ImmutableList<TestDefinition> testMetadata;
 
