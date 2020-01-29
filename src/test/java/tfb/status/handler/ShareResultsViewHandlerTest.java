@@ -30,7 +30,7 @@ import tfb.status.view.Results;
  * Tests for {@link ShareResultsViewHandler}.
  */
 @ExtendWith(TestServicesInjector.class)
-public class ShareResultsViewHandlerTest {
+public final class ShareResultsViewHandlerTest {
   /**
    * Ensure that after uploading a file, we can use the view handler to retrieve
    * that results file using the GET {@code /share-results/view/{shareId}.json}

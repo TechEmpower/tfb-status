@@ -32,7 +32,7 @@ import tfb.status.view.ShareResultsJsonView;
  * Tests for {@link ShareResultsUploader}.
  */
 @ExtendWith(TestServicesInjector.class)
-public class ShareResultsUploaderTest {
+public final class ShareResultsUploaderTest {
   /**
    * Ensure that uploading a valid results json file succeeds. This validates
    * the returned data, ensuring that the information is as expected based on

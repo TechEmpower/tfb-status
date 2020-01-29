@@ -37,7 +37,7 @@ import tfb.status.view.ShareResultsJsonView;
  * Tests for {@link ShareResultsFormUploadHandler}.
  */
 @ExtendWith(TestServicesInjector.class)
-public class ShareResultsFormUploadHandlerTest {
+public final class ShareResultsFormUploadHandlerTest {
   /**
    * Ensure that given a valid results json file, the handler successfully
    * uploads and responds as expected with a 201. This also verifies that the
