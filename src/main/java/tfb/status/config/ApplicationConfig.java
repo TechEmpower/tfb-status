@@ -59,6 +59,12 @@ public final class ApplicationConfig {
   public final UrlsConfig urlsConfig;
 
   /**
+   * See {@link ShareResultsMailerConfig}
+   */
+  @Provides
+  public final ShareResultsMailerConfig shareResultsMailer;
+
+  /**
    * The configuration for outbound emails, or {@code null} if outbound emails
    * are disabled.  See {@link EmailConfig}.
    */
@@ -81,7 +87,8 @@ public final class ApplicationConfig {
                            RunProgressMonitorConfig runProgressMonitor,
                            RunCompleteMailerConfig runCompleteMailer,
                            @Nullable EmailConfig email,
-                           UrlsConfig urlsConfig) {
+                           UrlsConfig urlsConfig,
+                           ShareResultsMailerConfig shareResultsMailer) {
 
     this.http = Objects.requireNonNull(http);
     this.assets = Objects.requireNonNull(assets);
@@ -91,6 +98,7 @@ public final class ApplicationConfig {
     this.runCompleteMailer = Objects.requireNonNull(runCompleteMailer);
     this.email = email;
     this.urlsConfig = Objects.requireNonNull(urlsConfig);
+    this.shareResultsMailer = Objects.requireNonNull(shareResultsMailer);
   }
 
   @Override
@@ -150,7 +158,10 @@ public final class ApplicationConfig {
       @Nullable EmailConfig email,
 
       @JsonProperty(value = "urls", required = false)
-      @Nullable UrlsConfig urls) {
+      @Nullable UrlsConfig urls,
+
+      @JsonProperty(value = "shareResultsMailer", required = false)
+      @Nullable ShareResultsMailerConfig shareResultsMailer) {
 
     return new ApplicationConfig(
         /* http= */
@@ -189,10 +200,15 @@ public final class ApplicationConfig {
         /* urlsConfig= */
         Objects.requireNonNullElseGet(
             urls,
-            () -> UrlsConfig.defaultConfig()));
+            () -> UrlsConfig.defaultConfig()),
+
+        /* shareResultsMailer= */
+        Objects.requireNonNullElseGet(
+            shareResultsMailer,
+            () -> ShareResultsMailerConfig.defaultConfig()));
   }
 
   public static ApplicationConfig defaultConfig() {
-    return create(null, null, null, null, null, null, null, null);
+    return create(null, null, null, null, null, null, null, null, null);
   }
 }

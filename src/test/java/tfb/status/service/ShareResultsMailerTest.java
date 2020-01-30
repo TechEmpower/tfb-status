@@ -1,0 +1,51 @@
+package tfb.status.service;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.util.List;
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.testlib.MailServer;
+import tfb.status.testlib.TestServicesInjector;
+
+/**
+ * Tests for {@link ShareResultsMailer}.
+ */
+@ExtendWith(TestServicesInjector.class)
+public final class ShareResultsMailerTest {
+  /**
+   * Verifies that the mailer sends an email with the expected title when the
+   * {@link ShareResultsMailer#onShareDirectoryFull(long, long)} method is
+   * invoked.
+   */
+  @Test
+  public void shareResultsMailer_shareDirectoryFullEmail(
+      MailServer mailServer,
+      ShareResultsMailer shareResultsMailer)
+      throws IOException, MessagingException {
+
+    // The mailer is a singleton and may have been called by other tests
+    // indirectly. We just need to make sure it sent an email as a result of
+    // this test.
+    List<MimeMessage> messages =getShareDirectoryFullEmails(mailServer);
+    int initialMessagesSize = messages.size();
+
+    shareResultsMailer.onShareDirectoryFull(1234, 5678);
+
+    messages = getShareDirectoryFullEmails(mailServer);
+
+    assertEquals(initialMessagesSize + 1, messages.size());
+  }
+
+  private static ImmutableList<MimeMessage> getShareDirectoryFullEmails(
+      MailServer mailServer) throws IOException, MessagingException {
+
+    return mailServer.getMessages(
+        m -> m.getSubject().equals(
+            ShareResultsMailer.SHARE_DIRECTORY_FULL_SUBJECT));
+  }
+}

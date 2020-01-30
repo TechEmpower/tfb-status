@@ -32,3 +32,6 @@ runCompleteMailer:
 urls:
   tfbStatus: https://test.tfb-status.techempower.com
   teWeb: https://www.test.techempower.com
+
+shareResultsMailer:
+  minSecondsBetweenDirectoryFullEmails: 0

@@ -48,16 +48,19 @@ public final class ShareResultsUploader {
   private final UrlsConfig urlsConfig;
   private final FileStore fileStore;
   private final ObjectMapper objectMapper;
+  private final ShareResultsMailer shareResultsMailer;
 
   @Inject
   public ShareResultsUploader(FileStoreConfig fileStoreConfig,
                               UrlsConfig urlsConfig,
                               FileStore fileStore,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              ShareResultsMailer shareResultsMailer) {
     this.fileStoreConfig = Objects.requireNonNull(fileStoreConfig);
     this.urlsConfig = Objects.requireNonNull(urlsConfig);
     this.fileStore = Objects.requireNonNull(fileStore);
     this.objectMapper = Objects.requireNonNull(objectMapper);
+    this.shareResultsMailer = Objects.requireNonNull(shareResultsMailer);
   }
 
   /**
@@ -191,6 +194,8 @@ public final class ShareResultsUploader {
     long shareDirectorySize = FileUtils.directorySizeBytes(
         fileStore.shareDirectory());
     if (shareDirectorySize >= fileStoreConfig.maxShareDirectorySizeBytes) {
+      shareResultsMailer.onShareDirectoryFull(
+          fileStoreConfig.maxShareDirectorySizeBytes, shareDirectorySize);
       return "Share uploads has reached max capacity.";
     }
 
