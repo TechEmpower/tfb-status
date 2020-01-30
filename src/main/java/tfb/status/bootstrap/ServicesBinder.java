@@ -13,6 +13,10 @@ import tfb.status.handler.LastSeenCommitHandler;
 import tfb.status.handler.RobotsHandler;
 import tfb.status.handler.RootHandler;
 import tfb.status.handler.SaveAttributesHandler;
+import tfb.status.handler.ShareResultsFormUploadHandler;
+import tfb.status.handler.ShareResultsPageHandler;
+import tfb.status.handler.ShareResultsUploadHandler;
+import tfb.status.handler.ShareResultsViewHandler;
 import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
@@ -31,6 +35,8 @@ import tfb.status.service.MustacheRenderer;
 import tfb.status.service.ObjectMapperFactory;
 import tfb.status.service.RunCompleteMailer;
 import tfb.status.service.RunProgressMonitor;
+import tfb.status.service.ShareResultsMailer;
+import tfb.status.service.ShareResultsUploader;
 import tfb.status.service.TaskScheduler;
 import tfb.status.service.TickerFactory;
 
@@ -73,6 +79,8 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(RunProgressMonitor.class);
     addActiveDescriptor(RunCompleteMailer.class);
     addActiveDescriptor(TaskScheduler.class);
+    addActiveDescriptor(ShareResultsUploader.class);
+    addActiveDescriptor(ShareResultsMailer.class);
     addActiveDescriptor(RootHandler.class);
     addActiveDescriptor(HomePageHandler.class);
     addActiveDescriptor(HomeUpdatesHandler.class);
@@ -87,5 +95,9 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(AttributesPageHandler.class);
     addActiveDescriptor(SaveAttributesHandler.class);
     addActiveDescriptor(LastSeenCommitHandler.class);
+    addActiveDescriptor(ShareResultsUploadHandler.class);
+    addActiveDescriptor(ShareResultsFormUploadHandler.class);
+    addActiveDescriptor(ShareResultsViewHandler.class);
+    addActiveDescriptor(ShareResultsPageHandler.class);
   }
 }

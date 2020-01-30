@@ -63,7 +63,8 @@ public final class DiffGeneratorTest {
             /* rawData= */ rawData,
             /* queryIntervals= */ ImmutableList.of(1),
             /* concurrencyLevels= */ ImmutableList.of(1),
-            /* git= */ null);
+            /* git= */ null,
+            /* testMetadata= */ null);
 
     String html = diffGenerator.diff(results, results);
 

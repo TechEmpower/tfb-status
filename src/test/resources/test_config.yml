@@ -19,6 +19,8 @@ mustache:
 
 fileStore:
   root: test_managed_files
+  maxShareDirectorySizeBytes: 10000000
+  maxShareFileSizeBytes: 5000000
 
 runProgressMonitor:
   environmentTimeoutSeconds: 1
@@ -26,3 +28,10 @@ runProgressMonitor:
 
 runCompleteMailer:
   minSecondsBetweenEmails: 0
+
+urls:
+  tfbStatus: https://test.tfb-status.techempower.com
+  teWeb: https://www.test.techempower.com
+
+shareResultsMailer:
+  minSecondsBetweenDirectoryFullEmails: 0

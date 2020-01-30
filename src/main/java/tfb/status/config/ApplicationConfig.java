@@ -53,6 +53,18 @@ public final class ApplicationConfig {
   public final RunCompleteMailerConfig runCompleteMailer;
 
   /**
+   * See {@link UrlsConfig}.
+   */
+  @Provides
+  public final UrlsConfig urlsConfig;
+
+  /**
+   * See {@link ShareResultsMailerConfig}
+   */
+  @Provides
+  public final ShareResultsMailerConfig shareResultsMailer;
+
+  /**
    * The configuration for outbound emails, or {@code null} if outbound emails
    * are disabled.  See {@link EmailConfig}.
    */
@@ -74,7 +86,9 @@ public final class ApplicationConfig {
                            FileStoreConfig fileStore,
                            RunProgressMonitorConfig runProgressMonitor,
                            RunCompleteMailerConfig runCompleteMailer,
-                           @Nullable EmailConfig email) {
+                           @Nullable EmailConfig email,
+                           UrlsConfig urlsConfig,
+                           ShareResultsMailerConfig shareResultsMailer) {
 
     this.http = Objects.requireNonNull(http);
     this.assets = Objects.requireNonNull(assets);
@@ -83,6 +97,8 @@ public final class ApplicationConfig {
     this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
     this.runCompleteMailer = Objects.requireNonNull(runCompleteMailer);
     this.email = email;
+    this.urlsConfig = Objects.requireNonNull(urlsConfig);
+    this.shareResultsMailer = Objects.requireNonNull(shareResultsMailer);
   }
 
   @Override
@@ -99,7 +115,8 @@ public final class ApplicationConfig {
           && this.fileStore.equals(that.fileStore)
           && this.runProgressMonitor.equals(that.runProgressMonitor)
           && this.runCompleteMailer.equals(that.runCompleteMailer)
-          && Objects.equals(this.email, that.email);
+          && Objects.equals(this.email, that.email)
+          && this.urlsConfig.equals(that.urlsConfig);
     }
   }
 
@@ -113,6 +130,7 @@ public final class ApplicationConfig {
     hash = 31 * hash + runProgressMonitor.hashCode();
     hash = 31 * hash + runCompleteMailer.hashCode();
     hash = 31 * hash + Objects.hashCode(email);
+    hash = 31 * hash + urlsConfig.hashCode();
     return hash;
   }
 
@@ -137,7 +155,13 @@ public final class ApplicationConfig {
       @Nullable RunCompleteMailerConfig runCompleteMailer,
 
       @JsonProperty(value = "email", required = false)
-      @Nullable EmailConfig email) {
+      @Nullable EmailConfig email,
+
+      @JsonProperty(value = "urls", required = false)
+      @Nullable UrlsConfig urls,
+
+      @JsonProperty(value = "shareResultsMailer", required = false)
+      @Nullable ShareResultsMailerConfig shareResultsMailer) {
 
     return new ApplicationConfig(
         /* http= */
@@ -171,10 +195,20 @@ public final class ApplicationConfig {
             () -> RunCompleteMailerConfig.defaultConfig()),
 
         /* email= */
-        email);
+        email,
+
+        /* urlsConfig= */
+        Objects.requireNonNullElseGet(
+            urls,
+            () -> UrlsConfig.defaultConfig()),
+
+        /* shareResultsMailer= */
+        Objects.requireNonNullElseGet(
+            shareResultsMailer,
+            () -> ShareResultsMailerConfig.defaultConfig()));
   }
 
   public static ApplicationConfig defaultConfig() {
-    return create(null, null, null, null, null, null, null);
+    return create(null, null, null, null, null, null, null, null, null);
   }
 }

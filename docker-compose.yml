@@ -7,7 +7,9 @@ services:
         SKIP_TESTS: "true"
     ports:
       - "127.0.0.1:80:80"
+      - "127.0.0.1:5005:5005"
     volumes:
       - ./managed_files:/tfbstatus/managed_files
       - ./example-config.yml:/tfbstatus/config.yml
+    entrypoint: java -Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar tfb-status.jar
     command: config.yml

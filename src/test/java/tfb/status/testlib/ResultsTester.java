@@ -70,7 +70,8 @@ public final class ResultsTester {
         /* rawData= */ oldResults.rawData,
         /* queryIntervals= */ oldResults.queryIntervals,
         /* concurrencyLevels= */ oldResults.concurrencyLevels,
-        /* git= */ oldResults.git);
+        /* git= */ oldResults.git,
+        /* testMetadata= */ oldResults.testMetadata);
   }
 
   /**

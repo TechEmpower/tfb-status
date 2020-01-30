@@ -1,6 +1,7 @@
 package tfb.status.service;
 
 import com.google.common.io.MoreFiles;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -21,6 +22,7 @@ public final class FileStore {
   private final Path resultsDirectory;
   private final Path accountsDirectory;
   private final Path attributesDirectory;
+  private final Path shareDirectory;
   private final Path announcementFile;
 
   /**
@@ -47,6 +49,9 @@ public final class FileStore {
 
     attributesDirectory = root.resolve("attributes");
     createDirectoryIfNecessary(attributesDirectory);
+
+    shareDirectory = root.resolve("share");
+    createDirectoryIfNecessary(shareDirectory);
 
     announcementFile = root.resolve("announcement.txt");
     createFileIfNecessary(announcementFile);
@@ -87,6 +92,14 @@ public final class FileStore {
    */
   public Path attributesDirectory() {
     return attributesDirectory;
+  }
+
+  /**
+   * The root directory for results.json files uploaded by users who want to
+   * share their results. Files in this directory are renamed to be unique.
+   */
+  public Path shareDirectory() {
+    return shareDirectory;
   }
 
   /**

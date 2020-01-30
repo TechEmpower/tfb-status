@@ -11,6 +11,18 @@ To build and run with [Docker Compose](https://docs.docker.com/compose/):
 docker-compose up --build
 ```
 
+### Debugging the app with Intellij
+
+To debug the app while running in Docker locally, create a new run configuration
+in Intellij for remote debugging:
+
+1. Run > Edit Configurations...
+2. Click the green plus sign to add a new configuration of type "Remote".
+3. The default settings should work: Socket transport, attach debugger mode, localhost port 5005.
+4. For "Search sources using module's classpath" select this project.
+5. Save and run it by clicking the debug icon.
+6. You should be able to place breakpoints, capture thread dumps, etc.
+
 ## Running without Docker
 
 To build:

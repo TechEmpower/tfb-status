@@ -20,12 +20,14 @@ public final class TestDefinition {
   public final String approach;
   public final String classification;
   public final String database;
+  @JsonProperty("database_os")
   public final String databaseOs;
   public final String framework;
   public final String language;
   public final String orm;
   public final String os;
   public final String platform;
+  @JsonProperty("display_name")
   public final String displayName;
   public final String name;
   public final String notes;

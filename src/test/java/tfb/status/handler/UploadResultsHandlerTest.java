@@ -191,7 +191,8 @@ public final class UploadResultsHandlerTest {
               /* rawData= */ newResults.rawData,
               /* queryIntervals= */ newResults.queryIntervals,
               /* concurrencyLevels= */ newResults.concurrencyLevels,
-              /* git= */ newResults.git);
+              /* git= */ newResults.git,
+              /* testMetadata= */ newResults.testMetadata);
 
       resultsTester.saveJsonToFile(updatedResults, jsonFile);
 
@@ -258,7 +259,8 @@ public final class UploadResultsHandlerTest {
               /* rawData= */ updatedResults.rawData,
               /* queryIntervals= */ updatedResults.queryIntervals,
               /* concurrencyLevels= */ updatedResults.concurrencyLevels,
-              /* git= */ updatedResults.git);
+              /* git= */ updatedResults.git,
+              /* testMetadata= */ updatedResults.testMetadata);
 
       Path zipFile = fileSystem.getPath("results_to_upload.zip");
       resultsTester.saveZipToFile(finalResults, zipFile);

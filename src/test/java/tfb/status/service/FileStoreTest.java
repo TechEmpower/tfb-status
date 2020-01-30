@@ -37,6 +37,14 @@ public final class FileStoreTest {
   }
 
   /**
+   * Verifies that {@link FileStore#shareDirectory()} ()} returns a directory.
+   */
+  @Test
+  public void testShareDirectory(FileStore fileStore) {
+    assertTrue(Files.isDirectory(fileStore.shareDirectory()));
+  }
+
+  /**
    * Verifies that {@link FileStore#announcementFile()} returns a file.
    */
   @Test
