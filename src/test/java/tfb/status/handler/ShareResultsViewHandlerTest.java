@@ -45,7 +45,7 @@ public final class ShareResultsViewHandlerTest {
 
     Results results = resultsTester.newResults();
 
-    Path jsonFile = fileSystem.getPath("results_to_upload.json");
+    Path jsonFile = fileSystem.getPath(UUID.randomUUID().toString() + ".json");
     resultsTester.saveJsonToFile(results, jsonFile);
 
     ShareResultsUploader.ShareResultsUploadReport report;
@@ -63,7 +63,8 @@ public final class ShareResultsViewHandlerTest {
         JSON_UTF_8.toString(),
         response.headers().firstValue(CONTENT_TYPE).orElse(null));
 
-    Path responseFile = fileSystem.getPath("results_response.json");
+    Path responseFile =
+        fileSystem.getPath(UUID.randomUUID().toString() + ".json");
     Files.writeString(responseFile, response.body(), CREATE_NEW);
 
     assertTrue(MoreFiles.equal(jsonFile, responseFile));

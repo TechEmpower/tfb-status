@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.HttpTester;
@@ -53,7 +54,7 @@ public final class ShareResultsFormUploadHandlerTest {
 
     Results results = resultsTester.newResults();
 
-    Path jsonFile = fileSystem.getPath("results_to_upload.json");
+    Path jsonFile = fileSystem.getPath(UUID.randomUUID().toString() + ".json");
     resultsTester.saveJsonToFile(results, jsonFile);
 
     List<MultipartFormFileEntry> files =

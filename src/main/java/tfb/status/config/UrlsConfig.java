@@ -53,7 +53,8 @@ public final class UrlsConfig {
     return hash;
   }
 
-  private static final String DEFAULT_TFB_STATUS = "https://tfb-status.techempower.com";
+  private static final String DEFAULT_TFB_STATUS =
+      "https://tfb-status.techempower.com";
   private static final String DEFAULT_TE_WEB = "https://www.techempower.com";
 
   @JsonCreator
