@@ -22,7 +22,7 @@
 
     <bcrypt.version>0.4</bcrypt.version>
     <caffeine.version>2.8.1</caffeine.version>
-    <checkerframework.version>3.1.0</checkerframework.version>
+    <checkerframework.version>3.1.1</checkerframework.version>
     <crawler-commons.version>1.0</crawler-commons.version>
     <error-prone.version>2.3.4</error-prone.version>
     <extra-enforcer-rules.version>1.2</extra-enforcer-rules.version>
