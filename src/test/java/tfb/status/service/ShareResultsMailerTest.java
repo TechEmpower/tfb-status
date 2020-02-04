@@ -21,20 +21,18 @@ import tfb.status.testlib.TestServicesInjector;
 @ExtendWith(TestServicesInjector.class)
 public final class ShareResultsMailerTest {
   /**
-   * Verifies that the mailer sends an email with the expected title when the
-   * {@link ShareResultsMailer#onShareDirectoryFull(long, long)} method is
-   * invoked.
+   * Verifies that {@link ShareResultsMailer#onShareDirectoryFull(long, long)}
+   * causes an email with the expected content to be sent.
    */
   @Test
-  public void shareResultsMailer_shareDirectoryFullEmail(
-      MailServer mailServer,
-      ShareResultsMailer shareResultsMailer)
+  public void testOnShareDirectoryFull(MailServer mailServer,
+                                       ShareResultsMailer shareResultsMailer)
       throws IOException, MessagingException {
 
     // The mailer is a singleton and may have been called by other tests
-    // indirectly. We just need to make sure it sent an email as a result of
+    // indirectly.  We just need to make sure it sent an email as a result of
     // this test.
-    List<MimeMessage> messages =getShareDirectoryFullEmails(mailServer);
+    List<MimeMessage> messages = getShareDirectoryFullEmails(mailServer);
     int initialMessagesSize = messages.size();
 
     shareResultsMailer.onShareDirectoryFull(1234, 5678);
@@ -47,11 +45,13 @@ public final class ShareResultsMailerTest {
     assertEquals(initialMessagesSize + 1, messages.size());
   }
 
-  private static ImmutableList<MimeMessage> getShareDirectoryFullEmails(
-      MailServer mailServer) throws IOException, MessagingException {
+  private static ImmutableList<MimeMessage>
+  getShareDirectoryFullEmails(MailServer mailServer)
+      throws IOException, MessagingException {
 
     return mailServer.getMessages(
-        m -> m.getSubject().equals(
-            ShareResultsMailer.SHARE_DIRECTORY_FULL_SUBJECT));
+        m ->
+            m.getSubject().equals(
+                ShareResultsMailer.SHARE_DIRECTORY_FULL_SUBJECT));
   }
 }

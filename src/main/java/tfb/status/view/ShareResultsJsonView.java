@@ -7,8 +7,8 @@ import java.util.Objects;
 
 /**
  * Represents a successful JSON response when a user uploads a result.json
- * file via {@link tfb.status.handler.ShareResultsUploadHandler}. This contains
- * information about the file and how to view it.
+ * file via {@link tfb.status.handler.ShareResultsUploadHandler}.  This object
+ * contains information about the file and how to view it.
  */
 @Immutable
 public final class ShareResultsJsonView {

@@ -1,37 +1,47 @@
 package tfb.status.util;
 
-import com.google.common.io.MoreFiles;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.stream.Stream;
 
+/**
+ * Utility methods for working with the file system.
+ */
 public final class FileUtils {
   private FileUtils() {
     throw new AssertionError("This class cannot be instantiated");
   }
 
   /**
-   * Calculate the size of the specified directory in bytes.
+   * Returns the size of the specified directory in bytes.  Includes files
+   * contained in subdirectories.
+   *
+   * @throws IllegalArgumentException if the specified path is not a directory
    */
-  public static long directorySizeBytes(Path directory) throws IOException {
+  public static long directorySizeInBytes(Path directory) throws IOException {
     Objects.requireNonNull(directory);
 
-    if (!Files.isDirectory(directory)) {
+    if (!Files.isDirectory(directory))
       throw new IllegalArgumentException(
-          "The specified File is not a directory: " + directory.toString());
+          "The specified path is not a directory: " + directory.toString());
+
+    try (Stream<Path> stream = Files.walk(directory)) {
+      return stream
+          .mapToLong(
+              path -> {
+                if (!Files.isRegularFile(path))
+                  return 0;
+
+                try {
+                  return Files.size(path);
+                } catch (IOException e) {
+                  throw new UncheckedIOException(e);
+                }
+              })
+          .sum();
     }
-
-    long length = 0;
-
-    for (Path path : MoreFiles.listFiles(directory)) {
-      if (Files.isDirectory(path)) {
-        length += directorySizeBytes(path);
-      } else {
-        length += Files.size(path);
-      }
-    }
-
-    return length;
   }
 }

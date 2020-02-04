@@ -17,6 +17,7 @@ public final class ShareResultsErrorJsonView {
   public ShareResultsErrorJsonView(
       @JsonProperty(value = "message", required = true)
       String message) {
+
     this.message = Objects.requireNonNull(message);
   }
 }

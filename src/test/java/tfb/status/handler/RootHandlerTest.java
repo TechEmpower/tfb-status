@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.common.io.ByteStreams;
 import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.net.URI;
@@ -109,8 +108,7 @@ public final class RootHandlerTest {
         exchange -> {
           assertFalse(exchange.isInIoThread());
           assertTrue(exchange.isBlocking());
-          ByteStreams.copy(exchange.getInputStream(),
-                           exchange.getOutputStream());
+          exchange.getInputStream().transferTo(exchange.getOutputStream());
         };
 
     String path = http.addHandler(handler);

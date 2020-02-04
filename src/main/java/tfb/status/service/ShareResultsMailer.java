@@ -14,6 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.ShareResultsMailerConfig;
 
+/**
+ * Sends an email when the {@link FileStore#shareDirectory()} is full.
+ */
 @Singleton
 public final class ShareResultsMailer {
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -29,11 +32,20 @@ public final class ShareResultsMailer {
   public ShareResultsMailer(Clock clock,
                             EmailSender emailSender,
                             ShareResultsMailerConfig config) {
+
     this.clock = Objects.requireNonNull(clock);
     this.emailSender = Objects.requireNonNull(emailSender);
     this.config = Objects.requireNonNull(config);
   }
 
+  /**
+   * Notifies this service that the share directory is full.  This service may
+   * respond by sending an email, assuming it has not sent a similar email too
+   * recently.
+   *
+   * @param capacityBytes the maximum size of the share directory
+   * @param sizeBytes the current size of the share directory
+   */
   public void onShareDirectoryFull(long capacityBytes, long sizeBytes) {
     synchronized (emailTimeLock) {
       Instant now = clock.instant();
@@ -57,41 +69,34 @@ public final class ShareResultsMailer {
       this.previousEmailTime = now;
     }
 
-    sendShareDirectoryFullEmail(capacityBytes, sizeBytes);
-  }
+    String textContent =
+        "Hello,"
+            + "\n"
+            + "\n"
+            + "The share directory used for storing public uploads of results "
+            + "files has reached capacity.  Please audit the directory and "
+            + "delete old uploads or expand the configured capacity."
+            + "\n"
+            + "\n"
+            + "Share directory capacity: " + capacityBytes + " bytes"
+            + "\n"
+            + "Share directory size:     " + sizeBytes + " bytes"
+            + "\n"
+            + "\n"
+            + "-a robot";
 
-  private void sendShareDirectoryFullEmail(long capacityBytes, long sizeBytes) {
     try {
       emailSender.sendEmail(
           /* subject= */ SHARE_DIRECTORY_FULL_SUBJECT,
-          /* textContent= */
-          composeShareDirectoryFullEmail(capacityBytes, sizeBytes),
+          /* textContent= */ textContent,
           /* attachments= */ ImmutableList.of());
+
     } catch (MessagingException e) {
       logger.warn("Error sending email for share directory full", e);
     }
   }
 
-  private String composeShareDirectoryFullEmail(long capacityBytes,
-                                                long sizeBytes) {
-    return "Hello,"
-        + "\n"
-        + "\n"
-        + "The share directory used for storing public uploads of "
-        + "results files has reached capacity. Please audit the "
-        + "directory and delete old uploads or expand the configured "
-        + "capacity."
-        + "\n"
-        + "\n"
-        + "Share directory capacity: " + capacityBytes + " bytes"
-        + "\n"
-        + "Share directory size:     " + sizeBytes + " bytes"
-        + "\n"
-        + "\n"
-        + "-a robot";
-  }
-
   @VisibleForTesting
-  public static final String SHARE_DIRECTORY_FULL_SUBJECT =
+  static final String SHARE_DIRECTORY_FULL_SUBJECT =
       "<tfb> <auto> Share directory full";
 }

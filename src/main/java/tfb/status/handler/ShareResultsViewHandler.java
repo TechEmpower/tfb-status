@@ -7,12 +7,10 @@ import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.file.StandardOpenOption.READ;
 
-import com.google.common.io.ByteStreams;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -25,9 +23,7 @@ import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 
 /**
- * Handles GET requests to view files from the share directory.
- *
- * @see ShareResultsUploadHandler
+ * Handles requests to view results.json files that were shared by users.
  */
 @Singleton
 public final class ShareResultsViewHandler implements HttpHandler {
@@ -57,20 +53,25 @@ public final class ShareResultsViewHandler implements HttpHandler {
       return;
     }
 
-    // omit leading slash
-    String relativePath = exchange.getRelativePath().substring(1);
+    String relativePath =
+        exchange.getRelativePath().substring(1); // omit leading slash
 
     shareResultsUploader.getUpload(
-        /* jsonFileName= */ relativePath,
-        /* ifPresent= */ (Path zipEntry) -> {
+        /* jsonFileName= */
+        relativePath,
+
+        /* ifPresent= */
+        (Path zipEntry) -> {
           exchange.getResponseHeaders().put(
-              CONTENT_TYPE, JSON_UTF_8.toString());
+              CONTENT_TYPE,
+              JSON_UTF_8.toString());
 
           try (InputStream in = Files.newInputStream(zipEntry, READ)) {
-            OutputStream out = exchange.getOutputStream();
-            ByteStreams.copy(in, out);
+            in.transferTo(exchange.getOutputStream());
           }
         },
-        /* ifAbsent= */ () -> exchange.setStatusCode(NOT_FOUND));
+
+        /* ifAbsent= */
+        () -> exchange.setStatusCode(NOT_FOUND));
   }
 }

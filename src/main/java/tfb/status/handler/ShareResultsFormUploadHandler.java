@@ -20,28 +20,31 @@ import io.undertow.server.handlers.form.FormDataParser;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.server.handlers.form.MultiPartParserDefinition;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.ShareResultsUploader;
+import tfb.status.service.ShareResultsUploader.ShareResultsUploadReport;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.Results;
-import tfb.status.view.ShareResultsErrorJsonView;
 
 /**
- * Handles requests to share results.json files. This is intended for anyone to
- * use, it does not require authentication. This handler accepts fully formed
- * and completed results.json uploads.
+ * Handles requests from users to share results.json files, where those files
+ * are encoded in the request body as {@code multipart/form-data}.
  *
- * Submit a multipart/form-data POST request to this handler with the
- * results.json file included as a value under the name "results". The JSON must
- * conform to {@link Results} such that it can deserialize without error, and
- * must have a non-empty {@link Results#testMetadata} array. Upon success, JSON
- * is returned that contains info about how to access the raw JSON and also
- * visualize it on the TechEmpower benchmarks site.
+ * <p>This feature is intended for anyone to use; no authentication is required.
+ * This handler accepts fully formed and completed results.json uploads.
+ *
+ * <p>Submit a {@code multipart/form-data} POST request to this handler with the
+ * results.json file included as a value under the name "results".  The JSON
+ * must conform to {@link Results} such that it can deserialize without error,
+ * and it must have a non-empty {@link Results#testMetadata} array.  Upon
+ * success, JSON is returned that describes how to access the raw JSON and how
+ * to visualize it on the TFB website.
  */
 @Singleton
 public final class ShareResultsFormUploadHandler implements HttpHandler {
@@ -50,7 +53,8 @@ public final class ShareResultsFormUploadHandler implements HttpHandler {
 
   @Inject
   public ShareResultsFormUploadHandler(ObjectMapper objectMapper,
-                                   ShareResultsUploader shareResultsUploader) {
+                                       ShareResultsUploader shareResultsUploader) {
+
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.shareResultsUploader = Objects.requireNonNull(shareResultsUploader);
   }
@@ -59,14 +63,15 @@ public final class ShareResultsFormUploadHandler implements HttpHandler {
   @Singleton
   @ExactPath("/share-results/upload/form")
   public HttpHandler shareResultsFormUploadHandler() {
-    FormParserFactory formParserFactory = FormParserFactory
-        .builder(/* includeDefault= */ false)
-        .addParsers(new MultiPartParserDefinition())
-        .build();
+    FormParserFactory formParserFactory =
+        FormParserFactory
+            .builder(/* includeDefault= */ false)
+            .addParsers(new MultiPartParserDefinition())
+            .build();
 
-    return HttpHandlers.chain(this,
-        handler -> new EagerFormParsingHandler(formParserFactory)
-            .setNext(handler),
+    return HttpHandlers.chain(
+        this,
+        handler -> new EagerFormParsingHandler(formParserFactory).setNext(handler),
         handler -> new MethodHandler().addMethod(POST, handler),
         handler -> new DisableCacheHandler(handler),
         handler -> new SetHeaderHandler(handler,
@@ -84,31 +89,28 @@ public final class ShareResultsFormUploadHandler implements HttpHandler {
     }
 
     FormData.FormValue upload = form.getFirst("results");
-
     if (upload == null || !upload.isFileItem()) {
       exchange.setStatusCode(BAD_REQUEST);
       return;
     }
 
-    ShareResultsUploader.ShareResultsUploadReport report =
-        shareResultsUploader.upload(upload.getFileItem().getInputStream());
-
-    exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
+    ShareResultsUploadReport report;
+    try (InputStream inputStream = upload.getFileItem().getInputStream()) {
+      report = shareResultsUploader.upload(inputStream);
+    }
 
     if (report.isError()) {
+      String json = objectMapper.writeValueAsString(report.getError());
       exchange.setStatusCode(BAD_REQUEST);
-
-      String json = objectMapper.writeValueAsString(
-          new ShareResultsErrorJsonView(report.getErrorMessage()));
+      exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
       exchange.getResponseSender().send(json, UTF_8);
-    } else {
-      exchange.setStatusCode(CREATED);
-      exchange.getResponseHeaders().put(
-          LOCATION,
-          report.getSuccess().resultsUrl);
-
-      String json = objectMapper.writeValueAsString(report.getSuccess());
-      exchange.getResponseSender().send(json, UTF_8);
+      return;
     }
+
+    String json = objectMapper.writeValueAsString(report.getSuccess());
+    exchange.setStatusCode(CREATED);
+    exchange.getResponseHeaders().put(LOCATION, report.getSuccess().resultsUrl);
+    exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
+    exchange.getResponseSender().send(json, UTF_8);
   }
 }

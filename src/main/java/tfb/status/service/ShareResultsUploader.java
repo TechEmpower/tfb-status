@@ -19,6 +19,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -33,13 +34,14 @@ import tfb.status.config.UrlsConfig;
 import tfb.status.util.FileUtils;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
+import tfb.status.view.ShareResultsErrorJsonView;
 import tfb.status.view.ShareResultsJsonView;
 
 /**
- * A service responsible for handling public uploads of results.json files.
- * This class provides several ways of creating new shared results files in
- * the {@link FileStore#shareDirectory()}. All access to that directory
- * should be done through this service.
+ * Accepts uploads of results.json files from users for sharing.  This class
+ * provides several ways of creating new shared results files in the {@link
+ * FileStore#shareDirectory()}.  All access to that directory should be done
+ * through this service.
  */
 @Singleton
 public final class ShareResultsUploader {
@@ -56,6 +58,7 @@ public final class ShareResultsUploader {
                               FileStore fileStore,
                               ObjectMapper objectMapper,
                               ShareResultsMailer shareResultsMailer) {
+
     this.fileStoreConfig = Objects.requireNonNull(fileStoreConfig);
     this.urlsConfig = Objects.requireNonNull(urlsConfig);
     this.fileStore = Objects.requireNonNull(fileStore);
@@ -64,52 +67,78 @@ public final class ShareResultsUploader {
   }
 
   /**
-   * Upload the given input stream containing the raw results JSON. Creates a
-   * temporary file from the bytes and passes it to {@link #upload(Path)}.
+   * Accepts an upload of a results.json file containing the specified bytes.
    *
-   * @param in The input stream containing the raw results JSON.
-   * @see #upload(Path)
+   * <p>This method first validates the size requirements: that the given file
+   * isn't too large, and that the share directory is not full.  This method
+   * then validates the contents of the file, ensuring that it de-serializes to
+   * a {@link Results} object successfully, and that it contains a non-empty
+   * {@link Results#testMetadata}.
+   *
+   * @param fileBytes the raw bytes of the results.json file
+   * @return an object describing the success or failure of the upload
    */
-  public ShareResultsUploadReport upload(InputStream in) throws IOException {
-    Objects.requireNonNull(in);
+  public ShareResultsUploadReport upload(InputStream fileBytes)
+      throws IOException {
 
-    // Copy the input to a temporary file.
-    Path tempFile = Files.createTempFile(/* prefix= */ "TFB_Share_Upload",
-        /* suffix= */ ".json");
+    Objects.requireNonNull(fileBytes);
 
-    try (OutputStream out =
-             Files.newOutputStream(tempFile, WRITE, APPEND)) {
-      ByteStreams.copy(in, out);
+    // We are only checking if the share directory is currently under its max
+    // size, without the addition of the new file.  This reduces the complexity
+    // and potentially wasted time of compressing the json file to a zip file
+    // before checking if it can fit in the share directory.  This is a fine
+    // compromise because it means that at most the share directory will exceed
+    // the max size by just one large results json file, and we will not accept
+    // further uploads after that.
+    long shareDirectorySize =
+        FileUtils.directorySizeInBytes(fileStore.shareDirectory());
+
+    if (shareDirectorySize >= fileStoreConfig.maxShareDirectorySizeBytes) {
+      shareResultsMailer.onShareDirectoryFull(
+          fileStoreConfig.maxShareDirectorySizeBytes,
+          shareDirectorySize);
+
+      return new ShareResultsUploadReport(
+          new ShareResultsErrorJsonView(
+              "Share uploads has reached max capacity."));
     }
 
-    return upload(tempFile);
-  }
-
-  /**
-   * Upload the given file containing raw results JSON. This first validates the
-   * size requirements: that the given file isn't too large, and that the share
-   * directory is not full. This method then validates the contents of the file,
-   * ensuring that it de-serializes to a {@link Results} object successfully,
-   * and that it contains a non-empty {@link Results#testMetadata}.
-   *
-   * @param tempFile The file containing raw results JSON. After this method
-   *                 returns, this file is guaranteed to be deleted.
-   * @return A new {@link ShareResultsUploadReport} instance containing either
-   * error or success information.
-   * @throws IOException If any network errors occur.
-   */
-  public ShareResultsUploadReport upload(Path tempFile) throws IOException {
-    Objects.requireNonNull(tempFile);
+    Path tempFile =
+        Files.createTempFile(
+            /* prefix= */ "TFB_Share_Upload",
+            /* suffix= */ ".json");
 
     try {
-      String sizeError = validateUploadSize(Files.size(tempFile));
-      if (sizeError != null) {
-        return new ShareResultsUploadReport(sizeError);
+      InputStream limitedBytes =
+          ByteStreams.limit(
+              fileBytes,
+              fileStoreConfig.maxShareFileSizeBytes + 1);
+
+      long fileSize;
+      try (OutputStream out = Files.newOutputStream(tempFile, WRITE, APPEND)) {
+        fileSize = limitedBytes.transferTo(out);
       }
-      String validationError = validateNewFile(tempFile);
-      if (validationError != null) {
-        return new ShareResultsUploadReport(validationError);
+
+      if (fileSize > fileStoreConfig.maxShareFileSizeBytes)
+        return new ShareResultsUploadReport(
+            new ShareResultsErrorJsonView(
+                "Share uploads cannot exceed "
+                    + fileStoreConfig.maxShareFileSizeBytes
+                    + " bytes."));
+
+      Results results;
+      try (InputStream inputStream = Files.newInputStream(tempFile)) {
+        results = objectMapper.readValue(inputStream, Results.class);
+      } catch (JsonProcessingException e) {
+        logger.info("Exception processing json file {}", tempFile, e);
+        return new ShareResultsUploadReport(
+            new ShareResultsErrorJsonView("Invalid results JSON"));
       }
+
+      if (results.testMetadata == null || results.testMetadata.isEmpty())
+        return new ShareResultsUploadReport(
+            new ShareResultsErrorJsonView(
+                "Results must contain non-empty test metadata"));
 
       String shareId = UUID.randomUUID().toString();
       String fileName = shareId + ".json";
@@ -122,8 +151,10 @@ public final class ShareResultsUploader {
                FileSystems.newFileSystem(
                    permanentFile,
                    Map.of("create", "true"))) {
+
         // Create a single entry in the zip file for the json file.
         Path entry = zipFs.getPath(fileName);
+
         try (InputStream in = Files.newInputStream(tempFile);
              OutputStream out = Files.newOutputStream(entry, CREATE_NEW)) {
           in.transferTo(out);
@@ -134,91 +165,35 @@ public final class ShareResultsUploader {
           urlsConfig.tfbStatus
               + "/share-results/view/"
               + URLEncoder.encode(fileName, UTF_8);
+
       String visualizeResultsUrl =
           urlsConfig.teWeb
               + "/benchmarks/#section=test&shareid="
               + URLEncoder.encode(shareId, UTF_8);
 
-      ShareResultsJsonView success = new ShareResultsJsonView(
-          /* fileName= */ fileName,
-          /* resultsUrl= */ resultsUrl,
-          /* visualizeResultsUrl= */ visualizeResultsUrl);
-      return new ShareResultsUploadReport(success);
+      return new ShareResultsUploadReport(
+          new ShareResultsJsonView(
+              /* fileName= */ fileName,
+              /* resultsUrl= */ resultsUrl,
+              /* visualizeResultsUrl= */ visualizeResultsUrl));
+
     } finally {
       Files.delete(tempFile);
     }
   }
 
   /**
-   * Returns null if the JSON file successfully de-serializes to {@link Results}
-   * and has non-empty {@link Results#testMetadata}. Otherwise returns a
-   * relevant error message.
-   */
-  private @Nullable String validateNewFile(Path newJsonFile)
-      throws IOException {
-    Objects.requireNonNull(newJsonFile);
-
-    try (InputStream inputStream = Files.newInputStream(newJsonFile)) {
-      Results results = objectMapper.readValue(inputStream, Results.class);
-
-      if (results.testMetadata == null || results.testMetadata.isEmpty()) {
-        return "Results must contain non-empty test metadata";
-      }
-    } catch (JsonProcessingException e) {
-      logger.warn("Exception processing json file {}", newJsonFile, e);
-      return "Invalid results JSON";
-    }
-
-    return null;
-  }
-
-  /**
-   * Ensure that a results file of the given size isn't too big, and that the
-   * share directory is not full. Returns null upon success, or a relevant error
-   * message.
-   */
-  private @Nullable String validateUploadSize(long resultsJsonSizeBytes)
-      throws IOException {
-    if (resultsJsonSizeBytes > fileStoreConfig.maxShareFileSizeBytes) {
-      return "Share uploads cannot exceed "
-          + fileStoreConfig.maxShareFileSizeBytes + " bytes.";
-    }
-
-    // We are only checking if the share directory is currently under its max
-    // size, without the addition of the new file. This reduces the complexity
-    // and potentially wasted time of compressing the json file to a zip file
-    // before checking if it can fit in the share directory. This is a fine
-    // compromise because it means that at most the share directory will exceed
-    // the max size by just one large results json file, and we will not accept
-    // further uploads after that.
-    long shareDirectorySize = FileUtils.directorySizeBytes(
-        fileStore.shareDirectory());
-    if (shareDirectorySize >= fileStoreConfig.maxShareDirectorySizeBytes) {
-      shareResultsMailer.onShareDirectoryFull(
-          fileStoreConfig.maxShareDirectorySizeBytes, shareDirectorySize);
-      return "Share uploads has reached max capacity.";
-    }
-
-    return null;
-  }
-
-  /**
-   * Read an uploaded results file from the share directory of the specified
-   * name. This is intended to read files created through one of this class's
-   * upload methods. Results file uploads are stored in zip files of the same
-   * name, and should always be modified or accessed through this class.
+   * Reads an uploaded results file from the share directory.  This is intended
+   * to read files created through one of this class's upload methods.  Results
+   * file uploads are stored in zip files of the same name, and should always be
+   * modified or accessed through this class.
    *
-   * @param jsonFileName The requested json file name, of the form
-   *                     "47f93e49-2ffe-4b8e-828a-25513b7d160e.json".
-   * @param ifPresent A consumer to be called with the path to the zip file
-   *                  entry for the json file. If this is invoked, the given
-   *                  path is guaranteed to exist and point to the requested
-   *                  json file, meaning it can be read without further
-   *                  checking.
-   * @param ifAbsent A runnable that is invoked if the upload cannot be found
-   *                 for any reason.
-   * @throws IOException If an error occurs reading or consuming the zip file.
-   * @see #upload(Path)
+   * @param jsonFileName the requested json file name, of the form
+   *        "47f93e49-2ffe-4b8e-828a-25513b7d160e.json"
+   * @param ifPresent a consumer to be called with the path to the zip file
+   *        entry for the json file
+   * @param ifAbsent a runnable that is invoked if the upload is not found
+   * @throws IOException if an error occurs reading or consuming the zip file
    */
   public void getUpload(String jsonFileName,
                         ShareResultsConsumer ifPresent,
@@ -229,7 +204,7 @@ public final class ShareResultsUploader {
     Objects.requireNonNull(ifPresent);
     Objects.requireNonNull(ifAbsent);
 
-    Matcher matcher = JSON_FILE.matcher(jsonFileName);
+    Matcher matcher = JSON_FILE_PATTERN.matcher(jsonFileName);
     if (!matcher.matches()) {
       ifAbsent.run();
       return;
@@ -245,87 +220,99 @@ public final class ShareResultsUploader {
     }
 
     ZipFiles.findZipEntry(
-        /* zipFile= */ zipFile,
-        /* entryPath= */ jsonFileName,
-        /* ifPresent= */ (Path zipEntry) -> {
-          if (Files.isRegularFile(zipEntry)) {
+        /* zipFile= */
+        zipFile,
+
+        /* entryPath= */
+        jsonFileName,
+
+        /* ifPresent= */
+        (Path zipEntry) -> {
+          if (Files.isRegularFile(zipEntry))
             ifPresent.accept(zipEntry);
-          } else {
+          else
             ifAbsent.run();
-          }
         },
-        /* ifAbsent= */ ifAbsent);
+
+        /* ifAbsent= */
+        ifAbsent);
   }
 
-  private static final Pattern JSON_FILE =
+  private static final Pattern JSON_FILE_PATTERN =
       Pattern.compile("^([^./]+)(\\.json)");
 
   /**
-   * Holds information about whether or not an upload was successful. Use
-   * {@link #isError()} to determine whether it was a success. If there was an
-   * error, use {@link #getErrorMessage()} for a message appropriate for showing
-   * to the user. Otherwise, {@link #getSuccess()} gives information about the
-   * newly uploaded results file.
+   * Describes whether or not an upload was successful.  Use {@link #isError()}
+   * to determine whether it was a success.  If there was an error, use {@link
+   * #getError()} for a message appropriate to display to the user.  Otherwise,
+   * {@link #getSuccess()} describes the newly uploaded results file.
    */
   @Immutable
   public static final class ShareResultsUploadReport {
     private final @Nullable ShareResultsJsonView success;
-    private final @Nullable String errorMessage;
+    private final @Nullable ShareResultsErrorJsonView error;
 
     /**
      * Create a successful result with the specified json view.
      */
     ShareResultsUploadReport(ShareResultsJsonView success) {
       this.success = Objects.requireNonNull(success);
-      this.errorMessage = null;
+      this.error = null;
     }
 
     /**
      * Create an error result with the specified error message.
      */
-    ShareResultsUploadReport(String errorMessage) {
-      this.errorMessage = Objects.requireNonNull(errorMessage);
+    ShareResultsUploadReport(ShareResultsErrorJsonView error) {
       this.success = null;
+      this.error = Objects.requireNonNull(error);
     }
 
     /**
-     * @return {@code true} if the upload failed and you should call
-     * {@link #getErrorMessage()}.
+     * Returns {@code true} if the upload failed and it is acceptable to call
+     * {@link #getError()}.
      */
     public boolean isError() {
-      return errorMessage != null;
+      return error != null;
     }
 
     /**
-     * @return The error message if there was an error, intended to be shown
-     * to the user.
+     * Returns the error message if there was an error.  This error message may
+     * be displayed to the user.
+     *
+     * @throws NoSuchElementException if this upload was successful
      */
-    public String getErrorMessage() {
-      if (errorMessage == null) {
-        throw new IllegalStateException(
+    public ShareResultsErrorJsonView getError() {
+      if (error == null)
+        throw new NoSuchElementException(
             "Cannot get error message from successful upload result.");
-      }
-      return errorMessage;
+
+      return error;
     }
 
     /**
-     * @return Information about the newly uploaded results file if the upload
+     * Returns information about the newly uploaded results file if the upload
      * was successful.
+     *
+     * @throws NoSuchElementException if this upload was not successful
      */
     public ShareResultsJsonView getSuccess() {
-      if (success == null) {
-        throw new IllegalStateException(
+      if (success == null)
+        throw new NoSuchElementException(
             "Cannot get success info from unsuccessful upload result.");
-      }
+
       return success;
     }
   }
 
   /**
    * A consumer to be called with the path to the zip file entry for the json
-   * file. If this is invoked, the given path is guaranteed to exist and
-   * point to the requested json file, meaning it can be read without further
+   * file.  If this is invoked, the specified path is guaranteed to exist and
+   * to refer to the requested json file, meaning it can be read without further
    * checking.
+   *
+   * <p>This interface should only be used by callers of {@link
+   * #getUpload(String, ShareResultsConsumer, Runnable)}.
    */
   @FunctionalInterface
   public interface ShareResultsConsumer {

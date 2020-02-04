@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,14 +21,17 @@ import org.junit.jupiter.api.Test;
  */
 public final class FileUtilsTest {
   private static final String FILE_CONTENTS = "This is a text file";
-  private static final int NUMBER_FILES_IN_DIRECTORY = 10;
-  private static final int DIRECTORY_SIZE_BYTES =
-      FILE_CONTENTS.length() * NUMBER_FILES_IN_DIRECTORY;
-  private static final int NUMBER_FILES_IN_ROOT = 5;
-  // The size of the text files that exist directly in the root, excluding any
-  // directories' contents.
-  private static final int ROOT_FILES_SIZE =
-      FILE_CONTENTS.length() * NUMBER_FILES_IN_ROOT;
+  private static final int FILES_IN_ROOT_DIRECTORY = 5;
+  private static final int FILES_IN_SUBDIRECTORY = 10;
+
+  // The total size of the files that exist directly in the root, excluding
+  // files in subdirectories.
+  private static final int ROOT_DIRECTORY_SIZE_IN_BYTES =
+      FILE_CONTENTS.length() * FILES_IN_ROOT_DIRECTORY;
+
+  // The total size of the files within each subdirectory.
+  private static final int SUBDIRECTORY_SIZE_IN_BYTES =
+      FILE_CONTENTS.length() * FILES_IN_SUBDIRECTORY;
 
   private static FileSystem inMemoryFs;
   private static Path directory;
@@ -45,20 +49,21 @@ public final class FileUtilsTest {
     emptyDirectory = inMemoryFs.getPath("/file_utils_test_empty_directory");
     Files.createDirectory(emptyDirectory);
 
-    for (int i = 0; i < NUMBER_FILES_IN_ROOT; i++) {
-      Path rootTextFile = inMemoryFs.getPath("/root_file_" + i + ".txt");
-      Files.writeString(rootTextFile, FILE_CONTENTS, CREATE_NEW);
+    for (int i = 0; i < FILES_IN_ROOT_DIRECTORY; i++) {
+      Path textFile = inMemoryFs.getPath("/root_file_" + i + ".txt");
+      Files.writeString(textFile, FILE_CONTENTS, CREATE_NEW);
     }
 
     // Get a reference to one of the text files, it's not important which.
-    textFile = MoreFiles.listFiles(inMemoryFs.getPath("/"))
-        .stream()
-        .filter(path -> "txt".equals(MoreFiles.getFileExtension(path)))
-        .findFirst()
-        .orElseThrow(
-            () -> new IllegalArgumentException("No text files found in root"));
+    try (Stream<Path> files = Files.list(inMemoryFs.getPath("/"))) {
+      textFile =
+          files.filter(path -> MoreFiles.getFileExtension(path).equals("txt"))
+               .findFirst()
+               .orElseThrow(
+                   () -> new IllegalArgumentException("No text files found in root"));
+    }
 
-    for (int i = 0; i < NUMBER_FILES_IN_DIRECTORY; i++) {
+    for (int i = 0; i < FILES_IN_SUBDIRECTORY; i++) {
       Path textFile = directory.resolve("directory_file_" + i + ".txt");
       Files.writeString(textFile, FILE_CONTENTS, CREATE_NEW);
     }
@@ -72,50 +77,53 @@ public final class FileUtilsTest {
   }
 
   /**
-   * Ensure that it returns the correct size for a valid directory with files.
+   * Verifies that {@link FileUtils#directorySizeInBytes(Path)} returns the
+   * correct size for a non-empty directory containing no subdirectories.
    */
   @Test
   public void testDirectorySizeBytes_directory() throws IOException {
-    assertEquals(DIRECTORY_SIZE_BYTES, FileUtils.directorySizeBytes(directory));
+    assertEquals(SUBDIRECTORY_SIZE_IN_BYTES, FileUtils.directorySizeInBytes(directory));
   }
 
   /**
-   * Ensure that it returns {@code 0} for a valid directory with no files.
+   * Verifies that {@link FileUtils#directorySizeInBytes(Path)} returns {@code
+   * 0L} for an empty directory.
    */
   @Test
   public void testDirectorySizeBytes_emptyDirectory() throws IOException {
-    assertEquals(0, FileUtils.directorySizeBytes(emptyDirectory));
+    assertEquals(0L, FileUtils.directorySizeInBytes(emptyDirectory));
   }
 
   /**
-   * Ensure that it returns the correct size for a valid directory with files
-   * and directories in it.
+   * Verifies that {@link FileUtils#directorySizeInBytes(Path)} returns the
+   * correct size for a directory that contains non-empty subdirectories.
    */
   @Test
   public void testDirectorySizeBytes_nestedDirectory() throws IOException {
     assertEquals(
-      DIRECTORY_SIZE_BYTES + ROOT_FILES_SIZE,
-      FileUtils.directorySizeBytes(inMemoryFs.getPath("/")));
+        SUBDIRECTORY_SIZE_IN_BYTES + ROOT_DIRECTORY_SIZE_IN_BYTES,
+        FileUtils.directorySizeInBytes(inMemoryFs.getPath("/")));
   }
 
   /**
-   * Ensure that it throws an exception when given a valid path that does not
-   * correspond to a directory.
+   * Verifies that {@link FileUtils#directorySizeInBytes(Path)} throws an
+   * exception when the specified path is a file rather than a directory.
    */
   @Test
   public void testDirectorySizeBytes_rejectTextFile() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> FileUtils.directorySizeBytes(textFile));
+        () -> FileUtils.directorySizeInBytes(textFile));
   }
 
   /**
-   * Ensure that it throws an exception when given a path that does not exist.
+   * Verifies that {@link FileUtils#directorySizeInBytes(Path)} throws an
+   * exception when the specified path does not exist.
    */
   @Test
   public void testDirectorySizeBytes_rejectMissingFile() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> FileUtils.directorySizeBytes(missingFile));
+        () -> FileUtils.directorySizeInBytes(missingFile));
   }
 }

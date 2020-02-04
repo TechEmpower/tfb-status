@@ -40,17 +40,15 @@ import tfb.status.view.ShareResultsJsonView;
 @ExtendWith(TestServicesInjector.class)
 public final class ShareResultsFormUploadHandlerTest {
   /**
-   * Ensure that given a valid results json file, the handler successfully
-   * uploads and responds as expected with a 201. This also verifies that the
-   * response body has JSON that de-serialized to a
-   * {@link ShareResultsJsonView}.
+   * Verifies that {@code POST /share-results/upload/form} produces a {@code 201
+   * Created} response for a valid results.json file.
    */
   @Test
-  public void shareResultsFormUploadHandler_uploadValid(
-      HttpTester http,
-      ResultsTester resultsTester,
-      ObjectMapper objectMapper,
-      FileSystem fileSystem) throws IOException, InterruptedException {
+  public void testPost(HttpTester http,
+                       ResultsTester resultsTester,
+                       ObjectMapper objectMapper,
+                       FileSystem fileSystem)
+      throws IOException, InterruptedException {
 
     Results results = resultsTester.newResults();
 
@@ -86,17 +84,17 @@ public final class ShareResultsFormUploadHandlerTest {
   }
 
   /**
-   * Ensure that given an invalid results json file, the handler responds as
-   * expected with a 400. This also verifies that the response body has JSON
-   * that de-serialized to a {@link ShareResultsErrorJsonView}.
+   * Verifies that {@code POST /share-results/upload/form} produces a {@code 201
+   * Created} response for a valid results.json file.
    */
   @Test
-  public void shareResultsFormUploadHandler_rejectUploadInvalid(
-      HttpTester http,
-      ObjectMapper objectMapper,
-      FileSystem fileSystem) throws IOException, InterruptedException {
+  public void testPost_invalidFile(HttpTester http,
+                                   ObjectMapper objectMapper,
+                                   FileSystem fileSystem)
+      throws IOException, InterruptedException {
 
     Path jsonFile = fileSystem.getPath("invalid_results.json");
+
     Files.writeString(jsonFile, "invalid json", CREATE_NEW);
 
     List<MultipartFormFileEntry> files =
@@ -107,59 +105,73 @@ public final class ShareResultsFormUploadHandlerTest {
                 /* fileName= */ jsonFile.getFileName().toString(),
                 /* mimeType= */ "application/json"));
 
-    HttpRequest.Builder builder = HttpRequest.newBuilder(
-        http.uri("/share-results/upload/form"));
+    HttpRequest.Builder builder =
+        HttpRequest.newBuilder(http.uri("/share-results/upload/form"));
 
     HttpRequest request = addPostMultipartFormData(builder, files).build();
 
-    HttpResponse<String> response = http.client().send(
-        request, HttpResponse.BodyHandlers.ofString());
+    HttpResponse<String> response =
+        http.client().send(
+            request,
+            HttpResponse.BodyHandlers.ofString());
 
     assertEquals(BAD_REQUEST, response.statusCode());
+
     assertEquals(
         JSON_UTF_8.toString(),
         response.headers().firstValue(CONTENT_TYPE).orElse(null));
 
-    ShareResultsErrorJsonView responseView = objectMapper.readValue(
-        response.body(),
-        ShareResultsErrorJsonView.class);
+    ShareResultsErrorJsonView responseView =
+        objectMapper.readValue(
+            response.body(),
+            ShareResultsErrorJsonView.class);
 
     assertNotNull(responseView);
   }
 
   /**
-   * Add multipart form data to a http request. Generates a new boundary,
-   * specifies the Content-Type header, and includes POST data by constructing
-   * a new body publisher containing all form data.
+   * Adds {@code multipart/form-data} to an HTTP request.  Generates a new
+   * boundary, specifies the {@code Content-Type} header, and includes POST data
+   * by constructing a new body publisher containing all form data.
    *
-   * @param request The builder to add to.
-   * @param files A list of files to include in the form data.
+   * @param request the builder to modify
+   * @param files the list of files to include in the form data
    */
-  private static HttpRequest.Builder addPostMultipartFormData(
-      HttpRequest.Builder request,
-      List<MultipartFormFileEntry> files) throws IOException {
+  private static HttpRequest.Builder
+  addPostMultipartFormData(HttpRequest.Builder request,
+                           List<MultipartFormFileEntry> files)
+      throws IOException {
+
+    Objects.requireNonNull(request);
+    Objects.requireNonNull(files);
 
     String boundary = new BigInteger(256, new Random()).toString();
 
-    return request
-        .header(CONTENT_TYPE, "multipart/form-data;boundary=" + boundary)
-        .POST(multipartFormDataPublisher(boundary, files));
+    return request.header(CONTENT_TYPE,
+                          "multipart/form-data;boundary=" + boundary)
+                  .POST(multipartFormDataPublisher(boundary, files));
   }
 
   /**
-   * Construct a new body publisher that includes all specified data as form
+   * Constructs a new body publisher that includes all specified data as form
    * data.
    */
-  private static HttpRequest.BodyPublisher multipartFormDataPublisher(
-      String boundary,
-      List<MultipartFormFileEntry> files) throws IOException {
+  private static HttpRequest.BodyPublisher
+  multipartFormDataPublisher(String boundary,
+                             List<MultipartFormFileEntry> files)
+      throws IOException {
+
+    Objects.requireNonNull(boundary);
+    Objects.requireNonNull(files);
 
     List<byte[]> byteArrays = new ArrayList<>();
 
-    byte[] separator = concatUtf8Bytes(
-        "--", boundary,
-        "\r\n",
-        "Content-Disposition: form-data; name=");
+    byte[] separator =
+        concatUtf8Bytes(
+            "--",
+            boundary,
+            "\r\n",
+            "Content-Disposition: form-data; name=");
 
     for (MultipartFormFileEntry file : files) {
       byteArrays.add(separator);
@@ -170,7 +182,8 @@ public final class ShareResultsFormUploadHandlerTest {
               "filename=\"", file.fileName, "\"",
               "\r\n",
               "Content-Type: ", file.mimeType,
-              "\r\n\r\n"));
+              "\r\n",
+              "\r\n"));
 
       byteArrays.add(Files.readAllBytes(file.path));
 
@@ -189,14 +202,14 @@ public final class ShareResultsFormUploadHandlerTest {
   private static byte[] concatUtf8Bytes(String... parts) throws IOException {
     Objects.requireNonNull(parts);
 
-    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
 
     for (String part : parts) {
       Objects.requireNonNull(part);
-      os.write(part.getBytes(UTF_8));
+      out.write(part.getBytes(UTF_8));
     }
 
-    return os.toByteArray();
+    return out.toByteArray();
   }
 
   @Immutable
@@ -207,9 +220,10 @@ public final class ShareResultsFormUploadHandlerTest {
     final String mimeType;
 
     MultipartFormFileEntry(String name,
-                                  Path path,
-                                  String fileName,
-                                  String mimeType) {
+                           Path path,
+                           String fileName,
+                           String mimeType) {
+
       this.name = Objects.requireNonNull(name);
       this.path = Objects.requireNonNull(path);
       this.fileName = Objects.requireNonNull(fileName);

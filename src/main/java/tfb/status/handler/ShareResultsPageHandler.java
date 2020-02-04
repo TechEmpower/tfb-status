@@ -19,9 +19,10 @@ import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 
 /**
- * Handler that renders the standalone paste bin style page for sharing results
- * files. Allows anonymous users to upload a results.json file or paste in the
- * contents of a results.json file in order to share it.
+ * Handles requests to render the standalone pastebin-style page for sharing
+ * results files.  This page allows anonymous users to upload a local
+ * results.json file or to enter the contents of a local results.json file as
+ * text.
  *
  * @see ShareResultsUploader
  */

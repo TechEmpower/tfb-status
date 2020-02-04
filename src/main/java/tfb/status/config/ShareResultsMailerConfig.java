@@ -9,15 +9,16 @@ import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * The configuration for the service that sends an emails related to sharing.
+ * The configuration for the service that sends emails related to shared
+ * results.
  */
 @Immutable
 @Singleton
-public class ShareResultsMailerConfig {
+public final class ShareResultsMailerConfig {
   /**
    * The minimum number of seconds that must pass after sending one email before
-   * sending another. This is used to prevent accidental self-spam if there are
-   * a lot of requests to upload results when the share directory is full.
+   * sending another.  This is used to prevent accidental self-spam if there are
+   * multiple requests to upload results when the share directory is full.
    */
   public final long minSecondsBetweenDirectoryFullEmails;
 

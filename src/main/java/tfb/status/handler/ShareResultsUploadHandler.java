@@ -21,21 +21,24 @@ import javax.inject.Singleton;
 import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.ShareResultsUploader;
+import tfb.status.service.ShareResultsUploader.ShareResultsUploadReport;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.Results;
-import tfb.status.view.ShareResultsErrorJsonView;
 
 /**
- * Handles requests to share results.json files. This is intended for anyone to
- * use, it does not require authentication. This handler accepts fully formed
- * and completed results.json uploads.
+ * Handles requests from users to share results.json files, where those files
+ * are encoded in the request body as {@code application/json}.
  *
- * POST the contents of a results.json file in the request body. The JSON must
- * conform to {@link Results} such that it can deserialize without error, and
- * must have a non-empty {@link Results#testMetadata} array. Upon success, JSON
- * is returned that contains info about how to access the raw JSON and also
- * visualize it on the TechEmpower benchmarks site.
+ * <p>This feature is intended for anyone to use; no authentication is required.
+ * This handler accepts fully formed and completed results.json uploads.
+ *
+ * <p>Submit an {@code application/json} POST request to this handler with the
+ * results.json file as the request body.  The JSON must conform to {@link
+ * Results} such that it can deserialize without error, and it must have a
+ * non-empty {@link Results#testMetadata} array.  Upon success, JSON is returned
+ * that describes how to access the raw JSON and how to visualize it on the TFB
+ * website.
  */
 @Singleton
 public final class ShareResultsUploadHandler implements HttpHandler {
@@ -45,6 +48,7 @@ public final class ShareResultsUploadHandler implements HttpHandler {
   @Inject
   public ShareResultsUploadHandler(ObjectMapper objectMapper,
                                    ShareResultsUploader shareResultsUploader) {
+
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.shareResultsUploader = Objects.requireNonNull(shareResultsUploader);
   }
@@ -53,7 +57,8 @@ public final class ShareResultsUploadHandler implements HttpHandler {
   @Singleton
   @ExactPath("/share-results/upload")
   public HttpHandler shareResultsUploadHandler() {
-    return HttpHandlers.chain(this,
+    return HttpHandlers.chain(
+        this,
         handler -> new MethodHandler().addMethod(POST, handler),
         handler -> new DisableCacheHandler(handler),
         handler -> new SetHeaderHandler(handler,
@@ -63,25 +68,21 @@ public final class ShareResultsUploadHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
-    ShareResultsUploader.ShareResultsUploadReport report =
+    ShareResultsUploadReport report =
         shareResultsUploader.upload(exchange.getInputStream());
 
-    exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
-
     if (report.isError()) {
+      String json = objectMapper.writeValueAsString(report.getError());
       exchange.setStatusCode(BAD_REQUEST);
-
-      String json = objectMapper.writeValueAsString(
-          new ShareResultsErrorJsonView(report.getErrorMessage()));
+      exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
       exchange.getResponseSender().send(json, UTF_8);
-    } else {
-      exchange.setStatusCode(CREATED);
-      exchange.getResponseHeaders().put(
-          LOCATION,
-          report.getSuccess().resultsUrl);
-
-      String json = objectMapper.writeValueAsString(report.getSuccess());
-      exchange.getResponseSender().send(json, UTF_8);
+      return;
     }
+
+    String json = objectMapper.writeValueAsString(report.getSuccess());
+    exchange.setStatusCode(CREATED);
+    exchange.getResponseHeaders().put(LOCATION, report.getSuccess().resultsUrl);
+    exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
+    exchange.getResponseSender().send(json, UTF_8);
   }
 }

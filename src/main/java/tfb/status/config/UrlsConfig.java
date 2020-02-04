@@ -8,22 +8,23 @@ import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Configuration for various URLs that the application needs to know about.
- * These are generally used to generate fully qualified URLs pointing to this
- * or other sites.
+ * URLs used by this application.  These are generally used to generate fully
+ * qualified URLs pointing to this application or to other websites.
  */
 @Immutable
 @Singleton
 public final class UrlsConfig {
   /**
-   * The origin of this application, containing the protocol and domain.
-   * Should not end with a slash.
+   * The <a href="https://url.spec.whatwg.org/#origin">origin</a> for this
+   * application, containing the scheme and domain but no path.  Must not end
+   * with a slash.
    */
   public final String tfbStatus;
 
   /**
-   * The origin of the TechEmpower website, containing the protocol and domain.
-   * Should not end with a slash.
+   * The <a href="https://url.spec.whatwg.org/#origin">origin</a> for the
+   * TechEmpower website, containing the scheme and domain but no path.  Must
+   * not end with a slash.
    */
   public final String teWeb;
 
@@ -53,8 +54,7 @@ public final class UrlsConfig {
     return hash;
   }
 
-  private static final String DEFAULT_TFB_STATUS =
-      "https://tfb-status.techempower.com";
+  private static final String DEFAULT_TFB_STATUS = "https://tfb-status.techempower.com";
   private static final String DEFAULT_TE_WEB = "https://www.techempower.com";
 
   @JsonCreator

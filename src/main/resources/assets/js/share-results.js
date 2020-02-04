@@ -1,50 +1,55 @@
+// -----------------------------------------------------------------------------
+// Dynamic behavior for the share results page.
+// -----------------------------------------------------------------------------
+
 (function() {
+
   function show(element) {
-    element.style.display = 'block';
+    element.style.display = "block";
   }
 
   function hide(element) {
-    element.style.display = 'none';
+    element.style.display = "none";
   }
 
   const htmlEscapes = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#x27;',
-    '/': '&#x2F;'
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#x27;",
+    "/": "&#x2F;"
   };
 
   function escapeForHtml(string) {
-    return ('' + string).replace(/[&<>"'\/]/g, function(match) {
+    return ("" + string).replace(/[&<>"'\/]/g, function(match) {
       return htmlEscapes[match];
     });
   }
 
   function showSuccess(uploadResponse) {
-    const resultsUrlAnchor = document.querySelector('.success-results-json-url');
+    const resultsUrlAnchor = document.querySelector(".success-results-json-url");
     resultsUrlAnchor.href = encodeURI(uploadResponse.resultsUrl);
     resultsUrlAnchor.innerHTML = escapeForHtml(uploadResponse.resultsUrl);
 
-    const visualizeResultsUrlAnchor = document.querySelector('.success-visualize-results-url');
+    const visualizeResultsUrlAnchor = document.querySelector(".success-visualize-results-url");
     visualizeResultsUrlAnchor.href = encodeURI(uploadResponse.visualizeResultsUrl);
     visualizeResultsUrlAnchor.innerHTML = escapeForHtml(uploadResponse.visualizeResultsUrl);
 
     hideErrors();
-    show(document.querySelector('.success-content'));
+    show(document.querySelector(".success-content"));
   }
 
   function hideSuccess() {
-    hide(document.querySelector('.success-content'));
+    hide(document.querySelector(".success-content"));
   }
 
   function showErrors(errors) {
-    const errorsList = document.querySelector('.error-list');
-    errorsList.innerHTML = '';
+    const errorsList = document.querySelector(".error-list");
+    errorsList.innerHTML = "";
 
     for (const error of errors) {
-      const errorLi = document.createElement('li');
+      const errorLi = document.createElement("li");
       errorLi.innerHTML = escapeForHtml(error);
       errorsList.appendChild(errorLi);
     }
@@ -54,7 +59,7 @@
   }
 
   function hideErrors() {
-    hide(document.querySelector('.error-list'));
+    hide(document.querySelector(".error-list"));
   }
 
   let currentShareType = null;
@@ -62,9 +67,9 @@
   function handleShareTypeChange(shareType) {
     currentShareType = shareType;
 
-    const allSections = document.querySelectorAll('.share-type-section');
+    const allSections = document.querySelectorAll(".share-type-section");
     const sectionToShow =
-        shareType ? document.querySelector('.share-type-section.' + shareType) : null;
+        shareType ? document.querySelector(".share-type-section." + shareType) : null;
 
     // Hide everything
     for (const section of allSections) {
@@ -78,11 +83,11 @@
   }
 
   function attachShareTypeHandler() {
-    const radios = document.querySelectorAll('input[name="share-type"]');
+    const radios = document.querySelectorAll("input[name=\"share-type\"]");
     let selectedShareType = null;
 
     for (const radio of radios) {
-      radio.addEventListener('change', function() {
+      radio.addEventListener("change", function() {
         handleShareTypeChange(radio.value);
       });
 
@@ -108,65 +113,65 @@
       showSuccess(json);
       onSuccess();
     }).catch(function(e) {
-      console.error('Error uploading:', e);
+      console.error("Error uploading:", e);
       showErrors([e.message]);
     });
   }
 
   function handleSubmitPaste() {
-    const pasteTextarea = document.querySelector('#paste-results-json');
+    const pasteTextarea = document.querySelector("#paste-results-json");
     const pasteResultsJson = pasteTextarea.value;
     if (!pasteResultsJson || pasteResultsJson.trim().length === 0) {
-      showErrors(['JSON is empty']);
+      showErrors(["JSON is empty"]);
       return;
     }
 
     handleUploadResponse(
-      fetch('/share-results/upload', {
-        method: 'POST',
+      fetch("/share-results/upload", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json"
         },
         body: pasteResultsJson
       }),
       function() {
-        pasteTextarea.value = '';
+        pasteTextarea.value = "";
       }
     );
   }
 
   function handleSubmitUpload() {
-    const fileInput = document.querySelector('#upload-results-json');
+    const fileInput = document.querySelector("#upload-results-json");
     const file = fileInput.files[0];
     if (!file) {
-      showErrors(['Select a file']);
+      showErrors(["Select a file"]);
       return;
     }
 
     const formData = new FormData();
-    formData.append('results', file);
+    formData.append("results", file);
 
     handleUploadResponse(
-      fetch('/share-results/upload/form', {
-        method: 'POST',
+      fetch("/share-results/upload/form", {
+        method: "POST",
         body: formData
       }),
       function() {
-        fileInput.value = '';
+        fileInput.value = "";
       }
     );
   }
 
   function attachSubmitHandler() {
-    document.querySelector('#share-results-form').addEventListener('submit', function(event) {
+    document.querySelector("#share-results-form").addEventListener("submit", function(event) {
       event.preventDefault();
 
-      if (currentShareType === 'paste') {
+      if (currentShareType === "paste") {
         handleSubmitPaste();
-      } else if (currentShareType === 'upload') {
+      } else if (currentShareType === "upload") {
         handleSubmitUpload();
       } else {
-        showErrors(['Select a share method']);
+        showErrors(["Select a share method"]);
       }
     });
   }
@@ -178,5 +183,6 @@
     hideErrors();
   }
 
-  document.addEventListener('DOMContentLoaded', handleDomReady);
+  document.addEventListener("DOMContentLoaded", handleDomReady);
+
 })();

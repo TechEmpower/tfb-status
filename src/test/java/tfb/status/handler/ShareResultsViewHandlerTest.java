@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.service.FileStore;
 import tfb.status.service.ShareResultsUploader;
+import tfb.status.service.ShareResultsUploader.ShareResultsUploadReport;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.ResultsTester;
 import tfb.status.testlib.TestServicesInjector;
@@ -32,23 +33,22 @@ import tfb.status.view.Results;
 @ExtendWith(TestServicesInjector.class)
 public final class ShareResultsViewHandlerTest {
   /**
-   * Ensure that after uploading a file, we can use the view handler to retrieve
-   * that results file using the GET {@code /share-results/view/{shareId}.json}
-   * endpoint.
+   * Verifies that {@code GET /share-results/view/$share_id.json} for a valid
+   * share id produces that results.json file that was shared.
    */
   @Test
-  public void shareResultsViewHandler_getValidUpload(
-      HttpTester http,
-      ResultsTester resultsTester,
-      ShareResultsUploader shareResultsUploader,
-      FileSystem fileSystem) throws IOException, InterruptedException {
+  public void testGet(HttpTester http,
+                      ResultsTester resultsTester,
+                      ShareResultsUploader shareResultsUploader,
+                      FileSystem fileSystem)
+      throws IOException, InterruptedException {
 
     Results results = resultsTester.newResults();
 
     Path jsonFile = fileSystem.getPath(UUID.randomUUID().toString() + ".json");
     resultsTester.saveJsonToFile(results, jsonFile);
 
-    ShareResultsUploader.ShareResultsUploadReport report;
+    ShareResultsUploadReport report;
     try (InputStream in = Files.newInputStream(jsonFile)) {
       report = shareResultsUploader.upload(in);
     }
@@ -71,20 +71,19 @@ public final class ShareResultsViewHandlerTest {
   }
 
   /**
-   * Ensure the handler gives a 404 when trying to view a results file that does
-   * not exist.
+   * Verifies that {@code GET /share-results/view/$share_id.json} produces a
+   * {@code 404 Not Found} response for an invalid share id.
    */
   @Test
-  public void shareResultsViewHandler_rejectMissingUpload(
-      HttpTester http,
-      FileStore fileStore) throws IOException, InterruptedException {
+  public void testGet_invalidShareId(HttpTester http,
+                                     FileStore fileStore)
+      throws IOException, InterruptedException {
 
     String shareId;
 
     do {
       shareId = UUID.randomUUID().toString();
-    } while (
-        Files.exists(fileStore.shareDirectory().resolve(shareId + ".zip")));
+    } while (Files.exists(fileStore.shareDirectory().resolve(shareId + ".zip")));
 
     HttpResponse<String> response =
         http.getString("/share-results/view/" + shareId + ".json");
