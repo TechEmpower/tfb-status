@@ -7,22 +7,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static tfb.status.testlib.MoreAssertions.assertEndsWith;
+import static tfb.status.testlib.MoreAssertions.assertStartsWith;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Ascii;
+import com.google.common.io.ByteSource;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.CharSource;
 import com.google.common.io.MoreFiles;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import tfb.status.config.FileStoreConfig;
 import tfb.status.service.ShareResultsUploader.ShareResultsUploadReport;
 import tfb.status.testlib.ResultsTester;
@@ -33,6 +41,7 @@ import tfb.status.view.ShareResultsJsonView;
 /**
  * Tests for {@link ShareResultsUploader}.
  */
+@Execution(ExecutionMode.SAME_THREAD) // currently not parallelizable
 @ExtendWith(TestServicesInjector.class)
 public final class ShareResultsUploaderTest {
   /**
@@ -66,32 +75,35 @@ public final class ShareResultsUploaderTest {
         NoSuchElementException.class,
         () -> report.getError());
 
-    ShareResultsJsonView jsonView = report.getSuccess();
+    ShareResultsJsonView shareView = report.getSuccess();
 
     // Validate the basics of the info returned.
-    assertTrue(jsonView.fileName.endsWith(".json"));
+    assertEndsWith(
+        ".json",
+        shareView.fileName);
 
-    assertTrue(
-        jsonView.resultsUrl.startsWith(
-            "https://test.tfb-status.techempower.com/share-results/view/"));
+    assertStartsWith(
+        "https://test.tfb-status.techempower.com/share-results/view/",
+        shareView.resultsUrl);
 
-    assertTrue(
-        jsonView.visualizeResultsUrl.startsWith(
-            "https://www.test.techempower.com/benchmarks/"));
+    assertStartsWith(
+        "https://www.test.techempower.com/benchmarks/",
+        shareView.visualizeResultsUrl);
 
     // Ensure the uploader created a zip file in the expected directory with the
     // expected name.
     String shareId =
-        MoreFiles.getNameWithoutExtension(Paths.get(jsonView.fileName));
+        shareView.fileName.substring(0, shareView.fileName.lastIndexOf('.'));
 
-    assertTrue(
-        Files.exists(fileStore.shareDirectory().resolve(shareId + ".zip")));
+    Path zipFile = fileStore.shareDirectory().resolve(shareId + ".zip");
+
+    assertTrue(Files.exists(zipFile));
 
     AtomicBoolean zipEntryPresent = new AtomicBoolean(false);
 
     shareResultsUploader.getUpload(
         /* jsonFileName= */
-        jsonView.fileName,
+        shareView.fileName,
 
         /* ifPresent= */
         (Path zipEntry) -> {
@@ -101,7 +113,7 @@ public final class ShareResultsUploaderTest {
         },
 
         /* ifAbsent= */
-        () -> {});
+        () -> fail());
 
     assertTrue(zipEntryPresent.get());
   }
@@ -115,9 +127,10 @@ public final class ShareResultsUploaderTest {
   public void testUpload_invalidJson(ShareResultsUploader shareResultsUploader)
       throws IOException {
 
+    ByteSource invalidJsonBytes = CharSource.wrap("foo").asByteSource(UTF_8);
+
     ShareResultsUploadReport report;
-    try (InputStream inputStream =
-             CharSource.wrap("foo").asByteSource(UTF_8).openStream()) {
+    try (InputStream inputStream = invalidJsonBytes.openStream()) {
       report = shareResultsUploader.upload(inputStream);
     }
 
@@ -155,7 +168,7 @@ public final class ShareResultsUploaderTest {
       oldResults = objectMapper.readValue(inputStream, Results.class);
     }
 
-    Results results =
+    Results newResults =
         new Results(
             /* uuid= */ oldResults.uuid,
             /* name= */ oldResults.name,
@@ -173,11 +186,11 @@ public final class ShareResultsUploaderTest {
             /* git= */ oldResults.git,
             /* testMetadata= */ null);
 
-    Path jsonFile = fileSystem.getPath("results_to_share.json");
-    resultsTester.saveJsonToFile(results, jsonFile);
+    Path newJsonFile = fileSystem.getPath("results_to_share.json");
+    resultsTester.saveJsonToFile(newResults, newJsonFile);
 
     ShareResultsUploadReport report;
-    try (InputStream inputStream = Files.newInputStream(jsonFile)) {
+    try (InputStream inputStream = Files.newInputStream(newJsonFile)) {
       report = shareResultsUploader.upload(inputStream);
     }
 
@@ -194,15 +207,48 @@ public final class ShareResultsUploaderTest {
    * with an error message when the specified results.json file is too large.
    */
   @Test
-  public void testUpload_fileTooLarge(
-      FileStoreConfig fileStoreConfig,
-      ShareResultsUploader shareResultsUploader) throws IOException {
+  public void testUpload_fileTooLarge(FileStoreConfig fileStoreConfig,
+                                      FileStore fileStore,
+                                      ShareResultsUploader shareResultsUploader,
+                                      ObjectMapper objectMapper)
+      throws IOException {
 
-    InputStream inputStream =
-        new FixedLengthStaticInputStream(
-            fileStoreConfig.maxShareFileSizeBytes + 1);
+    // Start with a valid results.json file and append spaces to the end to make
+    // it too large (but valid otherwise).
+    Path jsonFile =
+        fileStore.resultsDirectory().resolve(
+            "results.2019-12-11-13-21-02-404.json");
 
-    ShareResultsUploadReport report = shareResultsUploader.upload(inputStream);
+    ByteSource resultsBytes = MoreFiles.asByteSource(jsonFile);
+
+    // Make the uploaded file exactly too large.
+    long paddingNeeded =
+        fileStoreConfig.maxShareFileSizeBytes + 1 - resultsBytes.size();
+
+    ByteSource padding =
+        new ByteSource() {
+          @Override
+          public InputStream openStream() {
+            @SuppressWarnings("InputStreamSlowMultibyteRead")
+            InputStream spaces =
+                new InputStream() {
+                  @Override
+                  public int read() {
+                    return Ascii.SPACE;
+                  }
+                };
+
+            return ByteStreams.limit(spaces, paddingNeeded);
+          }
+        };
+
+    ByteSource paddedResultsBytes =
+        ByteSource.concat(resultsBytes, padding);
+
+    ShareResultsUploadReport report;
+    try (InputStream inputStream = paddedResultsBytes.openStream()) {
+      report = shareResultsUploader.upload(inputStream);
+    }
 
     assertTrue(report.isError());
 
@@ -224,29 +270,28 @@ public final class ShareResultsUploaderTest {
                                             ShareResultsUploader shareResultsUploader)
       throws IOException {
 
-    // Create a new large directory in the share directory so that it is above
-    // its maximum configured size.
-    Path directory = fileStore.shareDirectory().resolve("full_directory");
-    Files.createDirectory(directory);
-
+    // Create a new large file in the share directory so that the directory
+    // exceeds its maximum configured size.
+    //
+    // TODO: This is unfriendly to other tests running in parallel, since it
+    //       temporarily prevents the share functionality from working for
+    //       anyone.
+    Path junk = fileStore.shareDirectory().resolve("junk.txt");
     try {
-      long fileSize = fileStoreConfig.maxShareFileSizeBytes;
-      long directorySize = 0;
-
-      while (directorySize < fileStoreConfig.maxShareDirectorySizeBytes) {
-        Path file = directory.resolve(UUID.randomUUID().toString() + ".txt");
-
-        try (InputStream in = new FixedLengthStaticInputStream(fileSize);
-             OutputStream out = Files.newOutputStream(file, CREATE_NEW, WRITE)) {
-          in.transferTo(out);
-        }
-
-        directorySize += fileSize;
+      try (FileChannel channel = FileChannel.open(junk, CREATE_NEW, WRITE)) {
+        channel.write(
+            ByteBuffer.wrap(new byte[0]),
+            fileStoreConfig.maxShareDirectorySizeBytes);
       }
 
-      ShareResultsUploadReport report =
-          shareResultsUploader.upload(
-              new FixedLengthStaticInputStream(1000));
+      Path jsonFile =
+          fileStore.resultsDirectory().resolve(
+              "results.2019-12-11-13-21-02-404.json");
+
+      ShareResultsUploadReport report;
+      try (InputStream inputStream = Files.newInputStream(jsonFile)) {
+        report = shareResultsUploader.upload(inputStream);
+      }
 
       assertTrue(report.isError());
 
@@ -256,8 +301,7 @@ public final class ShareResultsUploaderTest {
           report.getError().message);
 
     } finally {
-      MoreFiles.deleteDirectoryContents(directory);
-      Files.delete(directory);
+      Files.delete(junk);
     }
   }
 
@@ -272,9 +316,8 @@ public final class ShareResultsUploaderTest {
       throws IOException {
 
     String shareId;
-    do {
-      shareId = UUID.randomUUID().toString();
-    } while (Files.exists(fileStore.shareDirectory().resolve(shareId + ".zip")));
+    do shareId = UUID.randomUUID().toString();
+    while (Files.exists(fileStore.shareDirectory().resolve(shareId + ".zip")));
 
     AtomicBoolean ifAbsentCalled = new AtomicBoolean(false);
 
@@ -283,7 +326,7 @@ public final class ShareResultsUploaderTest {
         shareId + ".json",
 
         /* ifPresent= */
-        (Path zipEntry) -> {},
+        zipEntry -> fail(),
 
         /* ifAbsent= */
         () -> ifAbsentCalled.set(true));
@@ -305,34 +348,9 @@ public final class ShareResultsUploaderTest {
 
     shareResultsUploader.getUpload(
         /* jsonFileName= */ "not-a-json-file.txt",
-        /* ifPresent= */ (Path zipEntry) -> {},
+        /* ifPresent= */ zipEntry -> fail(),
         /* ifAbsent= */ () -> ifAbsentCalled.set(true));
 
     assertTrue(ifAbsentCalled.get());
-  }
-
-  /**
-   * An input stream that will generate the configured number of bytes.  It
-   * outputs the letter "a" until it has given the right number of bytes without
-   * creating a large and unnecessary backing array in memory.
-   */
-  @SuppressWarnings("InputStreamSlowMultibyteRead") // it should still be fast
-  private static final class FixedLengthStaticInputStream extends InputStream {
-    private final long count;
-    private int data = ("a".getBytes(UTF_8)[0] & 0xff);
-    private int pos = -1;
-
-    /**
-     * @param count the number of bytes to output via {@link #read()}
-     */
-    FixedLengthStaticInputStream(long count) {
-      this.count = count;
-    }
-
-    @Override
-    public int read() {
-      pos++;
-      return (pos < count) ? data : -1;
-    }
   }
 }

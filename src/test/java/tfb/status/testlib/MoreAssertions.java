@@ -122,6 +122,28 @@ public final class MoreAssertions {
   }
 
   /**
+   * Asserts that the actual string ends with the expected string.
+   */
+  public static void assertEndsWith(String expected,
+                                    @Nullable String actual) {
+    Objects.requireNonNull(expected);
+
+    if (actual == null)
+      throw new AssertionError(
+          "expected string to start with \""
+              + expected
+              + "\", actual value was null");
+
+    if (!actual.endsWith(expected))
+      throw new AssertionError(
+          "expected string to end with \""
+              + expected
+              + "\", actual value was \""
+              + actual
+              + "\"");
+  }
+
+  /**
    * Asserts that the lines of the actual string are equal to the expected
    * lines, where "line" is defined by {@link BufferedReader#readLine()}.
    */

@@ -80,10 +80,8 @@ public final class ShareResultsViewHandlerTest {
       throws IOException, InterruptedException {
 
     String shareId;
-
-    do {
-      shareId = UUID.randomUUID().toString();
-    } while (Files.exists(fileStore.shareDirectory().resolve(shareId + ".zip")));
+    do shareId = UUID.randomUUID().toString();
+    while (Files.exists(fileStore.shareDirectory().resolve(shareId + ".zip")));
 
     HttpResponse<String> response =
         http.getString("/share-results/view/" + shareId + ".json");
