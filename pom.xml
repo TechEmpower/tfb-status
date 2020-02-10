@@ -451,6 +451,7 @@
               -Xep:TryFailRefactoring:OFF
               -Xep:MutableMethodReturnType:OFF
               -Xep:NoFunctionalReturnType:OFF
+              -Xep:ReturnMissingNullable:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
