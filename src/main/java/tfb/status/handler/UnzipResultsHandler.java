@@ -13,7 +13,6 @@ import static java.util.Comparator.comparing;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Booleans;
@@ -23,8 +22,7 @@ import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.util.MimeMappings;
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -143,10 +141,8 @@ public final class UnzipResultsHandler implements HttpHandler {
               exchange.getResponseHeaders().put(CONTENT_TYPE,
                                                 mediaType.toString());
 
-            try (ReadableByteChannel in =
-                     Files.newByteChannel(zipEntry, READ)) {
-              WritableByteChannel out = exchange.getResponseChannel();
-              ByteStreams.copy(in, out);
+            try (InputStream inputStream = Files.newInputStream(zipEntry, READ)) {
+              inputStream.transferTo(exchange.getOutputStream());
             }
           }
 
