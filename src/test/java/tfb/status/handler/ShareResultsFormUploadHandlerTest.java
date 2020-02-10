@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.http.HttpRequest;
@@ -164,52 +163,26 @@ public final class ShareResultsFormUploadHandlerTest {
     Objects.requireNonNull(boundary);
     Objects.requireNonNull(files);
 
+    // TODO: Avoid eagerly reading the contents of all the files into this list.
     List<byte[]> byteArrays = new ArrayList<>();
 
-    byte[] separator =
-        concatUtf8Bytes(
-            "--",
-            boundary,
-            "\r\n",
-            "Content-Disposition: form-data; name=");
-
     for (MultipartFormFileEntry file : files) {
-      byteArrays.add(separator);
+      String header =
+          "--"  + boundary + "\r\n"
+              + "Content-Disposition: form-data; name=\"" + file.name + "\";"
+              + "filename=\"" + file.fileName + "\""
+              + "\r\n"
+              + "Content-Type: " + file.mimeType
+              + "\r\n"
+              + "\r\n";
 
-      byteArrays.add(
-          concatUtf8Bytes(
-              "\"", file.name, "\";",
-              "filename=\"", file.fileName, "\"",
-              "\r\n",
-              "Content-Type: ", file.mimeType,
-              "\r\n",
-              "\r\n"));
-
+      byteArrays.add(header.getBytes(UTF_8));
       byteArrays.add(Files.readAllBytes(file.path));
-
       byteArrays.add("\r\n".getBytes(UTF_8));
     }
 
-    byteArrays.add(concatUtf8Bytes("--", boundary, "--"));
-
+    byteArrays.add(("--" + boundary + "--").getBytes(UTF_8));
     return HttpRequest.BodyPublishers.ofByteArrays(byteArrays);
-  }
-
-  /**
-   * Create a byte array containing all specified parts' bytes (UTF_8)
-   * concatenated together without a separator.
-   */
-  private static byte[] concatUtf8Bytes(String... parts) throws IOException {
-    Objects.requireNonNull(parts);
-
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-    for (String part : parts) {
-      Objects.requireNonNull(part);
-      outputStream.write(part.getBytes(UTF_8));
-    }
-
-    return outputStream.toByteArray();
   }
 
   @Immutable
