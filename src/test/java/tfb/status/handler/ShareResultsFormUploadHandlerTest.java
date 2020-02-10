@@ -78,14 +78,16 @@ public final class ShareResultsFormUploadHandlerTest {
 
     assertMediaType(
         JSON_UTF_8,
-        response.headers().firstValue(CONTENT_TYPE).orElse(null));
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
-    ShareResultsJsonView responseView =
+    ShareResultsJsonView shareView =
         objectMapper.readValue(
             response.body(),
             ShareResultsJsonView.class);
 
-    assertNotNull(responseView);
+    assertNotNull(shareView);
   }
 
   /**
@@ -120,14 +122,16 @@ public final class ShareResultsFormUploadHandlerTest {
 
     assertMediaType(
         JSON_UTF_8,
-        response.headers().firstValue(CONTENT_TYPE).orElse(null));
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
-    ShareResultsErrorJsonView responseView =
+    ShareResultsErrorJsonView errorView =
         objectMapper.readValue(
             response.body(),
             ShareResultsErrorJsonView.class);
 
-    assertNotNull(responseView);
+    assertNotNull(errorView);
   }
 
   /**

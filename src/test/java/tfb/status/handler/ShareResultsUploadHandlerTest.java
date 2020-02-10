@@ -38,11 +38,9 @@ public final class ShareResultsUploadHandlerTest {
 
     Results results = resultsTester.newResults();
 
-    String resultsJson = objectMapper.writeValueAsString(results);
-
     HttpRequest request =
         HttpRequest.newBuilder(http.uri("/share-results/upload"))
-                   .POST(HttpRequest.BodyPublishers.ofString(resultsJson))
+                   .POST(resultsTester.asBodyPublisher(results))
                    .header(CONTENT_TYPE, JSON_UTF_8.toString())
                    .build();
 
@@ -55,14 +53,16 @@ public final class ShareResultsUploadHandlerTest {
 
     assertMediaType(
         JSON_UTF_8,
-        response.headers().firstValue(CONTENT_TYPE).orElse(null));
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
-    ShareResultsJsonView responseView =
+    ShareResultsJsonView shareView =
         objectMapper.readValue(
             response.body(),
             ShareResultsJsonView.class);
 
-    assertNotNull(responseView);
+    assertNotNull(shareView);
   }
 
   /**
@@ -88,13 +88,15 @@ public final class ShareResultsUploadHandlerTest {
 
     assertMediaType(
         JSON_UTF_8,
-        response.headers().firstValue(CONTENT_TYPE).orElse(null));
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
-    ShareResultsErrorJsonView responseView =
+    ShareResultsErrorJsonView errorView =
         objectMapper.readValue(
             response.body(),
             ShareResultsErrorJsonView.class);
 
-    assertNotNull(responseView);
+    assertNotNull(errorView);
   }
 }

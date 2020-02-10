@@ -53,15 +53,15 @@ public final class ShareResultsUploaderTest {
    */
   @Test
   public void testUpload(ShareResultsUploader shareResultsUploader,
+                         ResultsTester resultsTester,
                          FileStore fileStore)
       throws IOException {
 
-    Path resultsJson =
-        fileStore.resultsDirectory().resolve(
-            "results.2019-12-11-13-21-02-404.json");
+    Results results = resultsTester.newResults();
+    ByteSource resultsBytes = resultsTester.asByteSource(results);
 
     ShareResultsUploadReport report;
-    try (InputStream inputStream = Files.newInputStream(resultsJson)) {
+    try (InputStream inputStream = resultsBytes.openStream()) {
       report = shareResultsUploader.upload(inputStream);
     }
 
@@ -99,7 +99,8 @@ public final class ShareResultsUploaderTest {
         (Path zipEntry) -> {
           zipEntryPresent.set(true);
           // The uploaded file should contain the same exact bytes as was given.
-          assertTrue(MoreFiles.equal(resultsJson, zipEntry));
+          ByteSource zipEntryBytes = MoreFiles.asByteSource(zipEntry);
+          assertTrue(zipEntryBytes.contentEquals(resultsBytes));
         },
 
         /* ifAbsent= */
@@ -242,8 +243,12 @@ public final class ShareResultsUploaderTest {
   @Test
   public void testUpload_shareDirectoryFull(FileStoreConfig fileStoreConfig,
                                             FileStore fileStore,
+                                            ResultsTester resultsTester,
                                             ShareResultsUploader shareResultsUploader)
       throws IOException {
+
+    Results results = resultsTester.newResults();
+    ByteSource resultsBytes = resultsTester.asByteSource(results);
 
     // Create a new large file in the share directory so that the directory
     // exceeds its maximum configured size.
@@ -251,33 +256,28 @@ public final class ShareResultsUploaderTest {
     // TODO: This is unfriendly to other tests running in parallel, since it
     //       temporarily prevents the share functionality from working for
     //       anyone.
+    ShareResultsUploadReport report;
     Path junk = fileStore.shareDirectory().resolve("junk.txt");
     try {
-      try (FileChannel channel = FileChannel.open(junk, CREATE_NEW, WRITE)) {
-        channel.write(
+      try (FileChannel fileChannel =
+               FileChannel.open(junk, CREATE_NEW, WRITE)) {
+        fileChannel.write(
             ByteBuffer.wrap(new byte[0]),
             fileStoreConfig.maxShareDirectorySizeBytes);
       }
-
-      Path jsonFile =
-          fileStore.resultsDirectory().resolve(
-              "results.2019-12-11-13-21-02-404.json");
-
-      ShareResultsUploadReport report;
-      try (InputStream inputStream = Files.newInputStream(jsonFile)) {
+      try (InputStream inputStream = resultsBytes.openStream()) {
         report = shareResultsUploader.upload(inputStream);
       }
-
-      assertTrue(report.isError());
-
-      // TODO: Avoid verifying specific error text.
-      assertEquals(
-          "Share uploads has reached max capacity.",
-          report.getError().message);
-
     } finally {
       Files.delete(junk);
     }
+
+    assertTrue(report.isError());
+
+    // TODO: Avoid verifying specific error text.
+    assertEquals(
+        "Share uploads has reached max capacity.",
+        report.getError().message);
   }
 
   /**

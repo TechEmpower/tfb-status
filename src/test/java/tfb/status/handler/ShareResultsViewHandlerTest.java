@@ -58,7 +58,9 @@ public final class ShareResultsViewHandlerTest {
 
     assertMediaType(
         JSON_UTF_8,
-        response.headers().firstValue(CONTENT_TYPE).orElse(null));
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
     assertTrue(resultsBytes.contentEquals(ByteSource.wrap(response.body())));
   }
