@@ -115,8 +115,9 @@ public final class ShareResultsUploader {
               fileStoreConfig.maxShareFileSizeBytes + 1);
 
       long fileSize;
-      try (OutputStream out = Files.newOutputStream(tempFile, WRITE, APPEND)) {
-        fileSize = limitedBytes.transferTo(out);
+      try (OutputStream outputStream =
+               Files.newOutputStream(tempFile, WRITE, APPEND)) {
+        fileSize = limitedBytes.transferTo(outputStream);
       }
 
       if (fileSize > fileStoreConfig.maxShareFileSizeBytes)
@@ -155,9 +156,10 @@ public final class ShareResultsUploader {
         // Create a single entry in the zip file for the json file.
         Path entry = zipFs.getPath(fileName);
 
-        try (InputStream in = Files.newInputStream(tempFile);
-             OutputStream out = Files.newOutputStream(entry, CREATE_NEW)) {
-          in.transferTo(out);
+        try (InputStream inputStream = Files.newInputStream(tempFile);
+             OutputStream outputStream =
+                 Files.newOutputStream(entry, CREATE_NEW)) {
+          inputStream.transferTo(outputStream);
         }
       }
 

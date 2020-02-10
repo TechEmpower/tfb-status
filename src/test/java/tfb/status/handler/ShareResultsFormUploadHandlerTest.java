@@ -202,14 +202,14 @@ public final class ShareResultsFormUploadHandlerTest {
   private static byte[] concatUtf8Bytes(String... parts) throws IOException {
     Objects.requireNonNull(parts);
 
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
     for (String part : parts) {
       Objects.requireNonNull(part);
-      out.write(part.getBytes(UTF_8));
+      outputStream.write(part.getBytes(UTF_8));
     }
 
-    return out.toByteArray();
+    return outputStream.toByteArray();
   }
 
   @Immutable

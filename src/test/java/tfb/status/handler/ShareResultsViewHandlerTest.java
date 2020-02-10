@@ -49,8 +49,8 @@ public final class ShareResultsViewHandlerTest {
     resultsTester.saveJsonToFile(results, jsonFile);
 
     ShareResultsUploadReport report;
-    try (InputStream in = Files.newInputStream(jsonFile)) {
-      report = shareResultsUploader.upload(in);
+    try (InputStream inputStream = Files.newInputStream(jsonFile)) {
+      report = shareResultsUploader.upload(inputStream);
     }
 
     assertFalse(report.isError());

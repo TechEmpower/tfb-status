@@ -104,8 +104,9 @@ public final class UploadResultsHandler implements HttpHandler {
             /* prefix= */ "TFB_Status_Upload",
             /* suffix= */ "." + fileExtension);
 
-    try (OutputStream out = Files.newOutputStream(tempFile, WRITE, APPEND)) {
-      exchange.getInputStream().transferTo(out);
+    try (OutputStream outputStream =
+             Files.newOutputStream(tempFile, WRITE, APPEND)) {
+      exchange.getInputStream().transferTo(outputStream);
     }
 
     Results results;

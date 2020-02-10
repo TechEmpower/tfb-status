@@ -5,7 +5,6 @@ import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
-import static java.nio.file.StandardOpenOption.READ;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -66,8 +65,8 @@ public final class ShareResultsViewHandler implements HttpHandler {
               CONTENT_TYPE,
               JSON_UTF_8.toString());
 
-          try (InputStream in = Files.newInputStream(zipEntry, READ)) {
-            in.transferTo(exchange.getOutputStream());
+          try (InputStream inputStream = Files.newInputStream(zipEntry)) {
+            inputStream.transferTo(exchange.getOutputStream());
           }
         },
 
