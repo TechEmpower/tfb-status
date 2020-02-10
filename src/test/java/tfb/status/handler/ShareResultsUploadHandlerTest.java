@@ -6,6 +6,7 @@ import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.CREATED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -37,11 +38,11 @@ public final class ShareResultsUploadHandlerTest {
 
     Results results = resultsTester.newResults();
 
+    String resultsJson = objectMapper.writeValueAsString(results);
+
     HttpRequest request =
         HttpRequest.newBuilder(http.uri("/share-results/upload"))
-                   .POST(
-                       HttpRequest.BodyPublishers.ofString(
-                           objectMapper.writeValueAsString(results)))
+                   .POST(HttpRequest.BodyPublishers.ofString(resultsJson))
                    .header(CONTENT_TYPE, JSON_UTF_8.toString())
                    .build();
 
@@ -52,8 +53,8 @@ public final class ShareResultsUploadHandlerTest {
 
     assertEquals(CREATED, response.statusCode());
 
-    assertEquals(
-        JSON_UTF_8.toString(),
+    assertMediaType(
+        JSON_UTF_8,
         response.headers().firstValue(CONTENT_TYPE).orElse(null));
 
     ShareResultsJsonView responseView =
@@ -85,8 +86,8 @@ public final class ShareResultsUploadHandlerTest {
 
     assertEquals(BAD_REQUEST, response.statusCode());
 
-    assertEquals(
-        JSON_UTF_8.toString(),
+    assertMediaType(
+        JSON_UTF_8,
         response.headers().firstValue(CONTENT_TYPE).orElse(null));
 
     ShareResultsErrorJsonView responseView =

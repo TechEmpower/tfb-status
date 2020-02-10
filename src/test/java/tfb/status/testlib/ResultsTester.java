@@ -4,9 +4,15 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.ByteSource;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.net.http.HttpRequest;
+import java.nio.channels.Channels;
+import java.nio.channels.Pipe;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +21,7 @@ import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.service.FileStore;
+import tfb.status.service.TaskScheduler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 
@@ -27,15 +34,71 @@ public final class ResultsTester {
   private final FileStore fileStore;
   private final FileSystem fileSystem;
   private final ObjectMapper objectMapper;
+  private final TaskScheduler taskScheduler;
 
   @Inject
   public ResultsTester(FileStore fileStore,
                        FileSystem fileSystem,
-                       ObjectMapper objectMapper) {
+                       ObjectMapper objectMapper,
+                       TaskScheduler taskScheduler) {
 
     this.fileStore = Objects.requireNonNull(fileStore);
     this.fileSystem = Objects.requireNonNull(fileSystem);
     this.objectMapper = Objects.requireNonNull(objectMapper);
+    this.taskScheduler = Objects.requireNonNull(taskScheduler);
+  }
+
+  /**
+   * Returns an {@link HttpRequest.BodyPublisher} containing the bytes of the
+   * specified results serialized to JSON.
+   */
+  public HttpRequest.BodyPublisher asBodyPublisher(Results results) {
+    Objects.requireNonNull(results);
+    return HttpRequest.BodyPublishers.ofInputStream(
+        () -> {
+          try {
+            return newInputStream(results);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
+  }
+
+  /**
+   * Returns a {@link ByteSource} containing the bytes of the specified results
+   * serialized to JSON.
+   */
+  public ByteSource asByteSource(Results results) {
+    Objects.requireNonNull(results);
+    return new ByteSource() {
+      @Override
+      public InputStream openStream() throws IOException {
+        return newInputStream(results);
+      }
+    };
+  }
+
+  /**
+   * Returns an {@link InputStream} containing the bytes of the specified
+   * results serialized to JSON.
+   */
+  public InputStream newInputStream(Results results) throws IOException {
+    Objects.requireNonNull(results);
+
+    Pipe pipe = Pipe.open();
+
+    taskScheduler.submit(
+        () -> {
+          try (OutputStream outputStream =
+                   Channels.newOutputStream(pipe.sink())) {
+            objectMapper.writeValue(outputStream, results);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
+
+    return Channels.newInputStream(pipe.source());
+
   }
 
   /**

@@ -8,10 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static tfb.status.testlib.MoreAssertions.assertEndsWith;
 import static tfb.status.testlib.MoreAssertions.assertStartsWith;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Ascii;
 import com.google.common.io.ByteSource;
 import com.google.common.io.ByteStreams;
@@ -21,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
@@ -77,11 +74,6 @@ public final class ShareResultsUploaderTest {
 
     ShareResultsJsonView shareView = report.getSuccess();
 
-    // Validate the basics of the info returned.
-    assertEndsWith(
-        ".json",
-        shareView.fileName);
-
     assertStartsWith(
         "https://test.tfb-status.techempower.com/share-results/view/",
         shareView.resultsUrl);
@@ -92,18 +84,16 @@ public final class ShareResultsUploaderTest {
 
     // Ensure the uploader created a zip file in the expected directory with the
     // expected name.
-    String shareId =
-        shareView.fileName.substring(0, shareView.fileName.lastIndexOf('.'));
-
-    Path zipFile = fileStore.shareDirectory().resolve(shareId + ".zip");
+    Path zipFile =
+        fileStore.shareDirectory().resolve(shareView.shareId + ".zip");
 
     assertTrue(Files.exists(zipFile));
 
     AtomicBoolean zipEntryPresent = new AtomicBoolean(false);
 
     shareResultsUploader.getUpload(
-        /* jsonFileName= */
-        shareView.fileName,
+        /* shareId= */
+        shareView.shareId,
 
         /* ifPresent= */
         (Path zipEntry) -> {
@@ -153,44 +143,33 @@ public final class ShareResultsUploaderTest {
    */
   @Test
   public void testUpload_noTestMetadata(ShareResultsUploader shareResultsUploader,
-                                        FileStore fileStore,
-                                        FileSystem fileSystem,
-                                        ResultsTester resultsTester,
-                                        ObjectMapper objectMapper)
+                                        ResultsTester resultsTester)
       throws IOException {
 
-    Path oldJsonFile =
-        fileStore.resultsDirectory().resolve(
-            "results.2019-12-11-13-21-02-404.json");
+    Results template = resultsTester.newResults();
 
-    Results oldResults;
-    try (InputStream inputStream = Files.newInputStream(oldJsonFile)) {
-      oldResults = objectMapper.readValue(inputStream, Results.class);
-    }
-
-    Results newResults =
+    Results results =
         new Results(
-            /* uuid= */ oldResults.uuid,
-            /* name= */ oldResults.name,
-            /* environmentDescription= */ oldResults.environmentDescription,
-            /* startTime= */ oldResults.startTime,
-            /* completionTime= */ oldResults.completionTime,
-            /* duration= */ oldResults.duration,
-            /* frameworks= */ oldResults.frameworks,
-            /* completed= */ oldResults.completed,
-            /* succeeded= */ oldResults.succeeded,
-            /* failed= */ oldResults.failed,
-            /* rawData= */ oldResults.rawData,
-            /* queryIntervals= */ oldResults.queryIntervals,
-            /* concurrencyLevels= */ oldResults.concurrencyLevels,
-            /* git= */ oldResults.git,
+            /* uuid= */ template.uuid,
+            /* name= */ template.name,
+            /* environmentDescription= */ template.environmentDescription,
+            /* startTime= */ template.startTime,
+            /* completionTime= */ template.completionTime,
+            /* duration= */ template.duration,
+            /* frameworks= */ template.frameworks,
+            /* completed= */ template.completed,
+            /* succeeded= */ template.succeeded,
+            /* failed= */ template.failed,
+            /* rawData= */ template.rawData,
+            /* queryIntervals= */ template.queryIntervals,
+            /* concurrencyLevels= */ template.concurrencyLevels,
+            /* git= */ template.git,
             /* testMetadata= */ null);
 
-    Path newJsonFile = fileSystem.getPath("results_to_share.json");
-    resultsTester.saveJsonToFile(newResults, newJsonFile);
+    ByteSource resultsBytes = resultsTester.asByteSource(results);
 
     ShareResultsUploadReport report;
-    try (InputStream inputStream = Files.newInputStream(newJsonFile)) {
+    try (InputStream inputStream = resultsBytes.openStream()) {
       report = shareResultsUploader.upload(inputStream);
     }
 
@@ -208,18 +187,14 @@ public final class ShareResultsUploaderTest {
    */
   @Test
   public void testUpload_fileTooLarge(FileStoreConfig fileStoreConfig,
-                                      FileStore fileStore,
                                       ShareResultsUploader shareResultsUploader,
-                                      ObjectMapper objectMapper)
+                                      ResultsTester resultsTester)
       throws IOException {
 
     // Start with a valid results.json file and append spaces to the end to make
     // it too large (but valid otherwise).
-    Path jsonFile =
-        fileStore.resultsDirectory().resolve(
-            "results.2019-12-11-13-21-02-404.json");
-
-    ByteSource resultsBytes = MoreFiles.asByteSource(jsonFile);
+    Results results = resultsTester.newResults();
+    ByteSource resultsBytes = resultsTester.asByteSource(results);
 
     // Make the uploaded file exactly too large.
     long paddingNeeded =
@@ -322,8 +297,8 @@ public final class ShareResultsUploaderTest {
     AtomicBoolean ifAbsentCalled = new AtomicBoolean(false);
 
     shareResultsUploader.getUpload(
-        /* jsonFileName= */
-        shareId + ".json",
+        /* shareId= */
+        shareId,
 
         /* ifPresent= */
         zipEntry -> fail(),
@@ -337,8 +312,8 @@ public final class ShareResultsUploaderTest {
   /**
    * Verifies that {@link ShareResultsUploader#getUpload(String,
    * ShareResultsUploader.ShareResultsConsumer, Runnable)} invokes the specified
-   * "if absent" callback when the specified shared file name does not conform
-   * to the naming scheme used for shared files.
+   * "if absent" callback when the specified share id does not conform to the
+   * scheme used for share ids.
    */
   @Test
   public void testGetUpload_invalidFileName(ShareResultsUploader shareResultsUploader)
@@ -347,7 +322,7 @@ public final class ShareResultsUploaderTest {
     AtomicBoolean ifAbsentCalled = new AtomicBoolean(false);
 
     shareResultsUploader.getUpload(
-        /* jsonFileName= */ "not-a-json-file.txt",
+        /* shareId= */ "../abc",
         /* ifPresent= */ zipEntry -> fail(),
         /* ifAbsent= */ () -> ifAbsentCalled.set(true));
 

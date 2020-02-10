@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * <p>Exceptions thrown from tasks are logged.
  */
 @Singleton
-public final class TaskScheduler implements PreDestroy {
+public final class TaskScheduler implements Executor, PreDestroy {
   private final ListeningScheduledExecutorService scheduler;
   private final ListeningExecutorService executor;
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -112,6 +113,11 @@ public final class TaskScheduler implements PreDestroy {
         executor.shutdownNow();
       }
     }
+  }
+
+  @Override
+  public void execute(Runnable command) {
+    submit(command);
   }
 
   /**

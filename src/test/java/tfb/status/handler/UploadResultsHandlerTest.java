@@ -24,6 +24,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -75,9 +76,6 @@ public final class UploadResultsHandlerTest {
 
     String uuid = newResults.uuid;
 
-    Path jsonFile = fileSystem.getPath("results_to_upload.json");
-    resultsTester.saveJsonToFile(newResults, jsonFile);
-
     //
     // Confirm the new results don't exist on the server yet.
     //
@@ -94,7 +92,7 @@ public final class UploadResultsHandlerTest {
     HttpResponse<Void> responseToUnauthorized =
         http.client().send(
             HttpRequest.newBuilder(http.uri("/upload"))
-                       .POST(filePublisher(jsonFile))
+                       .POST(resultsTester.asBodyPublisher(newResults))
                        .header(CONTENT_TYPE, JSON_UTF_8.toString())
                        .build(),
             HttpResponse.BodyHandlers.discarding());
@@ -135,7 +133,7 @@ public final class UploadResultsHandlerTest {
 
       HttpRequest.Builder requestWithNewJson =
           HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(filePublisher(jsonFile))
+                     .POST(resultsTester.asBodyPublisher(newResults))
                      .header(CONTENT_TYPE, JSON_UTF_8.toString());
 
       HttpResponse<Void> responseToNewJson =
@@ -194,15 +192,13 @@ public final class UploadResultsHandlerTest {
               /* git= */ newResults.git,
               /* testMetadata= */ newResults.testMetadata);
 
-      resultsTester.saveJsonToFile(updatedResults, jsonFile);
-
       //
       // Upload the updated results JSON.
       //
 
       HttpRequest.Builder requestWithUpdatedJson =
           HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(filePublisher(jsonFile))
+                     .POST(resultsTester.asBodyPublisher(updatedResults))
                      .header(CONTENT_TYPE, JSON_UTF_8.toString());
 
       HttpResponse<Void> responseToUpdatedJson =
@@ -262,7 +258,13 @@ public final class UploadResultsHandlerTest {
               /* git= */ updatedResults.git,
               /* testMetadata= */ updatedResults.testMetadata);
 
-      Path zipFile = fileSystem.getPath("results_to_upload.zip");
+      String zipFileName =
+          getClass().getSimpleName()
+              + "_results_to_upload_"
+              + UUID.randomUUID()
+              + ".zip";
+
+      Path zipFile = fileSystem.getPath(zipFileName);
       resultsTester.saveZipToFile(finalResults, zipFile);
 
       //

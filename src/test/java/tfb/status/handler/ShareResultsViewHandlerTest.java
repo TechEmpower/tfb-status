@@ -4,18 +4,16 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
-import com.google.common.io.MoreFiles;
+import com.google.common.io.ByteSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.http.HttpResponse;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,35 +37,30 @@ public final class ShareResultsViewHandlerTest {
   @Test
   public void testGet(HttpTester http,
                       ResultsTester resultsTester,
-                      ShareResultsUploader shareResultsUploader,
-                      FileSystem fileSystem)
+                      ShareResultsUploader shareResultsUploader)
       throws IOException, InterruptedException {
 
     Results results = resultsTester.newResults();
-
-    Path jsonFile = fileSystem.getPath(UUID.randomUUID().toString() + ".json");
-    resultsTester.saveJsonToFile(results, jsonFile);
+    ByteSource resultsBytes = resultsTester.asByteSource(results);
 
     ShareResultsUploadReport report;
-    try (InputStream inputStream = Files.newInputStream(jsonFile)) {
+    try (InputStream inputStream = resultsBytes.openStream()) {
       report = shareResultsUploader.upload(inputStream);
     }
 
     assertFalse(report.isError());
 
-    HttpResponse<String> response =
-        http.getString("/share-results/view/" + report.getSuccess().fileName);
+    HttpResponse<byte[]> response =
+        http.getBytes(
+            "/share-results/view/" + report.getSuccess().shareId + ".json");
 
     assertEquals(OK, response.statusCode());
-    assertEquals(
-        JSON_UTF_8.toString(),
+
+    assertMediaType(
+        JSON_UTF_8,
         response.headers().firstValue(CONTENT_TYPE).orElse(null));
 
-    Path responseFile =
-        fileSystem.getPath(UUID.randomUUID().toString() + ".json");
-    Files.writeString(responseFile, response.body(), CREATE_NEW);
-
-    assertTrue(MoreFiles.equal(jsonFile, responseFile));
+    assertTrue(resultsBytes.contentEquals(ByteSource.wrap(response.body())));
   }
 
   /**

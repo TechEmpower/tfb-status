@@ -5,27 +5,33 @@ import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.CREATED;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.google.errorprone.annotations.Immutable;
+import com.google.common.io.ByteSource;
+import com.google.common.io.CharSource;
+import com.google.common.net.MediaType;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
+import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
+import java.nio.channels.Channels;
+import java.nio.channels.Pipe;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.service.TaskScheduler;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.ResultsTester;
 import tfb.status.testlib.TestServicesInjector;
@@ -46,38 +52,38 @@ public final class ShareResultsFormUploadHandlerTest {
   public void testPost(HttpTester http,
                        ResultsTester resultsTester,
                        ObjectMapper objectMapper,
-                       FileSystem fileSystem)
+                       TaskScheduler taskScheduler)
       throws IOException, InterruptedException {
 
     Results results = resultsTester.newResults();
+    ByteSource resultsBytes = resultsTester.asByteSource(results);
 
-    Path jsonFile = fileSystem.getPath(UUID.randomUUID().toString() + ".json");
-    resultsTester.saveJsonToFile(results, jsonFile);
+    List<MultipartFormDataFile> files =
+        List.of(
+            new MultipartFormDataFile(
+                /* elementName= */ "results",
+                /* fileName= */ "results.json",
+                /* mediaType= */ JSON_UTF_8,
+                /* fileBytes= */ resultsBytes));
 
-    List<MultipartFormFileEntry> files =
-        ImmutableList.of(
-            new MultipartFormFileEntry(
-                /* name= */ "results",
-                /* path= */ jsonFile,
-                /* fileName= */ jsonFile.getFileName().toString(),
-                /* mimeType= */ "application/json"));
-
-    HttpRequest.Builder builder = HttpRequest.newBuilder(
-        http.uri("/share-results/upload/form"));
-
-    HttpRequest request = addPostMultipartFormData(builder, files).build();
-
-    HttpResponse<String> response = http.client().send(
-        request, HttpResponse.BodyHandlers.ofString());
+    HttpResponse<String> response =
+        http.client().send(
+            postFiles(
+                http.uri("/share-results/upload/form"),
+                files,
+                taskScheduler),
+            HttpResponse.BodyHandlers.ofString());
 
     assertEquals(CREATED, response.statusCode());
-    assertEquals(
-        JSON_UTF_8.toString(),
+
+    assertMediaType(
+        JSON_UTF_8,
         response.headers().firstValue(CONTENT_TYPE).orElse(null));
 
-    ShareResultsJsonView responseView = objectMapper.readValue(
-        response.body(),
-        ShareResultsJsonView.class);
+    ShareResultsJsonView responseView =
+        objectMapper.readValue(
+            response.body(),
+            ShareResultsJsonView.class);
 
     assertNotNull(responseView);
   }
@@ -89,35 +95,31 @@ public final class ShareResultsFormUploadHandlerTest {
   @Test
   public void testPost_invalidFile(HttpTester http,
                                    ObjectMapper objectMapper,
-                                   FileSystem fileSystem)
+                                   TaskScheduler taskScheduler)
       throws IOException, InterruptedException {
 
-    Path jsonFile = fileSystem.getPath("invalid_results.json");
+    ByteSource invalidJsonBytes = CharSource.wrap("foo").asByteSource(UTF_8);
 
-    Files.writeString(jsonFile, "invalid json", CREATE_NEW);
-
-    List<MultipartFormFileEntry> files =
-        ImmutableList.of(
-            new MultipartFormFileEntry(
-                /* name= */ "results",
-                /* path= */ jsonFile,
-                /* fileName= */ jsonFile.getFileName().toString(),
-                /* mimeType= */ "application/json"));
-
-    HttpRequest.Builder builder =
-        HttpRequest.newBuilder(http.uri("/share-results/upload/form"));
-
-    HttpRequest request = addPostMultipartFormData(builder, files).build();
+    List<MultipartFormDataFile> files =
+        List.of(
+            new MultipartFormDataFile(
+                /* elementName= */ "results",
+                /* fileName= */ "results.json",
+                /* mediaType= */ JSON_UTF_8,
+                /* fileBytes= */ invalidJsonBytes));
 
     HttpResponse<String> response =
         http.client().send(
-            request,
+            postFiles(
+                http.uri("/share-results/upload/form"),
+                files,
+                taskScheduler),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(BAD_REQUEST, response.statusCode());
 
-    assertEquals(
-        JSON_UTF_8.toString(),
+    assertMediaType(
+        JSON_UTF_8,
         response.headers().firstValue(CONTENT_TYPE).orElse(null));
 
     ShareResultsErrorJsonView responseView =
@@ -129,78 +131,111 @@ public final class ShareResultsFormUploadHandlerTest {
   }
 
   /**
-   * Adds {@code multipart/form-data} to an HTTP request.  Generates a new
-   * boundary, specifies the {@code Content-Type} header, and includes POST data
-   * by constructing a new body publisher containing all form data.
-   *
-   * @param request the builder to modify
-   * @param files the list of files to include in the form data
+   * Constructs a POST request containing the specified files as {@code
+   * multipart/form-data}.
    */
-  private static HttpRequest.Builder
-  addPostMultipartFormData(HttpRequest.Builder request,
-                           List<MultipartFormFileEntry> files)
-      throws IOException {
+  private static HttpRequest postFiles(URI uri,
+                                       List<MultipartFormDataFile> files,
+                                       Executor executor) {
 
-    Objects.requireNonNull(request);
+    Objects.requireNonNull(uri);
     Objects.requireNonNull(files);
+    Objects.requireNonNull(executor);
 
     String boundary = new BigInteger(256, new Random()).toString();
 
-    return request.header(CONTENT_TYPE,
-                          "multipart/form-data;boundary=" + boundary)
-                  .POST(multipartFormDataPublisher(boundary, files));
+    String contentType =
+        MediaType.create("multipart", "form-data")
+                 .withParameter("boundary", boundary)
+                 .toString();
+
+    Supplier<InputStream> bodySupplier =
+        () -> {
+          Pipe pipe;
+          try {
+            pipe = Pipe.open();
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+
+          executor.execute(
+              () -> {
+                try (OutputStream outputStream =
+                         Channels.newOutputStream(pipe.sink())) {
+
+                  for (MultipartFormDataFile file : files) {
+                    String header =
+                        "--"
+                            + boundary
+                            + "\r\n"
+                            + "Content-Disposition: form-data; name=\""
+                            + file.elementName
+                            + "\"; "
+                            + "filename=\""
+                            + file.fileName
+                            + "\""
+                            + "\r\n"
+                            + "Content-Type: "
+                            + file.mediaType
+                            + "\r\n"
+                            + "\r\n";
+
+                    outputStream.write(header.getBytes(UTF_8));
+                    file.fileBytes.copyTo(outputStream);
+                    outputStream.write("\r\n".getBytes(UTF_8));
+                  }
+
+                  outputStream.write(
+                      ("--" + boundary + "--").getBytes(UTF_8));
+
+                } catch (IOException e) {
+                  throw new UncheckedIOException(e);
+                }
+              });
+
+          return Channels.newInputStream(pipe.source());
+        };
+
+    return HttpRequest.newBuilder(uri)
+                      .header(CONTENT_TYPE, contentType)
+                      .POST(HttpRequest.BodyPublishers.ofInputStream(bodySupplier))
+                      .build();
   }
 
   /**
-   * Constructs a new body publisher that includes all specified data as form
-   * data.
+   * An {@code <input type="file">} element attached to a {@code
+   * multipart/form-data} form submission.
    */
-  private static HttpRequest.BodyPublisher
-  multipartFormDataPublisher(String boundary,
-                             List<MultipartFormFileEntry> files)
-      throws IOException {
+  private static final class MultipartFormDataFile {
+    /**
+     * The name of the {@code <input type="file">} element.
+     */
+    final String elementName;
 
-    Objects.requireNonNull(boundary);
-    Objects.requireNonNull(files);
-
-    // TODO: Avoid eagerly reading the contents of all the files into this list.
-    List<byte[]> byteArrays = new ArrayList<>();
-
-    for (MultipartFormFileEntry file : files) {
-      String header =
-          "--"  + boundary + "\r\n"
-              + "Content-Disposition: form-data; name=\"" + file.name + "\";"
-              + "filename=\"" + file.fileName + "\""
-              + "\r\n"
-              + "Content-Type: " + file.mimeType
-              + "\r\n"
-              + "\r\n";
-
-      byteArrays.add(header.getBytes(UTF_8));
-      byteArrays.add(Files.readAllBytes(file.path));
-      byteArrays.add("\r\n".getBytes(UTF_8));
-    }
-
-    byteArrays.add(("--" + boundary + "--").getBytes(UTF_8));
-    return HttpRequest.BodyPublishers.ofByteArrays(byteArrays);
-  }
-
-  @Immutable
-  private static final class MultipartFormFileEntry {
-    final String name;
-    final Path path;
+    /**
+     * The {@linkplain Path#getFileName() name} of the attached file.
+     */
     final String fileName;
-    final String mimeType;
 
-    MultipartFormFileEntry(String name,
-                           Path path,
-                           String fileName,
-                           String mimeType) {
+    /**
+     * The media type of the attached file.
+     */
+    final MediaType mediaType;
 
-      this.name = Objects.requireNonNull(name);
-      this.path = Objects.requireNonNull(path);
+    /**
+     * The bytes of the attached file.
+     */
+    final ByteSource fileBytes;
+
+    MultipartFormDataFile(String elementName,
+                          String fileName,
+                          MediaType mediaType,
+                          ByteSource fileBytes) {
+
+      this.elementName = Objects.requireNonNull(elementName);
       this.fileName = Objects.requireNonNull(fileName);
-      this.mimeType = Objects.requireNonNull(mimeType);
+      this.mediaType = Objects.requireNonNull(mediaType);
+      this.fileBytes = Objects.requireNonNull(fileBytes);
     }
   }
 }

@@ -22,8 +22,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -142,7 +140,7 @@ public final class ShareResultsUploader {
                 "Results must contain non-empty test metadata"));
 
       String shareId = UUID.randomUUID().toString();
-      String fileName = shareId + ".json";
+      String jsonFileName = shareId + ".json";
       String zipFileName = shareId + ".zip";
 
       Path permanentFile = fileStore.shareDirectory().resolve(zipFileName);
@@ -154,7 +152,7 @@ public final class ShareResultsUploader {
                    Map.of("create", "true"))) {
 
         // Create a single entry in the zip file for the json file.
-        Path entry = zipFs.getPath(fileName);
+        Path entry = zipFs.getPath(jsonFileName);
 
         try (InputStream inputStream = Files.newInputStream(tempFile);
              OutputStream outputStream =
@@ -166,7 +164,7 @@ public final class ShareResultsUploader {
       String resultsUrl =
           urlsConfig.tfbStatus
               + "/share-results/view/"
-              + URLEncoder.encode(fileName, UTF_8);
+              + URLEncoder.encode(jsonFileName, UTF_8);
 
       String visualizeResultsUrl =
           urlsConfig.teWeb
@@ -175,7 +173,7 @@ public final class ShareResultsUploader {
 
       return new ShareResultsUploadReport(
           new ShareResultsJsonView(
-              /* fileName= */ fileName,
+              /* shareId= */ shareId,
               /* resultsUrl= */ resultsUrl,
               /* visualizeResultsUrl= */ visualizeResultsUrl));
 
@@ -190,33 +188,26 @@ public final class ShareResultsUploader {
    * file uploads are stored in zip files of the same name, and should always be
    * modified or accessed through this class.
    *
-   * @param jsonFileName the requested json file name, of the form
-   *        "47f93e49-2ffe-4b8e-828a-25513b7d160e.json"
+   * @param shareId the share id for the results that were previously shared
    * @param ifPresent a consumer to be called with the path to the zip file
    *        entry for the json file
    * @param ifAbsent a runnable that is invoked if the upload is not found
    * @throws IOException if an error occurs reading or consuming the zip file
    */
-  public void getUpload(String jsonFileName,
+  public void getUpload(String shareId,
                         ShareResultsConsumer ifPresent,
                         Runnable ifAbsent)
       throws IOException {
 
-    Objects.requireNonNull(jsonFileName);
+    Objects.requireNonNull(shareId);
     Objects.requireNonNull(ifPresent);
     Objects.requireNonNull(ifAbsent);
 
-    Matcher matcher = JSON_FILE_PATTERN.matcher(jsonFileName);
-    if (!matcher.matches()) {
-      ifAbsent.run();
-      return;
-    }
-
-    String shareId = matcher.group(1);
-    String zipFileName = shareId + ".zip";
-    Path zipFile = fileStore.shareDirectory().resolve(zipFileName);
-
-    if (!Files.isRegularFile(zipFile)) {
+    Path zipFile = fileStore.shareDirectory().resolve(shareId + ".zip");
+    if (!zipFile.equals(zipFile.normalize())
+        || !zipFile.startsWith(fileStore.shareDirectory())
+        || !fileStore.shareDirectory().equals(zipFile.getParent())
+        || !Files.isRegularFile(zipFile)) {
       ifAbsent.run();
       return;
     }
@@ -226,7 +217,7 @@ public final class ShareResultsUploader {
         zipFile,
 
         /* entryPath= */
-        jsonFileName,
+        shareId + ".json",
 
         /* ifPresent= */
         (Path zipEntry) -> {
@@ -239,9 +230,6 @@ public final class ShareResultsUploader {
         /* ifAbsent= */
         ifAbsent);
   }
-
-  private static final Pattern JSON_FILE_PATTERN =
-      Pattern.compile("^([^./]+)(\\.json)");
 
   /**
    * Describes whether or not an upload was successful.  Use {@link #isError()}

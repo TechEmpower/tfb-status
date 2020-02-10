@@ -13,6 +13,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.handler.routing.PrefixPath;
@@ -47,17 +49,18 @@ public final class ShareResultsViewHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws Exception {
-    if (exchange.getRelativePath().isEmpty()) {
+    Matcher matcher = REQUEST_PATH_PATTERN.matcher(exchange.getRelativePath());
+
+    if (!matcher.matches()) {
       exchange.setStatusCode(NOT_FOUND);
       return;
     }
 
-    String relativePath =
-        exchange.getRelativePath().substring(1); // omit leading slash
+    String shareId = matcher.group("shareId");
 
     shareResultsUploader.getUpload(
-        /* jsonFileName= */
-        relativePath,
+        /* shareId= */
+        shareId,
 
         /* ifPresent= */
         (Path zipEntry) -> {
@@ -73,4 +76,8 @@ public final class ShareResultsViewHandler implements HttpHandler {
         /* ifAbsent= */
         () -> exchange.setStatusCode(NOT_FOUND));
   }
+
+  // Matches "/6f221937-b8e5-4b22-a52d-020d2538fa64.json", for example.
+  private static final Pattern REQUEST_PATH_PATTERN =
+      Pattern.compile("^/(?<shareId>[\\w-]+)\\.json$");
 }
