@@ -2,6 +2,7 @@ package tfb.status.util;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.io.MoreFiles;
@@ -125,5 +126,80 @@ public final class FileUtilsTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> FileUtils.directorySizeInBytes(missingFile));
+  }
+
+  /**
+   * Verifies that {@link FileUtils#resolveChildPath(Path, String)} returns the
+   * expected non-{@code null} result when invoked with valid parameters.
+   */
+  @Test
+  public void testResolveChildPath() {
+    assertEquals(
+        inMemoryFs.getPath("foo/bar"),
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo"),
+            "bar"));
+    assertEquals(
+        inMemoryFs.getPath("foo/bar.txt"),
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo"),
+            "bar.txt"));
+  }
+
+  /**
+   * Verifies that {@link FileUtils#resolveChildPath(Path, String)} returns
+   * {@code null} when the resulting path is not a child of the directory.
+   */
+  @Test
+  public void testResolveChildPath_notChild() {
+    assertNull(
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo"),
+            "bar/baz"));
+  }
+
+  /**
+   * Verifies that {@link FileUtils#resolveChildPath(Path, String)} returns
+   * {@code null} when the resulting path is invalid according to the file
+   * system.
+   */
+  @Test
+  public void testResolveChildPath_invalidPath() {
+    assertNull(
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo"),
+            "\0"));
+  }
+
+  /**
+   * Verifies that {@link FileUtils#resolveChildPath(Path, String)} returns
+   * {@code null} when the resulting path is not normalized.
+   */
+  @Test
+  public void testResolveChildPath_notNormalized() {
+    assertNull(
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo"),
+            "."));
+    assertNull(
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo"),
+            ".."));
+    assertNull(
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo"),
+            "../foo/bar"));
+    assertNull(
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo"),
+            "bar/."));
+    assertNull(
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo"),
+            "bar/../baz"));
+    assertNull(
+        FileUtils.resolveChildPath(
+            inMemoryFs.getPath("foo/."),
+            "bar"));
   }
 }

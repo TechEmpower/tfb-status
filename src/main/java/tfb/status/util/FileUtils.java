@@ -3,9 +3,11 @@ package tfb.status.util;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.stream.Stream;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Utility methods for working with the file system.
@@ -43,5 +45,39 @@ public final class FileUtils {
               })
           .sum();
     }
+  }
+
+  /**
+   * Returns the {@link Path} object for the child of the specified directory
+   * where the child has the specified {@linkplain Path#getFileName() file
+   * name}.  Returns {@code null} if the file name is invalid according to the
+   * directory's file system, or if the resulting path is not {@linkplain
+   * Path#normalize() normalized} (the path contains ".." or "." elements), or
+   * if the resulting path would not refer to a direct child of the directory.
+   * This method does not check if the file or directory exists in the file
+   * system.
+   *
+   * @param directory the parent path
+   * @param fileName the file name of the child path
+   */
+  public static @Nullable Path resolveChildPath(Path directory,
+                                                String fileName) {
+    Objects.requireNonNull(directory);
+    Objects.requireNonNull(fileName);
+
+    Path child;
+    try {
+      child = directory.resolve(fileName);
+    } catch (InvalidPathException ignored) {
+      return null;
+    }
+
+    if (!child.equals(child.normalize()))
+      return null;
+
+    if (!directory.equals(child.getParent()))
+      return null;
+
+    return child;
   }
 }

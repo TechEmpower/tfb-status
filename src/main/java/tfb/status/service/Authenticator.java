@@ -15,7 +15,6 @@ import io.undertow.util.HeaderValues;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
@@ -26,6 +25,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.mindrot.jbcrypt.BCrypt;
+import tfb.status.util.FileUtils;
 
 /**
  * Implements a simple password-based authentication scheme.
@@ -275,27 +275,8 @@ public final class Authenticator {
    *         account id is invalid
    */
   private @Nullable Path getPasswordFile(String accountId) {
-    return resolveChildPath(fileStore.accountsDirectory(), accountId);
-  }
-
-  private static @Nullable Path resolveChildPath(Path directory,
-                                                 String fileName) {
-    Objects.requireNonNull(directory);
-    Objects.requireNonNull(fileName);
-
-    Path child;
-    try {
-      child = directory.resolve(fileName);
-    } catch (InvalidPathException ignored) {
-      return null;
-    }
-
-    if (!child.equals(child.normalize()))
-      return null;
-
-    if (!directory.equals(child.getParent()))
-      return null;
-
-    return child;
+    return FileUtils.resolveChildPath(
+        /* directory= */ fileStore.accountsDirectory(),
+        /* fileName= */ accountId);
   }
 }

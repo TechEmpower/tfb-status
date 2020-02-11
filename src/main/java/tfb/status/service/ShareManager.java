@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -222,28 +221,9 @@ public final class ShareManager {
    *         share id is invalid
    */
   private @Nullable Path getSharedFile(String shareId) {
-    return resolveChildPath(fileStore.shareDirectory(), shareId + ".json.gz");
-  }
-
-  private static @Nullable Path resolveChildPath(Path directory,
-                                                 String fileName) {
-    Objects.requireNonNull(directory);
-    Objects.requireNonNull(fileName);
-
-    Path child;
-    try {
-      child = directory.resolve(fileName);
-    } catch (InvalidPathException ignored) {
-      return null;
-    }
-
-    if (!child.equals(child.normalize()))
-      return null;
-
-    if (!directory.equals(child.getParent()))
-      return null;
-
-    return child;
+    return FileUtils.resolveChildPath(
+        /* directory= */ fileStore.shareDirectory(),
+        /* fileName= */ shareId + ".json.gz");
   }
 
   /**
