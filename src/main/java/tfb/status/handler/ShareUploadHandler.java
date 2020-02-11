@@ -75,7 +75,7 @@ public final class ShareUploadHandler implements HttpHandler {
   @Provides
   @Singleton
   @ExactPath("/share/upload")
-  public HttpHandler shareResultsUploadHandler() {
+  public HttpHandler shareUploadHandler() {
     return HttpHandlers.chain(
         this,
         handler -> new MethodHandler().addMethod(POST, handler),

@@ -35,7 +35,7 @@ public final class SharePageHandler implements HttpHandler {
   @Provides
   @Singleton
   @ExactPath("/share")
-  public HttpHandler shareResultsPageHandler() {
+  public HttpHandler sharePageHandler() {
     return HttpHandlers.chain(
         this,
         handler -> new MethodHandler().addMethod(GET, handler),

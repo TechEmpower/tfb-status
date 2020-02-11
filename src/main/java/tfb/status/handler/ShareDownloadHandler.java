@@ -36,7 +36,7 @@ public final class ShareDownloadHandler implements HttpHandler {
   @Provides
   @Singleton
   @PrefixPath("/share/download")
-  public HttpHandler shareResultsViewHandler() {
+  public HttpHandler shareDownloadHandler() {
     return HttpHandlers.chain(
         this,
         handler -> new MethodHandler().addMethod(GET, handler),
