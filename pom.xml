@@ -520,6 +520,10 @@
                 <!-- jsr305 cannot be allowed if we ever want to use Java
                      modules. -->
                 <exclude>com.google.code.findbugs:jsr305</exclude>
+
+                <!-- We use jakarta.mail, which is the replacement for the
+                     now-obsolete javax.mail. -->
+                <exclude>com.sun.mail:javax.mail</exclude>
               </excludes>
             </bannedDependencies>
           </rules>
