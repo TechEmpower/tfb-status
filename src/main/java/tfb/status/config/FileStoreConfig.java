@@ -22,12 +22,14 @@ public final class FileStoreConfig {
   /**
    * The maximum size of the {@link FileStore#shareDirectory()} in bytes.
    */
+  // TODO: Move this to a ShareConfig.
   public final long maxShareDirectorySizeBytes;
 
   /**
    * The maximum size of a single file (before zip compression) that can be
    * uploaded to the {@link FileStore#shareDirectory()} in bytes.
    */
+  // TODO: Move this to a ShareConfig.
   public final long maxShareFileSizeBytes;
 
   public FileStoreConfig(String root,

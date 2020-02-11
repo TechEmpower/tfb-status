@@ -33,6 +33,7 @@ import tfb.status.service.ShareResultsUploader.ShareResultsUploadReport;
 import tfb.status.testlib.ResultsTester;
 import tfb.status.testlib.TestServicesInjector;
 import tfb.status.view.Results;
+import tfb.status.view.ShareResultsErrorJsonView;
 import tfb.status.view.ShareResultsJsonView;
 
 /**
@@ -131,10 +132,9 @@ public final class ShareResultsUploaderTest {
         NoSuchElementException.class,
         () -> report.getSuccess());
 
-    // TODO: Avoid verifying specific error text.
     assertEquals(
-        "Invalid results JSON",
-        report.getError().message);
+        ShareResultsErrorJsonView.ErrorKind.INVALID_JSON,
+        report.getError().errorKind);
   }
 
   /**
@@ -176,10 +176,9 @@ public final class ShareResultsUploaderTest {
 
     assertTrue(report.isError());
 
-    // TODO: Avoid verifying specific error text.
     assertEquals(
-        "Results must contain non-empty test metadata",
-        report.getError().message);
+        ShareResultsErrorJsonView.ErrorKind.MISSING_TEST_METADATA,
+        report.getError().errorKind);
   }
 
   /**
@@ -228,12 +227,9 @@ public final class ShareResultsUploaderTest {
 
     assertTrue(report.isError());
 
-    // TODO: Avoid verifying specific error text.
     assertEquals(
-        "Share uploads cannot exceed "
-            + fileStoreConfig.maxShareFileSizeBytes
-            + " bytes.",
-        report.getError().message);
+        ShareResultsErrorJsonView.ErrorKind.FILE_TOO_LARGE,
+        report.getError().errorKind);
   }
 
   /**
@@ -274,10 +270,9 @@ public final class ShareResultsUploaderTest {
 
     assertTrue(report.isError());
 
-    // TODO: Avoid verifying specific error text.
     assertEquals(
-        "Share uploads has reached max capacity.",
-        report.getError().message);
+        ShareResultsErrorJsonView.ErrorKind.SHARE_DIRECTORY_FULL,
+        report.getError().errorKind);
   }
 
   /**

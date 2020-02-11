@@ -98,6 +98,7 @@ public final class ShareResultsUploader {
 
       return new ShareResultsUploadReport(
           new ShareResultsErrorJsonView(
+              ShareResultsErrorJsonView.ErrorKind.SHARE_DIRECTORY_FULL,
               "Share uploads has reached max capacity."));
     }
 
@@ -121,6 +122,7 @@ public final class ShareResultsUploader {
       if (fileSize > fileStoreConfig.maxShareFileSizeBytes)
         return new ShareResultsUploadReport(
             new ShareResultsErrorJsonView(
+                ShareResultsErrorJsonView.ErrorKind.FILE_TOO_LARGE,
                 "Share uploads cannot exceed "
                     + fileStoreConfig.maxShareFileSizeBytes
                     + " bytes."));
@@ -131,12 +133,15 @@ public final class ShareResultsUploader {
       } catch (JsonProcessingException e) {
         logger.info("Exception processing json file {}", tempFile, e);
         return new ShareResultsUploadReport(
-            new ShareResultsErrorJsonView("Invalid results JSON"));
+            new ShareResultsErrorJsonView(
+                ShareResultsErrorJsonView.ErrorKind.INVALID_JSON,
+                "Invalid results JSON"));
       }
 
       if (results.testMetadata == null || results.testMetadata.isEmpty())
         return new ShareResultsUploadReport(
             new ShareResultsErrorJsonView(
+                ShareResultsErrorJsonView.ErrorKind.MISSING_TEST_METADATA,
                 "Results must contain non-empty test metadata"));
 
       String shareId = UUID.randomUUID().toString();
