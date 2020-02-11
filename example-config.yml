@@ -30,8 +30,6 @@
 
 #fileStore:
 #  root: managed_files
-#  maxShareDirectorySizeBytes: 1000000000
-#  maxShareFileSizeBytes: 5000000
 
 #email:
 #  host: mail.techempower.com
@@ -46,6 +44,9 @@
 #runCompleteMailer:
 #  minSecondsBetweenEmails: 86400
 
-#urls:
-#  tfbStatus: https://tfb-status.techempower.com
-#  teWeb: https://www.techempower.com
+#sharing:
+#  minSecondsBetweenEmails: 86400
+#  maxDirectorySizeInBytes: 1000000000
+#  maxFileSizeInBytes: 5000000
+#  tfbStatusOrigin: https://tfb-status.techempower.com
+#  tfbWebsiteOrigin: https://www.techempower.com

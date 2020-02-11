@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
-import tfb.status.config.FileStoreConfig;
+import tfb.status.config.SharingConfig;
 
 /**
  * Represents a JSON response to an unsuccessful request to share a results.json
@@ -41,13 +41,13 @@ public final class ShareResultsErrorJsonView {
   public enum ErrorKind {
     /**
      * The results cannot be shared because the share directory has reached its
-     * {@linkplain FileStoreConfig#maxShareDirectorySizeBytes maximum size}.
+     * {@linkplain SharingConfig#maxDirectorySizeInBytes maximum size}.
      */
     SHARE_DIRECTORY_FULL,
 
     /**
      * The results cannot be shared because the results.json file exceeds the
-     * {@linkplain FileStoreConfig#maxShareFileSizeBytes maximum size} for
+     * {@linkplain SharingConfig#maxFileSizeInBytes maximum size} for
      * individual files.
      */
     FILE_TOO_LARGE,

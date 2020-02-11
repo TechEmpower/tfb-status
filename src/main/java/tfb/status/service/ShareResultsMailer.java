@@ -12,7 +12,7 @@ import javax.mail.MessagingException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.ShareResultsMailerConfig;
+import tfb.status.config.SharingConfig;
 
 /**
  * Sends an email when the {@link FileStore#shareDirectory()} is full.
@@ -22,7 +22,7 @@ public final class ShareResultsMailer {
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final Clock clock;
   private final EmailSender emailSender;
-  private final ShareResultsMailerConfig config;
+  private final SharingConfig config;
 
   @GuardedBy("emailTimeLock")
   private volatile @Nullable Instant previousEmailTime;
@@ -31,7 +31,7 @@ public final class ShareResultsMailer {
   @Inject
   public ShareResultsMailer(Clock clock,
                             EmailSender emailSender,
-                            ShareResultsMailerConfig config) {
+                            SharingConfig config) {
 
     this.clock = Objects.requireNonNull(clock);
     this.emailSender = Objects.requireNonNull(emailSender);
@@ -53,7 +53,7 @@ public final class ShareResultsMailer {
 
       if (previous != null) {
         Instant nextEmailTime =
-            previous.plusSeconds(config.minSecondsBetweenDirectoryFullEmails);
+            previous.plusSeconds(config.minSecondsBetweenEmails);
 
         if (now.isBefore(nextEmailTime)) {
           logger.warn(

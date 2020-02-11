@@ -20,8 +20,7 @@ import tfb.status.config.HttpServerConfig;
 import tfb.status.config.MustacheConfig;
 import tfb.status.config.RunCompleteMailerConfig;
 import tfb.status.config.RunProgressMonitorConfig;
-import tfb.status.config.ShareResultsMailerConfig;
-import tfb.status.config.UrlsConfig;
+import tfb.status.config.SharingConfig;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
@@ -41,8 +40,8 @@ public final class ApplicationConfigFactoryTest {
       Provider<FileStoreConfig> fileStoreConfigProvider,
       Provider<RunProgressMonitorConfig> runProgressMonitorConfigProvider,
       Provider<RunCompleteMailerConfig> runCompleteMailerConfigProvider,
-      Provider<ShareResultsMailerConfig> shareResultsMailerConfigProvider,
-      Provider<UrlsConfig> urlsConfigProvider,
+      Provider<SharingConfig> shareResultsMailerConfigProvider,
+      Provider<SharingConfig> sharingConfigProvider,
       Provider<EmailConfig> emailConfigProvider) {
 
     ApplicationConfig config = applicationConfigProvider.get();
@@ -73,12 +72,12 @@ public final class ApplicationConfigFactoryTest {
         runCompleteMailerConfigProvider.get());
 
     assertEquals(
-        config.shareResultsMailer,
+        config.sharing,
         shareResultsMailerConfigProvider.get());
 
     assertEquals(
-        config.urlsConfig,
-        urlsConfigProvider.get());
+        config.sharing,
+        sharingConfigProvider.get());
 
     assertEquals(
         config.email,

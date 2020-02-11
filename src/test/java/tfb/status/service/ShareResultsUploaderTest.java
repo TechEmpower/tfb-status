@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import tfb.status.config.FileStoreConfig;
+import tfb.status.config.SharingConfig;
 import tfb.status.service.ShareResultsUploader.ShareResultsUploadReport;
 import tfb.status.testlib.ResultsTester;
 import tfb.status.testlib.TestServicesInjector;
@@ -54,6 +54,7 @@ public final class ShareResultsUploaderTest {
    */
   @Test
   public void testUpload(ShareResultsUploader shareResultsUploader,
+                         SharingConfig sharingConfig,
                          ResultsTester resultsTester,
                          FileStore fileStore)
       throws IOException {
@@ -76,11 +77,11 @@ public final class ShareResultsUploaderTest {
     ShareResultsJsonView shareView = report.getSuccess();
 
     assertStartsWith(
-        "https://test.tfb-status.techempower.com/share-results/view/",
+        sharingConfig.tfbStatusOrigin + "/share-results/view/",
         shareView.resultsUrl);
 
     assertStartsWith(
-        "https://www.test.techempower.com/benchmarks/",
+        sharingConfig.tfbWebsiteOrigin + "/benchmarks/",
         shareView.visualizeResultsUrl);
 
     // Ensure the uploader created a zip file in the expected directory with the
@@ -186,7 +187,7 @@ public final class ShareResultsUploaderTest {
    * with an error message when the specified results.json file is too large.
    */
   @Test
-  public void testUpload_fileTooLarge(FileStoreConfig fileStoreConfig,
+  public void testUpload_fileTooLarge(SharingConfig sharingConfig,
                                       ShareResultsUploader shareResultsUploader,
                                       ResultsTester resultsTester)
       throws IOException {
@@ -198,7 +199,7 @@ public final class ShareResultsUploaderTest {
 
     // Make the uploaded file exactly too large.
     long paddingNeeded =
-        fileStoreConfig.maxShareFileSizeBytes + 1 - resultsBytes.size();
+        sharingConfig.maxFileSizeInBytes + 1 - resultsBytes.size();
 
     ByteSource padding =
         new ByteSource() {
@@ -237,7 +238,7 @@ public final class ShareResultsUploaderTest {
    * with an error message when the the share directory is full.
    */
   @Test
-  public void testUpload_shareDirectoryFull(FileStoreConfig fileStoreConfig,
+  public void testUpload_shareDirectoryFull(SharingConfig sharingConfig,
                                             FileStore fileStore,
                                             ResultsTester resultsTester,
                                             ShareResultsUploader shareResultsUploader)
@@ -259,7 +260,7 @@ public final class ShareResultsUploaderTest {
                FileChannel.open(junk, CREATE_NEW, WRITE)) {
         fileChannel.write(
             ByteBuffer.wrap(new byte[0]),
-            fileStoreConfig.maxShareDirectorySizeBytes);
+            sharingConfig.maxDirectorySizeInBytes);
       }
       try (InputStream inputStream = resultsBytes.openStream()) {
         report = shareResultsUploader.upload(inputStream);

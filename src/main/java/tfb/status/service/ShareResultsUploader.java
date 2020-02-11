@@ -27,8 +27,7 @@ import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.FileStoreConfig;
-import tfb.status.config.UrlsConfig;
+import tfb.status.config.SharingConfig;
 import tfb.status.util.FileUtils;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
@@ -44,21 +43,18 @@ import tfb.status.view.ShareResultsJsonView;
 @Singleton
 public final class ShareResultsUploader {
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final FileStoreConfig fileStoreConfig;
-  private final UrlsConfig urlsConfig;
+  private final SharingConfig sharingConfig;
   private final FileStore fileStore;
   private final ObjectMapper objectMapper;
   private final ShareResultsMailer shareResultsMailer;
 
   @Inject
-  public ShareResultsUploader(FileStoreConfig fileStoreConfig,
-                              UrlsConfig urlsConfig,
+  public ShareResultsUploader(SharingConfig sharingConfig,
                               FileStore fileStore,
                               ObjectMapper objectMapper,
                               ShareResultsMailer shareResultsMailer) {
 
-    this.fileStoreConfig = Objects.requireNonNull(fileStoreConfig);
-    this.urlsConfig = Objects.requireNonNull(urlsConfig);
+    this.sharingConfig = Objects.requireNonNull(sharingConfig);
     this.fileStore = Objects.requireNonNull(fileStore);
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.shareResultsMailer = Objects.requireNonNull(shareResultsMailer);
@@ -91,9 +87,9 @@ public final class ShareResultsUploader {
     long shareDirectorySize =
         FileUtils.directorySizeInBytes(fileStore.shareDirectory());
 
-    if (shareDirectorySize >= fileStoreConfig.maxShareDirectorySizeBytes) {
+    if (shareDirectorySize >= sharingConfig.maxDirectorySizeInBytes) {
       shareResultsMailer.onShareDirectoryFull(
-          fileStoreConfig.maxShareDirectorySizeBytes,
+          sharingConfig.maxDirectorySizeInBytes,
           shareDirectorySize);
 
       return new ShareResultsUploadReport(
@@ -111,7 +107,7 @@ public final class ShareResultsUploader {
       InputStream limitedBytes =
           ByteStreams.limit(
               fileBytes,
-              fileStoreConfig.maxShareFileSizeBytes + 1);
+              sharingConfig.maxFileSizeInBytes + 1);
 
       long fileSize;
       try (OutputStream outputStream =
@@ -119,12 +115,12 @@ public final class ShareResultsUploader {
         fileSize = limitedBytes.transferTo(outputStream);
       }
 
-      if (fileSize > fileStoreConfig.maxShareFileSizeBytes)
+      if (fileSize > sharingConfig.maxFileSizeInBytes)
         return new ShareResultsUploadReport(
             new ShareResultsErrorJsonView(
                 ShareResultsErrorJsonView.ErrorKind.FILE_TOO_LARGE,
                 "Share uploads cannot exceed "
-                    + fileStoreConfig.maxShareFileSizeBytes
+                    + sharingConfig.maxFileSizeInBytes
                     + " bytes."));
 
       Results results;
@@ -167,12 +163,12 @@ public final class ShareResultsUploader {
       }
 
       String resultsUrl =
-          urlsConfig.tfbStatus
+          sharingConfig.tfbStatusOrigin
               + "/share-results/view/"
               + URLEncoder.encode(jsonFileName, UTF_8);
 
       String visualizeResultsUrl =
-          urlsConfig.teWeb
+          sharingConfig.tfbWebsiteOrigin
               + "/benchmarks/#section=test&shareid="
               + URLEncoder.encode(shareId, UTF_8);
 
