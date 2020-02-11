@@ -8,14 +8,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
-import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.MustacheRenderer;
-import tfb.status.service.ShareManager;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 
@@ -37,12 +35,7 @@ public final class SharePageHandler implements HttpHandler {
   @Provides
   @Singleton
   @ExactPath("/share")
-  public HttpHandler shareResultsPageHandler(ShareManager shareManager)
-      throws IOException {
-
-    // TODO: Once the zip files have been migrated, delete this.
-    shareManager.migrateZipFiles();
-
+  public HttpHandler shareResultsPageHandler() {
     return HttpHandlers.chain(
         this,
         handler -> new MethodHandler().addMethod(GET, handler),

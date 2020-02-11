@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -38,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.ShareConfig;
 import tfb.status.util.FileUtils;
-import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 
 /**
@@ -69,60 +67,6 @@ public final class ShareManager {
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.clock = Objects.requireNonNull(clock);
     this.emailSender = Objects.requireNonNull(emailSender);
-  }
-
-  // TODO: Once all zip files are migrated, delete this.
-  public void migrateZipFiles() throws IOException {
-    try (DirectoryStream<Path> zipFiles =
-             Files.newDirectoryStream(fileStore.shareDirectory(), "*.zip")) {
-      for (Path zipFile : zipFiles) {
-        String shareId = MoreFiles.getNameWithoutExtension(zipFile);
-        Path sharedFile = getSharedFile(shareId);
-        if (sharedFile == null) {
-          logger.warn(
-              "Shared zip file \"{}\" has an unexpected naming scheme",
-              zipFile);
-          continue;
-        }
-        if (Files.isRegularFile(sharedFile)) {
-          logger.info(
-              "Already migrated zip file {} to gzipped file {}",
-              zipFile,
-              sharedFile);
-          continue;
-        }
-        ZipFiles.findZipEntry(
-            /* zipFile= */
-            zipFile,
-
-            /* entryPath= */
-            shareId + ".json",
-
-            /* ifPresent= */
-            zipEntry -> {
-              try (OutputStream outputStream =
-                       Files.newOutputStream(sharedFile, CREATE_NEW);
-
-                   GZIPOutputStream gzipOutputStream =
-                       new GZIPOutputStream(outputStream)) {
-
-                Files.copy(zipEntry, gzipOutputStream);
-              }
-
-              logger.info(
-                  "Migrated zip file {} to gzipped file {}",
-                  zipFile,
-                  sharedFile);
-            },
-
-            /* ifAbsent= */
-            () -> {
-              logger.warn(
-                  "Shared zip file \"{}\" doesn't have the expected json file",
-                  zipFile);
-            });
-      }
-    }
   }
 
   /**
