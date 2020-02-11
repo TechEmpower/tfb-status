@@ -4,6 +4,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -34,20 +36,18 @@ import javax.mail.MessagingException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.config.SharingConfig;
+import tfb.status.config.ShareConfig;
 import tfb.status.util.FileUtils;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
-import tfb.status.view.ShareResultsErrorJsonView;
-import tfb.status.view.ShareResultsJsonView;
 
 /**
  * Accepts uploads of results.json files from users for sharing.
  */
 @Singleton
-public final class ShareResultsUploader {
+public final class ShareManager {
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final SharingConfig config;
+  private final ShareConfig config;
   private final FileStore fileStore;
   private final ObjectMapper objectMapper;
   private final Clock clock;
@@ -58,11 +58,11 @@ public final class ShareResultsUploader {
   private final Object emailTimeLock = new Object();
 
   @Inject
-  public ShareResultsUploader(SharingConfig config,
-                              FileStore fileStore,
-                              ObjectMapper objectMapper,
-                              Clock clock,
-                              EmailSender emailSender) {
+  public ShareManager(ShareConfig config,
+                      FileStore fileStore,
+                      ObjectMapper objectMapper,
+                      Clock clock,
+                      EmailSender emailSender) {
 
     this.config = Objects.requireNonNull(config);
     this.fileStore = Objects.requireNonNull(fileStore);
@@ -126,7 +126,7 @@ public final class ShareResultsUploader {
   }
 
   /**
-   * Accepts an upload of a results.json file containing the specified bytes.
+   * Accepts a new results.json file to be shared.
    *
    * <p>This method first validates the size requirements: that the given file
    * isn't too large, and that the share directory is not full.  This method
@@ -134,20 +134,21 @@ public final class ShareResultsUploader {
    * a {@link Results} object successfully, and that it contains a non-empty
    * {@link Results#testMetadata}.
    *
-   * @param resultsBytes the raw bytes of the results.json file
-   * @return an object describing the success or failure of the upload
+   * @param resultsBytes the bytes of the results.json file to be shared
+   * @return an object describing the success or failure of the call
    */
-  public ShareResultsUploadReport upload(InputStream resultsBytes)
+  public ShareOutcome shareResults(InputStream resultsBytes)
       throws IOException {
 
     Objects.requireNonNull(resultsBytes);
 
     // We are only checking if the share directory is currently under its max
     // size, without the addition of the new file.  This reduces the complexity
-    // and potentially wasted time of zipping the json file before checking if it can fit in the share directory.  This is a fine
-    // compromise because it means that at most the share directory will exceed
-    // the max size by just one large results json file, and we will not accept
-    // further uploads after that.
+    // and potentially wasted time of zipping the json file before checking if
+    // it can fit in the share directory.  This is a fine compromise because it
+    // means that at most the share directory will exceed the max size by just
+    // one large results json file, and we will not accept further uploads after
+    // that.
     long shareDirectorySize =
         FileUtils.directorySizeInBytes(fileStore.shareDirectory());
 
@@ -156,9 +157,9 @@ public final class ShareResultsUploader {
           config.maxDirectorySizeInBytes,
           shareDirectorySize);
 
-      return new ShareResultsUploadReport(
-          new ShareResultsErrorJsonView(
-              ShareResultsErrorJsonView.ErrorKind.SHARE_DIRECTORY_FULL,
+      return new ShareOutcome(
+          new ShareOutcome.Failure(
+              ShareOutcome.Failure.Kind.SHARE_DIRECTORY_FULL,
               "Share uploads has reached max capacity."));
     }
 
@@ -176,9 +177,9 @@ public final class ShareResultsUploader {
       long fileSize = Files.copy(limitedBytes, tempFile, REPLACE_EXISTING);
 
       if (fileSize > config.maxFileSizeInBytes)
-        return new ShareResultsUploadReport(
-            new ShareResultsErrorJsonView(
-                ShareResultsErrorJsonView.ErrorKind.FILE_TOO_LARGE,
+        return new ShareOutcome(
+            new ShareOutcome.Failure(
+                ShareOutcome.Failure.Kind.FILE_TOO_LARGE,
                 "Share uploads cannot exceed "
                     + config.maxFileSizeInBytes
                     + " bytes."));
@@ -188,16 +189,16 @@ public final class ShareResultsUploader {
         results = objectMapper.readValue(inputStream, Results.class);
       } catch (JsonProcessingException e) {
         logger.info("Exception processing json file {}", tempFile, e);
-        return new ShareResultsUploadReport(
-            new ShareResultsErrorJsonView(
-                ShareResultsErrorJsonView.ErrorKind.INVALID_JSON,
+        return new ShareOutcome(
+            new ShareOutcome.Failure(
+                ShareOutcome.Failure.Kind.INVALID_JSON,
                 "Invalid results JSON"));
       }
 
       if (results.testMetadata == null || results.testMetadata.isEmpty())
-        return new ShareResultsUploadReport(
-            new ShareResultsErrorJsonView(
-                ShareResultsErrorJsonView.ErrorKind.MISSING_TEST_METADATA,
+        return new ShareOutcome(
+            new ShareOutcome.Failure(
+                ShareOutcome.Failure.Kind.MISSING_TEST_METADATA,
                 "Results must contain non-empty test metadata"));
 
       String shareId = UUID.randomUUID().toString();
@@ -218,7 +219,7 @@ public final class ShareResultsUploader {
 
       String resultsUrl =
           config.tfbStatusOrigin
-              + "/share-results/view/"
+              + "/share/download/"
               + URLEncoder.encode(shareId + ".json", UTF_8);
 
       String visualizeResultsUrl =
@@ -226,8 +227,8 @@ public final class ShareResultsUploader {
               + "/benchmarks/#section=test&shareid="
               + URLEncoder.encode(shareId, UTF_8);
 
-      return new ShareResultsUploadReport(
-          new ShareResultsJsonView(
+      return new ShareOutcome(
+          new ShareOutcome.Success(
               /* shareId= */ shareId,
               /* resultsUrl= */ resultsUrl,
               /* visualizeResultsUrl= */ visualizeResultsUrl));
@@ -249,7 +250,7 @@ public final class ShareResultsUploader {
    * @throws IllegalArgumentException if the specified string could never be the
    *         share id for any results
    */
-  public @Nullable ByteSource getUpload(String shareId) {
+  public @Nullable ByteSource findSharedResults(String shareId) {
     Objects.requireNonNull(shareId);
 
     Path sharedFile = getSharedFile(shareId);
@@ -364,66 +365,161 @@ public final class ShareResultsUploader {
       "<tfb> <auto> Share directory full";
 
   /**
-   * Describes whether or not an upload was successful.  Use {@link #isError()}
-   * to determine whether it was a success.  If there was an error, use {@link
-   * #getError()} for a message appropriate to display to the user.  Otherwise,
-   * {@link #getSuccess()} describes the newly uploaded results file.
+   * Describes whether or not an attempt to share a results.json file succeeded.
+   * Use {@link #isFailure()} to determine whether this attempt failed.  If this
+   * was a failure, use {@link #getFailure()} for a message appropriate to
+   * display to the user.  Otherwise, {@link #getSuccess()} describes the newly
+   * shared results.json file.
    */
   @Immutable
-  public static final class ShareResultsUploadReport {
-    private final @Nullable ShareResultsJsonView success;
-    private final @Nullable ShareResultsErrorJsonView error;
+  public static final class ShareOutcome {
+    private final @Nullable Success success;
+    private final @Nullable Failure failure;
 
     /**
-     * Create a successful result with the specified json view.
+     * Constructs a successful outcome.
      */
-    ShareResultsUploadReport(ShareResultsJsonView success) {
+    ShareOutcome(Success success) {
       this.success = Objects.requireNonNull(success);
-      this.error = null;
+      this.failure = null;
     }
 
     /**
-     * Create an error result with the specified error message.
+     * Constructs a failed outcome.
      */
-    ShareResultsUploadReport(ShareResultsErrorJsonView error) {
+    ShareOutcome(Failure failure) {
       this.success = null;
-      this.error = Objects.requireNonNull(error);
+      this.failure = Objects.requireNonNull(failure);
     }
 
     /**
-     * Returns {@code true} if the upload failed and it is acceptable to call
-     * {@link #getError()}.
+     * Returns {@code true} if this attempt to share a results.json file failed.
      */
-    public boolean isError() {
-      return error != null;
+    public boolean isFailure() {
+      return failure != null;
     }
 
     /**
-     * Returns the error message if there was an error.  This error message may
-     * be displayed to the user.
+     * Returns information about why this attempt to share a results.json file
+     * failed.
      *
-     * @throws NoSuchElementException if this upload was successful
+     * @throws NoSuchElementException if this share succeeded
      */
-    public ShareResultsErrorJsonView getError() {
-      if (error == null)
-        throw new NoSuchElementException(
-            "Cannot get error message from successful upload result.");
+    public Failure getFailure() {
+      if (failure == null)
+        throw new NoSuchElementException("This share attempt succeeded");
 
-      return error;
+      return failure;
     }
 
     /**
-     * Returns information about the newly uploaded results file if the upload
-     * was successful.
+     * Returns information about the successfully shared results.json file.
      *
-     * @throws NoSuchElementException if this upload was not successful
+     * @throws NoSuchElementException if this share failed
      */
-    public ShareResultsJsonView getSuccess() {
+    public Success getSuccess() {
       if (success == null)
-        throw new NoSuchElementException(
-            "Cannot get success info from unsuccessful upload result.");
+        throw new NoSuchElementException("This share attempt failed");
 
       return success;
+    }
+
+    /**
+     * A view of a results.json file that was successfully shared by a user.
+     */
+    @Immutable
+    public static final class Success {
+      /**
+       * The unique id for these shared results.
+       */
+      public final String shareId;
+
+      /**
+       * The absolute URL for viewing these shared results as JSON on this
+       * website.
+       */
+      public final String resultsUrl;
+
+      /**
+       * The absolute URL for visualizing these shared results on the TFB
+       * website.
+       */
+      public final String visualizeResultsUrl;
+
+      @JsonCreator
+      public Success(
+          @JsonProperty(value = "shareId", required = true)
+          String shareId,
+
+          @JsonProperty(value = "resultsUrl", required = true)
+          String resultsUrl,
+
+          @JsonProperty(value = "visualizeResultsUrl", required = true)
+          String visualizeResultsUrl) {
+
+        this.shareId = Objects.requireNonNull(shareId);
+        this.resultsUrl = Objects.requireNonNull(resultsUrl);
+        this.visualizeResultsUrl = Objects.requireNonNull(visualizeResultsUrl);
+      }
+    }
+
+    /**
+     * A view of a failed attempt by a user to share a results.json file.
+     */
+    @Immutable
+    public static final class Failure {
+      /**
+       * The kind of failure that occurred.
+       */
+      public final Kind kind;
+
+      /**
+       * A message describing why the results could not be shared, which may be
+       * displayed directly to the user.
+       */
+      public final String message;
+
+      @JsonCreator
+      public Failure(
+          @JsonProperty(value = "kind", required = true)
+          Kind kind,
+
+          @JsonProperty(value = "message", required = true)
+          String message) {
+
+        this.kind = Objects.requireNonNull(kind);
+        this.message = Objects.requireNonNull(message);
+      }
+
+      /**
+       * A kind of failure that prevents results from being shared.
+       */
+      public enum Kind {
+        /**
+         * The results cannot be shared because the share directory has reached
+         * its {@linkplain ShareConfig#maxDirectorySizeInBytes maximum size}.
+         */
+        SHARE_DIRECTORY_FULL,
+
+        /**
+         * The results cannot be shared because the results.json file exceeds
+         * the {@linkplain ShareConfig#maxFileSizeInBytes maximum size} for
+         * individual files.
+         */
+        FILE_TOO_LARGE,
+
+        /**
+         * The results cannot be shared because its {@link Results#testMetadata}
+         * is {@code null} or empty.
+         */
+        MISSING_TEST_METADATA,
+
+        /**
+         * The results cannot be shared because the results.json file isn't a
+         * valid JSON encoding of {@link Results}.
+         */
+        INVALID_JSON
+      }
     }
   }
 }

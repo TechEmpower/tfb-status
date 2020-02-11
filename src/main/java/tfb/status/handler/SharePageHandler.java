@@ -15,35 +15,33 @@ import javax.inject.Singleton;
 import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.MustacheRenderer;
-import tfb.status.service.ShareResultsUploader;
+import tfb.status.service.ShareManager;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 
 /**
- * Handles requests to render the standalone pastebin-style page for sharing
- * results files.  This page allows anonymous users to upload a local
- * results.json file or to enter the contents of a local results.json file as
- * text.
- *
- * @see ShareResultsUploader
+ * Handles requests to render the pastebin-style HTML interface for sharing
+ * results.json files.  This page allows anonymous users to upload a local
+ * results.json file as a file or to enter the contents of a results.json file
+ * as text.
  */
 @Singleton
-public final class ShareResultsPageHandler implements HttpHandler {
+public final class SharePageHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;
 
   @Inject
-  public ShareResultsPageHandler(MustacheRenderer mustacheRenderer) {
+  public SharePageHandler(MustacheRenderer mustacheRenderer) {
     this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
   }
 
   @Provides
   @Singleton
-  @ExactPath("/share-results/pastebin")
-  public HttpHandler shareResultsPageHandler(ShareResultsUploader shareResultsUploader)
+  @ExactPath("/share")
+  public HttpHandler shareResultsPageHandler(ShareManager shareManager)
       throws IOException {
 
     // TODO: Once the zip files have been migrated, delete this.
-    shareResultsUploader.migrateZipFiles();
+    shareManager.migrateZipFiles();
 
     return HttpHandlers.chain(
         this,
@@ -53,7 +51,7 @@ public final class ShareResultsPageHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) {
-    String html = mustacheRenderer.render("share-results.mustache");
+    String html = mustacheRenderer.render("share.mustache");
     exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
     exchange.getResponseSender().send(html, UTF_8);
   }

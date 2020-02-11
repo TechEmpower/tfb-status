@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// Dynamic behavior for the share results page.
+// Dynamic behavior for the share page.
 // -----------------------------------------------------------------------------
 
 (function() {
@@ -127,7 +127,7 @@
     }
 
     handleUploadResponse(
-      fetch("/share-results/upload", {
+      fetch("/share/upload", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -152,7 +152,7 @@
     formData.append("results", file);
 
     handleUploadResponse(
-      fetch("/share-results/upload", {
+      fetch("/share/upload", {
         method: "POST",
         body: formData
       }),
@@ -163,7 +163,7 @@
   }
 
   function attachSubmitHandler() {
-    document.querySelector("#share-results-form").addEventListener("submit", function(event) {
+    document.querySelector("#share-form").addEventListener("submit", function(event) {
       event.preventDefault();
 
       if (currentShareType === "paste") {

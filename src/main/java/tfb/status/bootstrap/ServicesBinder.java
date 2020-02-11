@@ -13,9 +13,9 @@ import tfb.status.handler.LastSeenCommitHandler;
 import tfb.status.handler.RobotsHandler;
 import tfb.status.handler.RootHandler;
 import tfb.status.handler.SaveAttributesHandler;
-import tfb.status.handler.ShareResultsPageHandler;
-import tfb.status.handler.ShareResultsUploadHandler;
-import tfb.status.handler.ShareResultsViewHandler;
+import tfb.status.handler.ShareDownloadHandler;
+import tfb.status.handler.SharePageHandler;
+import tfb.status.handler.ShareUploadHandler;
 import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
@@ -34,7 +34,7 @@ import tfb.status.service.MustacheRenderer;
 import tfb.status.service.ObjectMapperFactory;
 import tfb.status.service.RunCompleteMailer;
 import tfb.status.service.RunProgressMonitor;
-import tfb.status.service.ShareResultsUploader;
+import tfb.status.service.ShareManager;
 import tfb.status.service.TaskScheduler;
 import tfb.status.service.TickerFactory;
 
@@ -77,7 +77,7 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(RunProgressMonitor.class);
     addActiveDescriptor(RunCompleteMailer.class);
     addActiveDescriptor(TaskScheduler.class);
-    addActiveDescriptor(ShareResultsUploader.class);
+    addActiveDescriptor(ShareManager.class);
     addActiveDescriptor(RootHandler.class);
     addActiveDescriptor(HomePageHandler.class);
     addActiveDescriptor(HomeUpdatesHandler.class);
@@ -92,8 +92,8 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(AttributesPageHandler.class);
     addActiveDescriptor(SaveAttributesHandler.class);
     addActiveDescriptor(LastSeenCommitHandler.class);
-    addActiveDescriptor(ShareResultsUploadHandler.class);
-    addActiveDescriptor(ShareResultsViewHandler.class);
-    addActiveDescriptor(ShareResultsPageHandler.class);
+    addActiveDescriptor(ShareUploadHandler.class);
+    addActiveDescriptor(ShareDownloadHandler.class);
+    addActiveDescriptor(SharePageHandler.class);
   }
 }

@@ -14,7 +14,7 @@ import tfb.status.service.FileStore;
  */
 @Immutable
 @Singleton
-public final class SharingConfig {
+public final class ShareConfig {
   /**
    * The minimum number of seconds that must pass after sending one email before
    * sending another.  This is used to prevent accidental self-spam if there are
@@ -47,11 +47,11 @@ public final class SharingConfig {
    */
   public final String tfbWebsiteOrigin;
 
-  public SharingConfig(long minSecondsBetweenEmails,
-                       long maxDirectorySizeInBytes,
-                       long maxFileSizeInBytes,
-                       String tfbStatusOrigin,
-                       String tfbWebsiteOrigin) {
+  public ShareConfig(long minSecondsBetweenEmails,
+                     long maxDirectorySizeInBytes,
+                     long maxFileSizeInBytes,
+                     String tfbStatusOrigin,
+                     String tfbWebsiteOrigin) {
 
     this.minSecondsBetweenEmails = minSecondsBetweenEmails;
     this.maxDirectorySizeInBytes = maxDirectorySizeInBytes;
@@ -64,10 +64,10 @@ public final class SharingConfig {
   public boolean equals(@Nullable Object object) {
     if (object == this) {
       return true;
-    } else if (!(object instanceof SharingConfig)) {
+    } else if (!(object instanceof ShareConfig)) {
       return false;
     } else {
-      SharingConfig that = (SharingConfig) object;
+      ShareConfig that = (ShareConfig) object;
       return this.minSecondsBetweenEmails == that.minSecondsBetweenEmails
           && this.maxDirectorySizeInBytes == that.maxDirectorySizeInBytes
           && this.maxFileSizeInBytes == that.maxFileSizeInBytes
@@ -88,7 +88,7 @@ public final class SharingConfig {
   }
 
   @JsonCreator
-  public static SharingConfig create(
+  public static ShareConfig create(
       @JsonProperty(value = "minSecondsBetweenEmails", required = false)
       @Nullable Long minSecondsBetweenEmails,
 
@@ -104,7 +104,7 @@ public final class SharingConfig {
       @JsonProperty(value = "tfbWebsiteOrigin", required = false)
       @Nullable String tfbWebsiteOrigin) {
 
-    return new SharingConfig(
+    return new ShareConfig(
         /* minSecondsBetweenEmails= */
         Objects.requireNonNullElse(
             minSecondsBetweenEmails,
@@ -131,7 +131,7 @@ public final class SharingConfig {
             DEFAULT_TFB_WEBSITE_ORIGIN));
   }
 
-  public static SharingConfig defaultConfig() {
+  public static ShareConfig defaultConfig() {
     return create(null, null, null, null, null);
   }
 

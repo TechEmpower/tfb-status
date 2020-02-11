@@ -44,7 +44,7 @@
 #runCompleteMailer:
 #  minSecondsBetweenEmails: 86400
 
-#sharing:
+#share:
 #  minSecondsBetweenEmails: 86400
 #  maxDirectorySizeInBytes: 1000000000
 #  maxFileSizeInBytes: 5000000

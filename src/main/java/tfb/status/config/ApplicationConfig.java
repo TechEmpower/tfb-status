@@ -53,10 +53,10 @@ public final class ApplicationConfig {
   public final RunCompleteMailerConfig runCompleteMailer;
 
   /**
-   * See {@link SharingConfig}.
+   * See {@link ShareConfig}.
    */
   @Provides
-  public final SharingConfig sharing;
+  public final ShareConfig share;
 
   /**
    * The configuration for outbound emails, or {@code null} if outbound emails
@@ -80,7 +80,7 @@ public final class ApplicationConfig {
                            FileStoreConfig fileStore,
                            RunProgressMonitorConfig runProgressMonitor,
                            RunCompleteMailerConfig runCompleteMailer,
-                           SharingConfig sharing,
+                           ShareConfig share,
                            @Nullable EmailConfig email) {
 
     this.http = Objects.requireNonNull(http);
@@ -89,7 +89,7 @@ public final class ApplicationConfig {
     this.fileStore = Objects.requireNonNull(fileStore);
     this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
     this.runCompleteMailer = Objects.requireNonNull(runCompleteMailer);
-    this.sharing = Objects.requireNonNull(sharing);
+    this.share = Objects.requireNonNull(share);
     this.email = email;
   }
 
@@ -107,7 +107,7 @@ public final class ApplicationConfig {
           && this.fileStore.equals(that.fileStore)
           && this.runProgressMonitor.equals(that.runProgressMonitor)
           && this.runCompleteMailer.equals(that.runCompleteMailer)
-          && this.sharing.equals(that.sharing)
+          && this.share.equals(that.share)
           && Objects.equals(this.email, that.email);
     }
   }
@@ -121,7 +121,7 @@ public final class ApplicationConfig {
     hash = 31 * hash + fileStore.hashCode();
     hash = 31 * hash + runProgressMonitor.hashCode();
     hash = 31 * hash + runCompleteMailer.hashCode();
-    hash = 31 * hash + sharing.hashCode();
+    hash = 31 * hash + share.hashCode();
     hash = 31 * hash + Objects.hashCode(email);
     return hash;
   }
@@ -146,8 +146,8 @@ public final class ApplicationConfig {
       @JsonProperty(value = "runCompleteMailer", required = false)
       @Nullable RunCompleteMailerConfig runCompleteMailer,
 
-      @JsonProperty(value = "sharing", required = false)
-      @Nullable SharingConfig sharing,
+      @JsonProperty(value = "share", required = false)
+      @Nullable ShareConfig share,
 
       @JsonProperty(value = "email", required = false)
       @Nullable EmailConfig email) {
@@ -183,10 +183,10 @@ public final class ApplicationConfig {
             runCompleteMailer,
             () -> RunCompleteMailerConfig.defaultConfig()),
 
-        /* sharing= */
+        /* share= */
         Objects.requireNonNullElseGet(
-            sharing,
-            () -> SharingConfig.defaultConfig()),
+            share,
+            () -> ShareConfig.defaultConfig()),
 
         /* email= */
         email);

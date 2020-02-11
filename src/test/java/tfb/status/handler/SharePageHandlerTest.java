@@ -15,19 +15,18 @@ import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
- * Tests for {@link ShareResultsPageHandler}.
+ * Tests for {@link SharePageHandler}.
  */
 @ExtendWith(TestServicesInjector.class)
-public final class ShareResultsPageHandlerTest {
+public final class SharePageHandlerTest {
   /**
-   * Verifies that {@code GET /share-results/pastebin} produces an HTML
-   * response.
+   * Verifies that {@code GET /share} produces an HTML response.
    */
   @Test
   public void testGet(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpResponse<String> response = http.getString("/share-results/pastebin");
+    HttpResponse<String> response = http.getString("/share");
 
     assertEquals(OK, response.statusCode());
 

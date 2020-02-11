@@ -31,22 +31,21 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import tfb.status.service.ShareManager;
 import tfb.status.service.TaskScheduler;
 import tfb.status.testlib.HttpTester;
 import tfb.status.testlib.ResultsTester;
 import tfb.status.testlib.TestServicesInjector;
 import tfb.status.view.Results;
-import tfb.status.view.ShareResultsErrorJsonView;
-import tfb.status.view.ShareResultsJsonView;
 
 /**
- * Tests for {@link ShareResultsUploadHandler}.
+ * Tests for {@link ShareUploadHandler}.
  */
 @ExtendWith(TestServicesInjector.class)
-public final class ShareResultsUploadHandlerTest {
+public final class ShareUploadHandlerTest {
   /**
-   * Verifies that {@code POST /share-results/upload} produces a {@code 201
-   * Created} response for a valid results.json file included as {@code
+   * Verifies that {@code POST /share/upload} produces a {@code 201 Created}
+   * response for a valid results.json file included as {@code
    * application/json}.
    */
   @Test
@@ -58,7 +57,7 @@ public final class ShareResultsUploadHandlerTest {
     Results results = resultsTester.newResults();
 
     HttpRequest request =
-        HttpRequest.newBuilder(http.uri("/share-results/upload"))
+        HttpRequest.newBuilder(http.uri("/share/upload"))
                    .POST(resultsTester.asBodyPublisher(results))
                    .header(CONTENT_TYPE, JSON_UTF_8.toString())
                    .build();
@@ -76,25 +75,26 @@ public final class ShareResultsUploadHandlerTest {
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
 
-    ShareResultsJsonView shareView =
+    ShareManager.ShareOutcome.Success success =
         objectMapper.readValue(
             response.body(),
-            ShareResultsJsonView.class);
+            ShareManager.ShareOutcome.Success.class);
 
-    assertNotNull(shareView);
+    assertNotNull(success);
   }
 
   /**
-   * Verifies that {@code POST /share-results/upload} produces a {@code 400 Bad
-   * Request} response for an invalid results.json file included as {@code
+   * Verifies that {@code POST /share/upload} produces a {@code 400 Bad Request}
+   * response for an invalid results.json file included as {@code
    * application/json}.
    */
   @Test
-  public void testPostJson_invalidFile(HttpTester http, ObjectMapper objectMapper)
+  public void testPostJson_invalidFile(HttpTester http,
+                                       ObjectMapper objectMapper)
       throws IOException, InterruptedException {
 
     HttpRequest request =
-        HttpRequest.newBuilder(http.uri("/share-results/upload"))
+        HttpRequest.newBuilder(http.uri("/share/upload"))
                    .POST(HttpRequest.BodyPublishers.ofString("invalid json"))
                    .header(CONTENT_TYPE, JSON_UTF_8.toString())
                    .build();
@@ -112,16 +112,17 @@ public final class ShareResultsUploadHandlerTest {
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
 
-    ShareResultsErrorJsonView errorView =
+    ShareManager.ShareOutcome.Failure failure =
         objectMapper.readValue(
             response.body(),
-            ShareResultsErrorJsonView.class);
+            ShareManager.ShareOutcome.Failure.class);
 
-    assertNotNull(errorView);
+    assertNotNull(failure);
   }
+
   /**
-   * Verifies that {@code POST /share-results/upload} produces a {@code 201
-   * Created} response for a valid results.json file included as {@code
+   * Verifies that {@code POST /share/upload} produces a {@code 201 Created}
+   * response for a valid results.json file included as {@code
    * multipart/form-data}.
    */
   @Test
@@ -145,7 +146,7 @@ public final class ShareResultsUploadHandlerTest {
     HttpResponse<String> response =
         http.client().send(
             postFiles(
-                http.uri("/share-results/upload"),
+                http.uri("/share/upload"),
                 files,
                 taskScheduler),
             HttpResponse.BodyHandlers.ofString());
@@ -158,17 +159,17 @@ public final class ShareResultsUploadHandlerTest {
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
 
-    ShareResultsJsonView shareView =
+    ShareManager.ShareOutcome.Success success =
         objectMapper.readValue(
             response.body(),
-            ShareResultsJsonView.class);
+            ShareManager.ShareOutcome.Success.class);
 
-    assertNotNull(shareView);
+    assertNotNull(success);
   }
 
   /**
-   * Verifies that {@code POST /share-results/upload} produces a {@code 201
-   * Created} response for a valid results.json file included as {@code
+   * Verifies that {@code POST /share/upload} produces a {@code 201 Created}
+   * response for a valid results.json file included as {@code
    * multipart/form-data}.
    */
   @Test
@@ -190,7 +191,7 @@ public final class ShareResultsUploadHandlerTest {
     HttpResponse<String> response =
         http.client().send(
             postFiles(
-                http.uri("/share-results/upload"),
+                http.uri("/share/upload"),
                 files,
                 taskScheduler),
             HttpResponse.BodyHandlers.ofString());
@@ -203,12 +204,12 @@ public final class ShareResultsUploadHandlerTest {
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
 
-    ShareResultsErrorJsonView errorView =
+    ShareManager.ShareOutcome.Failure failure =
         objectMapper.readValue(
             response.body(),
-            ShareResultsErrorJsonView.class);
+            ShareManager.ShareOutcome.Failure.class);
 
-    assertNotNull(errorView);
+    assertNotNull(failure);
   }
 
   /**

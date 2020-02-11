@@ -27,7 +27,7 @@ runProgressMonitor:
 runCompleteMailer:
   minSecondsBetweenEmails: 0
 
-sharing:
+share:
   minSecondsBetweenEmails: 10
   maxDirectorySizeInBytes: 10000000
   maxFileSizeInBytes: 5000000

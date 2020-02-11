@@ -28,8 +28,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.handler.routing.ExactPath;
 import tfb.status.hk2.extensions.Provides;
-import tfb.status.service.ShareResultsUploader;
-import tfb.status.service.ShareResultsUploader.ShareResultsUploadReport;
+import tfb.status.service.ShareManager;
+import tfb.status.service.ShareManager.ShareOutcome;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.Results;
@@ -60,21 +60,21 @@ import tfb.status.view.Results;
  * </pre>
  */
 @Singleton
-public final class ShareResultsUploadHandler implements HttpHandler {
+public final class ShareUploadHandler implements HttpHandler {
   private final ObjectMapper objectMapper;
-  private final ShareResultsUploader shareResultsUploader;
+  private final ShareManager shareManager;
 
   @Inject
-  public ShareResultsUploadHandler(ObjectMapper objectMapper,
-                                   ShareResultsUploader shareResultsUploader) {
+  public ShareUploadHandler(ObjectMapper objectMapper,
+                            ShareManager shareManager) {
 
     this.objectMapper = Objects.requireNonNull(objectMapper);
-    this.shareResultsUploader = Objects.requireNonNull(shareResultsUploader);
+    this.shareManager = Objects.requireNonNull(shareManager);
   }
 
   @Provides
   @Singleton
-  @ExactPath("/share-results/upload")
+  @ExactPath("/share/upload")
   public HttpHandler shareResultsUploadHandler() {
     return HttpHandlers.chain(
         this,
@@ -88,10 +88,10 @@ public final class ShareResultsUploadHandler implements HttpHandler {
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
     MediaType contentType = detectMediaType(exchange);
-    ShareResultsUploadReport report;
+    ShareOutcome outcome;
 
     if (contentType.is(JSON_MEDIA_TYPE))
-      report = shareResultsUploader.upload(exchange.getInputStream());
+      outcome = shareManager.shareResults(exchange.getInputStream());
 
     else if (contentType.is(MULTIPART_FORM_DATA_MEDIA_TYPE)) {
       FormParserFactory parserFactory =
@@ -107,7 +107,7 @@ public final class ShareResultsUploadHandler implements HttpHandler {
           return;
         }
         try (InputStream inputStream = element.getFileItem().getInputStream()) {
-          report = shareResultsUploader.upload(inputStream);
+          outcome = shareManager.shareResults(inputStream);
         }
       }
 
@@ -116,17 +116,17 @@ public final class ShareResultsUploadHandler implements HttpHandler {
       return;
     }
 
-    if (report.isError()) {
-      String json = objectMapper.writeValueAsString(report.getError());
+    if (outcome.isFailure()) {
+      String json = objectMapper.writeValueAsString(outcome.getFailure());
       exchange.setStatusCode(BAD_REQUEST);
       exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
       exchange.getResponseSender().send(json, UTF_8);
       return;
     }
 
-    String json = objectMapper.writeValueAsString(report.getSuccess());
+    String json = objectMapper.writeValueAsString(outcome.getSuccess());
     exchange.setStatusCode(CREATED);
-    exchange.getResponseHeaders().put(LOCATION, report.getSuccess().resultsUrl);
+    exchange.getResponseHeaders().put(LOCATION, outcome.getSuccess().resultsUrl);
     exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
     exchange.getResponseSender().send(json, UTF_8);
   }

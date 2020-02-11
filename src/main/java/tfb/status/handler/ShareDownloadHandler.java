@@ -17,25 +17,25 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.handler.routing.PrefixPath;
 import tfb.status.hk2.extensions.Provides;
-import tfb.status.service.ShareResultsUploader;
+import tfb.status.service.ShareManager;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 
 /**
- * Handles requests to view results.json files that were shared by users.
+ * Handles requests to download results.json files that were shared by users.
  */
 @Singleton
-public final class ShareResultsViewHandler implements HttpHandler {
-  private final ShareResultsUploader shareResultsUploader;
+public final class ShareDownloadHandler implements HttpHandler {
+  private final ShareManager shareManager;
 
   @Inject
-  public ShareResultsViewHandler(ShareResultsUploader shareResultsUploader) {
-    this.shareResultsUploader = Objects.requireNonNull(shareResultsUploader);
+  public ShareDownloadHandler(ShareManager shareManager) {
+    this.shareManager = Objects.requireNonNull(shareManager);
   }
 
   @Provides
   @Singleton
-  @PrefixPath("/share-results/view")
+  @PrefixPath("/share/download")
   public HttpHandler shareResultsViewHandler() {
     return HttpHandlers.chain(
         this,
@@ -56,7 +56,7 @@ public final class ShareResultsViewHandler implements HttpHandler {
 
     String shareId = matcher.group("shareId");
 
-    ByteSource resultsBytes = shareResultsUploader.getUpload(shareId);
+    ByteSource resultsBytes = shareManager.findSharedResults(shareId);
     if (resultsBytes == null) {
       exchange.setStatusCode(NOT_FOUND);
       return;

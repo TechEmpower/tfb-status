@@ -28,65 +28,57 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import tfb.status.config.SharingConfig;
-import tfb.status.service.ShareResultsUploader.ShareResultsUploadReport;
+import tfb.status.config.ShareConfig;
+import tfb.status.service.ShareManager.ShareOutcome;
 import tfb.status.testlib.MailDelay;
 import tfb.status.testlib.MailServer;
 import tfb.status.testlib.ResultsTester;
 import tfb.status.testlib.TestServicesInjector;
 import tfb.status.view.Results;
-import tfb.status.view.ShareResultsErrorJsonView;
-import tfb.status.view.ShareResultsJsonView;
 
 /**
- * Tests for {@link ShareResultsUploader}.
+ * Tests for {@link ShareManager}.
  */
 @Execution(ExecutionMode.SAME_THREAD) // currently not parallelizable
 @ExtendWith(TestServicesInjector.class)
-public final class ShareResultsUploaderTest {
+public final class ShareManagerTest {
   /**
-   * Verifies that {@link ShareResultsUploader#upload(InputStream)} succeeds for
+   * Verifies that {@link ShareManager#shareResults(InputStream)} succeeds for
    * a valid results.json file.
-   *
-   * <p>This validates the returned data, ensuring that the information is as
-   * expected based on the test_config.  This also ensures that the uploader
-   * created a zip file with the expected name in the expected directory.  It
-   * then uses the uploader to read the uploaded file and ensures that it
-   * exactly equals the original file.
    */
   @Test
-  public void testUpload(ShareResultsUploader shareResultsUploader,
-                         SharingConfig sharingConfig,
-                         ResultsTester resultsTester,
-                         FileStore fileStore)
+  public void testShareResults(ShareManager shareManager,
+                               ShareConfig shareConfig,
+                               ResultsTester resultsTester,
+                               FileStore fileStore)
       throws IOException {
 
     Results results = resultsTester.newResults();
     ByteSource resultsBytes = resultsTester.asByteSource(results);
 
-    ShareResultsUploadReport report;
+    ShareOutcome outcome;
     try (InputStream inputStream = resultsBytes.openStream()) {
-      report = shareResultsUploader.upload(inputStream);
+      outcome = shareManager.shareResults(inputStream);
     }
 
     // The upload should have succeeded.
-    assertFalse(report.isError());
+    assertFalse(outcome.isFailure());
 
     assertThrows(
         NoSuchElementException.class,
-        () -> report.getError());
+        () -> outcome.getFailure());
 
-    ShareResultsJsonView shareView = report.getSuccess();
-
-    assertStartsWith(
-        sharingConfig.tfbStatusOrigin + "/share-results/view/",
-        shareView.resultsUrl);
+    ShareOutcome.Success success = outcome.getSuccess();
 
     assertStartsWith(
-        sharingConfig.tfbWebsiteOrigin + "/benchmarks/",
-        shareView.visualizeResultsUrl);
+        shareConfig.tfbStatusOrigin + "/share/download/",
+        success.resultsUrl);
 
-    ByteSource sharedBytes = shareResultsUploader.getUpload(shareView.shareId);
+    assertStartsWith(
+        shareConfig.tfbWebsiteOrigin + "/benchmarks/",
+        success.visualizeResultsUrl);
+
+    ByteSource sharedBytes = shareManager.findSharedResults(success.shareId);
 
     assertNotNull(sharedBytes);
 
@@ -94,40 +86,40 @@ public final class ShareResultsUploaderTest {
   }
 
   /**
-   * Verifies that {@link ShareResultsUploader#upload(InputStream)} responds
+   * Verifies that {@link ShareManager#shareResults(InputStream)} responds
    * with an error message when the specified results.json file contains
    * invalid JSON.
    */
   @Test
-  public void testUpload_invalidJson(ShareResultsUploader shareResultsUploader)
+  public void testShareResults_invalidJson(ShareManager shareManager)
       throws IOException {
 
     ByteSource invalidJsonBytes = CharSource.wrap("foo").asByteSource(UTF_8);
 
-    ShareResultsUploadReport report;
+    ShareOutcome outcome;
     try (InputStream inputStream = invalidJsonBytes.openStream()) {
-      report = shareResultsUploader.upload(inputStream);
+      outcome = shareManager.shareResults(inputStream);
     }
 
-    assertTrue(report.isError());
+    assertTrue(outcome.isFailure());
 
     assertThrows(
         NoSuchElementException.class,
-        () -> report.getSuccess());
+        () -> outcome.getSuccess());
 
     assertEquals(
-        ShareResultsErrorJsonView.ErrorKind.INVALID_JSON,
-        report.getError().errorKind);
+        ShareOutcome.Failure.Kind.INVALID_JSON,
+        outcome.getFailure().kind);
   }
 
   /**
-   * Verifies that {@link ShareResultsUploader#upload(InputStream)} responds
+   * Verifies that {@link ShareManager#shareResults(InputStream)} responds
    * with an error message when the specified results.json file contains no
    * {@link Results#testMetadata}.
    */
   @Test
-  public void testUpload_noTestMetadata(ShareResultsUploader shareResultsUploader,
-                                        ResultsTester resultsTester)
+  public void testShareResults_noTestMetadata(ShareManager shareManager,
+                                              ResultsTester resultsTester)
       throws IOException {
 
     Results template = resultsTester.newResults();
@@ -152,26 +144,26 @@ public final class ShareResultsUploaderTest {
 
     ByteSource resultsBytes = resultsTester.asByteSource(results);
 
-    ShareResultsUploadReport report;
+    ShareOutcome outcome;
     try (InputStream inputStream = resultsBytes.openStream()) {
-      report = shareResultsUploader.upload(inputStream);
+      outcome = shareManager.shareResults(inputStream);
     }
 
-    assertTrue(report.isError());
+    assertTrue(outcome.isFailure());
 
     assertEquals(
-        ShareResultsErrorJsonView.ErrorKind.MISSING_TEST_METADATA,
-        report.getError().errorKind);
+        ShareOutcome.Failure.Kind.MISSING_TEST_METADATA,
+        outcome.getFailure().kind);
   }
 
   /**
-   * Verifies that {@link ShareResultsUploader#upload(InputStream)} responds
+   * Verifies that {@link ShareManager#shareResults(InputStream)} responds
    * with an error message when the specified results.json file is too large.
    */
   @Test
-  public void testUpload_fileTooLarge(SharingConfig sharingConfig,
-                                      ShareResultsUploader shareResultsUploader,
-                                      ResultsTester resultsTester)
+  public void testShareResults_fileTooLarge(ShareConfig shareConfig,
+                                            ShareManager shareManager,
+                                            ResultsTester resultsTester)
       throws IOException {
 
     // Start with a valid results.json file and append spaces to the end to make
@@ -181,7 +173,7 @@ public final class ShareResultsUploaderTest {
 
     // Make the uploaded file exactly too large.
     long paddingNeeded =
-        sharingConfig.maxFileSizeInBytes + 1 - resultsBytes.size();
+        shareConfig.maxFileSizeInBytes + 1 - resultsBytes.size();
 
     ByteSource padding =
         new ByteSource() {
@@ -203,29 +195,29 @@ public final class ShareResultsUploaderTest {
     ByteSource paddedResultsBytes =
         ByteSource.concat(resultsBytes, padding);
 
-    ShareResultsUploadReport report;
+    ShareOutcome outcome;
     try (InputStream inputStream = paddedResultsBytes.openStream()) {
-      report = shareResultsUploader.upload(inputStream);
+      outcome = shareManager.shareResults(inputStream);
     }
 
-    assertTrue(report.isError());
+    assertTrue(outcome.isFailure());
 
     assertEquals(
-        ShareResultsErrorJsonView.ErrorKind.FILE_TOO_LARGE,
-        report.getError().errorKind);
+        ShareOutcome.Failure.Kind.FILE_TOO_LARGE,
+        outcome.getFailure().kind);
   }
 
   /**
-   * Verifies that {@link ShareResultsUploader#upload(InputStream)} responds
+   * Verifies that {@link ShareManager#shareResults(InputStream)} responds
    * with an error message when the the share directory is full.
    */
   @Test
-  public void testUpload_shareDirectoryFull(SharingConfig sharingConfig,
-                                            FileStore fileStore,
-                                            ResultsTester resultsTester,
-                                            MailServer mailServer,
-                                            MailDelay mailDelay,
-                                            ShareResultsUploader shareResultsUploader)
+  public void testShareResults_shareDirectoryFull(ShareConfig shareConfig,
+                                                  FileStore fileStore,
+                                                  ResultsTester resultsTester,
+                                                  MailServer mailServer,
+                                                  MailDelay mailDelay,
+                                                  ShareManager shareManager)
       throws IOException, MessagingException, InterruptedException {
 
     Results results = resultsTester.newResults();
@@ -234,7 +226,7 @@ public final class ShareResultsUploaderTest {
     // Counts the number of emails received regarding the share directory being
     // full.
     class EmailCounter {
-      final String subject = ShareResultsUploader.SHARE_DIRECTORY_FULL_SUBJECT;
+      final String subject = ShareManager.SHARE_DIRECTORY_FULL_SUBJECT;
 
       int count() throws IOException, MessagingException {
         return mailServer.getMessages(m -> m.getSubject().equals(subject))
@@ -252,25 +244,25 @@ public final class ShareResultsUploaderTest {
     // TODO: This is unfriendly to other tests running in parallel, since it
     //       temporarily prevents the share functionality from working for
     //       anyone.
-    ShareResultsUploadReport report;
+    ShareOutcome outcome;
     Path junk = fileStore.shareDirectory().resolve("junk.txt");
     try {
       try (FileChannel fileChannel =
                FileChannel.open(junk, CREATE_NEW, WRITE)) {
         fileChannel.write(
             ByteBuffer.wrap(new byte[0]),
-            sharingConfig.maxDirectorySizeInBytes);
+            shareConfig.maxDirectorySizeInBytes);
       }
 
       try (InputStream inputStream = resultsBytes.openStream()) {
-        report = shareResultsUploader.upload(inputStream);
+        outcome = shareManager.shareResults(inputStream);
       }
 
-      assertTrue(report.isError());
+      assertTrue(outcome.isFailure());
 
       assertEquals(
-          ShareResultsErrorJsonView.ErrorKind.SHARE_DIRECTORY_FULL,
-          report.getError().errorKind);
+          ShareOutcome.Failure.Kind.SHARE_DIRECTORY_FULL,
+          outcome.getFailure().kind);
 
       Thread.sleep(mailDelay.timeToSendOneEmail().toMillis());
 
@@ -279,14 +271,14 @@ public final class ShareResultsUploaderTest {
       // Assert that we don't receive a second email.
 
       try (InputStream inputStream = resultsBytes.openStream()) {
-        report = shareResultsUploader.upload(inputStream);
+        outcome = shareManager.shareResults(inputStream);
       }
 
-      assertTrue(report.isError());
+      assertTrue(outcome.isFailure());
 
       assertEquals(
-          ShareResultsErrorJsonView.ErrorKind.SHARE_DIRECTORY_FULL,
-          report.getError().errorKind);
+          ShareOutcome.Failure.Kind.SHARE_DIRECTORY_FULL,
+          outcome.getFailure().kind);
 
       Thread.sleep(mailDelay.timeToSendOneEmail().toMillis());
 
@@ -298,26 +290,26 @@ public final class ShareResultsUploaderTest {
   }
 
   /**
-   * Verifies that {@link ShareResultsUploader#getUpload(String)} returns {@code
+   * Verifies that {@link ShareManager#findSharedResults(String)} returns {@code
    * null} when the specified shared file does not exist.
    */
   @Test
-  public void testGetUpload_notFound(ShareResultsUploader shareResultsUploader,
-                                     FileStore fileStore) {
+  public void testFindSharedResults_notFound(ShareManager shareManager,
+                                             FileStore fileStore) {
 
-    assertNull(shareResultsUploader.getUpload(UUID.randomUUID().toString()));
+    assertNull(shareManager.findSharedResults(UUID.randomUUID().toString()));
   }
 
   /**
-   * Verifies that {@link ShareResultsUploader#getUpload(String)} throws {@link
+   * Verifies that {@link ShareManager#findSharedResults(String)} throws {@link
    * IllegalArgumentException} when the specified share id is invalid.
    */
   @Test
-  public void testGetUpload_invalidShareId(ShareResultsUploader shareResultsUploader,
-                                           FileStore fileStore) {
+  public void testFindSharedResults_invalidShareId(ShareManager shareManager,
+                                                   FileStore fileStore) {
 
     assertThrows(
         IllegalArgumentException.class,
-        () -> shareResultsUploader.getUpload("../."));
+        () -> shareManager.findSharedResults("../."));
   }
 }
