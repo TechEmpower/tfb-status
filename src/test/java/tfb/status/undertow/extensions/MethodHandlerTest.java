@@ -8,7 +8,6 @@ import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.METHOD_NOT_ALLOWED;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.base.Splitter;
 import io.undertow.server.HttpHandler;
@@ -17,6 +16,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -282,7 +282,9 @@ public final class MethodHandlerTest {
 
     assertEquals(OK, response.statusCode());
     assertEquals("optionsHandler", response.body());
-    assertTrue(response.headers().firstValue(ALLOW).isEmpty());
+    assertEquals(
+        Optional.empty(),
+        response.headers().firstValue(ALLOW));
   }
 
   private static Set<String> parseAllowHeader(HttpResponse<?> response) {

@@ -3,7 +3,6 @@ package tfb.status.undertow.extensions;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
 import com.google.common.net.MediaType;
@@ -11,6 +10,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.HttpTester;
@@ -180,8 +180,8 @@ public final class DefaultToUtf8HandlerTest {
 
     assertEquals(OK, response.statusCode());
 
-    assertTrue(response.headers()
-                       .firstValue(CONTENT_TYPE)
-                       .isEmpty());
+    assertEquals(
+        Optional.empty(),
+        response.headers().firstValue(CONTENT_TYPE));
   }
 }
