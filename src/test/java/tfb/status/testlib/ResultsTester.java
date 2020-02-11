@@ -102,8 +102,9 @@ public final class ResultsTester {
   }
 
   /**
-   * Generates new results with a unique and non-null {@link Results#uuid},
-   * {@link Results#name}, and {@link Results#environmentDescription}.
+   * Generates new results with a unique and non-{@code null} {@link
+   * Results#uuid}, {@link Results#name}, and {@link
+   * Results#environmentDescription}.
    */
   public Results newResults() throws IOException {
     Path oldJsonFile =
