@@ -24,12 +24,15 @@ import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import tfb.status.config.SharingConfig;
 import tfb.status.service.ShareResultsUploader.ShareResultsUploadReport;
+import tfb.status.testlib.MailDelay;
+import tfb.status.testlib.MailServer;
 import tfb.status.testlib.ResultsTester;
 import tfb.status.testlib.TestServicesInjector;
 import tfb.status.view.Results;
@@ -241,11 +244,28 @@ public final class ShareResultsUploaderTest {
   public void testUpload_shareDirectoryFull(SharingConfig sharingConfig,
                                             FileStore fileStore,
                                             ResultsTester resultsTester,
+                                            MailServer mailServer,
+                                            MailDelay mailDelay,
                                             ShareResultsUploader shareResultsUploader)
-      throws IOException {
+      throws IOException, MessagingException, InterruptedException {
 
     Results results = resultsTester.newResults();
     ByteSource resultsBytes = resultsTester.asByteSource(results);
+
+    // Counts the number of emails received regarding the share directory being
+    // full.
+    class EmailCounter {
+      final String subject = ShareResultsUploader.SHARE_DIRECTORY_FULL_SUBJECT;
+
+      int count() throws IOException, MessagingException {
+        return mailServer.getMessages(m -> m.getSubject().equals(subject))
+                         .size();
+      }
+    }
+
+    var emails = new EmailCounter();
+
+    assertEquals(0, emails.count());
 
     // Create a new large file in the share directory so that the directory
     // exceeds its maximum configured size.
@@ -262,18 +282,40 @@ public final class ShareResultsUploaderTest {
             ByteBuffer.wrap(new byte[0]),
             sharingConfig.maxDirectorySizeInBytes);
       }
+
       try (InputStream inputStream = resultsBytes.openStream()) {
         report = shareResultsUploader.upload(inputStream);
       }
+
+      assertTrue(report.isError());
+
+      assertEquals(
+          ShareResultsErrorJsonView.ErrorKind.SHARE_DIRECTORY_FULL,
+          report.getError().errorKind);
+
+      Thread.sleep(mailDelay.timeToSendOneEmail().toMillis());
+
+      assertEquals(1, emails.count());
+
+      // Assert that we don't receive a second email.
+
+      try (InputStream inputStream = resultsBytes.openStream()) {
+        report = shareResultsUploader.upload(inputStream);
+      }
+
+      assertTrue(report.isError());
+
+      assertEquals(
+          ShareResultsErrorJsonView.ErrorKind.SHARE_DIRECTORY_FULL,
+          report.getError().errorKind);
+
+      Thread.sleep(mailDelay.timeToSendOneEmail().toMillis());
+
+      assertEquals(1, emails.count());
+
     } finally {
       Files.delete(junk);
     }
-
-    assertTrue(report.isError());
-
-    assertEquals(
-        ShareResultsErrorJsonView.ErrorKind.SHARE_DIRECTORY_FULL,
-        report.getError().errorKind);
   }
 
   /**

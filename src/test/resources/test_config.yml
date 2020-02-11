@@ -28,7 +28,7 @@ runCompleteMailer:
   minSecondsBetweenEmails: 0
 
 sharing:
-  minSecondsBetweenEmails: 0
+  minSecondsBetweenEmails: 10
   maxDirectorySizeInBytes: 10000000
   maxFileSizeInBytes: 5000000
   tfbStatusOrigin: https://tfb-status.localhost

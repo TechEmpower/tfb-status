@@ -7,9 +7,12 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.Immutable;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,12 +21,15 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.mail.MessagingException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,21 +49,28 @@ import tfb.status.view.ShareResultsJsonView;
 @Singleton
 public final class ShareResultsUploader {
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final SharingConfig sharingConfig;
+  private final SharingConfig config;
   private final FileStore fileStore;
   private final ObjectMapper objectMapper;
-  private final ShareResultsMailer shareResultsMailer;
+  private final Clock clock;
+  private final EmailSender emailSender;
+
+  @GuardedBy("emailTimeLock")
+  private volatile @Nullable Instant previousEmailTime;
+  private final Object emailTimeLock = new Object();
 
   @Inject
-  public ShareResultsUploader(SharingConfig sharingConfig,
+  public ShareResultsUploader(SharingConfig config,
                               FileStore fileStore,
                               ObjectMapper objectMapper,
-                              ShareResultsMailer shareResultsMailer) {
+                              Clock clock,
+                              EmailSender emailSender) {
 
-    this.sharingConfig = Objects.requireNonNull(sharingConfig);
+    this.config = Objects.requireNonNull(config);
     this.fileStore = Objects.requireNonNull(fileStore);
     this.objectMapper = Objects.requireNonNull(objectMapper);
-    this.shareResultsMailer = Objects.requireNonNull(shareResultsMailer);
+    this.clock = Objects.requireNonNull(clock);
+    this.emailSender = Objects.requireNonNull(emailSender);
   }
 
   /**
@@ -87,9 +100,9 @@ public final class ShareResultsUploader {
     long shareDirectorySize =
         FileUtils.directorySizeInBytes(fileStore.shareDirectory());
 
-    if (shareDirectorySize >= sharingConfig.maxDirectorySizeInBytes) {
-      shareResultsMailer.onShareDirectoryFull(
-          sharingConfig.maxDirectorySizeInBytes,
+    if (shareDirectorySize >= config.maxDirectorySizeInBytes) {
+      onShareDirectoryFull(
+          config.maxDirectorySizeInBytes,
           shareDirectorySize);
 
       return new ShareResultsUploadReport(
@@ -107,7 +120,7 @@ public final class ShareResultsUploader {
       InputStream limitedBytes =
           ByteStreams.limit(
               fileBytes,
-              sharingConfig.maxFileSizeInBytes + 1);
+              config.maxFileSizeInBytes + 1);
 
       long fileSize;
       try (OutputStream outputStream =
@@ -115,12 +128,12 @@ public final class ShareResultsUploader {
         fileSize = limitedBytes.transferTo(outputStream);
       }
 
-      if (fileSize > sharingConfig.maxFileSizeInBytes)
+      if (fileSize > config.maxFileSizeInBytes)
         return new ShareResultsUploadReport(
             new ShareResultsErrorJsonView(
                 ShareResultsErrorJsonView.ErrorKind.FILE_TOO_LARGE,
                 "Share uploads cannot exceed "
-                    + sharingConfig.maxFileSizeInBytes
+                    + config.maxFileSizeInBytes
                     + " bytes."));
 
       Results results;
@@ -163,12 +176,12 @@ public final class ShareResultsUploader {
       }
 
       String resultsUrl =
-          sharingConfig.tfbStatusOrigin
+          config.tfbStatusOrigin
               + "/share-results/view/"
               + URLEncoder.encode(jsonFileName, UTF_8);
 
       String visualizeResultsUrl =
-          sharingConfig.tfbWebsiteOrigin
+          config.tfbWebsiteOrigin
               + "/benchmarks/#section=test&shareid="
               + URLEncoder.encode(shareId, UTF_8);
 
@@ -231,6 +244,68 @@ public final class ShareResultsUploader {
         /* ifAbsent= */
         ifAbsent);
   }
+
+  /**
+   * Notifies the maintainers of this application that the share directory is
+   * full.  This method may return without sending the email if a similar email
+   * was sent too recently.
+   *
+   * @param capacityBytes the maximum size of the share directory
+   * @param sizeBytes the current size of the share directory
+   */
+  private void onShareDirectoryFull(long capacityBytes, long sizeBytes) {
+    synchronized (emailTimeLock) {
+      Instant now = clock.instant();
+      Instant previous = this.previousEmailTime;
+
+      if (previous != null) {
+        Instant nextEmailTime =
+            previous.plusSeconds(config.minSecondsBetweenEmails);
+
+        if (now.isBefore(nextEmailTime)) {
+          logger.warn(
+              "Suppressing email for full share directory, "
+                  + "another email was sent for that account too recently, "
+                  + "previous email time = {}, next possible email time = {}",
+              previous,
+              nextEmailTime);
+          return;
+        }
+      }
+
+      this.previousEmailTime = now;
+    }
+
+    String textContent =
+        "Hello,"
+            + "\n"
+            + "\n"
+            + "The share directory used for storing public uploads of results "
+            + "files has reached capacity.  Please audit the directory and "
+            + "delete old uploads or expand the configured capacity."
+            + "\n"
+            + "\n"
+            + "Share directory capacity: " + capacityBytes + " bytes"
+            + "\n"
+            + "Share directory size:     " + sizeBytes + " bytes"
+            + "\n"
+            + "\n"
+            + "-a robot";
+
+    try {
+      emailSender.sendEmail(
+          /* subject= */ SHARE_DIRECTORY_FULL_SUBJECT,
+          /* textContent= */ textContent,
+          /* attachments= */ ImmutableList.of());
+
+    } catch (MessagingException e) {
+      logger.warn("Error sending email for share directory full", e);
+    }
+  }
+
+  @VisibleForTesting
+  static final String SHARE_DIRECTORY_FULL_SUBJECT =
+      "<tfb> <auto> Share directory full";
 
   /**
    * Describes whether or not an upload was successful.  Use {@link #isError()}
