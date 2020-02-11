@@ -2,7 +2,6 @@ package tfb.status.service;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -167,12 +166,7 @@ public final class ShareResultsUploader {
 
         // Create a single entry in the zip file for the json file.
         Path entry = zipFs.getPath(jsonFileName);
-
-        try (InputStream inputStream = Files.newInputStream(tempFile);
-             OutputStream outputStream =
-                 Files.newOutputStream(entry, CREATE_NEW)) {
-          inputStream.transferTo(outputStream);
-        }
+        Files.copy(tempFile, entry);
       }
 
       String resultsUrl =

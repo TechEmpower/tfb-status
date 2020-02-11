@@ -8,7 +8,6 @@ import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.INTERNAL_SERVER_ERROR;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.StandardOpenOption.READ;
 import static java.util.Comparator.comparing;
 
 import com.google.common.base.Joiner;
@@ -22,7 +21,6 @@ import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.util.MimeMappings;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -141,9 +139,7 @@ public final class UnzipResultsHandler implements HttpHandler {
               exchange.getResponseHeaders().put(CONTENT_TYPE,
                                                 mediaType.toString());
 
-            try (InputStream inputStream = Files.newInputStream(zipEntry, READ)) {
-              inputStream.transferTo(exchange.getOutputStream());
-            }
+            Files.copy(zipEntry, exchange.getOutputStream());
           }
 
           else if (Files.isDirectory(zipEntry)) {

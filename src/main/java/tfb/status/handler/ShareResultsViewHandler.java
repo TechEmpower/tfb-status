@@ -9,7 +9,6 @@ import static io.undertow.util.StatusCodes.NOT_FOUND;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -68,9 +67,7 @@ public final class ShareResultsViewHandler implements HttpHandler {
               CONTENT_TYPE,
               JSON_UTF_8.toString());
 
-          try (InputStream inputStream = Files.newInputStream(zipEntry)) {
-            inputStream.transferTo(exchange.getOutputStream());
-          }
+          Files.copy(zipEntry, exchange.getOutputStream());
         },
 
         /* ifAbsent= */

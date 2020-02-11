@@ -5,8 +5,6 @@ import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.MoreFiles;
@@ -16,7 +14,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -104,10 +101,7 @@ public final class UploadResultsHandler implements HttpHandler {
             /* prefix= */ "TFB_Status_Upload",
             /* suffix= */ "." + fileExtension);
 
-    try (OutputStream outputStream =
-             Files.newOutputStream(tempFile, WRITE, APPEND)) {
-      exchange.getInputStream().transferTo(outputStream);
-    }
+    Files.copy(exchange.getInputStream(), tempFile, REPLACE_EXISTING);
 
     Results results;
     if (isJson) {
