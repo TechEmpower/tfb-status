@@ -6,11 +6,10 @@ import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 
+import com.google.common.io.ByteSource;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,21 +56,17 @@ public final class ShareResultsViewHandler implements HttpHandler {
 
     String shareId = matcher.group("shareId");
 
-    shareResultsUploader.getUpload(
-        /* shareId= */
-        shareId,
+    ByteSource resultsBytes = shareResultsUploader.getUpload(shareId);
+    if (resultsBytes == null) {
+      exchange.setStatusCode(NOT_FOUND);
+      return;
+    }
 
-        /* ifPresent= */
-        (Path zipEntry) -> {
-          exchange.getResponseHeaders().put(
-              CONTENT_TYPE,
-              JSON_UTF_8.toString());
+    exchange.getResponseHeaders().put(
+        CONTENT_TYPE,
+        JSON_UTF_8.toString());
 
-          Files.copy(zipEntry, exchange.getOutputStream());
-        },
-
-        /* ifAbsent= */
-        () -> exchange.setStatusCode(NOT_FOUND));
+    resultsBytes.copyTo(exchange.getOutputStream());
   }
 
   // Matches "/6f221937-b8e5-4b22-a52d-020d2538fa64.json", for example.

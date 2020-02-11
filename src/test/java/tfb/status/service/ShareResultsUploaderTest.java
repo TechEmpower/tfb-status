@@ -5,16 +5,16 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static tfb.status.testlib.MoreAssertions.assertStartsWith;
 
 import com.google.common.base.Ascii;
 import com.google.common.io.ByteSource;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharSource;
-import com.google.common.io.MoreFiles;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,31 +86,11 @@ public final class ShareResultsUploaderTest {
         sharingConfig.tfbWebsiteOrigin + "/benchmarks/",
         shareView.visualizeResultsUrl);
 
-    // Ensure the uploader created a zip file in the expected directory with the
-    // expected name.
-    Path zipFile =
-        fileStore.shareDirectory().resolve(shareView.shareId + ".zip");
+    ByteSource sharedBytes = shareResultsUploader.getUpload(shareView.shareId);
 
-    assertTrue(Files.exists(zipFile));
+    assertNotNull(sharedBytes);
 
-    AtomicBoolean zipEntryPresent = new AtomicBoolean(false);
-
-    shareResultsUploader.getUpload(
-        /* shareId= */
-        shareView.shareId,
-
-        /* ifPresent= */
-        (Path zipEntry) -> {
-          zipEntryPresent.set(true);
-          // The uploaded file should contain the same exact bytes as was given.
-          ByteSource zipEntryBytes = MoreFiles.asByteSource(zipEntry);
-          assertTrue(zipEntryBytes.contentEquals(resultsBytes));
-        },
-
-        /* ifAbsent= */
-        () -> fail());
-
-    assertTrue(zipEntryPresent.get());
+    assertTrue(sharedBytes.contentEquals(resultsBytes));
   }
 
   /**
@@ -319,51 +298,14 @@ public final class ShareResultsUploaderTest {
   }
 
   /**
-   * Verifies that {@link ShareResultsUploader#getUpload(String,
-   * ShareResultsUploader.ShareResultsConsumer, Runnable)} invokes the specified
-   * "if absent" callback when the specified shared file does not exist.
+   * Verifies that {@link ShareResultsUploader#getUpload(String)} returns {@code
+   * null} when the specified shared file does not exist.
    */
   @Test
   public void testGetUpload_invalidShareId(ShareResultsUploader shareResultsUploader,
-                                           FileStore fileStore)
-      throws IOException {
+                                           FileStore fileStore) {
 
-    String shareId;
-    do shareId = UUID.randomUUID().toString();
-    while (Files.exists(fileStore.shareDirectory().resolve(shareId + ".zip")));
-
-    AtomicBoolean ifAbsentCalled = new AtomicBoolean(false);
-
-    shareResultsUploader.getUpload(
-        /* shareId= */
-        shareId,
-
-        /* ifPresent= */
-        zipEntry -> fail(),
-
-        /* ifAbsent= */
-        () -> ifAbsentCalled.set(true));
-
-    assertTrue(ifAbsentCalled.get());
-  }
-
-  /**
-   * Verifies that {@link ShareResultsUploader#getUpload(String,
-   * ShareResultsUploader.ShareResultsConsumer, Runnable)} invokes the specified
-   * "if absent" callback when the specified share id does not conform to the
-   * scheme used for share ids.
-   */
-  @Test
-  public void testGetUpload_invalidFileName(ShareResultsUploader shareResultsUploader)
-      throws IOException {
-
-    AtomicBoolean ifAbsentCalled = new AtomicBoolean(false);
-
-    shareResultsUploader.getUpload(
-        /* shareId= */ "../abc",
-        /* ifPresent= */ zipEntry -> fail(),
-        /* ifAbsent= */ () -> ifAbsentCalled.set(true));
-
-    assertTrue(ifAbsentCalled.get());
+    assertNull(shareResultsUploader.getUpload(UUID.randomUUID().toString()));
+    assertNull(shareResultsUploader.getUpload("../."));
   }
 }

@@ -1,20 +1,19 @@
 package tfb.status.service;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
+import com.google.common.io.ByteSource;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.Immutable;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -22,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -34,16 +34,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.SharingConfig;
 import tfb.status.util.FileUtils;
-import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 import tfb.status.view.ShareResultsErrorJsonView;
 import tfb.status.view.ShareResultsJsonView;
 
 /**
- * Accepts uploads of results.json files from users for sharing.  This class
- * provides several ways of creating new shared results files in the {@link
- * FileStore#shareDirectory()}.  All access to that directory should be done
- * through this service.
+ * Accepts uploads of results.json files from users for sharing.
  */
 @Singleton
 public final class ShareResultsUploader {
@@ -72,6 +68,8 @@ public final class ShareResultsUploader {
     this.emailSender = Objects.requireNonNull(emailSender);
   }
 
+  // TODO: Save results as .json.gz instead of as .zip files.
+
   /**
    * Accepts an upload of a results.json file containing the specified bytes.
    *
@@ -81,13 +79,13 @@ public final class ShareResultsUploader {
    * a {@link Results} object successfully, and that it contains a non-empty
    * {@link Results#testMetadata}.
    *
-   * @param fileBytes the raw bytes of the results.json file
+   * @param resultsBytes the raw bytes of the results.json file
    * @return an object describing the success or failure of the upload
    */
-  public ShareResultsUploadReport upload(InputStream fileBytes)
+  public ShareResultsUploadReport upload(InputStream resultsBytes)
       throws IOException {
 
-    Objects.requireNonNull(fileBytes);
+    Objects.requireNonNull(resultsBytes);
 
     // We are only checking if the share directory is currently under its max
     // size, without the addition of the new file.  This reduces the complexity
@@ -118,14 +116,10 @@ public final class ShareResultsUploader {
     try {
       InputStream limitedBytes =
           ByteStreams.limit(
-              fileBytes,
+              resultsBytes,
               config.maxFileSizeInBytes + 1);
 
-      long fileSize;
-      try (OutputStream outputStream =
-               Files.newOutputStream(tempFile, WRITE, APPEND)) {
-        fileSize = limitedBytes.transferTo(outputStream);
-      }
+      long fileSize = Files.copy(limitedBytes, tempFile, REPLACE_EXISTING);
 
       if (fileSize > config.maxFileSizeInBytes)
         return new ShareResultsUploadReport(
@@ -153,26 +147,23 @@ public final class ShareResultsUploader {
                 "Results must contain non-empty test metadata"));
 
       String shareId = UUID.randomUUID().toString();
-      String jsonFileName = shareId + ".json";
-      String zipFileName = shareId + ".zip";
-
-      Path permanentFile = fileStore.shareDirectory().resolve(zipFileName);
-      MoreFiles.createParentDirectories(permanentFile);
+      Path zipFile = fileStore.shareDirectory().resolve(shareId + ".zip");
+      MoreFiles.createParentDirectories(zipFile);
 
       try (FileSystem zipFs =
                FileSystems.newFileSystem(
-                   permanentFile,
+                   zipFile,
                    Map.of("create", "true"))) {
 
         // Create a single entry in the zip file for the json file.
-        Path entry = zipFs.getPath(jsonFileName);
+        Path entry = zipFs.getPath(shareId + ".json");
         Files.copy(tempFile, entry);
       }
 
       String resultsUrl =
           config.tfbStatusOrigin
               + "/share-results/view/"
-              + URLEncoder.encode(jsonFileName, UTF_8);
+              + URLEncoder.encode(shareId + ".json", UTF_8);
 
       String visualizeResultsUrl =
           config.tfbWebsiteOrigin
@@ -197,46 +188,51 @@ public final class ShareResultsUploader {
    * modified or accessed through this class.
    *
    * @param shareId the share id for the results that were previously shared
-   * @param ifPresent a consumer to be called with the path to the zip file
-   *        entry for the json file
-   * @param ifAbsent a runnable that is invoked if the upload is not found
-   * @throws IOException if an error occurs reading or consuming the zip file
+   * @return the bytes of the shared results.json file, or {@code null} if no
+   *         shared results.json file with the specified id is found
    */
-  public void getUpload(String shareId,
-                        ShareResultsConsumer ifPresent,
-                        Runnable ifAbsent)
-      throws IOException {
-
+  public @Nullable ByteSource getUpload(String shareId) {
     Objects.requireNonNull(shareId);
-    Objects.requireNonNull(ifPresent);
-    Objects.requireNonNull(ifAbsent);
 
     Path zipFile = fileStore.shareDirectory().resolve(shareId + ".zip");
     if (!zipFile.equals(zipFile.normalize())
         || !zipFile.startsWith(fileStore.shareDirectory())
         || !fileStore.shareDirectory().equals(zipFile.getParent())
         || !Files.isRegularFile(zipFile)) {
-      ifAbsent.run();
-      return;
+      return null;
     }
 
-    ZipFiles.findZipEntry(
-        /* zipFile= */
-        zipFile,
+    return new ByteSource() {
+      @Override
+      public InputStream openStream() throws IOException {
+        // Return an input stream that closes the zip file when closed.
+        InputStream closingStream = null;
 
-        /* entryPath= */
-        shareId + ".json",
+        FileSystem zipFs = FileSystems.newFileSystem(zipFile);
+        try {
+          Path entry = zipFs.getPath(shareId + ".json");
+          InputStream rawStream = Files.newInputStream(entry);
+          closingStream =
+              new FilterInputStream(rawStream) {
+                @Override
+                public void close() throws IOException {
+                  try {
+                    super.close();
+                  } finally {
+                    zipFs.close();
+                  }
+                }
+              };
+        } finally {
+          if (closingStream == null)
+            zipFs.close();
+        }
 
-        /* ifPresent= */
-        (Path zipEntry) -> {
-          if (Files.isRegularFile(zipEntry))
-            ifPresent.accept(zipEntry);
-          else
-            ifAbsent.run();
-        },
-
-        /* ifAbsent= */
-        ifAbsent);
+        // If we're here, meaning the preceding code did not throw, then this
+        // stream is guaranteed to be non-null.
+        return Objects.requireNonNull(closingStream);
+      }
+    };
   }
 
   /**
@@ -290,7 +286,7 @@ public final class ShareResultsUploader {
       emailSender.sendEmail(
           /* subject= */ SHARE_DIRECTORY_FULL_SUBJECT,
           /* textContent= */ textContent,
-          /* attachments= */ ImmutableList.of());
+          /* attachments= */ List.of());
 
     } catch (MessagingException e) {
       logger.warn("Error sending email for share directory full", e);
@@ -363,19 +359,5 @@ public final class ShareResultsUploader {
 
       return success;
     }
-  }
-
-  /**
-   * A consumer to be called with the path to the zip file entry for the json
-   * file.  If this is invoked, the specified path is guaranteed to exist and
-   * to refer to the requested json file, meaning it can be read without further
-   * checking.
-   *
-   * <p>This interface should only be used by callers of {@link
-   * #getUpload(String, ShareResultsConsumer, Runnable)}.
-   */
-  @FunctionalInterface
-  public interface ShareResultsConsumer {
-    void accept(Path zipEntry) throws IOException;
   }
 }
