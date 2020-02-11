@@ -37,7 +37,7 @@ public final class FileStoreTest {
   }
 
   /**
-   * Verifies that {@link FileStore#shareDirectory()} ()} returns a directory.
+   * Verifies that {@link FileStore#shareDirectory()} returns a directory.
    */
   @Test
   public void testShareDirectory(FileStore fileStore) {
