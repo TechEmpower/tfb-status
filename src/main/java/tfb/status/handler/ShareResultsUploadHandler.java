@@ -7,14 +7,22 @@ import static io.undertow.util.Headers.LOCATION;
 import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.CREATED;
+import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static tfb.status.undertow.extensions.RequestValues.detectMediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.net.MediaType;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
+import io.undertow.server.handlers.form.FormData;
+import io.undertow.server.handlers.form.FormDataParser;
+import io.undertow.server.handlers.form.FormParserFactory;
+import io.undertow.server.handlers.form.MultiPartParserDefinition;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -27,18 +35,29 @@ import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.Results;
 
 /**
- * Handles requests from users to share results.json files, where those files
- * are encoded in the request body as {@code application/json}.
+ * Handles requests from users to share results.json files.
  *
  * <p>This feature is intended for anyone to use; no authentication is required.
- * This handler accepts fully formed and completed results.json uploads.
  *
- * <p>Submit an {@code application/json} POST request to this handler with the
- * results.json file as the request body.  The JSON must conform to {@link
- * Results} such that it can deserialize without error, and it must have a
- * non-empty {@link Results#testMetadata} array.  Upon success, JSON is returned
- * that describes how to access the raw JSON and how to visualize it on the TFB
- * website.
+ * <p>The results.json files must conform to {@link Results}, meaning that they
+ * can deserialize from JSON without error.  The results must also have
+ * non-empty {@link Results#testMetadata}.
+ *
+ * <p>Upon a successful upload, the response body is JSON that describes how to
+ * access the raw JSON and how to visualize it on the TFB website.
+ *
+ * <p>The {@code Content-Type} of incoming requests must be either {@code
+ * application/json} or {@code multipart/form-data}.  If the {@code
+ * Content-Type} of the request is {@code application/json}, then the request
+ * body must be the content of the results.json file.  If the {@code
+ * Content-Type} of the request is {@code multipart/form-data}, then the
+ * results.json file must be included as an element whose name is "results" and
+ * that element must be a file.  Here is an example {@code Content-Disposition}
+ * header value for such an element:
+ *
+ * <pre>
+ *   Content-Disposition: form-data; name="results"; filename="results.json"
+ * </pre>
  */
 @Singleton
 public final class ShareResultsUploadHandler implements HttpHandler {
@@ -68,8 +87,34 @@ public final class ShareResultsUploadHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
-    ShareResultsUploadReport report =
-        shareResultsUploader.upload(exchange.getInputStream());
+    MediaType contentType = detectMediaType(exchange);
+    ShareResultsUploadReport report;
+
+    if (contentType.is(JSON_MEDIA_TYPE))
+      report = shareResultsUploader.upload(exchange.getInputStream());
+
+    else if (contentType.is(MULTIPART_FORM_DATA_MEDIA_TYPE)) {
+      FormParserFactory parserFactory =
+          FormParserFactory
+              .builder(/* includeDefault= */ false)
+              .addParsers(new MultiPartParserDefinition())
+              .build();
+      try (FormDataParser parser = parserFactory.createParser(exchange)) {
+        FormData form = parser.parseBlocking();
+        FormData.FormValue element = form.getFirst("results");
+        if (element == null || !element.isFileItem()) {
+          exchange.setStatusCode(BAD_REQUEST);
+          return;
+        }
+        try (InputStream inputStream = element.getFileItem().getInputStream()) {
+          report = shareResultsUploader.upload(inputStream);
+        }
+      }
+
+    } else {
+      exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
+      return;
+    }
 
     if (report.isError()) {
       String json = objectMapper.writeValueAsString(report.getError());
@@ -85,4 +130,10 @@ public final class ShareResultsUploadHandler implements HttpHandler {
     exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
     exchange.getResponseSender().send(json, UTF_8);
   }
+
+  private static final MediaType JSON_MEDIA_TYPE =
+      MediaType.create("application", "json");
+
+  private static final MediaType MULTIPART_FORM_DATA_MEDIA_TYPE =
+      MediaType.create("multipart", "form-data");
 }

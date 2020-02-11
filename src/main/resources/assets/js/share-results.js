@@ -152,7 +152,7 @@
     formData.append("results", file);
 
     handleUploadResponse(
-      fetch("/share-results/upload/form", {
+      fetch("/share-results/upload", {
         method: "POST",
         body: formData
       }),
