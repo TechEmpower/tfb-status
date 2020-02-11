@@ -302,10 +302,22 @@ public final class ShareResultsUploaderTest {
    * null} when the specified shared file does not exist.
    */
   @Test
+  public void testGetUpload_notFound(ShareResultsUploader shareResultsUploader,
+                                     FileStore fileStore) {
+
+    assertNull(shareResultsUploader.getUpload(UUID.randomUUID().toString()));
+  }
+
+  /**
+   * Verifies that {@link ShareResultsUploader#getUpload(String)} throws {@link
+   * IllegalArgumentException} when the specified share id is invalid.
+   */
+  @Test
   public void testGetUpload_invalidShareId(ShareResultsUploader shareResultsUploader,
                                            FileStore fileStore) {
 
-    assertNull(shareResultsUploader.getUpload(UUID.randomUUID().toString()));
-    assertNull(shareResultsUploader.getUpload("../."));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> shareResultsUploader.getUpload("../."));
   }
 }

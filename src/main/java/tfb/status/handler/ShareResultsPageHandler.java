@@ -8,6 +8,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
+import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -38,7 +39,12 @@ public final class ShareResultsPageHandler implements HttpHandler {
   @Provides
   @Singleton
   @ExactPath("/share-results/pastebin")
-  public HttpHandler shareResultsPageHandler() {
+  public HttpHandler shareResultsPageHandler(ShareResultsUploader shareResultsUploader)
+      throws IOException {
+
+    // TODO: Once the zip files have been migrated, delete this.
+    shareResultsUploader.migrateZipFiles();
+
     return HttpHandlers.chain(
         this,
         handler -> new MethodHandler().addMethod(GET, handler),

@@ -2,6 +2,7 @@ package tfb.status.service;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,21 +12,22 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.Immutable;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URLEncoder;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.MessagingException;
@@ -34,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.SharingConfig;
 import tfb.status.util.FileUtils;
+import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 import tfb.status.view.ShareResultsErrorJsonView;
 import tfb.status.view.ShareResultsJsonView;
@@ -68,7 +71,59 @@ public final class ShareResultsUploader {
     this.emailSender = Objects.requireNonNull(emailSender);
   }
 
-  // TODO: Save results as .json.gz instead of as .zip files.
+  // TODO: Once all zip files are migrated, delete this.
+  public void migrateZipFiles() throws IOException {
+    try (DirectoryStream<Path> zipFiles =
+             Files.newDirectoryStream(fileStore.shareDirectory(), "*.zip")) {
+      for (Path zipFile : zipFiles) {
+        String shareId = MoreFiles.getNameWithoutExtension(zipFile);
+        Path sharedFile = getSharedFile(shareId);
+        if (sharedFile == null) {
+          logger.warn(
+              "Shared zip file \"{}\" has an unexpected naming scheme",
+              zipFile);
+          continue;
+        }
+        if (Files.isRegularFile(sharedFile)) {
+          logger.info(
+              "Already migrated zip file {} to gzipped file {}",
+              zipFile,
+              sharedFile);
+          continue;
+        }
+        ZipFiles.findZipEntry(
+            /* zipFile= */
+            zipFile,
+
+            /* entryPath= */
+            shareId + ".json",
+
+            /* ifPresent= */
+            zipEntry -> {
+              try (OutputStream outputStream =
+                       Files.newOutputStream(sharedFile, CREATE_NEW);
+
+                   GZIPOutputStream gzipOutputStream =
+                       new GZIPOutputStream(outputStream)) {
+
+                Files.copy(zipEntry, gzipOutputStream);
+              }
+
+              logger.info(
+                  "Migrated zip file {} to gzipped file {}",
+                  zipFile,
+                  sharedFile);
+            },
+
+            /* ifAbsent= */
+            () -> {
+              logger.warn(
+                  "Shared zip file \"{}\" doesn't have the expected json file",
+                  zipFile);
+            });
+      }
+    }
+  }
 
   /**
    * Accepts an upload of a results.json file containing the specified bytes.
@@ -89,8 +144,7 @@ public final class ShareResultsUploader {
 
     // We are only checking if the share directory is currently under its max
     // size, without the addition of the new file.  This reduces the complexity
-    // and potentially wasted time of compressing the json file to a zip file
-    // before checking if it can fit in the share directory.  This is a fine
+    // and potentially wasted time of zipping the json file before checking if it can fit in the share directory.  This is a fine
     // compromise because it means that at most the share directory will exceed
     // the max size by just one large results json file, and we will not accept
     // further uploads after that.
@@ -147,17 +201,19 @@ public final class ShareResultsUploader {
                 "Results must contain non-empty test metadata"));
 
       String shareId = UUID.randomUUID().toString();
-      Path zipFile = fileStore.shareDirectory().resolve(shareId + ".zip");
-      MoreFiles.createParentDirectories(zipFile);
+      Path sharedFile = getSharedFile(shareId);
+      if (sharedFile == null)
+        throw new AssertionError("This must be a valid share id: " + shareId);
 
-      try (FileSystem zipFs =
-               FileSystems.newFileSystem(
-                   zipFile,
-                   Map.of("create", "true"))) {
+      MoreFiles.createParentDirectories(sharedFile);
 
-        // Create a single entry in the zip file for the json file.
-        Path entry = zipFs.getPath(shareId + ".json");
-        Files.copy(tempFile, entry);
+      try (OutputStream outputStream =
+               Files.newOutputStream(sharedFile, CREATE_NEW);
+
+           GZIPOutputStream gzipOutputStream =
+               new GZIPOutputStream(outputStream)) {
+
+        Files.copy(tempFile, gzipOutputStream);
       }
 
       String resultsUrl =
@@ -190,49 +246,59 @@ public final class ShareResultsUploader {
    * @param shareId the share id for the results that were previously shared
    * @return the bytes of the shared results.json file, or {@code null} if no
    *         shared results.json file with the specified id is found
+   * @throws IllegalArgumentException if the specified string could never be the
+   *         share id for any results
    */
   public @Nullable ByteSource getUpload(String shareId) {
     Objects.requireNonNull(shareId);
 
-    Path zipFile = fileStore.shareDirectory().resolve(shareId + ".zip");
-    if (!zipFile.equals(zipFile.normalize())
-        || !zipFile.startsWith(fileStore.shareDirectory())
-        || !fileStore.shareDirectory().equals(zipFile.getParent())
-        || !Files.isRegularFile(zipFile)) {
+    Path sharedFile = getSharedFile(shareId);
+    if (sharedFile == null)
+      throw new IllegalArgumentException("Invalid share id: " + shareId);
+
+    if (!Files.isRegularFile(sharedFile))
       return null;
-    }
 
     return new ByteSource() {
       @Override
       public InputStream openStream() throws IOException {
-        // Return an input stream that closes the zip file when closed.
-        InputStream closingStream = null;
-
-        FileSystem zipFs = FileSystems.newFileSystem(zipFile);
-        try {
-          Path entry = zipFs.getPath(shareId + ".json");
-          InputStream rawStream = Files.newInputStream(entry);
-          closingStream =
-              new FilterInputStream(rawStream) {
-                @Override
-                public void close() throws IOException {
-                  try {
-                    super.close();
-                  } finally {
-                    zipFs.close();
-                  }
-                }
-              };
-        } finally {
-          if (closingStream == null)
-            zipFs.close();
-        }
-
-        // If we're here, meaning the preceding code did not throw, then this
-        // stream is guaranteed to be non-null.
-        return Objects.requireNonNull(closingStream);
+        return new GZIPInputStream(Files.newInputStream(sharedFile));
       }
     };
+  }
+
+  /**
+   * Returns the path to the results.json file with the specified share id, or
+   * {@code null} if the id is not a possible share id.  The returned file
+   * exists if those shared results exist.
+   *
+   * @param shareId the id of the shared results
+   * @return the file containing the shared results hash, or {@code null} if the
+   *         share id is invalid
+   */
+  private @Nullable Path getSharedFile(String shareId) {
+    return resolveChildPath(fileStore.shareDirectory(), shareId + ".json.gz");
+  }
+
+  private static @Nullable Path resolveChildPath(Path directory,
+                                                 String fileName) {
+    Objects.requireNonNull(directory);
+    Objects.requireNonNull(fileName);
+
+    Path child;
+    try {
+      child = directory.resolve(fileName);
+    } catch (InvalidPathException ignored) {
+      return null;
+    }
+
+    if (!child.equals(child.normalize()))
+      return null;
+
+    if (!directory.equals(child.getParent()))
+      return null;
+
+    return child;
   }
 
   /**
