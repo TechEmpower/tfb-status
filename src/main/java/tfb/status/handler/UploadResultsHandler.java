@@ -1,10 +1,10 @@
 package tfb.status.handler;
 
-import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static tfb.status.undertow.extensions.RequestValues.detectMediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.MoreFiles;
@@ -184,19 +184,6 @@ public final class UploadResultsHandler implements HttpHandler {
                       .resolve(oldResults.zipFileName);
 
     return newResultsFile(fileExtension);
-  }
-
-  private static MediaType detectMediaType(HttpServerExchange exchange) {
-    String contentType = exchange.getRequestHeaders().getFirst(CONTENT_TYPE);
-
-    if (contentType == null)
-      return MediaType.ANY_TYPE;
-
-    try {
-      return MediaType.parse(contentType);
-    } catch (IllegalArgumentException ignored) {
-      return MediaType.ANY_TYPE;
-    }
   }
 
   private static final MediaType JSON_MEDIA_TYPE =

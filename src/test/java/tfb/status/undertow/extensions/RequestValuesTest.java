@@ -1,8 +1,11 @@
 package tfb.status.undertow.extensions;
 
+import static io.undertow.util.Headers.CONTENT_TYPE;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.google.common.net.MediaType;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayDeque;
 import org.junit.jupiter.api.Test;
@@ -154,5 +157,52 @@ public final class RequestValuesTest {
         VALUE_IF_MALFORMED,
         RequestValues.queryParameterAsInt(
             exchange, PARAMETER_NAME, VALUE_IF_ABSENT, VALUE_IF_MALFORMED));
+  }
+
+  /**
+   * Verifies that {@link RequestValues#detectMediaType(HttpServerExchange)}
+   * returns {@link MediaType#ANY_TYPE} when the request has no {@code
+   * Content-Type} header.
+   */
+  @Test
+  public void testDetectMediaType_missingHeader() {
+    var exchange = new HttpServerExchange(null);
+    assertEquals(
+        MediaType.ANY_TYPE,
+        RequestValues.detectMediaType(exchange));
+  }
+
+  /**
+   * Verifies that {@link RequestValues#detectMediaType(HttpServerExchange)}
+   * returns {@link MediaType#ANY_TYPE} when the request has an invalid {@code
+   * Content-Type} header.
+   */
+  @Test
+  public void testDetectMediaType_invalidHeader() {
+    var exchange = new HttpServerExchange(null);
+    exchange.getRequestHeaders().put(CONTENT_TYPE, "invalid/content/type");
+    assertEquals(
+        MediaType.ANY_TYPE,
+        RequestValues.detectMediaType(exchange));
+
+  }
+
+  /**
+   * Verifies that {@link RequestValues#detectMediaType(HttpServerExchange)}
+   * returns {@link MediaType#ANY_TYPE} when the request has a valid {@code
+   * Content-Type} header.
+   */
+  @Test
+  public void testDetectMediaType_validHeader() {
+    var exchange = new HttpServerExchange(null);
+    exchange.getRequestHeaders().put(
+        CONTENT_TYPE,
+        "valid/type; charset=us-ascii; p1=v1; p2=v2");
+    assertEquals(
+        MediaType.create("valid", "type")
+                 .withCharset(US_ASCII)
+                 .withParameter("p1", "v1")
+                 .withParameter("p2", "v2"),
+        RequestValues.detectMediaType(exchange));
   }
 }
