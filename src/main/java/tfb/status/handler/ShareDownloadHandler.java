@@ -74,8 +74,10 @@ public final class ShareDownloadHandler implements HttpHandler {
         CONTENT_TYPE,
         JSON_UTF_8.toString());
 
-    // TODO: Detect if the "Accept-Encoding" request header allows gzip, and if
-    //       so, then transfer the file as is?
+    // We could parse the "Accept-Encoding" request header to determine if the
+    // client supports gzip, and if so, add "Content-Encoding: gzip" to the
+    // response headers and transfer the file as is.  For now, we don't think
+    // that feature would be worth the added complexity.
     try (InputStream inputStream = Files.newInputStream(sharedFile);
          GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream)) {
       gzipInputStream.transferTo(exchange.getOutputStream());
