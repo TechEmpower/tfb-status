@@ -148,13 +148,13 @@
       return;
     }
 
-    const formData = new FormData();
-    formData.append("results", file);
-
     handleUploadResponse(
       fetch("/share/upload", {
         method: "POST",
-        body: formData
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: file
       }),
       function() {
         fileInput.value = "";
