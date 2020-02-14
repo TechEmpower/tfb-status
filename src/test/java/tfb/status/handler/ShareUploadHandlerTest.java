@@ -23,11 +23,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.channels.Channels;
 import java.nio.channels.Pipe;
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,15 +53,12 @@ public final class ShareUploadHandlerTest {
 
     Results results = resultsTester.newResults();
 
-    HttpRequest request =
-        HttpRequest.newBuilder(http.uri("/share/upload"))
-                   .POST(resultsTester.asBodyPublisher(results))
-                   .header(CONTENT_TYPE, JSON_UTF_8.toString())
-                   .build();
-
     HttpResponse<String> response =
         http.client().send(
-            request,
+            HttpRequest.newBuilder(http.uri("/share/upload"))
+                       .POST(resultsTester.asBodyPublisher(results))
+                       .header(CONTENT_TYPE, JSON_UTF_8.toString())
+                       .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(CREATED, response.statusCode());
@@ -93,15 +87,12 @@ public final class ShareUploadHandlerTest {
                                        ObjectMapper objectMapper)
       throws IOException, InterruptedException {
 
-    HttpRequest request =
-        HttpRequest.newBuilder(http.uri("/share/upload"))
-                   .POST(HttpRequest.BodyPublishers.ofString("invalid json"))
-                   .header(CONTENT_TYPE, JSON_UTF_8.toString())
-                   .build();
-
     HttpResponse<String> response =
         http.client().send(
-            request,
+            HttpRequest.newBuilder(http.uri("/share/upload"))
+                       .POST(HttpRequest.BodyPublishers.ofString("not json"))
+                       .header(CONTENT_TYPE, JSON_UTF_8.toString())
+                       .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(BAD_REQUEST, response.statusCode());
@@ -135,21 +126,8 @@ public final class ShareUploadHandlerTest {
     Results results = resultsTester.newResults();
     ByteSource resultsBytes = resultsTester.asByteSource(results);
 
-    List<FileElement> files =
-        List.of(
-            new FileElement(
-                /* elementName= */ "results",
-                /* fileName= */ "results.json",
-                /* mediaType= */ JSON_UTF_8,
-                /* fileBytes= */ resultsBytes));
-
     HttpResponse<String> response =
-        http.client().send(
-            postFiles(
-                http.uri("/share/upload"),
-                files,
-                taskScheduler),
-            HttpResponse.BodyHandlers.ofString());
+        postForm(resultsBytes, http, taskScheduler);
 
     assertEquals(CREATED, response.statusCode());
 
@@ -178,23 +156,11 @@ public final class ShareUploadHandlerTest {
                                        TaskScheduler taskScheduler)
       throws IOException, InterruptedException {
 
-    ByteSource invalidJsonBytes = CharSource.wrap("foo").asByteSource(UTF_8);
-
-    List<FileElement> files =
-        List.of(
-            new FileElement(
-                /* elementName= */ "results",
-                /* fileName= */ "results.json",
-                /* mediaType= */ JSON_UTF_8,
-                /* fileBytes= */ invalidJsonBytes));
+    ByteSource invalidJsonBytes =
+        CharSource.wrap("not json").asByteSource(UTF_8);
 
     HttpResponse<String> response =
-        http.client().send(
-            postFiles(
-                http.uri("/share/upload"),
-                files,
-                taskScheduler),
-            HttpResponse.BodyHandlers.ofString());
+        postForm(invalidJsonBytes, http, taskScheduler);
 
     assertEquals(BAD_REQUEST, response.statusCode());
 
@@ -213,16 +179,21 @@ public final class ShareUploadHandlerTest {
   }
 
   /**
-   * Constructs a POST request containing the specified files as {@code
-   * multipart/form-data}.
+   * Issues a POST request to {@code /share/upload} containing the specified
+   * results.json file as {@code multipart/form-data}.
+   *
+   * @param resultsBytes the bytes of the results.json file
    */
-  private static HttpRequest postFiles(URI uri,
-                                       List<FileElement> files,
-                                       Executor executor) {
+  private static HttpResponse<String> postForm(ByteSource resultsBytes,
+                                               HttpTester http,
+                                               TaskScheduler taskScheduler)
+      throws IOException, InterruptedException {
 
-    Objects.requireNonNull(uri);
-    Objects.requireNonNull(files);
-    Objects.requireNonNull(executor);
+    Objects.requireNonNull(resultsBytes);
+    Objects.requireNonNull(http);
+    Objects.requireNonNull(taskScheduler);
+
+    URI uri = http.uri("/share/upload");
 
     String boundary = new BigInteger(256, new Random()).toString();
 
@@ -240,32 +211,25 @@ public final class ShareUploadHandlerTest {
             throw new UncheckedIOException(e);
           }
 
-          executor.execute(
+          taskScheduler.submit(
               () -> {
                 try (OutputStream outputStream =
                          Channels.newOutputStream(pipe.sink())) {
 
-                  for (FileElement file : files) {
-                    String header =
-                        "--"
-                            + boundary
-                            + "\r\n"
-                            + "Content-Disposition: form-data; name=\""
-                            + file.elementName
-                            + "\"; "
-                            + "filename=\""
-                            + file.fileName
-                            + "\""
-                            + "\r\n"
-                            + "Content-Type: "
-                            + file.mediaType
-                            + "\r\n"
-                            + "\r\n";
+                  String header =
+                      "--"
+                          + boundary
+                          + "\r\n"
+                          + "Content-Disposition: form-data; "
+                          + "name=\"results\"; filename=\"results.json\""
+                          + "\r\n"
+                          + "Content-Type: application/json"
+                          + "\r\n"
+                          + "\r\n";
 
-                    outputStream.write(header.getBytes(UTF_8));
-                    file.fileBytes.copyTo(outputStream);
-                    outputStream.write("\r\n".getBytes(UTF_8));
-                  }
+                  outputStream.write(header.getBytes(UTF_8));
+                  resultsBytes.copyTo(outputStream);
+                  outputStream.write("\r\n".getBytes(UTF_8));
 
                   outputStream.write(
                       ("--" + boundary + "--").getBytes(UTF_8));
@@ -278,46 +242,11 @@ public final class ShareUploadHandlerTest {
           return Channels.newInputStream(pipe.source());
         };
 
-    return HttpRequest.newBuilder(uri)
-                      .header(CONTENT_TYPE, contentType)
-                      .POST(HttpRequest.BodyPublishers.ofInputStream(bodySupplier))
-                      .build();
-  }
-
-  /**
-   * An {@code <input type="file">} element attached to a {@code
-   * multipart/form-data} form submission.
-   */
-  private static final class FileElement {
-    /**
-     * The name of the {@code <input type="file">} element.
-     */
-    final String elementName;
-
-    /**
-     * The {@linkplain Path#getFileName() name} of the attached file.
-     */
-    final String fileName;
-
-    /**
-     * The media type of the attached file.
-     */
-    final MediaType mediaType;
-
-    /**
-     * The bytes of the attached file.
-     */
-    final ByteSource fileBytes;
-
-    FileElement(String elementName,
-                String fileName,
-                MediaType mediaType,
-                ByteSource fileBytes) {
-
-      this.elementName = Objects.requireNonNull(elementName);
-      this.fileName = Objects.requireNonNull(fileName);
-      this.mediaType = Objects.requireNonNull(mediaType);
-      this.fileBytes = Objects.requireNonNull(fileBytes);
-    }
+    return http.client().send(
+        HttpRequest.newBuilder(uri)
+                   .header(CONTENT_TYPE, contentType)
+                   .POST(HttpRequest.BodyPublishers.ofInputStream(bodySupplier))
+                   .build(),
+        HttpResponse.BodyHandlers.ofString());
   }
 }
