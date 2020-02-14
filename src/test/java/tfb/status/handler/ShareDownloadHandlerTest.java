@@ -1,27 +1,15 @@
 package tfb.status.handler;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static tfb.status.testlib.MoreAssertions.assertMediaType;
 
-import com.google.common.io.ByteSource;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import tfb.status.service.FileStore;
-import tfb.status.service.ShareManager;
-import tfb.status.service.ShareManager.ShareOutcome;
 import tfb.status.testlib.HttpTester;
-import tfb.status.testlib.ResultsTester;
 import tfb.status.testlib.TestServicesInjector;
 import tfb.status.view.Results;
 
@@ -31,55 +19,36 @@ import tfb.status.view.Results;
 @ExtendWith(TestServicesInjector.class)
 public final class ShareDownloadHandlerTest {
   /**
-   * Verifies that {@code GET /share/download/$share_id.json} for a valid
-   * share id produces that results.json file that was shared.
+   * Verifies that {@code GET /share/download/$share_id.json} produces the
+   * results.json file for a share id that exists.
    */
   @Test
-  public void testGet(HttpTester http,
-                      ResultsTester resultsTester,
-                      ShareManager shareManager)
+  public void testGet(HttpTester http, ObjectMapper objectMapper)
       throws IOException, InterruptedException {
-
-    Results results = resultsTester.newResults();
-    ByteSource resultsBytes = resultsTester.asByteSource(results);
-
-    ShareOutcome outcome;
-    try (InputStream inputStream = resultsBytes.openStream()) {
-      outcome = shareManager.shareResults(inputStream);
-    }
-
-    assertFalse(outcome.isFailure());
 
     HttpResponse<byte[]> response =
         http.getBytes(
-            "/share/download/" + outcome.getSuccess().shareId + ".json");
+            "/share/download/a7044ac3-f729-4a41-952a-6302af8a65ae.json");
 
     assertEquals(OK, response.statusCode());
 
-    assertMediaType(
-        JSON_UTF_8,
-        response.headers()
-                .firstValue(CONTENT_TYPE)
-                .orElse(null));
+    byte[] responseBytes = response.body();
 
-    assertTrue(resultsBytes.contentEquals(ByteSource.wrap(response.body())));
+    Results results = objectMapper.readValue(responseBytes, Results.class);
+
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid);
   }
 
   /**
    * Verifies that {@code GET /share/download/$share_id.json} produces a
-   * {@code 404 Not Found} response for an invalid share id.
+   * {@code 404 Not Found} response for share id that doesn't exist.
    */
   @Test
-  public void testGet_invalidShareId(HttpTester http,
-                                     FileStore fileStore)
+  public void testGet_shareIdNotFound(HttpTester http)
       throws IOException, InterruptedException {
 
-    String shareId;
-    do shareId = UUID.randomUUID().toString();
-    while (Files.exists(fileStore.shareDirectory().resolve(shareId + ".zip")));
-
     HttpResponse<String> response =
-        http.getString("/share/download/" + shareId + ".json");
+        http.getString("/share/download/not_a_share_id.json");
 
     assertEquals(NOT_FOUND, response.statusCode());
 

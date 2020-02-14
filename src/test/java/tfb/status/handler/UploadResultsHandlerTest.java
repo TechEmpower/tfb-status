@@ -14,6 +14,7 @@ import static tfb.status.testlib.MoreAssertions.assertContains;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.ByteSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -92,7 +93,7 @@ public final class UploadResultsHandlerTest {
     HttpResponse<Void> responseToUnauthorized =
         http.client().send(
             HttpRequest.newBuilder(http.uri("/upload"))
-                       .POST(resultsTester.asBodyPublisher(newResults))
+                       .POST(asBodyPublisher(resultsTester.asByteSource(newResults)))
                        .header(CONTENT_TYPE, JSON_UTF_8.toString())
                        .build(),
             HttpResponse.BodyHandlers.discarding());
@@ -133,7 +134,7 @@ public final class UploadResultsHandlerTest {
 
       HttpRequest.Builder requestWithNewJson =
           HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(resultsTester.asBodyPublisher(newResults))
+                     .POST(asBodyPublisher(resultsTester.asByteSource(newResults)))
                      .header(CONTENT_TYPE, JSON_UTF_8.toString());
 
       HttpResponse<Void> responseToNewJson =
@@ -198,7 +199,7 @@ public final class UploadResultsHandlerTest {
 
       HttpRequest.Builder requestWithUpdatedJson =
           HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(resultsTester.asBodyPublisher(updatedResults))
+                     .POST(asBodyPublisher(resultsTester.asByteSource(updatedResults)))
                      .header(CONTENT_TYPE, JSON_UTF_8.toString());
 
       HttpResponse<Void> responseToUpdatedJson =
@@ -336,6 +337,18 @@ public final class UploadResultsHandlerTest {
         () -> {
           try {
             return Files.newInputStream(file);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
+  }
+
+  private static HttpRequest.BodyPublisher asBodyPublisher(ByteSource bytes) {
+    Objects.requireNonNull(bytes);
+    return HttpRequest.BodyPublishers.ofInputStream(
+        () -> {
+          try {
+            return bytes.openStream();
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }

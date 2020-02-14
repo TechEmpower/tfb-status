@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.net.http.HttpRequest;
 import java.nio.channels.Channels;
 import java.nio.channels.Pipe;
 import java.nio.file.FileSystem;
@@ -49,22 +48,6 @@ public final class ResultsTester {
   }
 
   /**
-   * Returns an {@link HttpRequest.BodyPublisher} containing the bytes of the
-   * specified results serialized to JSON.
-   */
-  public HttpRequest.BodyPublisher asBodyPublisher(Results results) {
-    Objects.requireNonNull(results);
-    return HttpRequest.BodyPublishers.ofInputStream(
-        () -> {
-          try {
-            return newInputStream(results);
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
-  }
-
-  /**
    * Returns a {@link ByteSource} containing the bytes of the specified results
    * serialized to JSON.
    */
@@ -82,11 +65,9 @@ public final class ResultsTester {
    * Returns an {@link InputStream} containing the bytes of the specified
    * results serialized to JSON.
    */
-  public InputStream newInputStream(Results results) throws IOException {
+  private InputStream newInputStream(Results results) throws IOException {
     Objects.requireNonNull(results);
-
     Pipe pipe = Pipe.open();
-
     taskScheduler.submit(
         () -> {
           try (OutputStream outputStream =
@@ -96,9 +77,7 @@ public final class ResultsTester {
             throw new UncheckedIOException(e);
           }
         });
-
     return Channels.newInputStream(pipe.source());
-
   }
 
   /**

@@ -34,7 +34,6 @@ import tfb.status.service.MustacheRenderer;
 import tfb.status.service.ObjectMapperFactory;
 import tfb.status.service.RunCompleteMailer;
 import tfb.status.service.RunProgressMonitor;
-import tfb.status.service.ShareManager;
 import tfb.status.service.TaskScheduler;
 import tfb.status.service.TickerFactory;
 
@@ -77,7 +76,6 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(RunProgressMonitor.class);
     addActiveDescriptor(RunCompleteMailer.class);
     addActiveDescriptor(TaskScheduler.class);
-    addActiveDescriptor(ShareManager.class);
     addActiveDescriptor(RootHandler.class);
     addActiveDescriptor(HomePageHandler.class);
     addActiveDescriptor(HomeUpdatesHandler.class);

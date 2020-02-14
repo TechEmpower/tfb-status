@@ -6,31 +6,35 @@ import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 
-import com.google.common.io.ByteSource;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.handler.routing.PrefixPath;
 import tfb.status.hk2.extensions.Provides;
-import tfb.status.service.ShareManager;
+import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
+import tfb.status.util.FileUtils;
 
 /**
  * Handles requests to download results.json files that were shared by users.
  */
 @Singleton
 public final class ShareDownloadHandler implements HttpHandler {
-  private final ShareManager shareManager;
+  private final FileStore fileStore;
 
   @Inject
-  public ShareDownloadHandler(ShareManager shareManager) {
-    this.shareManager = Objects.requireNonNull(shareManager);
+  public ShareDownloadHandler(FileStore fileStore) {
+    this.fileStore = Objects.requireNonNull(fileStore);
   }
 
   @Provides
@@ -56,8 +60,12 @@ public final class ShareDownloadHandler implements HttpHandler {
 
     String shareId = matcher.group("shareId");
 
-    ByteSource resultsBytes = shareManager.findSharedResults(shareId);
-    if (resultsBytes == null) {
+    Path sharedFile =
+        FileUtils.resolveChildPath(
+            /* directory= */ fileStore.shareDirectory(),
+            /* fileName= */ shareId + ".json.gz");
+
+    if (sharedFile == null || !Files.isRegularFile(sharedFile)) {
       exchange.setStatusCode(NOT_FOUND);
       return;
     }
@@ -66,7 +74,12 @@ public final class ShareDownloadHandler implements HttpHandler {
         CONTENT_TYPE,
         JSON_UTF_8.toString());
 
-    resultsBytes.copyTo(exchange.getOutputStream());
+    // TODO: Detect if the "Accept-Encoding" request header allows gzip, and if
+    //       so, then transfer the file as is?
+    try (InputStream inputStream = Files.newInputStream(sharedFile);
+         GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream)) {
+      gzipInputStream.transferTo(exchange.getOutputStream());
+    }
   }
 
   // Matches "/6f221937-b8e5-4b22-a52d-020d2538fa64.json", for example.
