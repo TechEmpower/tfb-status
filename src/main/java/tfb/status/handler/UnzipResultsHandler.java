@@ -1,6 +1,7 @@
 package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static com.google.common.net.MediaType.ANY_TEXT_TYPE;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
@@ -12,6 +13,7 @@ import static java.util.Comparator.comparing;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Booleans;
@@ -37,7 +39,6 @@ import tfb.status.handler.routing.PrefixPath;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
-import tfb.status.undertow.extensions.DefaultToUtf8Handler;
 import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
@@ -67,7 +68,6 @@ public final class UnzipResultsHandler implements HttpHandler {
   public HttpHandler unzipResultsHandler() {
     return HttpHandlers.chain(
         this,
-        handler -> new DefaultToUtf8Handler(handler),
         handler -> new MethodHandler().addMethod(GET, handler),
         handler -> new DisableCacheHandler(handler),
         handler -> new SetHeaderHandler(handler,
@@ -240,8 +240,25 @@ public final class UnzipResultsHandler implements HttpHandler {
     if (mediaTypeString == null)
       return null;
 
-    return MediaType.parse(mediaTypeString);
+    MediaType mediaType = MediaType.parse(mediaTypeString);
+    if (mediaType.charset().isPresent() || !isTextType(mediaType))
+      return mediaType;
+
+    return mediaType.withCharset(UTF_8);
   }
+
+  private static boolean isTextType(MediaType mediaType) {
+    for (MediaType textType : KNOWN_TEXT_TYPES)
+      if (mediaType.is(textType))
+        return true;
+
+    return false;
+  }
+
+  private static final ImmutableSet<MediaType> KNOWN_TEXT_TYPES =
+      ImmutableSet.of(
+          ANY_TEXT_TYPE,
+          MediaType.create("application", "javascript"));
 
   // https://stackoverflow.com/a/3758880/359008
   private static String fileSizeToString(long bytes, boolean si) {
