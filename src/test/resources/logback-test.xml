@@ -9,7 +9,7 @@
     </filter>
     <filter class="tfb.status.testlib.LoggerThresholdFilter">
       <loggerName>tfb.status.hk2.extensions.TopicDistributionServiceImpl</loggerName>
-      <loggerName>tfb.status.service.ShareManager</loggerName>
+      <loggerName>tfb.status.handler.ShareUploadHandler</loggerName>
       <level>ERROR</level>
     </filter>
     <filter class="tfb.status.testlib.LoggerThresholdFilter">
