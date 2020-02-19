@@ -19,7 +19,6 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
-import io.undertow.util.MimeMappings;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -225,18 +224,19 @@ public final class UnzipResultsHandler implements HttpHandler {
   /**
    * Guesses the media type of the given file.  Returns {@code null} if there is
    * not a good guess.
+   *
+   * @throws IOException if an I/O error occurs while examining the file
    */
-  private static @Nullable MediaType guessMediaType(Path file) {
+  private static @Nullable MediaType guessMediaType(Path file)
+      throws IOException {
+
     String extension = MoreFiles.getFileExtension(file);
 
     // TFB itself generates plaintext .log files.
-    if (extension.equals("log")) {
+    if (extension.equals("log"))
       return PLAIN_TEXT_UTF_8;
-    }
 
-    String mediaTypeString =
-        MimeMappings.DEFAULT_MIME_MAPPINGS.get(extension);
-
+    String mediaTypeString = Files.probeContentType(file);
     if (mediaTypeString == null)
       return null;
 
