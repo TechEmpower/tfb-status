@@ -44,7 +44,8 @@ public final class ZipFiles {
    * @param entryReader the reader to be used upon finding the entry
    * @return the non-{@code null} result of reading the entry or {@code null} if
    *         the entry is not found
-   * @throws IOException if an I/O error occurs
+   * @throws IOException if an I/O error occurs while reading the zip file or
+   *         while executing the entry reader on the matching zip entry
    */
   public static <T> @Nullable T readZipEntry(Path zipFile,
                                              String entryPath,
@@ -121,7 +122,8 @@ public final class ZipFiles {
    * @param entryPath the path of the entry to be read
    * @param ifPresent the action to be invoked if the entry is found
    * @param ifAbsent the action to be invoked if the entry is not found
-   * @throws IOException if an I/O error occurs
+   * @throws IOException if an I/O error occurs while reading the zip file or
+   *         while executing the "if present" action on the matching zip entry
    */
   public static void findZipEntry(Path zipFile,
                                   String entryPath,
