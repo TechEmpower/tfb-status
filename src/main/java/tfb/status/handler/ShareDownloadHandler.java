@@ -70,9 +70,7 @@ public final class ShareDownloadHandler implements HttpHandler {
       return;
     }
 
-    exchange.getResponseHeaders().put(
-        CONTENT_TYPE,
-        JSON_UTF_8.toString());
+    exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
 
     // We could parse the "Accept-Encoding" request header to determine if the
     // client supports gzip, and if so, add "Content-Encoding: gzip" to the
