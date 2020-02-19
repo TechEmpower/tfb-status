@@ -2,16 +2,15 @@ package tfb.status.handler;
 
 import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
-import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static tfb.status.undertow.extensions.RequestValues.detectMediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.MoreFiles;
-import com.google.common.net.MediaType;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.AttachmentHandler;
 import io.undertow.server.handlers.DisableCacheHandler;
+import io.undertow.util.AttachmentKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -33,6 +32,7 @@ import tfb.status.service.Authenticator;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.undertow.extensions.HttpHandlers;
+import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.HomePageView.ResultsView;
@@ -76,24 +76,26 @@ public final class UploadResultsHandler implements HttpHandler {
     Objects.requireNonNull(authenticator);
     return HttpHandlers.chain(
         this,
+        handler ->
+            new MediaTypeHandler()
+                .addMediaType("application/json", setIsJson(true, handler))
+                .addMediaType("application/zip", setIsJson(false, handler)),
         handler -> new MethodHandler().addMethod(POST, handler),
         handler -> new DisableCacheHandler(handler),
         handler -> authenticator.newRequiredAuthHandler(handler));
   }
 
+  private static HttpHandler setIsJson(boolean isJson, HttpHandler next) {
+    Objects.requireNonNull(next);
+    return new AttachmentHandler<Boolean>(IS_JSON, next, isJson);
+  }
+
+  private static final AttachmentKey<Boolean> IS_JSON =
+      AttachmentKey.create(Boolean.class);
+
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
-    MediaType contentType = detectMediaType(exchange);
-    boolean isJson;
-    if (contentType.is(JSON_MEDIA_TYPE))
-      isJson = true;
-    else if (contentType.is(ZIP_MEDIA_TYPE))
-      isJson = false;
-    else {
-      exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
-      return;
-    }
-
+    boolean isJson = exchange.getAttachment(IS_JSON);
     String fileExtension = isJson ? "json" : "zip";
 
     Path tempFile =
@@ -185,10 +187,4 @@ public final class UploadResultsHandler implements HttpHandler {
 
     return newResultsFile(fileExtension);
   }
-
-  private static final MediaType JSON_MEDIA_TYPE =
-      MediaType.create("application", "json");
-
-  private static final MediaType ZIP_MEDIA_TYPE =
-      MediaType.create("application", "zip");
 }

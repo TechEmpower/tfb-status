@@ -1,7 +1,7 @@
 package tfb.status.undertow.extensions;
 
+import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
-import static tfb.status.undertow.extensions.RequestValues.detectMediaType;
 
 import com.google.common.net.MediaType;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -82,5 +82,26 @@ public final class MediaTypeHandler implements HttpHandler {
       }
     }
     exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
+  }
+
+  /**
+   * Parses the {@code Content-Type} header of the HTTP request and returns the
+   * result.  Falls back to {@link MediaType#ANY_TYPE} when the {@code
+   * Content-Type} header is missing or malformed.
+   *
+   * @param exchange the HTTP request/response
+   * @return the media type of the HTTP request
+   */
+  private static MediaType detectMediaType(HttpServerExchange exchange) {
+    String contentType = exchange.getRequestHeaders().getFirst(CONTENT_TYPE);
+
+    if (contentType == null)
+      return MediaType.ANY_TYPE;
+
+    try {
+      return MediaType.parse(contentType);
+    } catch (IllegalArgumentException ignored) {
+      return MediaType.ANY_TYPE;
+    }
   }
 }

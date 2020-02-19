@@ -1,9 +1,6 @@
 package tfb.status.undertow.extensions;
 
-import static io.undertow.util.Headers.CONTENT_TYPE;
-
 import com.google.common.collect.Iterables;
-import com.google.common.net.MediaType;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.Objects;
@@ -72,27 +69,6 @@ public final class RequestValues {
       return Integer.parseInt(onlyValue);
     } catch (NumberFormatException ignored) {
       return valueIfMalformed;
-    }
-  }
-
-  /**
-   * Parses the {@code Content-Type} header of the HTTP request and returns the
-   * result.  Falls back to {@link MediaType#ANY_TYPE} when the {@code
-   * Content-Type} header is missing or malformed.
-   *
-   * @param exchange the HTTP request/response
-   * @return the media type of the HTTP request
-   */
-  public static MediaType detectMediaType(HttpServerExchange exchange) {
-    String contentType = exchange.getRequestHeaders().getFirst(CONTENT_TYPE);
-
-    if (contentType == null)
-      return MediaType.ANY_TYPE;
-
-    try {
-      return MediaType.parse(contentType);
-    } catch (IllegalArgumentException ignored) {
-      return MediaType.ANY_TYPE;
     }
   }
 }

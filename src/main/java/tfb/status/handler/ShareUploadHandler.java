@@ -9,18 +9,15 @@ import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.CREATED;
 import static io.undertow.util.StatusCodes.REQUEST_ENTITY_TOO_LARGE;
 import static io.undertow.util.StatusCodes.SERVICE_UNAVAILABLE;
-import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static tfb.status.undertow.extensions.RequestValues.detectMediaType;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
-import com.google.common.net.MediaType;
 import com.google.errorprone.annotations.Immutable;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.server.HttpHandler;
@@ -51,6 +48,7 @@ import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
 import tfb.status.undertow.extensions.HttpHandlers;
+import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.FileUtils;
 import tfb.status.view.Results;
@@ -107,6 +105,7 @@ public final class ShareUploadHandler implements HttpHandler {
   public HttpHandler shareUploadHandler() {
     return HttpHandlers.chain(
         this,
+        handler -> new MediaTypeHandler().addMediaType("application/json", handler),
         handler -> new MethodHandler().addMethod(POST, handler),
         handler -> new DisableCacheHandler(handler),
         handler -> new SetHeaderHandler(handler,
@@ -116,12 +115,6 @@ public final class ShareUploadHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
-    MediaType contentType = detectMediaType(exchange);
-    if (!contentType.is(JSON_MEDIA_TYPE)) {
-      exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
-      return;
-    }
-
     ShareOutcome outcome = share(exchange.getInputStream());
     if (outcome.failure != null) {
       String json = objectMapper.writeValueAsString(outcome.failure);
@@ -138,9 +131,6 @@ public final class ShareUploadHandler implements HttpHandler {
     exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
     exchange.getResponseSender().send(json, UTF_8);
   }
-
-  private static final MediaType JSON_MEDIA_TYPE =
-      MediaType.create("application", "json");
 
   /**
    * Accepts a new results.json file to be shared.
