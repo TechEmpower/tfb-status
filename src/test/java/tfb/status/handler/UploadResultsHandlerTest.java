@@ -6,6 +6,7 @@ import static com.google.common.net.MediaType.ZIP;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -85,20 +86,6 @@ public final class UploadResultsHandlerTest {
         http.getBytes("/results/" + uuid + ".json");
 
     assertEquals(NOT_FOUND, responseBeforeUpload.statusCode());
-
-    //
-    // Confirm that authorization is required for uploads.
-    //
-
-    HttpResponse<Void> responseToUnauthorized =
-        http.client().send(
-            HttpRequest.newBuilder(http.uri("/upload"))
-                       .POST(asBodyPublisher(resultsTester.asByteSource(newResults)))
-                       .header(CONTENT_TYPE, JSON_UTF_8.toString())
-                       .build(),
-            HttpResponse.BodyHandlers.discarding());
-
-    assertEquals(UNAUTHORIZED, responseToUnauthorized.statusCode());
 
     //
     // Begin listening for updates to the home page.
@@ -327,6 +314,58 @@ public final class UploadResultsHandlerTest {
     } finally {
       updatesWebSocket.abort();
     }
+  }
+
+  /**
+   * Verifies that {@code POST /upload} produces a {@code 415 Unsupported
+   * Media Type} response for a request that does not specify either {@code
+   * application/json} or {@code application/zip} as its {@code Content-Type}.
+   */
+  @Test
+  public void testPost_invalidContentType(HttpTester http,
+                                          ResultsTester resultsTester)
+      throws IOException, InterruptedException {
+
+    Results results = resultsTester.newResults();
+    ByteSource resultsBytes = resultsTester.asByteSource(results);
+
+    HttpRequest.Builder requestWithoutContentType =
+        HttpRequest.newBuilder(http.uri("/upload"))
+                   .POST(asBodyPublisher(resultsBytes));
+
+    HttpResponse<String> response =
+        http.client().send(
+            http.addAuthorization(requestWithoutContentType).build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(UNSUPPORTED_MEDIA_TYPE, response.statusCode());
+
+    assertEquals("", response.body());
+  }
+
+  /**
+   * Verifies that {@code POST /upload} produces a {@code 401 Unauthorized}
+   * response for a request that does not include valid credentials.
+   */
+  @Test
+  public void testPost_unauthorized(HttpTester http,
+                                    ResultsTester resultsTester)
+      throws IOException, InterruptedException {
+
+    Results results = resultsTester.newResults();
+    ByteSource resultsBytes = resultsTester.asByteSource(results);
+
+    HttpResponse<String> response =
+        http.client().send(
+            HttpRequest.newBuilder(http.uri("/upload"))
+                       .POST(asBodyPublisher(resultsBytes))
+                       .header(CONTENT_TYPE, "application/json")
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(UNAUTHORIZED, response.statusCode());
+
+    assertEquals("", response.body());
   }
 
   // The JDK's version of this, `HttpRequest.BodyPublishers.ofFile(file)`, is

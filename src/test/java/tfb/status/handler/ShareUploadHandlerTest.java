@@ -7,6 +7,7 @@ import static io.undertow.util.StatusCodes.CREATED;
 import static io.undertow.util.StatusCodes.OK;
 import static io.undertow.util.StatusCodes.REQUEST_ENTITY_TOO_LARGE;
 import static io.undertow.util.StatusCodes.SERVICE_UNAVAILABLE;
+import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -107,6 +108,31 @@ public final class ShareUploadHandlerTest {
     assertTrue(
         resultsBytes.contentEquals(
             ByteSource.wrap(downloadResponse.body())));
+  }
+
+  /**
+   * Verifies that {@code POST /share/upload} produces a {@code 415 Unsupported
+   * Media Type} response for a request that does not specify {@code
+   * application/json} as its {@code Content-Type}.
+   */
+  @Test
+  public void testPost_invalidContentType(HttpTester http,
+                                          ResultsTester resultsTester)
+      throws IOException, InterruptedException {
+
+    Results results = resultsTester.newResults();
+    ByteSource resultsBytes = resultsTester.asByteSource(results);
+
+    HttpResponse<String> response =
+        http.client().send(
+            HttpRequest.newBuilder(http.uri("/share/upload"))
+                       .POST(asBodyPublisher(resultsBytes))
+                       .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(UNSUPPORTED_MEDIA_TYPE, response.statusCode());
+
+    assertEquals("", response.body());
   }
 
   /**
