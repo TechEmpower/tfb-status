@@ -33,6 +33,9 @@ public final class DownloadResultsHandler {
         new ResourceHandler(
             new PathResourceManager(fileStore.resultsDirectory())),
         handler -> new MethodHandler().addMethod(GET, handler),
+
+        // This endpoint is used by the TFB website when rendering results by
+        // uuid.
         handler -> new SetHeaderHandler(handler,
                                         ACCESS_CONTROL_ALLOW_ORIGIN,
                                         "*"));

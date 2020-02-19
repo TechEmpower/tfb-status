@@ -54,6 +54,11 @@ public final class DetailPageHandler implements HttpHandler {
         this,
         handler -> new MethodHandler().addMethod(GET, handler),
         handler -> new DisableCacheHandler(handler),
+
+        // The JSON version of this endpoint is used by the TFB website when
+        // rendering results by uuid.  Specifically, the TFB website uses this
+        // endpoint to discover the names of the results.json and results.zip
+        // files associated with a given uuid.
         handler -> new SetHeaderHandler(handler,
                                         ACCESS_CONTROL_ALLOW_ORIGIN,
                                         "*"));

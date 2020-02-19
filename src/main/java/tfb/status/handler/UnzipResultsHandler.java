@@ -70,6 +70,12 @@ public final class UnzipResultsHandler implements HttpHandler {
         this,
         handler -> new MethodHandler().addMethod(GET, handler),
         handler -> new DisableCacheHandler(handler),
+
+        // This endpoint is used by the TFB website when rendering results by
+        // uuid.  Specifically, the TFB website uses this endpoint to fetch the
+        // test_metadata.json file associated with a given set of results.  This
+        // is only necessary for historic results, since the test metadata was
+        // added to the results themselves in January 2020.
         handler -> new SetHeaderHandler(handler,
                                         ACCESS_CONTROL_ALLOW_ORIGIN,
                                         "*"));

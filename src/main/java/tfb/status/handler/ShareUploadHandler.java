@@ -1,6 +1,5 @@
 package tfb.status.handler;
 
-import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Headers.LOCATION;
@@ -23,7 +22,6 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.DisableCacheHandler;
-import io.undertow.server.handlers.SetHeaderHandler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -107,10 +105,7 @@ public final class ShareUploadHandler implements HttpHandler {
         this,
         handler -> new MediaTypeHandler().addMediaType("application/json", handler),
         handler -> new MethodHandler().addMethod(POST, handler),
-        handler -> new DisableCacheHandler(handler),
-        handler -> new SetHeaderHandler(handler,
-                                        ACCESS_CONTROL_ALLOW_ORIGIN,
-                                        "*"));
+        handler -> new DisableCacheHandler(handler));
   }
 
   @Override

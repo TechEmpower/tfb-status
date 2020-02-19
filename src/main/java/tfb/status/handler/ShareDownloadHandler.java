@@ -44,6 +44,9 @@ public final class ShareDownloadHandler implements HttpHandler {
     return HttpHandlers.chain(
         this,
         handler -> new MethodHandler().addMethod(GET, handler),
+
+        // This endpoint is used by the TFB website when rendering results by
+        // share id.
         handler -> new SetHeaderHandler(handler,
                                         ACCESS_CONTROL_ALLOW_ORIGIN,
                                         "*"));
