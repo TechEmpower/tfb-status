@@ -28,12 +28,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Objects;
 import javax.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.threeten.extra.MutableClock;
 import tfb.status.config.ShareConfig;
 import tfb.status.service.FileStore;
 import tfb.status.testlib.HttpTester;
@@ -305,26 +307,59 @@ public final class ShareUploadHandlerTest {
                                           FileStore fileStore,
                                           ShareConfig shareConfig,
                                           ResultsTester resultsTester,
-                                          ObjectMapper objectMapper)
+                                          ObjectMapper objectMapper,
+                                          MutableClock clock)
       throws IOException, InterruptedException, MessagingException {
 
-    Results results = resultsTester.newResults();
-    ByteSource resultsBytes = resultsTester.asByteSource(results);
+    class ShareTester {
+      /**
+       * Attempts to share a new set of results, and asserts that the attempt
+       * ends in failure because the share directory is full.
+       */
+      void assertShareDirectoryFull() throws IOException, InterruptedException {
+        Results results = resultsTester.newResults();
+        ByteSource resultsBytes = resultsTester.asByteSource(results);
 
-    // Counts the number of emails received regarding the share directory being
-    // full.
-    class EmailCounter {
-      final String subject = ShareUploadHandler.SHARE_DIRECTORY_FULL_SUBJECT;
+        HttpResponse<String> response =
+            http.client().send(
+                HttpRequest.newBuilder(http.uri("/share/upload"))
+                           .POST(asBodyPublisher(resultsBytes))
+                           .header(CONTENT_TYPE, JSON_UTF_8.toString())
+                           .build(),
+                HttpResponse.BodyHandlers.ofString());
 
-      int count() throws IOException, MessagingException {
+        assertEquals(SERVICE_UNAVAILABLE, response.statusCode());
+
+        assertMediaType(
+            JSON_UTF_8,
+            response.headers()
+                    .firstValue(CONTENT_TYPE)
+                    .orElse(null));
+
+        ShareFailure failure =
+            objectMapper.readValue(
+                response.body(),
+                ShareFailure.class);
+
+        assertEquals(
+            ShareFailure.Kind.SHARE_DIRECTORY_FULL,
+            failure.kind);
+      }
+
+      /**
+       * Counts the number of emails received regarding the share directory
+       * being full.
+       */
+      int countEmails() throws IOException, MessagingException {
+        String subject = ShareUploadHandler.SHARE_DIRECTORY_FULL_SUBJECT;
         return mailServer.getMessages(m -> m.getSubject().equals(subject))
                          .size();
       }
     }
 
-    var emails = new EmailCounter();
+    var shareTester = new ShareTester();
 
-    assertEquals(0, emails.count());
+    assertEquals(0, shareTester.countEmails());
 
     // Create a new large file in the share directory so that the directory
     // exceeds its maximum configured size.
@@ -341,67 +376,33 @@ public final class ShareUploadHandlerTest {
             shareConfig.maxDirectorySizeInBytes);
       }
 
-      HttpResponse<String> response =
-          http.client().send(
-              HttpRequest.newBuilder(http.uri("/share/upload"))
-                         .POST(asBodyPublisher(resultsBytes))
-                         .header(CONTENT_TYPE, JSON_UTF_8.toString())
-                         .build(),
-              HttpResponse.BodyHandlers.ofString());
-
-      assertEquals(SERVICE_UNAVAILABLE, response.statusCode());
-
-      assertMediaType(
-          JSON_UTF_8,
-          response.headers()
-                  .firstValue(CONTENT_TYPE)
-                  .orElse(null));
-
-      ShareFailure failure =
-          objectMapper.readValue(
-              response.body(),
-              ShareFailure.class);
-
-      assertEquals(
-          ShareFailure.Kind.SHARE_DIRECTORY_FULL,
-          failure.kind);
-
+      shareTester.assertShareDirectoryFull();
       Thread.sleep(mailDelay.timeToSendOneEmail().toMillis());
-
-      assertEquals(1, emails.count());
+      assertEquals(1, shareTester.countEmails());
 
       //
       // Assert that we don't receive a second email.
       //
 
-      HttpResponse<String> secondResponse =
-          http.client().send(
-              HttpRequest.newBuilder(http.uri("/share/upload"))
-                         .POST(asBodyPublisher(resultsBytes))
-                         .header(CONTENT_TYPE, JSON_UTF_8.toString())
-                         .build(),
-              HttpResponse.BodyHandlers.ofString());
-
-      assertEquals(SERVICE_UNAVAILABLE, response.statusCode());
-
-      assertMediaType(
-          JSON_UTF_8,
-          response.headers()
-                  .firstValue(CONTENT_TYPE)
-                  .orElse(null));
-
-      ShareFailure secondFailure =
-          objectMapper.readValue(
-              secondResponse.body(),
-              ShareFailure.class);
-
-      assertEquals(
-          ShareFailure.Kind.SHARE_DIRECTORY_FULL,
-          secondFailure.kind);
-
+      shareTester.assertShareDirectoryFull();
       Thread.sleep(mailDelay.timeToSendOneEmail().toMillis());
+      assertEquals(1, shareTester.countEmails());
 
-      assertEquals(1, emails.count());
+      //
+      // Assert that once the configured amount of time has passed, another
+      // upload will cause another email.
+      //
+
+      // TODO: A @Singleton mutable clock is inherently unfriendly to test
+      //       parallelism.  Perhaps MutableClock should be provided in the
+      //       @PerLookup scope, and the "clock" field of the service being
+      //       tested should be made @VisibleForTesting, and the test for that
+      //       service should directly reference that field.
+      clock.add(Duration.ofSeconds(shareConfig.minSecondsBetweenEmails));
+
+      shareTester.assertShareDirectoryFull();
+      Thread.sleep(mailDelay.timeToSendOneEmail().toMillis());
+      assertEquals(2, shareTester.countEmails());
 
     } finally {
       Files.delete(junk);
