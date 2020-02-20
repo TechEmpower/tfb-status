@@ -3,8 +3,10 @@ package tfb.status.testlib;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.io.ByteSource;
 import io.undertow.server.HttpHandler;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -192,5 +194,24 @@ public final class HttpTester {
     return "Basic " +
         Base64.getEncoder().encodeToString(
             (username + ":" + password).getBytes(UTF_8));
+  }
+
+  /**
+   * Returns a request body publisher that reads its data from the specified
+   * {@link ByteSource}.
+   *
+   * @param bytes the bytes of the request body
+   */
+  public static HttpRequest.BodyPublisher asBodyPublisher(ByteSource bytes) {
+    Objects.requireNonNull(bytes);
+    // TODO: Use bytes.sizeIfKnown() for the publisher's contentLength()?
+    return HttpRequest.BodyPublishers.ofInputStream(
+        () -> {
+          try {
+            return bytes.openStream();
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
   }
 }

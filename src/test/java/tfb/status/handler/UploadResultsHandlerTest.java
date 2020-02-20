@@ -11,21 +11,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static tfb.status.testlib.HttpTester.asBodyPublisher;
 import static tfb.status.testlib.MoreAssertions.assertContains;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteSource;
+import com.google.common.io.MoreFiles;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -119,9 +118,11 @@ public final class UploadResultsHandlerTest {
       // Upload the new results JSON.
       //
 
+      ByteSource newResultsBytes = resultsTester.asByteSource(newResults);
+
       HttpRequest.Builder requestWithNewJson =
           HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(asBodyPublisher(resultsTester.asByteSource(newResults)))
+                     .POST(asBodyPublisher(newResultsBytes))
                      .header(CONTENT_TYPE, JSON_UTF_8.toString());
 
       HttpResponse<Void> responseToNewJson =
@@ -184,9 +185,12 @@ public final class UploadResultsHandlerTest {
       // Upload the updated results JSON.
       //
 
+      ByteSource updatedResultsBytes =
+          resultsTester.asByteSource(updatedResults);
+
       HttpRequest.Builder requestWithUpdatedJson =
           HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(asBodyPublisher(resultsTester.asByteSource(updatedResults)))
+                     .POST(asBodyPublisher(updatedResultsBytes))
                      .header(CONTENT_TYPE, JSON_UTF_8.toString());
 
       HttpResponse<Void> responseToUpdatedJson =
@@ -259,9 +263,15 @@ public final class UploadResultsHandlerTest {
       // Upload the final results zip.
       //
 
+      // The JDK's version of this, `HttpRequest.BodyPublishers.ofFile(Path)`,
+      // is incompatible with the in-memory file system that we use during
+      // tests.
+      HttpRequest.BodyPublisher zipFilePublisher =
+          asBodyPublisher(MoreFiles.asByteSource(zipFile));
+
       HttpRequest.Builder requestWithZip =
           HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(filePublisher(zipFile))
+                     .POST(zipFilePublisher)
                      .header(CONTENT_TYPE, ZIP.toString());
 
       HttpResponse<Void> responseToZip =
@@ -301,6 +311,8 @@ public final class UploadResultsHandlerTest {
 
       //
       // Confirm the "Run complete" email was sent.
+      //
+      // TODO: Test the self-spam protection.
       //
 
       String subject =
@@ -366,31 +378,5 @@ public final class UploadResultsHandlerTest {
     assertEquals(UNAUTHORIZED, response.statusCode());
 
     assertEquals("", response.body());
-  }
-
-  // The JDK's version of this, `HttpRequest.BodyPublishers.ofFile(file)`, is
-  // incompatible with the in-memory file system that we use during tests.
-  private static HttpRequest.BodyPublisher filePublisher(Path file) {
-    Objects.requireNonNull(file);
-    return HttpRequest.BodyPublishers.ofInputStream(
-        () -> {
-          try {
-            return Files.newInputStream(file);
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
-  }
-
-  private static HttpRequest.BodyPublisher asBodyPublisher(ByteSource bytes) {
-    Objects.requireNonNull(bytes);
-    return HttpRequest.BodyPublishers.ofInputStream(
-        () -> {
-          try {
-            return bytes.openStream();
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
   }
 }

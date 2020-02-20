@@ -12,6 +12,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static tfb.status.testlib.HttpTester.asBodyPublisher;
 import static tfb.status.testlib.MoreAssertions.assertMediaType;
 import static tfb.status.testlib.MoreAssertions.assertStartsWith;
 
@@ -21,7 +22,6 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.ByteStreams;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
@@ -29,7 +29,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Objects;
 import javax.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -407,17 +406,5 @@ public final class ShareUploadHandlerTest {
     } finally {
       Files.delete(junk);
     }
-  }
-
-  private static HttpRequest.BodyPublisher asBodyPublisher(ByteSource bytes) {
-    Objects.requireNonNull(bytes);
-    return HttpRequest.BodyPublishers.ofInputStream(
-        () -> {
-          try {
-            return bytes.openStream();
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
   }
 }
