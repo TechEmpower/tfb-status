@@ -11,8 +11,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.Objects;
+import java.util.concurrent.Flow;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -203,15 +205,35 @@ public final class HttpTester {
    * @param bytes the bytes of the request body
    */
   public static HttpRequest.BodyPublisher asBodyPublisher(ByteSource bytes) {
-    Objects.requireNonNull(bytes);
-    // TODO: Use bytes.sizeIfKnown() for the publisher's contentLength()?
-    return HttpRequest.BodyPublishers.ofInputStream(
-        () -> {
-          try {
-            return bytes.openStream();
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
+    return new ByteSourcePublisher(bytes);
+  }
+
+  private static final class ByteSourcePublisher
+      implements HttpRequest.BodyPublisher {
+
+    private final ByteSource bytes;
+
+    ByteSourcePublisher(ByteSource bytes) {
+      this.bytes = Objects.requireNonNull(bytes);
+    }
+
+    @Override
+    public long contentLength() {
+      return bytes.sizeIfKnown().or(-1L);
+    }
+
+    @Override
+    public void subscribe(Flow.Subscriber<? super ByteBuffer> subscriber) {
+      HttpRequest.BodyPublisher delegate =
+          HttpRequest.BodyPublishers.ofInputStream(
+              () -> {
+                try {
+                  return bytes.openStream();
+                } catch (IOException e) {
+                  throw new UncheckedIOException(e);
+                }
+              });
+      delegate.subscribe(subscriber);
+    }
   }
 }
