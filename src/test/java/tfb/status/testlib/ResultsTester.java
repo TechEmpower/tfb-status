@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteSource;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -140,8 +139,8 @@ public final class ResultsTester {
     Objects.requireNonNull(results);
     Objects.requireNonNull(file);
 
-    try (BufferedWriter writer = Files.newBufferedWriter(file)) {
-      objectMapper.writeValue(writer, results);
+    try (OutputStream outputStream = Files.newOutputStream(file)) {
+      objectMapper.writeValue(outputStream, results);
     }
   }
 
@@ -187,8 +186,8 @@ public final class ResultsTester {
 
         /* ifPresent= */
         (Path zipEntry) -> {
-          try (BufferedWriter writer = Files.newBufferedWriter(zipEntry)) {
-            objectMapper.writeValue(writer, results);
+          try (OutputStream outputStream = Files.newOutputStream(zipEntry)) {
+            objectMapper.writeValue(outputStream, results);
           }
         },
 
