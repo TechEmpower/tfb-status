@@ -6,7 +6,7 @@ FROM maven:3.6.3-jdk-13 AS base_build_image
 # ------------------------------------------------------------------------------
 # java.datatransfer  java.awt.datatransfer.Transferrable     jakarta.activation
 # java.logging       java.util.logging.Logger                hk2
-# java.management    java.lang.management.ManagementFactory  maven-surefire-plugin
+# java.management    java.lang.management.ManagementFactory  maven-surefire-plugin, tfb.status.service.HealthChecker
 # java.naming        javax.naming.NamingException            logback
 # java.xml           org.xml.sax.InputSource                 logback
 # jdk.crypto.ec      sun.security.ec.SunEC                   jakarta.mail (for STARTTLS)

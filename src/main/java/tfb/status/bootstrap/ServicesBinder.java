@@ -7,6 +7,7 @@ import tfb.status.handler.AssetsHandler;
 import tfb.status.handler.AttributesPageHandler;
 import tfb.status.handler.DetailPageHandler;
 import tfb.status.handler.DownloadResultsHandler;
+import tfb.status.handler.HealthCheckHandler;
 import tfb.status.handler.HomePageHandler;
 import tfb.status.handler.HomeUpdatesHandler;
 import tfb.status.handler.LastSeenCommitHandler;
@@ -28,6 +29,7 @@ import tfb.status.service.DiffGenerator;
 import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
 import tfb.status.service.FileSystemFactory;
+import tfb.status.service.HealthChecker;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.HttpServer;
 import tfb.status.service.MustacheRenderer;
@@ -76,6 +78,7 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(RunProgressMonitor.class);
     addActiveDescriptor(RunCompleteMailer.class);
     addActiveDescriptor(TaskScheduler.class);
+    addActiveDescriptor(HealthChecker.class);
     addActiveDescriptor(RootHandler.class);
     addActiveDescriptor(HomePageHandler.class);
     addActiveDescriptor(HomeUpdatesHandler.class);
@@ -93,5 +96,6 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(ShareUploadHandler.class);
     addActiveDescriptor(ShareDownloadHandler.class);
     addActiveDescriptor(SharePageHandler.class);
+    addActiveDescriptor(HealthCheckHandler.class);
   }
 }

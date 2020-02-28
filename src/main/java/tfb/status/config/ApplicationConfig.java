@@ -59,6 +59,12 @@ public final class ApplicationConfig {
   public final ShareConfig share;
 
   /**
+   * See {@link HealthCheckConfig}.
+   */
+  @Provides
+  public final HealthCheckConfig healthCheck;
+
+  /**
    * The configuration for outbound emails, or {@code null} if outbound emails
    * are disabled.  See {@link EmailConfig}.
    */
@@ -81,6 +87,7 @@ public final class ApplicationConfig {
                            RunProgressMonitorConfig runProgressMonitor,
                            RunCompleteMailerConfig runCompleteMailer,
                            ShareConfig share,
+                           HealthCheckConfig healthCheck,
                            @Nullable EmailConfig email) {
 
     this.http = Objects.requireNonNull(http);
@@ -90,6 +97,7 @@ public final class ApplicationConfig {
     this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
     this.runCompleteMailer = Objects.requireNonNull(runCompleteMailer);
     this.share = Objects.requireNonNull(share);
+    this.healthCheck = Objects.requireNonNull(healthCheck);
     this.email = email;
   }
 
@@ -108,6 +116,7 @@ public final class ApplicationConfig {
           && this.runProgressMonitor.equals(that.runProgressMonitor)
           && this.runCompleteMailer.equals(that.runCompleteMailer)
           && this.share.equals(that.share)
+          && this.healthCheck.equals(that.healthCheck)
           && Objects.equals(this.email, that.email);
     }
   }
@@ -122,6 +131,7 @@ public final class ApplicationConfig {
     hash = 31 * hash + runProgressMonitor.hashCode();
     hash = 31 * hash + runCompleteMailer.hashCode();
     hash = 31 * hash + share.hashCode();
+    hash = 31 * hash + healthCheck.hashCode();
     hash = 31 * hash + Objects.hashCode(email);
     return hash;
   }
@@ -148,6 +158,9 @@ public final class ApplicationConfig {
 
       @JsonProperty(value = "share", required = false)
       @Nullable ShareConfig share,
+
+      @JsonProperty(value = "healthCheck", required = false)
+      @Nullable HealthCheckConfig healthCheck,
 
       @JsonProperty(value = "email", required = false)
       @Nullable EmailConfig email) {
@@ -188,11 +201,16 @@ public final class ApplicationConfig {
             share,
             () -> ShareConfig.defaultConfig()),
 
+        /* healthCheck= */
+        Objects.requireNonNullElseGet(
+            healthCheck,
+            () -> HealthCheckConfig.defaultConfig()),
+
         /* email= */
         email);
   }
 
   public static ApplicationConfig defaultConfig() {
-    return create(null, null, null, null, null, null, null, null);
+    return create(null, null, null, null, null, null, null, null, null);
   }
 }

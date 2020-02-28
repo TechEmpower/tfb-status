@@ -50,3 +50,6 @@
 #  maxFileSizeInBytes: 5000000
 #  tfbStatusOrigin: https://tfb-status.techempower.com
 #  tfbWebsiteOrigin: https://www.techempower.com
+
+#healthCheck:
+#  intervalSeconds: 30

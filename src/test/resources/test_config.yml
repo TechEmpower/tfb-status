@@ -33,3 +33,6 @@ share:
   maxFileSizeInBytes: 5000000
   tfbStatusOrigin: https://tfb-status.localhost
   tfbWebsiteOrigin: https://tfb-website.localhost
+
+healthCheck:
+  intervalSeconds: 1

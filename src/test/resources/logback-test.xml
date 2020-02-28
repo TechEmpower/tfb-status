@@ -13,6 +13,7 @@
       <level>ERROR</level>
     </filter>
     <filter class="tfb.status.testlib.LoggerThresholdFilter">
+      <loggerName>tfb.status.service.HealthChecker</loggerName>
       <loggerName>tfb.status.service.TaskScheduler</loggerName>
       <loggerName>http</loggerName>
       <level>OFF</level>
