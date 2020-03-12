@@ -70,6 +70,7 @@
     <rule groupId="com.sun.activation" artifactId="jakarta.activation" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-rc[\d]+</ignoreVersion>
+        <ignoreVersion type="regex">.+\-RC[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
