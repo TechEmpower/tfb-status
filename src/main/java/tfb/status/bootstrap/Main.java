@@ -44,6 +44,7 @@ public final class Main {
     }
 
     ServiceLocator locator = createAndPopulateServiceLocator();
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> locator.shutdown()));
     NoInstancesFilter.enableNoInstancesFilter(locator);
     ServiceLocatorUtilities.bind(
         locator,

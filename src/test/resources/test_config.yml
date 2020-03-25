@@ -1,6 +1,8 @@
 http:
   host: "localhost"
   port: 8443
+  gracefulShutdownTimeoutMillis: 500
+  forcefulShutdownTimeoutMillis: 500
   keyStore:
     path: localhost.jks
     password: password

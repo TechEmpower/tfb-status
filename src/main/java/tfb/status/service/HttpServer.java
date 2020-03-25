@@ -1,9 +1,12 @@
 package tfb.status.service;
 
+import static io.undertow.UndertowOptions.ENABLE_HTTP2;
+import static io.undertow.UndertowOptions.RECORD_REQUEST_START_TIME;
+import static io.undertow.UndertowOptions.SHUTDOWN_TIMEOUT;
+
 import com.google.common.io.MoreFiles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.Undertow;
-import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
@@ -21,8 +24,8 @@ import tfb.status.util.KeyStores;
 /**
  * The HTTP server for this application.
  *
- * <p>This server does not start automatically.  Call {@link #start()} to begin
- * listening for incoming HTTP requests.
+ * <p>This HTTP server does not start automatically.  Call {@link #start()} to
+ * begin listening for incoming HTTP requests.
  */
 @Singleton
 public final class HttpServer implements PreDestroy {
@@ -43,7 +46,15 @@ public final class HttpServer implements PreDestroy {
 
     Undertow.Builder builder = Undertow.builder();
     builder.setHandler(handler);
-    builder.setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true);
+    builder.setServerOption(RECORD_REQUEST_START_TIME, true);
+
+    // Without this shutdown timeout, stopping this HTTP server would block the
+    // current thread until all in-progress HTTP requests complete naturally.
+    // That would mean a single misbehaving HTTP request could delay shutdown
+    // indefinitely.
+    builder.setServerOption(
+        SHUTDOWN_TIMEOUT,
+        config.forcefulShutdownTimeoutMillis);
 
     if (config.keyStore == null)
       builder.addHttpListener(config.port, config.host);
@@ -57,7 +68,7 @@ public final class HttpServer implements PreDestroy {
               /* password= */ config.keyStore.password.toCharArray());
 
       builder.addHttpsListener(config.port, config.host, sslContext);
-      builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
+      builder.setServerOption(ENABLE_HTTP2, true);
     }
 
     serverInfo =
@@ -74,7 +85,7 @@ public final class HttpServer implements PreDestroy {
   }
 
   /**
-   * Starts this server if it is currently stopped.
+   * Starts this HTTP server if it is currently stopped.
    */
   public synchronized void start() {
     if (isRunning) return;
@@ -85,12 +96,20 @@ public final class HttpServer implements PreDestroy {
   }
 
   /**
-   * Stops this server if it is currently running.
+   * Stops this HTTP server if it is currently running.
+   *
+   * <p>It is not necessarily the case that all HTTP request-handling threads
+   * have stopped when this method returns.  This method will wait
+   * {@link HttpServerConfig#forcefulShutdownTimeoutMillis} for the threads to
+   * stop, but if some threads are still running after that amount of time, this
+   * method will return anyway.
    */
   public synchronized void stop() {
     if (!isRunning) return;
 
+    // Blocks this thread for up to SHUTDOWN_TIMEOUT milliseconds.
     server.stop();
+
     isRunning = false;
     logger.info("stopped [{}]", serverInfo);
   }

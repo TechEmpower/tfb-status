@@ -5,22 +5,26 @@ import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Objects;
 import java.util.Set;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.glassfish.hk2.api.IterableProvider;
 import org.glassfish.hk2.api.PerLookup;
+import org.glassfish.hk2.api.PreDestroy;
 import org.glassfish.hk2.api.ServiceHandle;
+import org.jvnet.hk2.annotations.ContractsProvided;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tfb.status.config.HttpServerConfig;
 import tfb.status.handler.routing.AllPaths;
 import tfb.status.handler.routing.ExactPath;
 import tfb.status.handler.routing.PrefixPath;
-import tfb.status.hk2.extensions.Provides;
 import tfb.status.undertow.extensions.HttpHandlers;
 
 /**
@@ -35,17 +39,23 @@ import tfb.status.undertow.extensions.HttpHandlers;
  *     blocking}.  Other handlers are permitted to perform blocking operations
  *     such as {@link HttpServerExchange#getInputStream()} and {@link
  *     HttpServerExchange#getOutputStream()}.
+ * <li>{@linkplain #shutdown() Shutdown} is handled gracefully.
  * </ul>
  */
-public final class RootHandler {
-  private RootHandler() {
-    throw new AssertionError("This class cannot be instantiated");
-  }
+@Singleton
+@AllPaths
+@ContractsProvided(HttpHandler.class)
+public final class RootHandler implements HttpHandler, PreDestroy {
+  private final HttpServerConfig config;
+  private final GracefulShutdownHandler shutdownHandler;
+  private final HttpHandler delegateHandler;
+  private final Logger logger = LoggerFactory.getLogger("http");
 
-  @Provides
-  @Singleton
-  @AllPaths
-  public static HttpHandler rootHandler(IterableProvider<HttpHandler> handlers) {
+  @Inject
+  public RootHandler(HttpServerConfig config,
+                     IterableProvider<HttpHandler> handlers) {
+
+    this.config = Objects.requireNonNull(config);
     Objects.requireNonNull(handlers);
 
     PathHandler pathHandler = new PathHandler();
@@ -106,13 +116,55 @@ public final class RootHandler {
       }
     }
 
-    Logger logger = LoggerFactory.getLogger("http");
+    shutdownHandler = new GracefulShutdownHandler(pathHandler);
 
-    return HttpHandlers.chain(
-        pathHandler,
-        handler -> newAccessLoggingHandler(handler, logger),
-        handler -> new ExceptionLoggingHandler(handler, logger),
-        handler -> new BlockingHandler(handler));
+    delegateHandler =
+        HttpHandlers.chain(
+            shutdownHandler,
+            handler -> newAccessLoggingHandler(handler, logger),
+            handler -> new ExceptionLoggingHandler(handler, logger),
+            handler -> new BlockingHandler(handler));
+  }
+
+  @Override
+  public void handleRequest(HttpServerExchange exchange) throws Exception {
+    delegateHandler.handleRequest(exchange);
+  }
+
+  @Override
+  public void preDestroy() {
+    shutdown();
+  }
+
+  /**
+   * Shuts down this root handler, allowing already in-progress HTTP requests to
+   * complete and rejecting new HTTP requests with {@code 503 Service
+   * Unavailable}.
+   *
+   * <p>It is not necessarily the case that all HTTP requests have completed or
+   * have been terminated when this method returns.  This method will wait
+   * {@link HttpServerConfig#gracefulShutdownTimeoutMillis} for the requests to
+   * complete naturally, but if the requests haven't completed after that amount
+   * of time, this method will return anyway.
+   */
+  public void shutdown() {
+    shutdownHandler.shutdown();
+    boolean allRequestsComplete;
+    try {
+      allRequestsComplete =
+          shutdownHandler.awaitShutdown(config.gracefulShutdownTimeoutMillis);
+    } catch (InterruptedException e) {
+      logger.warn(
+          "Shutdown was interrupted before all in-progress HTTP requests "
+              + "could complete",
+          e);
+      Thread.currentThread().interrupt();
+      return;
+    }
+    if (!allRequestsComplete)
+      logger.warn(
+          "Not all in-progress HTTP requests could complete within a "
+              + "reasonable amount of time; shutting down anyway");
   }
 
   /**

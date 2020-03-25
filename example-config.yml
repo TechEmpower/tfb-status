@@ -18,6 +18,8 @@
 #http:
 #  host: "0.0.0.0"
 #  port: 80
+#  gracefulShutdownTimeoutMillis: 2000
+#  forcefulShutdownTimeoutMillis: 1000
 #  keyStore:
 #    path: src/test/resources/localhost.jks
 #    password: password
