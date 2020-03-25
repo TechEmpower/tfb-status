@@ -4,6 +4,7 @@ import static io.undertow.util.StatusCodes.OK;
 import static io.undertow.util.StatusCodes.SERVICE_UNAVAILABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -116,9 +117,11 @@ public final class HealthCheckHandlerTest {
       thread1.interrupt();
       thread2.interrupt();
 
-      long timeToGiveUp = System.nanoTime() + 5000;
+      Duration timeout = Duration.ofSeconds(5);
+      Stopwatch stopwatch = Stopwatch.createStarted();
+
       while ((thread1.isAlive() || thread2.isAlive())
-          && System.nanoTime() < timeToGiveUp)
+          && stopwatch.elapsed().compareTo(timeout) < 0)
         Thread.sleep(50);
 
       if (thread1.isAlive() || thread2.isAlive())
