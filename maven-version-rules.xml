@@ -50,7 +50,7 @@
     <rule groupId="com.fasterxml.jackson.*" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\.pr[\d]+</ignoreVersion>
-        <ignoreVersion type="regex"> +\.rc[\d]+</ignoreVersion>
+        <ignoreVersion type="regex">.+\.rc[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
