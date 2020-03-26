@@ -255,27 +255,14 @@ public final class TaskScheduler implements Executor, PreDestroy {
       @GuardedBy("this")
       ListenableFuture<T> next = internalSchedule(task, initialDelay);
 
-      final FutureCallback<T> reschedule =
-          new FutureCallback<T>() {
-            @Override
-            public void onSuccess(@Nullable T result) {
-              scheduleNext();
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-              scheduleNext();
-            }
-          };
-
       {
-        Futures.addCallback(next, reschedule, executor);
+        next.addListener(() -> scheduleNext(), executor);
       }
 
       synchronized void scheduleNext() {
         if (!isCancelled()) {
           next = internalSchedule(task, interval);
-          Futures.addCallback(next, reschedule, executor);
+          next.addListener(() -> scheduleNext(), executor);
         }
       }
 
