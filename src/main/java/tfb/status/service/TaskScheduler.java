@@ -225,6 +225,8 @@ public final class TaskScheduler implements Executor, PreDestroy {
    * unless it is cancelled.  Exceptions thrown from the task's {@link
    * Callable#call()} method are logged but not propagated to the returned
    * future, and such exceptions will not prevent the task from repeating.
+   * Results returned from the task's {@link Callable#call()} method are
+   * ignored.
    *
    * @param task the task to run
    * @param initialDelay the amount of time to wait before running the task
@@ -236,9 +238,9 @@ public final class TaskScheduler implements Executor, PreDestroy {
    *         interval} is negative
    * @throws RejectedExecutionException if {@link #shutdown()} was called
    */
-  public <T> ListenableFuture<T> repeat(Callable<T> task,
-                                        Duration initialDelay,
-                                        Duration interval) {
+  public ListenableFuture<?> repeat(Callable<?> task,
+                                    Duration initialDelay,
+                                    Duration interval) {
     Objects.requireNonNull(task);
     Objects.requireNonNull(initialDelay);
     Objects.requireNonNull(interval);
@@ -251,9 +253,9 @@ public final class TaskScheduler implements Executor, PreDestroy {
       throw new IllegalArgumentException(
           "negative interval: " + interval);
 
-    return new AbstractFuture<T>() {
+    return new AbstractFuture<Void>() {
       @GuardedBy("this")
-      ListenableFuture<T> next = internalSchedule(task, initialDelay);
+      ListenableFuture<?> next = internalSchedule(task, initialDelay);
 
       {
         next.addListener(() -> scheduleNext(), executor);

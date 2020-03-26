@@ -614,7 +614,7 @@ public final class TaskSchedulerTest {
           return result;
         };
 
-    ListenableFuture<String> future =
+    ListenableFuture<?> future =
         taskScheduler.repeat(task, initialDelay, interval);
 
     assertEquals(0, counter.get());
@@ -694,7 +694,7 @@ public final class TaskSchedulerTest {
           return result;
         };
 
-    ListenableFuture<String> future =
+    ListenableFuture<?> future =
         taskScheduler.repeat(task, initialDelay, interval);
 
     assertEquals(0, counter.get());
@@ -867,7 +867,7 @@ public final class TaskSchedulerTest {
               messagePrefix + counter.incrementAndGet());
         };
 
-    ListenableFuture<String> future =
+    ListenableFuture<?> future =
         taskScheduler.repeat(task, initialDelay, interval);
 
     // Let the task run at least twice.
