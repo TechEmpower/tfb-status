@@ -26,22 +26,16 @@ public final class Main {
    * @throws IllegalArgumentException if there are two or more arguments
    */
   public static void main(String[] args) {
-    String configFilePath;
-    switch (args.length) {
-      case 0:
-        configFilePath = null;
-        break;
-
-      case 1:
-        configFilePath = args[0];
-        break;
-
-      default:
-        throw new IllegalArgumentException(
-            "Expected zero or one arguments, received "
-                + args.length
-                + " arguments instead");
-    }
+    String configFilePath =
+        switch (args.length) {
+          case 0 -> null;
+          case 1 -> args[0];
+          default ->
+              throw new IllegalArgumentException(
+                  "Expected zero or one arguments, received "
+                      + args.length
+                      + " arguments instead");
+        };
 
     ServiceLocator locator = createAndPopulateServiceLocator();
     Runtime.getRuntime().addShutdownHook(new Thread(() -> locator.shutdown()));

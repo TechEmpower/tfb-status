@@ -47,7 +47,6 @@
     <maven-site-plugin.version>3.8.2</maven-site-plugin.version>
     <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
     <mustache.version>0.9.6</mustache.version>
-    <nullaway.version>0.7.9</nullaway.version>
     <slf4j.version>1.7.30</slf4j.version>
     <threeten-extra.version>1.5.0</threeten-extra.version>
     <undertow.version>2.0.30.Final</undertow.version>
@@ -452,6 +451,7 @@
               -Xep:MutableMethodReturnType:OFF
               -Xep:NoFunctionalReturnType:OFF
               -Xep:ReturnMissingNullable:OFF
+              -Xep:UnnecessaryParentheses:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
@@ -466,15 +466,6 @@
                    if it doesn't refer to instance-level state. -->
               -Xep:MethodCanBeStatic:OFF
 
-              <!-- Enable NullAway, which is a plugin for Error Prone that
-                   offers additional checks to help us handle null correctly.
-
-                   See: https://github.com/uber/NullAway
-              -->
-              -Xep:NullAway:ERROR
-              -XepOpt:NullAway:AnnotatedPackages=tfb.status
-              -XepOpt:NullAway:UnannotatedSubPackages=tfb.status.hk2.extensions
-
             </arg>
 
             <!-- Without this, compilation fails.  Error Prone is not currently
@@ -487,11 +478,6 @@
               <groupId>com.google.errorprone</groupId>
               <artifactId>error_prone_core</artifactId>
               <version>${error-prone.version}</version>
-            </path>
-            <path>
-              <groupId>com.uber.nullaway</groupId>
-              <artifactId>nullaway</artifactId>
-              <version>${nullaway.version}</version>
             </path>
           </annotationProcessorPaths>
         </configuration>

@@ -202,37 +202,30 @@ public final class Results {
     ImmutableList<SingleWrkExecution> executions =
         rawData.get(testType, framework);
 
-    switch (testType) {
+    return switch (testType) {
       //
       // For these test types, we vary the concurrency (simultaneous requests
       // from the client) and then use the highest total requests from any
       // concurrency level.
       //
-      case "json":
-      case "plaintext":
-      case "db":
-      case "fortune":
-        return executions.stream()
-                         .mapToLong(execution -> execution.successfulRequests())
-                         .max()
-                         .orElse(0);
-
+      case "json", "plaintext", "db", "fortune" ->
+          executions.stream()
+                    .mapToLong(execution -> execution.successfulRequests())
+                    .max()
+                    .orElse(0);
       //
       // For these test types, we vary the number of database queries per
       // request and then use the total requests of the wrk execution for the
       // highest number of queries, which is the last execution in the list.
       //
-      case "query":
-      case "update":
-      case "cached_query":
-        return executions.isEmpty()
-            ? 0
-            : executions.get(executions.size() - 1)
-                        .successfulRequests();
+      case "query", "update", "cached_query" ->
+          executions.isEmpty()
+              ? 0
+              : executions.get(executions.size() - 1)
+                          .successfulRequests();
 
-      default:
-        return 0;
-    }
+      default -> 0;
+    };
   }
 
   /**
@@ -299,17 +292,17 @@ public final class Results {
      * framework (the keys of the returned multimap are framework names).
      */
     ImmutableListMultimap<String, SingleWrkExecution> get(String testType) {
-      ImmutableListMultimap<String, SingleWrkExecution> m;
-      switch (testType) {
-        case "json":         m = json; break;
-        case "plaintext":    m = plaintext; break;
-        case "db":           m = db; break;
-        case "query":        m = query; break;
-        case "update":       m = update; break;
-        case "fortune":      m = fortune; break;
-        case "cached_query": m = cachedQuery; break;
-        default:             m = null; break;
-      }
+      ImmutableListMultimap<String, SingleWrkExecution> m =
+          switch (testType) {
+            case "json" -> json;
+            case "plaintext" -> plaintext;
+            case "db" -> db;
+            case "query" -> query;
+            case "update" -> update;
+            case "fortune" -> fortune;
+            case "cached_query" -> cachedQuery;
+            default -> null;
+          };
       return (m == null) ? ImmutableListMultimap.of() : m;
     }
 

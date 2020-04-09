@@ -264,19 +264,16 @@ public final class ShareUploadHandler implements HttpHandler {
   private static int statusCodeForFailure(ShareFailure.Kind failureKind) {
     Objects.requireNonNull(failureKind);
 
-    switch (failureKind) {
-      case MISSING_TEST_METADATA:
-      case INVALID_JSON:
-        return BAD_REQUEST;
+    return switch (failureKind) {
+      case MISSING_TEST_METADATA, INVALID_JSON ->
+          BAD_REQUEST;
 
-      case FILE_TOO_LARGE:
-        return REQUEST_ENTITY_TOO_LARGE;
+      case FILE_TOO_LARGE ->
+          REQUEST_ENTITY_TOO_LARGE;
 
-      case SHARE_DIRECTORY_FULL:
-        return SERVICE_UNAVAILABLE;
-    }
-
-    throw new AssertionError("Unknown failure kind: " + failureKind);
+      case SHARE_DIRECTORY_FULL ->
+          SERVICE_UNAVAILABLE;
+    };
   }
 
   /**

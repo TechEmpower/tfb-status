@@ -50,13 +50,13 @@ public final class AssetsHandler {
     Objects.requireNonNull(config);
     Objects.requireNonNull(fileSystem);
 
-    switch (config.mode) {
+    return switch (config.mode) {
       case CLASS_PATH: {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         var resourceManager = new ClassPathResourceManager(classLoader, "assets");
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setMimeMappings(newMimeMappings());
-        return resourceHandler;
+        yield resourceHandler;
       }
       case FILE_SYSTEM: {
         Path assetsRoot = fileSystem.getPath("src/main/resources/assets");
@@ -64,11 +64,9 @@ public final class AssetsHandler {
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setMimeMappings(newMimeMappings());
         resourceHandler.setCacheTime(0);
-        return resourceHandler;
+        yield resourceHandler;
       }
-    }
-
-    throw new AssertionError("Unknown resource mode: " + config.mode);
+    };
   }
 
   private static MimeMappings newMimeMappings() {

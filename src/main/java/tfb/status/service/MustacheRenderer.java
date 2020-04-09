@@ -66,24 +66,22 @@ public final class MustacheRenderer {
     Objects.requireNonNull(config);
     Objects.requireNonNull(fileSystem);
 
-    switch (config.mode) {
-      case CLASS_PATH: {
+    return switch (config.mode) {
+      case CLASS_PATH -> {
         var resolver = new ClasspathResolver("mustache");
         var onlyFactory = new DefaultMustacheFactory(resolver);
-        return fileName -> onlyFactory.compile(fileName);
+        yield fileName -> onlyFactory.compile(fileName);
       }
-      case FILE_SYSTEM: {
+      case FILE_SYSTEM -> {
         Path mustacheRoot = fileSystem.getPath("src/main/resources/mustache");
         // FIXME: Use a version of Mustache that lets us avoid calling toFile(),
         //        which breaks on non-default file systems.
         var resolver = new FileSystemResolver(mustacheRoot.toFile());
-        return fileName -> {
+        yield fileName -> {
           var newFactory = new DefaultMustacheFactory(resolver);
           return newFactory.compile(fileName);
         };
       }
-    }
-
-    throw new AssertionError("Unknown resource mode: " + config.mode);
+    };
   }
 }
