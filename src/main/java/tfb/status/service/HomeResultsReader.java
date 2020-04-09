@@ -179,25 +179,28 @@ public final class HomeResultsReader implements PreDestroy {
 
   private @Nullable FileSummary readFile(Path file) {
     Objects.requireNonNull(file);
-    switch (MoreFiles.getFileExtension(file)) {
-      case "json":
+    return switch (MoreFiles.getFileExtension(file)) {
+      case "json" -> {
         try {
-          return readJsonFile(file);
+          yield readJsonFile(file);
         } catch (IOException e) {
           logger.warn("Exception reading results.json file {}", file, e);
-          return null;
+          yield null;
         }
-      case "zip":
+      }
+      case "zip" -> {
         try {
-          return readZipFile(file);
+          yield readZipFile(file);
         } catch (IOException e) {
           logger.warn("Exception reading results.zip file {}", file, e);
-          return null;
+          yield null;
         }
-      default:
+      }
+      default -> {
         logger.warn("Unknown format for results file {}", file);
-        return null;
-    }
+        yield null;
+      }
+    };
   }
 
   private FileSummary readJsonFile(Path jsonFile) throws IOException {

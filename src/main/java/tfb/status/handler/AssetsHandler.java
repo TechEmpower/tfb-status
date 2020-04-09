@@ -51,14 +51,14 @@ public final class AssetsHandler {
     Objects.requireNonNull(fileSystem);
 
     return switch (config.mode) {
-      case CLASS_PATH: {
+      case CLASS_PATH -> {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         var resourceManager = new ClassPathResourceManager(classLoader, "assets");
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setMimeMappings(newMimeMappings());
         yield resourceHandler;
       }
-      case FILE_SYSTEM: {
+      case FILE_SYSTEM -> {
         Path assetsRoot = fileSystem.getPath("src/main/resources/assets");
         var resourceManager = new PathResourceManager(assetsRoot);
         var resourceHandler = new ResourceHandler(resourceManager);
