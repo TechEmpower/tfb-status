@@ -1,6 +1,8 @@
 package tfb.status.handler;
 
 import static com.google.common.net.MediaType.JSON_UTF_8;
+import static com.google.common.net.UrlEscapers.urlFragmentEscaper;
+import static com.google.common.net.UrlEscapers.urlPathSegmentEscaper;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Headers.LOCATION;
 import static io.undertow.util.Methods.POST;
@@ -25,7 +27,6 @@ import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -218,12 +219,12 @@ public final class ShareUploadHandler implements HttpHandler {
       String resultsUrl =
           config.tfbStatusOrigin
               + "/share/download/"
-              + URLEncoder.encode(shareId + ".json", UTF_8);
+              + urlPathSegmentEscaper().escape(shareId + ".json");
 
       String visualizeResultsUrl =
           config.tfbWebsiteOrigin
-              + "/benchmarks/#section=test&shareid="
-              + URLEncoder.encode(shareId, UTF_8);
+              + "/benchmarks/#"
+              + urlFragmentEscaper().escape("section=test&shareid=" + shareId);
 
       return new ShareOutcome(
           new ShareSuccess(
