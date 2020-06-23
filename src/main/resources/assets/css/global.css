@@ -5,8 +5,27 @@ Styles for the entire site.
 */
 
 body {
-  margin: 2em;
+  margin: 2em 2em 0;
   font-family: "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
+}
+
+.global-nav {
+  margin: 2em -2em 0;
+  padding: 1em 2em;
+  background-image: linear-gradient(to bottom, #d1d2d5, #f1f2f5 5px, transparent);
+}
+
+.global-nav ul {
+  margin: -.5em -1em;
+  padding: 0;
+  list-style: none outside;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.global-nav li {
+  margin: .5em 1em;
 }
