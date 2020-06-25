@@ -107,6 +107,12 @@
       </ignoreVersions>
     </rule>
 
+    <rule groupId="org.glassfish.hk2" comparisonMethod="maven">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\-M[\d]+</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
   </rules>
 
 </ruleset>
