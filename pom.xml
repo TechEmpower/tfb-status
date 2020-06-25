@@ -30,7 +30,7 @@
     <greenmail.version>1.5.13</greenmail.version>
     <guava.version>29.0-jre</guava.version>
     <hk2.version>2.6.1</hk2.version>
-    <jackson.version>2.11.0</jackson.version>
+    <jackson.version>2.11.1</jackson.version>
     <jakarta-activation.version>1.2.2</jakarta-activation.version>
     <javamail.version>1.6.5</javamail.version>
     <jimfs.version>1.1</jimfs.version>
