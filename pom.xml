@@ -445,6 +445,7 @@
                    We last tried these checks in Error Prone 2.4.0. -->
               -Xep:FieldMissingNullable:OFF
               -Xep:UnnecessaryParentheses:OFF
+              -Xep:FallThrough:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
