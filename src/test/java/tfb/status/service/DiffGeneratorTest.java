@@ -6,12 +6,14 @@ import static tfb.status.testlib.MoreAssertions.assertHtmlDocument;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tfb.status.testlib.TestServicesInjector;
 import tfb.status.view.Results;
 import tfb.status.view.Results.RawData;
 import tfb.status.view.Results.SingleWrkExecution;
+import tfb.status.view.Results.TestTypeToFrameworks;
 
 /**
  * Tests for {@link DiffGenerator}.
@@ -48,6 +50,26 @@ public final class DiffGeneratorTest {
             /* fortune= */ null,
             /* cachedQuery= */ null);
 
+    var succeeded =
+        new TestTypeToFrameworks(
+            /* json= */ ImmutableSet.of(framework),
+            /* plaintext= */ null,
+            /* db= */ null,
+            /* query= */ null,
+            /* update= */ null,
+            /* fortune= */ null,
+            /* cachedQuery= */ null);
+
+    var failed =
+        new TestTypeToFrameworks(
+            /* json= */ null,
+            /* plaintext= */ null,
+            /* db= */ null,
+            /* query= */ null,
+            /* update= */ null,
+            /* fortune= */ null,
+            /* cachedQuery= */ null);
+
     var results =
         new Results(
             /* uuid= */ null,
@@ -56,10 +78,10 @@ public final class DiffGeneratorTest {
             /* startTime= */ null,
             /* completionTime= */ null,
             /* duration= */ 1,
-            /* frameworks= */ ImmutableList.of(framework),
+            /* frameworks= */ ImmutableSet.of(framework),
             /* completed= */ ImmutableMap.of(),
-            /* succeeded= */ ImmutableListMultimap.of(),
-            /* failed= */ ImmutableListMultimap.of(),
+            /* succeeded= */ succeeded,
+            /* failed= */ failed,
             /* rawData= */ rawData,
             /* queryIntervals= */ ImmutableList.of(1),
             /* concurrencyLevels= */ ImmutableList.of(1),

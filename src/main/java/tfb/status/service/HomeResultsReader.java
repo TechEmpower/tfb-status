@@ -2,6 +2,7 @@ package tfb.status.service;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.net.UrlEscapers.urlFragmentEscaper;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.reverseOrder;
@@ -10,9 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.io.MoreFiles;
@@ -224,7 +225,8 @@ public final class HomeResultsReader implements PreDestroy {
         /* results= */ results,
         /* fileName= */ fileName,
         /* lastUpdated= */ lastModifiedTime.toInstant(),
-        /* backupCommitId= */ null);
+        /* backupCommitId= */ null,
+        /* hasTestMetadataFile= */ false);
   }
 
   private @Nullable FileSummary readZipFile(Path zipFile) throws IOException {
@@ -264,7 +266,7 @@ public final class HomeResultsReader implements PreDestroy {
     String backupCommitId;
     if (results.git != null)
       backupCommitId = null;
-    else {
+    else
       backupCommitId =
           ZipFiles.readZipEntry(
               /* zipFile= */ zipFile,
@@ -276,19 +278,34 @@ public final class HomeResultsReader implements PreDestroy {
                   return br.readLine();
                 }
               });
-    }
+
+    // If the results.json doesn't contain the test metadata, then search for a
+    // test_metadata.json file.  We used to capture the test metadata in its own
+    // file before we added it to results.json.
+    boolean hasTestMetadataFile;
+    if (results.testMetadata != null)
+      hasTestMetadataFile = false;
+    else
+      hasTestMetadataFile =
+          ZipFiles.readZipEntry(
+              /* zipFile= */ zipFile,
+              /* entryPath= */ "test_metadata.json",
+              /* entryReader= */ inputStream -> "not null")
+              != null;
 
     return summarizeResults(
         /* results= */ results,
         /* fileName= */ fileName,
         /* lastUpdated= */ lastModifiedTime.toInstant(),
-        /* backupCommitId= */ backupCommitId);
+        /* backupCommitId= */ backupCommitId,
+        /* hasTestMetadataFile= */ hasTestMetadataFile);
   }
 
   private FileSummary summarizeResults(Results results,
                                        String fileName,
                                        Instant lastUpdated,
-                                       @Nullable String backupCommitId) {
+                                       @Nullable String backupCommitId,
+                                       boolean hasTestMetadataFile) {
 
     Objects.requireNonNull(results);
     Objects.requireNonNull(fileName);
@@ -317,15 +334,34 @@ public final class HomeResultsReader implements PreDestroy {
         frameworksWithCleanSetup + frameworksWithSetupProblems;
 
     int totalFrameworks = results.frameworks.size();
-    int successfulTests = results.succeeded.values().size();
-    int failedTests = results.failed.values().size();
+    int successfulTests = 0;
+    int failedTests = 0;
 
-    for (String testType : Results.TEST_TYPES) {
+    SetMultimap<String, Results.TestType> frameworkToFailedTestTypes =
+        MultimapBuilder.hashKeys()
+                       .enumSetValues(Results.TestType.class)
+                       .build();
+
+    for (Results.TestType testType : Results.TestType.values()) {
       for (String framework : results.frameworks) {
-        if (results.succeeded.containsEntry(testType, framework)
-            && results.requests(testType, framework) == 0) {
-          successfulTests--;
-          failedTests++;
+        switch (results.testOutcome(testType, framework)) {
+          case FAILED -> {
+            failedTests++;
+            frameworkToFailedTestTypes.put(framework, testType);
+          }
+
+          case SUCCEEDED -> successfulTests++;
+
+          case NOT_IMPLEMENTED_OR_NOT_YET_TESTED -> {} // Do nothing.
+
+          default ->
+              throw new AssertionError(
+                  "Unknown test outcome "
+                      + results.testOutcome(testType, framework)
+                      + " for framework "
+                      + framework
+                      + " and test type "
+                      + testType);
         }
       }
     }
@@ -354,19 +390,10 @@ public final class HomeResultsReader implements PreDestroy {
       branchName = results.git.branchName;
     }
 
+    boolean hasTestMetadata =
+        results.testMetadata != null || hasTestMetadataFile;
+
     var failures = new ArrayList<Failure>();
-
-    SetMultimap<String, String> frameworkToFailedTestTypes =
-        HashMultimap.create(results.failed.inverse());
-
-    for (String testType : Results.TEST_TYPES) {
-      for (String framework : results.frameworks) {
-        if (results.succeeded.containsEntry(testType, framework)
-            && results.requests(testType, framework) == 0) {
-          frameworkToFailedTestTypes.put(framework, testType);
-        }
-      }
-    }
 
     var frameworksWithSetupIssues = new HashSet<String>();
 
@@ -380,14 +407,24 @@ public final class HomeResultsReader implements PreDestroy {
     for (String framework : Sets.union(frameworkToFailedTestTypes.keySet(),
                                        frameworksWithSetupIssues)) {
 
-      Set<String> failedTestTypes = frameworkToFailedTestTypes.get(framework);
+      Set<Results.TestType> failedTestTypes =
+          frameworkToFailedTestTypes.get(framework);
+
       boolean hadSetupProblems = frameworksWithSetupIssues.contains(framework);
 
       failures.add(
           new Failure(
-              /* framework= */ framework,
-              /* failedTestTypes= */ ImmutableList.sortedCopyOf(failedTestTypes),
-              /* hadSetupProblems= */ hadSetupProblems));
+              /* framework= */
+              framework,
+
+              /* failedTestTypes= */
+              failedTestTypes
+                  .stream()
+                  .map(testType -> testType.serialize())
+                  .collect(toImmutableList()),
+
+              /* hadSetupProblems= */
+              hadSetupProblems));
     }
 
     failures.sort(comparing(failure -> failure.framework,
@@ -410,6 +447,7 @@ public final class HomeResultsReader implements PreDestroy {
         /* totalFrameworks= */ totalFrameworks,
         /* successfulTests= */ successfulTests,
         /* failedTests= */ failedTests,
+        /* hasTestMetadata= */ hasTestMetadata,
         /* failures= */ ImmutableList.copyOf(failures));
   }
 
@@ -564,6 +602,17 @@ public final class HomeResultsReader implements PreDestroy {
             ? null
             : mostRecentZip.fileName;
 
+    String visualizeResultsUrl;
+    if (uuid != null
+        && ((mostRecentJson != null && mostRecentJson.hasTestMetadata)
+            || (mostRecentZip != null && mostRecentZip.hasTestMetadata)))
+      visualizeResultsUrl =
+          // TODO: Make this origin configurable?
+          "https://www.techempower.com/benchmarks/#"
+              + urlFragmentEscaper().escape("section=test&runid=" + uuid);
+    else
+      visualizeResultsUrl = null;
+
     return new ResultsView(
         /* uuid= */ uuid,
         /* name= */ name,
@@ -587,7 +636,8 @@ public final class HomeResultsReader implements PreDestroy {
         /* browseBranchUrl= */ browseBranchUrl,
         /* failures= */ failures,
         /* jsonFileName= */ jsonFileName,
-        /* zipFileName= */ zipFileName);
+        /* zipFileName= */ zipFileName,
+        /* visualizeResultsUrl= */ visualizeResultsUrl);
   }
 
   /**
@@ -703,6 +753,7 @@ public final class HomeResultsReader implements PreDestroy {
     final int totalFrameworks;
     final int successfulTests;
     final int failedTests;
+    final boolean hasTestMetadata;
     // TODO: Avoid sharing the Failure data type with HomePageView?
     final ImmutableList<Failure> failures;
 
@@ -722,6 +773,7 @@ public final class HomeResultsReader implements PreDestroy {
                 int totalFrameworks,
                 int successfulTests,
                 int failedTests,
+                boolean hasTestMetadata,
                 ImmutableList<Failure> failures) {
 
       this.fileName = Objects.requireNonNull(fileName);
@@ -740,6 +792,7 @@ public final class HomeResultsReader implements PreDestroy {
       this.totalFrameworks = totalFrameworks;
       this.successfulTests = successfulTests;
       this.failedTests = failedTests;
+      this.hasTestMetadata = hasTestMetadata;
       this.failures = Objects.requireNonNull(failures);
     }
   }

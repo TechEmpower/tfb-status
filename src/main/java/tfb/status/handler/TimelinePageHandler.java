@@ -18,6 +18,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -80,15 +82,17 @@ public final class TimelinePageHandler implements HttpHandler {
     }
 
     String selectedFramework = matcher.group("framework");
-    String selectedTestType = matcher.group("testType");
 
-    if (!Results.TEST_TYPES.contains(selectedTestType)) {
+    Results.TestType selectedTestType =
+        Results.TestType.deserialize(matcher.group("testType"));
+
+    if (selectedTestType == null) {
       exchange.setStatusCode(NOT_FOUND);
       return;
     }
 
     var allFrameworks = new HashSet<String>();
-    var missingTestTypes = new HashSet<String>(Results.TEST_TYPES);
+    var missingTestTypes = EnumSet.allOf(Results.TestType.class);
     var dataPoints = new ArrayList<DataPointView>();
 
     try (DirectoryStream<Path> zipFiles =
@@ -159,15 +163,15 @@ public final class TimelinePageHandler implements HttpHandler {
     dataPoints.sort(comparing(dataPoint -> dataPoint.time));
 
     ImmutableList<TestTypeOptionView> testTypeOptions =
-        Results.TEST_TYPES
-            .stream()
+        Arrays
+            .stream(Results.TestType.values())
             .sorted()
             .map(
                 testType ->
                     new TestTypeOptionView(
-                        /* testType= */ testType,
+                        /* testType= */ testType.serialize(),
                         /* isPresent= */ !missingTestTypes.contains(testType),
-                        /* isSelected= */ testType.equals(selectedTestType)))
+                        /* isSelected= */ testType == selectedTestType))
             .collect(toImmutableList());
 
     ImmutableList<FrameworkOptionView> frameworkOptions =
@@ -184,7 +188,7 @@ public final class TimelinePageHandler implements HttpHandler {
     var timelinePageView =
         new TimelinePageView(
             /* framework= */ selectedFramework,
-            /* testType= */ selectedTestType,
+            /* testType= */ selectedTestType.serialize(),
             /* dataPoints= */ ImmutableList.copyOf(dataPoints),
             /* testTypeOptions= */ testTypeOptions,
             /* frameworkOptions= */ frameworkOptions);

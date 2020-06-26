@@ -62,6 +62,7 @@ public final class HomePageView {
     public final ImmutableList<Failure> failures;
     public final @Nullable String jsonFileName;
     public final @Nullable String zipFileName;
+    public final @Nullable String visualizeResultsUrl;
 
     @JsonCreator
     public ResultsView(
@@ -133,7 +134,10 @@ public final class HomePageView {
         @Nullable String jsonFileName,
 
         @JsonProperty(value = "zipFileName", required = true)
-        @Nullable String zipFileName) {
+        @Nullable String zipFileName,
+
+        @JsonProperty(value = "visualizeResultsUrl", required = true)
+        @Nullable String visualizeResultsUrl) {
 
       this.uuid = uuid;
       this.name = name;
@@ -158,6 +162,7 @@ public final class HomePageView {
       this.failures = Objects.requireNonNull(failures);
       this.jsonFileName = jsonFileName;
       this.zipFileName = zipFileName;
+      this.visualizeResultsUrl = visualizeResultsUrl;
     }
 
     // Provide backwards compatibility with the TFB website, which reads the

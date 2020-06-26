@@ -14,9 +14,9 @@
       <br>
     {{/commitId}}
     <a href="/results/{{uuid}}">details</a><br>
-    {{#zipFileName}}
-      <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">visualize</a><br>
-    {{/zipFileName}}
+    {{#visualizeResultsUrl}}
+      <a href="{{visualizeResultsUrl}}">visualize</a><br>
+    {{/visualizeResultsUrl}}
   {{/uuid}}
 <td>
   {{completedFrameworks}}/{{totalFrameworks}} frameworks tested<br>

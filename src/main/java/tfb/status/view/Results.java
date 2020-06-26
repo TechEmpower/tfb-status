@@ -2,9 +2,11 @@ package tfb.status.view;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -71,7 +73,7 @@ public final class Results {
   /**
    * The names of the frameworks in the run.
    */
-  public final ImmutableList<String> frameworks;
+  public final ImmutableSet<String> frameworks;
 
   /**
    * The mapping of framework names to the times their tests completed.
@@ -79,20 +81,26 @@ public final class Results {
   public final ImmutableMap<String, String> completed;
 
   /**
-   * The mapping of test types to the list of frameworks that succeeded at that
-   * test type in this run.
+   * Maps test types to the names of the frameworks that succeeded at that test
+   * type in this run.
+   *
+   * <p>This mapping does not take into account whether the framework achieved
+   * at least one request during the test.
    */
-  public final ImmutableListMultimap<String, String> succeeded;
+  public final TestTypeToFrameworks succeeded;
 
   /**
-   * The mapping of test types to the list of frameworks that failed at that
-   * test type in this run.
+   * Maps test types to the names of the frameworks that failed at that test
+   * type in this run.
+   *
+   * <p>This mapping does not take into account whether the framework achieved
+   * at least one request during the test.
    */
-  public final ImmutableListMultimap<String, String> failed;
+  public final TestTypeToFrameworks failed;
 
   /**
-   * Maps test type names and framework names to the list of raw results for
-   * that test type and framework.
+   * Maps test types and framework names to the list of raw results for that
+   * test type and framework.
    */
   public final RawData rawData;
 
@@ -149,16 +157,16 @@ public final class Results {
       long duration,
 
       @JsonProperty(value = "frameworks", required = true)
-      ImmutableList<String> frameworks,
+      ImmutableSet<String> frameworks,
 
       @JsonProperty(value = "completed", required = true)
       ImmutableMap<String, String> completed,
 
       @JsonProperty(value = "succeeded", required = true)
-      ImmutableListMultimap<String, String> succeeded,
+      TestTypeToFrameworks succeeded,
 
       @JsonProperty(value = "failed", required = true)
-      ImmutableListMultimap<String, String> failed,
+      TestTypeToFrameworks failed,
 
       @JsonProperty(value = "rawData", required = true)
       RawData rawData,
@@ -195,7 +203,7 @@ public final class Results {
   /**
    * Returns the total number of requests achieved by a framework in a test.
    */
-  public long requests(String testType, String framework) {
+  public long requests(TestType testType, String framework) {
     Objects.requireNonNull(testType);
     Objects.requireNonNull(framework);
 
@@ -208,7 +216,7 @@ public final class Results {
       // from the client) and then use the highest total requests from any
       // concurrency level.
       //
-      case "json", "plaintext", "db", "fortune" ->
+      case JSON, PLAINTEXT, DB, FORTUNE ->
           executions.stream()
                     .mapToLong(execution -> execution.successfulRequests())
                     .max()
@@ -218,20 +226,18 @@ public final class Results {
       // request and then use the total requests of the wrk execution for the
       // highest number of queries, which is the last execution in the list.
       //
-      case "query", "update", "cached_query" ->
+      case QUERY, UPDATE, CACHED_QUERY ->
           executions.isEmpty()
               ? 0
               : executions.get(executions.size() - 1)
                           .successfulRequests();
-
-      default -> 0;
     };
   }
 
   /**
    * Returns the requests per second achieved by a framework in a test.
    */
-  public double rps(String testType, String framework) {
+  public double rps(TestType testType, String framework) {
     Objects.requireNonNull(testType);
     Objects.requireNonNull(framework);
     long requests = requests(testType, framework);
@@ -239,8 +245,133 @@ public final class Results {
   }
 
   /**
-   * Maps test type names and framework names to the list of raw results for
-   * that test type and framework.
+   * Returns a {@link TestOutcome} describing what happened for the specified
+   * framework in the specified test type in this run.
+   */
+  public TestOutcome testOutcome(TestType testType, String framework) {
+    Objects.requireNonNull(testType);
+    Objects.requireNonNull(framework);
+
+    if (failed.contains(testType, framework))
+      return TestOutcome.FAILED;
+
+    if (succeeded.contains(testType, framework))
+      return (requests(testType, framework) == 0)
+          ? TestOutcome.FAILED
+          : TestOutcome.SUCCEEDED;
+
+    return TestOutcome.NOT_IMPLEMENTED_OR_NOT_YET_TESTED;
+  }
+
+  /**
+   * A high-level description of what happened for a particular [framework, test
+   * type] combination in a run.
+   */
+  public enum TestOutcome {
+    /**
+     * This framework succeeded at achieving at least one request in this test
+     * type.
+     */
+    SUCCEEDED,
+
+    /**
+     * This framework failed to achieve at least one request in this test type.
+     * Possible reasons for this failure include: the framework did not start;
+     * the framework started but it failed validation for this test type; the
+     * framework passed validation but did not respond to any requests during
+     * the tests.
+     */
+    FAILED,
+
+    /**
+     * This framework did not implement this test type, or this [framework, test
+     * type] combination has not yet been tested in this run.
+     */
+    NOT_IMPLEMENTED_OR_NOT_YET_TESTED
+  }
+
+  /**
+   * A mapping of test types to names of frameworks.
+   */
+  @Immutable
+  public static final class TestTypeToFrameworks {
+    public final @Nullable ImmutableSet<String> json;
+    public final @Nullable ImmutableSet<String> plaintext;
+    public final @Nullable ImmutableSet<String> db;
+    public final @Nullable ImmutableSet<String> query;
+    public final @Nullable ImmutableSet<String> update;
+    public final @Nullable ImmutableSet<String> fortune;
+
+    @JsonProperty("cached_query")
+    public final @Nullable ImmutableSet<String> cachedQuery;
+
+    @JsonCreator
+    public TestTypeToFrameworks(
+
+        @JsonProperty(value = "json", required = false)
+        @Nullable ImmutableSet<String> json,
+
+        @JsonProperty(value = "plaintext", required = false)
+        @Nullable ImmutableSet<String> plaintext,
+
+        @JsonProperty(value = "db", required = false)
+        @Nullable ImmutableSet<String> db,
+
+        @JsonProperty(value = "query", required = false)
+        @Nullable ImmutableSet<String> query,
+
+        @JsonProperty(value = "update", required = false)
+        @Nullable ImmutableSet<String> update,
+
+        @JsonProperty(value = "fortune", required = false)
+        @Nullable ImmutableSet<String> fortune,
+
+        @JsonProperty(value = "cached_query", required = false)
+        @JsonAlias("cached-query")
+        @Nullable ImmutableSet<String> cachedQuery) {
+
+      this.json = json;
+      this.plaintext = plaintext;
+      this.db = db;
+      this.query = query;
+      this.update = update;
+      this.fortune = fortune;
+      this.cachedQuery = cachedQuery;
+    }
+
+    /**
+     * Returns the names of the frameworks associated with the specified test
+     * type in this mapping.
+     */
+    ImmutableSet<String> get(TestType testType) {
+      Objects.requireNonNull(testType);
+      ImmutableSet<String> frameworks =
+          switch (testType) {
+            case JSON -> json;
+            case PLAINTEXT -> plaintext;
+            case DB -> db;
+            case QUERY -> query;
+            case UPDATE -> update;
+            case FORTUNE -> fortune;
+            case CACHED_QUERY -> cachedQuery;
+          };
+      return (frameworks == null) ? ImmutableSet.of() : frameworks;
+    }
+
+    /**
+     * Returns {@code true} if the specified framework and test type are
+     * associated in this mapping.
+     */
+    boolean contains(TestType testType, String framework) {
+      Objects.requireNonNull(testType);
+      Objects.requireNonNull(framework);
+      return get(testType).contains(framework);
+    }
+  }
+
+  /**
+   * Maps test types and framework names to the list of raw results for that
+   * test type and framework.
    */
   @Immutable
   public static final class RawData {
@@ -256,6 +387,11 @@ public final class Results {
 
     @JsonCreator
     public RawData(
+
+        // Note: The incoming data cannot be represented as a Map<TestType, ?>
+        //       because its keys are not exclusively test types.  The incoming
+        //       data also contains "slocCounts" and "commitCounts" keys whose
+        //       values are structured differently than the test types' values.
 
         @JsonProperty(value = "json", required = false)
         @Nullable ImmutableListMultimap<String, SingleWrkExecution> json,
@@ -276,6 +412,7 @@ public final class Results {
         @Nullable ImmutableListMultimap<String, SingleWrkExecution> fortune,
 
         @JsonProperty(value = "cached_query", required = false)
+        @JsonAlias("cached-query")
         @Nullable ImmutableListMultimap<String, SingleWrkExecution> cachedQuery) {
 
       this.json = json;
@@ -291,17 +428,17 @@ public final class Results {
      * Extracts the raw results data for the given test type, grouping by
      * framework (the keys of the returned multimap are framework names).
      */
-    ImmutableListMultimap<String, SingleWrkExecution> get(String testType) {
+    ImmutableListMultimap<String, SingleWrkExecution> get(TestType testType) {
+      Objects.requireNonNull(testType);
       ImmutableListMultimap<String, SingleWrkExecution> m =
           switch (testType) {
-            case "json" -> json;
-            case "plaintext" -> plaintext;
-            case "db" -> db;
-            case "query" -> query;
-            case "update" -> update;
-            case "fortune" -> fortune;
-            case "cached_query" -> cachedQuery;
-            default -> null;
+            case JSON -> json;
+            case PLAINTEXT -> plaintext;
+            case DB -> db;
+            case QUERY -> query;
+            case UPDATE -> update;
+            case FORTUNE -> fortune;
+            case CACHED_QUERY -> cachedQuery;
           };
       return (m == null) ? ImmutableListMultimap.of() : m;
     }
@@ -309,7 +446,9 @@ public final class Results {
     /**
      * Extracts the raw results data for the given test type and framework.
      */
-    ImmutableList<SingleWrkExecution> get(String testType, String framework) {
+    ImmutableList<SingleWrkExecution> get(TestType testType, String framework) {
+      Objects.requireNonNull(testType);
+      Objects.requireNonNull(framework);
       return get(testType).get(framework);
     }
   }
@@ -402,14 +541,82 @@ public final class Results {
   }
 
   /**
-   * The set of all known test types.
+   * A type of test in TFB.  Support for each test type is hardcoded into the
+   * TFB toolset and TFB website.  The set of test types in TFB changes very
+   * infrequently.
    */
-  public static final ImmutableSet<String> TEST_TYPES =
-      ImmutableSet.of("json",
-                      "plaintext",
-                      "db",
-                      "query",
-                      "update",
-                      "fortune",
-                      "cached_query");
+  // Be careful with this enum when deserializing results.json files.  This enum
+  // does not provide a way to represent new/unknown test types, and we don't
+  // want to throw exceptions when parsing results.json files that contain
+  // new/unknown test types.
+  public enum TestType {
+    // These enum constants are arranged in the same order as the test type tabs
+    // on the TFB website.
+
+    JSON("json"),
+    DB("db"),
+    QUERY("query"),
+
+    // We decided to rename the "cached_query" test type to "cached-query" on
+    // June 24, 2020.  As of this writing, that change has not yet been made.
+    // Even after that change is made, this application will continue to support
+    // both names forever.  In the timeline view, for example, we want to be
+    // able to plot "cached_query" data from older results.json files alongside
+    // "cached-query" data from newer results.json files.
+    CACHED_QUERY("cached_query", "cached-query"),
+
+    FORTUNE("fortune"),
+    UPDATE("update"),
+    PLAINTEXT("plaintext");
+
+    /**
+     * The name of this test type as it appears in results.json files.
+     */
+    private final String canonicalName;
+
+    /**
+     * Alternative or historical names for this test type, provided for
+     * compatibility when this test type was or will be renamed.
+     */
+    private final ImmutableSet<String> aliases;
+
+    TestType(String canonicalName, String... aliases) {
+      this.canonicalName = Objects.requireNonNull(canonicalName);
+      this.aliases = ImmutableSet.copyOf(aliases);
+    }
+
+    /**
+     * The name of this test type as it appears in results.json files.
+     */
+    @JsonValue
+    public String serialize() {
+      return canonicalName;
+    }
+
+    /**
+     * Returns the test type represented by the specified string, or {@code
+     * null} if there is no such test type.  Supports alternative/historical
+     * names of test types.
+     *
+     * @param serializedName the name of this test type as it appears in
+     *        results.json files
+     */
+    @JsonCreator
+    public static @Nullable TestType deserialize(String serializedName) {
+      Objects.requireNonNull(serializedName);
+      return BY_SERIALIZED_NAME.get(serializedName);
+    }
+
+    private static final ImmutableMap<String, TestType> BY_SERIALIZED_NAME;
+    static {
+      var builder = new ImmutableMap.Builder<String, TestType>();
+      for (TestType testType : values()) {
+        builder.put(testType.canonicalName, testType);
+        for (String alias : testType.aliases) {
+          builder.put(alias, testType);
+        }
+      }
+      BY_SERIALIZED_NAME = builder.build();
+    }
+  }
 }

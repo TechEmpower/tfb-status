@@ -18,9 +18,9 @@ The HTML of the results detail page.
 
 {{#uuid}}
   Run ID: <code>{{uuid}}</code><br>
-  {{#zipFileName}}
-    <a href="https://www.techempower.com/benchmarks/#section=test&runid={{uuid}}">Visualize this run on the TFB website</a><br>
-  {{/zipFileName}}
+  {{#visualizeResultsUrl}}
+    <a href="{{visualizeResultsUrl}}">Visualize this run on the TFB website</a><br>
+  {{/visualizeResultsUrl}}
 {{/uuid}}
 
 {{#commitId}}

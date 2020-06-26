@@ -46,7 +46,7 @@ public final class DiffGenerator {
 
     var lines = new ArrayList<DiffLine>();
     for (String framework : distinctFrameworks) {
-      for (String testType : Results.TEST_TYPES) {
+      for (Results.TestType testType : Results.TestType.values()) {
         double oldRps = oldResults.rps(testType, framework);
         double newRps = newResults.rps(testType, framework);
         if (oldRps != 0d || newRps != 0d) {
@@ -124,7 +124,7 @@ public final class DiffGenerator {
           new DiffLineView(
               /* addedOrRemoved= */ addedOrRemovedText,
               /* framework= */ line.framework,
-              /* testType= */ line.testType,
+              /* testType= */ line.testType.serialize(),
               /* oldRps= */ integerFormat.format(line.oldRps),
               /* newRps= */ integerFormat.format(line.newRps),
               /* rpsChange= */ rpsChangeText));
@@ -141,11 +141,15 @@ public final class DiffGenerator {
   @Immutable
   private static final class DiffLine {
     final String framework;
-    final String testType;
+    final Results.TestType testType;
     final double oldRps;
     final double newRps;
 
-    DiffLine(String framework, String testType, double oldRps, double newRps) {
+    DiffLine(String framework,
+             Results.TestType testType,
+             double oldRps,
+             double newRps) {
+
       this.framework = Objects.requireNonNull(framework);
       this.testType = Objects.requireNonNull(testType);
       this.oldRps = oldRps;
