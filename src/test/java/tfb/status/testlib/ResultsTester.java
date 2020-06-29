@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteSource;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -119,8 +120,11 @@ public final class ResultsTester {
   /**
    * Saves the results.json file for these results to the {@link
    * FileStore#resultsDirectory()}.
+   *
+   * @return the path to the new results.json file
    */
-  public void saveJsonToResultsDirectory(Results results) throws IOException {
+  @CanIgnoreReturnValue
+  public Path saveJsonToResultsDirectory(Results results) throws IOException {
     Objects.requireNonNull(results);
 
     String fileName =
@@ -130,6 +134,7 @@ public final class ResultsTester {
 
     Path file = fileStore.resultsDirectory().resolve(fileName);
     saveJsonToFile(results, file);
+    return file;
   }
 
   /**
@@ -147,8 +152,11 @@ public final class ResultsTester {
   /**
    * Saves the results.zip file for these results to the {@link
    * FileStore#resultsDirectory()}.
+   *
+   * @return the path to the new results.zip file
    */
-  public void saveZipToResultsDirectory(Results results) throws IOException {
+  @CanIgnoreReturnValue
+  public Path saveZipToResultsDirectory(Results results) throws IOException {
     Objects.requireNonNull(results);
 
     String fileName =
@@ -158,6 +166,7 @@ public final class ResultsTester {
 
     Path file = fileStore.resultsDirectory().resolve(fileName);
     saveZipToFile(results, file);
+    return file;
   }
 
   /**

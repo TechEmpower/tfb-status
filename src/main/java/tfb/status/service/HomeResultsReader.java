@@ -10,6 +10,7 @@ import static java.util.Comparator.reverseOrder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -526,29 +527,24 @@ public final class HomeResultsReader implements PreDestroy {
                          .dividedBy(completedFrameworks)
                          .minus(elapsedDuration);
 
-    DateTimeFormatter displayedTimeFormatter =
-        DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd 'at' h:mm a",
-            Locale.ROOT);
-
     String startTimeString =
         (startTime == null)
             ? null
             : startTime.atZone(clock.getZone())
                        .toLocalDateTime()
-                       .format(displayedTimeFormatter);
+                       .format(DISPLAYED_TIME_FORMATTER);
 
     String completionTimeString =
         (completionTime == null)
             ? null
             : completionTime.atZone(clock.getZone())
                             .toLocalDateTime()
-                            .format(displayedTimeFormatter);
+                            .format(DISPLAYED_TIME_FORMATTER);
 
     String lastUpdatedString =
         lastUpdated.atZone(clock.getZone())
                    .toLocalDateTime()
-                   .format(displayedTimeFormatter);
+                   .format(DISPLAYED_TIME_FORMATTER);
 
     // TODO: Don't display huge durations when it looks like the run is defunct.
 
@@ -847,6 +843,10 @@ public final class HomeResultsReader implements PreDestroy {
 
   private static final DateTimeFormatter COMPLETED_TIMESTAMP_FORMATTER =
       DateTimeFormatter.ofPattern("yyyyMMddHHmmss", Locale.ROOT);
+
+  @VisibleForTesting
+  static final DateTimeFormatter DISPLAYED_TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd 'at' h:mm a", Locale.ROOT);
 
   /**
    * The ordering of results displayed on the home page.
