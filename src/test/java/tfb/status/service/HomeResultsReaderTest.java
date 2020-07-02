@@ -148,13 +148,13 @@ public final class HomeResultsReaderTest {
                                                   ResultsTester resultsTester)
       throws IOException {
 
-    var results = resultsTester.newResults();
+    Results results = resultsTester.newResults();
     assertNotNull(results.uuid);
     assertNotNull(results.testMetadata);
 
     resultsTester.saveJsonToResultsDirectory(results);
 
-    var view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
     assertNotNull(view);
     assertNotNull(view.visualizeResultsUrl);
   }
@@ -168,15 +168,13 @@ public final class HomeResultsReaderTest {
                                                     ResultsTester resultsTester)
       throws IOException {
 
-    var template = resultsTester.newResults();
-
-    var results = newResultsWithoutMetadata(resultsTester);
+    Results results = newResultsWithoutMetadata(resultsTester);
     assertNotNull(results.uuid);
     assertNull(results.testMetadata);
 
     resultsTester.saveJsonToResultsDirectory(results);
 
-    var view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
     assertNotNull(view);
     assertNull(view.visualizeResultsUrl);
   }
@@ -191,7 +189,7 @@ public final class HomeResultsReaderTest {
                                                               ResultsTester resultsTester)
       throws IOException {
 
-    var results = resultsTester.newResults();
+    Results results = resultsTester.newResults();
     assertNotNull(results.uuid);
     assertNotNull(results.testMetadata);
 
@@ -210,7 +208,7 @@ public final class HomeResultsReaderTest {
         /* ifAbsent= */
         () -> fail("test_metadata.json file must be present"));
 
-    var view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
     assertNotNull(view);
     assertNotNull(view.visualizeResultsUrl);
   }
@@ -225,7 +223,7 @@ public final class HomeResultsReaderTest {
                                                      ResultsTester resultsTester)
       throws IOException {
 
-    var results = newResultsWithoutMetadata(resultsTester);
+    Results results = newResultsWithoutMetadata(resultsTester);
     assertNotNull(results.uuid);
     assertNull(results.testMetadata);
 
@@ -244,7 +242,7 @@ public final class HomeResultsReaderTest {
         /* ifAbsent= */
         () -> fail("test_metadata.json file must be present"));
 
-    var view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
     assertNotNull(view);
     assertNotNull(view.visualizeResultsUrl);
   }
@@ -259,7 +257,7 @@ public final class HomeResultsReaderTest {
                                                    ResultsTester resultsTester)
       throws IOException {
 
-    var results = newResultsWithoutMetadata(resultsTester);
+    Results results = newResultsWithoutMetadata(resultsTester);
     assertNotNull(results.uuid);
     assertNull(results.testMetadata);
 
@@ -278,7 +276,7 @@ public final class HomeResultsReaderTest {
         /* ifAbsent= */
         () -> fail("test_metadata.json file must be present"));
 
-    var view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
     assertNotNull(view);
     assertNull(view.visualizeResultsUrl);
   }
@@ -286,7 +284,7 @@ public final class HomeResultsReaderTest {
   private static Results newResultsWithoutMetadata(ResultsTester resultsTester)
       throws IOException {
 
-    var template = resultsTester.newResults();
+    Results template = resultsTester.newResults();
 
     return new Results(
         /* uuid= */ template.uuid,
