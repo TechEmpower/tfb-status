@@ -94,4 +94,49 @@ public final class TestDefinition {
     this.versus = versus;
     this.webserver = Objects.requireNonNull(webserver);
   }
+
+  @Override
+  public boolean equals(@Nullable Object object) {
+    if (object == this) {
+      return true;
+    } else if (!(object instanceof TestDefinition)) {
+      return false;
+    } else {
+      TestDefinition that = (TestDefinition) object;
+      return this.approach.equals(that.approach)
+          && this.classification.equals(that.classification)
+          && this.database.equals(that.database)
+          && this.databaseOs.equals(that.databaseOs)
+          && this.framework.equals(that.framework)
+          && this.language.equals(that.language)
+          && this.orm.equals(that.orm)
+          && this.os.equals(that.os)
+          && this.platform.equals(that.platform)
+          && this.displayName.equals(that.displayName)
+          && this.name.equals(that.name)
+          && this.notes.equals(that.notes)
+          && Objects.equals(this.versus, that.versus)
+          && this.webserver.equals(that.webserver);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = 1;
+    hash = 31 * hash + approach.hashCode();
+    hash = 31 * hash + classification.hashCode();
+    hash = 31 * hash + database.hashCode();
+    hash = 31 * hash + databaseOs.hashCode();
+    hash = 31 * hash + framework.hashCode();
+    hash = 31 * hash + language.hashCode();
+    hash = 31 * hash + orm.hashCode();
+    hash = 31 * hash + os.hashCode();
+    hash = 31 * hash + platform.hashCode();
+    hash = 31 * hash + displayName.hashCode();
+    hash = 31 * hash + name.hashCode();
+    hash = 31 * hash + notes.hashCode();
+    hash = 31 * hash + Objects.hashCode(versus);
+    hash = 31 * hash + webserver.hashCode();
+    return hash;
+  }
 }

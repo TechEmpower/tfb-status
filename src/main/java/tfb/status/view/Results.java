@@ -263,6 +263,53 @@ public final class Results {
     return TestOutcome.NOT_IMPLEMENTED_OR_NOT_YET_TESTED;
   }
 
+  @Override
+  public boolean equals(@Nullable Object object) {
+    if (object == this) {
+      return true;
+    } else if (!(object instanceof Results)) {
+      return false;
+    } else {
+      Results that = (Results) object;
+      return this.duration == that.duration
+          && Objects.equals(this.uuid, that.uuid)
+          && Objects.equals(this.name, that.name)
+          && Objects.equals(this.environmentDescription, that.environmentDescription)
+          && Objects.equals(this.startTime, that.startTime)
+          && Objects.equals(this.completionTime, that.completionTime)
+          && this.frameworks.equals(that.frameworks)
+          && this.completed.equals(that.completed)
+          && this.succeeded.equals(that.succeeded)
+          && this.failed.equals(that.failed)
+          && this.rawData.equals(that.rawData)
+          && this.queryIntervals.equals(that.queryIntervals)
+          && this.concurrencyLevels.equals(that.concurrencyLevels)
+          && Objects.equals(this.git, that.git)
+          && Objects.equals(this.testMetadata, that.testMetadata);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = 1;
+    hash = 31 * hash + Objects.hashCode(uuid);
+    hash = 31 * hash + Objects.hashCode(name);
+    hash = 31 * hash + Objects.hashCode(environmentDescription);
+    hash = 31 * hash + Objects.hashCode(startTime);
+    hash = 31 * hash + Objects.hashCode(completionTime);
+    hash = 31 * hash + Long.hashCode(duration);
+    hash = 31 * hash + frameworks.hashCode();
+    hash = 31 * hash + completed.hashCode();
+    hash = 31 * hash + succeeded.hashCode();
+    hash = 31 * hash + failed.hashCode();
+    hash = 31 * hash + rawData.hashCode();
+    hash = 31 * hash + queryIntervals.hashCode();
+    hash = 31 * hash + concurrencyLevels.hashCode();
+    hash = 31 * hash + Objects.hashCode(git);
+    hash = 31 * hash + Objects.hashCode(testMetadata);
+    return hash;
+  }
+
   /**
    * A high-level description of what happened for a particular [framework, test
    * type] combination in a run.
@@ -367,6 +414,37 @@ public final class Results {
       Objects.requireNonNull(framework);
       return get(testType).contains(framework);
     }
+
+    @Override
+    public boolean equals(@Nullable Object object) {
+      if (object == this) {
+        return true;
+      } else if (!(object instanceof TestTypeToFrameworks)) {
+        return false;
+      } else {
+        TestTypeToFrameworks that = (TestTypeToFrameworks) object;
+        return Objects.equals(this.json, that.json)
+            && Objects.equals(this.plaintext, that.plaintext)
+            && Objects.equals(this.db, that.db)
+            && Objects.equals(this.query, that.query)
+            && Objects.equals(this.update, that.update)
+            && Objects.equals(this.fortune, that.fortune)
+            && Objects.equals(this.cachedQuery, that.cachedQuery);
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      int hash = 1;
+      hash = 31 * hash + Objects.hashCode(json);
+      hash = 31 * hash + Objects.hashCode(plaintext);
+      hash = 31 * hash + Objects.hashCode(db);
+      hash = 31 * hash + Objects.hashCode(query);
+      hash = 31 * hash + Objects.hashCode(update);
+      hash = 31 * hash + Objects.hashCode(fortune);
+      hash = 31 * hash + Objects.hashCode(cachedQuery);
+      return hash;
+    }
   }
 
   /**
@@ -451,6 +529,37 @@ public final class Results {
       Objects.requireNonNull(framework);
       return get(testType).get(framework);
     }
+
+    @Override
+    public boolean equals(@Nullable Object object) {
+      if (object == this) {
+        return true;
+      } else if (!(object instanceof RawData)) {
+        return false;
+      } else {
+        RawData that = (RawData) object;
+        return Objects.equals(this.json, that.json)
+            && Objects.equals(this.plaintext, that.plaintext)
+            && Objects.equals(this.db, that.db)
+            && Objects.equals(this.query, that.query)
+            && Objects.equals(this.update, that.update)
+            && Objects.equals(this.fortune, that.fortune)
+            && Objects.equals(this.cachedQuery, that.cachedQuery);
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      int hash = 1;
+      hash = 31 * hash + Objects.hashCode(json);
+      hash = 31 * hash + Objects.hashCode(plaintext);
+      hash = 31 * hash + Objects.hashCode(db);
+      hash = 31 * hash + Objects.hashCode(query);
+      hash = 31 * hash + Objects.hashCode(update);
+      hash = 31 * hash + Objects.hashCode(fortune);
+      hash = 31 * hash + Objects.hashCode(cachedQuery);
+      return hash;
+    }
   }
 
   /**
@@ -511,6 +620,39 @@ public final class Results {
     long successfulRequests() {
       return totalRequests - status5xx;
     }
+
+    @Override
+    public boolean equals(@Nullable Object object) {
+      if (object == this) {
+        return true;
+      } else if (!(object instanceof SingleWrkExecution)) {
+        return false;
+      } else {
+        SingleWrkExecution that = (SingleWrkExecution) object;
+        return this.totalRequests == that.totalRequests
+            && this.status5xx == that.status5xx
+            && this.write == that.write
+            && this.read == that.read
+            && this.connect == that.connect
+            && Objects.equals(this.latencyAvg, that.latencyAvg)
+            && Objects.equals(this.latencyMax, that.latencyMax)
+            && Objects.equals(this.latencyStdev, that.latencyStdev);
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      int hash = 1;
+      hash = 31 * hash + Long.hashCode(totalRequests);
+      hash = 31 * hash + Objects.hashCode(latencyAvg);
+      hash = 31 * hash + Objects.hashCode(latencyMax);
+      hash = 31 * hash + Objects.hashCode(latencyStdev);
+      hash = 31 * hash + Integer.hashCode(status5xx);
+      hash = 31 * hash + Integer.hashCode(write);
+      hash = 31 * hash + Integer.hashCode(read);
+      hash = 31 * hash + Integer.hashCode(connect);
+      return hash;
+    }
   }
 
   /**
@@ -538,6 +680,29 @@ public final class Results {
       this.repositoryUrl = Objects.requireNonNull(repositoryUrl);
       this.branchName = branchName;
     }
+
+    @Override
+    public boolean equals(@Nullable Object object) {
+      if (object == this) {
+        return true;
+      } else if (!(object instanceof GitInfo)) {
+        return false;
+      } else {
+        GitInfo that = (GitInfo) object;
+        return this.commitId.equals(that.commitId)
+            && this.repositoryUrl.equals(that.repositoryUrl)
+            && Objects.equals(this.branchName, that.branchName);
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      int hash = 1;
+      hash = 31 * hash + commitId.hashCode();
+      hash = 31 * hash + repositoryUrl.hashCode();
+      hash = 31 * hash + Objects.hashCode(branchName);
+      return hash;
+    }
   }
 
   /**
@@ -557,12 +722,11 @@ public final class Results {
     DB("db"),
     QUERY("query"),
 
-    // We decided to rename the "cached_query" test type to "cached-query" on
-    // June 24, 2020.  As of this writing, that change has not yet been made.
-    // Even after that change is made, this application will continue to support
-    // both names forever.  In the timeline view, for example, we want to be
-    // able to plot "cached_query" data from older results.json files alongside
-    // "cached-query" data from newer results.json files.
+    // We renamed the "cached_query" test type to "cached-query" on July 2,
+    // 2020.  This application will continue to support both names forever.  In
+    // the timeline view, for example, we want to be able to plot "cached_query"
+    // data from older results.json files alongside "cached-query" data from
+    // newer results.json files.
     CACHED_QUERY("cached_query", "cached-query"),
 
     FORTUNE("fortune"),
