@@ -20,7 +20,6 @@ import tfb.status.config.FileStoreConfig;
 public final class FileStore {
   private final Path resultsDirectory;
   private final Path accountsDirectory;
-  private final Path attributesDirectory;
   private final Path shareDirectory;
   private final Path announcementFile;
 
@@ -45,9 +44,6 @@ public final class FileStore {
 
     accountsDirectory = root.resolve("accounts");
     createDirectoryIfNecessary(accountsDirectory);
-
-    attributesDirectory = root.resolve("attributes");
-    createDirectoryIfNecessary(attributesDirectory);
 
     shareDirectory = root.resolve("share");
     createDirectoryIfNecessary(shareDirectory);
@@ -84,13 +80,6 @@ public final class FileStore {
    */
   public Path accountsDirectory() {
     return accountsDirectory;
-  }
-
-  /**
-   * The root directory for tfb_lookup.json files.
-   */
-  public Path attributesDirectory() {
-    return attributesDirectory;
   }
 
   /**

@@ -29,14 +29,6 @@ public final class FileStoreTest {
   }
 
   /**
-   * Verifies that {@link FileStore#attributesDirectory()} returns a directory.
-   */
-  @Test
-  public void testAttributesDirectory(FileStore fileStore) {
-    assertTrue(Files.isDirectory(fileStore.attributesDirectory()));
-  }
-
-  /**
    * Verifies that {@link FileStore#shareDirectory()} returns a directory.
    */
   @Test

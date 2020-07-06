@@ -83,7 +83,6 @@ The HTML of the results detail page.
 <p>
 {{#jsonFileName}}<a href="/raw/{{jsonFileName}}">results.json</a><br>{{/jsonFileName}}
 {{#zipFileName}}<a href="/raw/{{zipFileName}}">results.zip</a> (<a href="/unzip/{{zipFileName}}">browse</a>)<br>{{/zipFileName}}
-{{#zipFileName}}<a href="/attributes?zipFile={{zipFileName}}">tfb-lookup.js update helper</a><br>{{/zipFileName}}
 
 {{^failures.isEmpty}}
   <p>Frameworks with test failures:<br>
