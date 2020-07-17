@@ -38,13 +38,13 @@
     <logback.version>1.2.3</logback.version>
     <maven-clean-plugin.version>3.1.0</maven-clean-plugin.version>
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
-    <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
+    <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
     <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
     <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
     <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
     <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
     <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
-    <maven-site-plugin.version>3.8.2</maven-site-plugin.version>
+    <maven-site-plugin.version>3.9.1</maven-site-plugin.version>
     <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
     <mustache.version>0.9.6</mustache.version>
     <slf4j.version>1.7.30</slf4j.version>
@@ -158,6 +158,11 @@
     <dependency>
       <groupId>org.glassfish.hk2</groupId>
       <artifactId>hk2-locator</artifactId>
+      <version>${hk2.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.hk2</groupId>
+      <artifactId>hk2-utils</artifactId>
       <version>${hk2.version}</version>
     </dependency>
     <dependency>
