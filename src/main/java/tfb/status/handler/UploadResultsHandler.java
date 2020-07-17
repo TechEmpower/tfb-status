@@ -1,6 +1,5 @@
 package tfb.status.handler;
 
-import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -9,7 +8,6 @@ import com.google.common.io.MoreFiles;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.AttachmentHandler;
-import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.util.AttachmentKey;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,14 +24,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.handler.routing.ExactPath;
+import tfb.status.handler.routing.DisableCache;
+import tfb.status.handler.routing.Route;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.Authenticator;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
-import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MediaTypeHandler;
-import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.HomePageView.ResultsView;
 import tfb.status.view.Results;
@@ -71,18 +68,21 @@ public final class UploadResultsHandler implements HttpHandler {
 
   @Provides
   @Singleton
-  @ExactPath("/upload")
+  @Route(method = "POST", path = "/upload")
+  @DisableCache
   public HttpHandler uploadResultsHandler(Authenticator authenticator) {
     Objects.requireNonNull(authenticator);
-    return HttpHandlers.chain(
-        this,
-        handler ->
-            new MediaTypeHandler()
-                .addMediaType("application/json", setIsJson(true, handler))
-                .addMediaType("application/zip", setIsJson(false, handler)),
-        handler -> new MethodHandler().addMethod(POST, handler),
-        handler -> new DisableCacheHandler(handler),
-        handler -> authenticator.newRequiredAuthHandler(handler));
+
+    HttpHandler handler = this;
+
+    handler = authenticator.newRequiredAuthHandler(handler);
+
+    handler =
+        new MediaTypeHandler()
+            .addMediaType("application/json", setIsJson(true, handler))
+            .addMediaType("application/zip", setIsJson(false, handler));
+
+    return handler;
   }
 
   private static HttpHandler setIsJson(boolean isJson, HttpHandler next) {

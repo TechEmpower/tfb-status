@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.PathTemplateHandler;
+import io.undertow.util.PathTemplateMatcher;
 import java.util.ArrayDeque;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -154,5 +157,86 @@ public final class RequestValuesTest {
         VALUE_IF_MALFORMED,
         RequestValues.queryParameterAsInt(
             exchange, PARAMETER_NAME, VALUE_IF_ABSENT, VALUE_IF_MALFORMED));
+  }
+
+  /**
+   * Verifies that {@link RequestValues#pathParameter(HttpServerExchange,
+   * String)} returns the expected values for a request matching a registered
+   * path template.
+   */
+  @Test
+  public void testPathParameter_matchingPath() throws Exception {
+    var handler = new PathTemplateHandler();
+    handler.add("/prefix/{a}/{b}/*", exchange -> {});
+
+    var exchange = new HttpServerExchange(null);
+    exchange.setRelativePath("/prefix/foo/bar/baz/qux");
+    handler.handleRequest(exchange);
+
+    assertEquals(
+        Optional.of("foo"),
+        RequestValues.pathParameter(exchange, "a"));
+
+    assertEquals(
+        Optional.of("bar"),
+        RequestValues.pathParameter(exchange, "b"));
+
+    assertEquals(
+        Optional.of("baz/qux"),
+        RequestValues.pathParameter(exchange, "*"));
+
+    assertEquals(
+        Optional.empty(),
+        RequestValues.pathParameter(exchange, "undeclared"));
+  }
+
+  /**
+   * Verifies that {@link RequestValues#pathParameter(HttpServerExchange,
+   * String)} returns empty values for a request not matching any registered
+   * path template.
+   */
+  @Test
+  public void testPathParameter_noMatchingPath() throws Exception {
+    var handler = new PathTemplateHandler();
+    handler.add("/prefix/{a}/{b}/*", exchange -> {});
+
+    var exchange = new HttpServerExchange(null);
+    exchange.setRelativePath("/wrong_prefix/foo/bar/baz/qux");
+    handler.handleRequest(exchange);
+
+    assertEquals(
+        Optional.empty(),
+        RequestValues.pathParameter(exchange, "a"));
+
+    assertEquals(
+        Optional.empty(),
+        RequestValues.pathParameter(exchange, "b"));
+
+    assertEquals(
+        Optional.empty(),
+        RequestValues.pathParameter(exchange, "*"));
+
+    assertEquals(
+        Optional.empty(),
+        RequestValues.pathParameter(exchange, "undeclared"));
+  }
+
+  /**
+   * Verifies that {@link RequestValues#pathParameter(HttpServerExchange,
+   * String)} returns empty values for a request that was not processed by a
+   * {@link PathTemplateMatcher}.
+   */
+  @Test
+  public void testPathParameter_noMatcher() {
+    var exchange = new HttpServerExchange(null);
+    exchange.setRelativePath("/prefix/foo/bar/baz/qux");
+
+    assertEquals(
+        Optional.empty(),
+        RequestValues.pathParameter(exchange, "*"));
+
+    assertEquals(
+        Optional.empty(),
+        RequestValues.pathParameter(exchange, "undeclared"));
   }
 }

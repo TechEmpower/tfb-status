@@ -100,6 +100,28 @@ public final class UnzipResultsHandlerTest {
   }
 
   /**
+   * Verifies that a GET request for the root directory of a results.zip file
+   * that exists is successful.
+   */
+  @Test
+  public void testGet_rootDirectory(HttpTester http)
+      throws IOException, InterruptedException {
+
+    HttpResponse<String> response =
+        http.getString("/unzip/results.2019-12-16-03-22-48-407.zip");
+
+    assertEquals(OK, response.statusCode());
+
+    assertMediaType(
+        HTML_UTF_8,
+        response.headers()
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
+
+    assertHtmlDocument(response.body());
+  }
+
+  /**
    * Verifies that a GET request that references a results.zip file that does
    * not exist produces a {@code 404 Not Found} response.
    */

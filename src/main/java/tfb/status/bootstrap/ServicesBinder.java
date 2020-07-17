@@ -11,7 +11,6 @@ import tfb.status.handler.HomePageHandler;
 import tfb.status.handler.HomeUpdatesHandler;
 import tfb.status.handler.LastSeenCommitHandler;
 import tfb.status.handler.RobotsHandler;
-import tfb.status.handler.RootHandler;
 import tfb.status.handler.ShareDownloadHandler;
 import tfb.status.handler.SharePageHandler;
 import tfb.status.handler.ShareUploadHandler;
@@ -77,7 +76,6 @@ public final class ServicesBinder extends AbstractBinder {
     addActiveDescriptor(RunCompleteMailer.class);
     addActiveDescriptor(TaskScheduler.class);
     addActiveDescriptor(HealthChecker.class);
-    addActiveDescriptor(RootHandler.class);
     addActiveDescriptor(HomePageHandler.class);
     addActiveDescriptor(HomeUpdatesHandler.class);
     addActiveDescriptor(UploadResultsHandler.class);

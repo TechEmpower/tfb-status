@@ -5,7 +5,6 @@ import static com.google.common.net.UrlEscapers.urlFragmentEscaper;
 import static com.google.common.net.UrlEscapers.urlPathSegmentEscaper;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Headers.LOCATION;
-import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.CREATED;
 import static io.undertow.util.StatusCodes.REQUEST_ENTITY_TOO_LARGE;
@@ -23,7 +22,6 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -42,13 +40,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.ShareConfig;
-import tfb.status.handler.routing.ExactPath;
+import tfb.status.handler.routing.DisableCache;
+import tfb.status.handler.routing.Route;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
-import tfb.status.undertow.extensions.HttpHandlers;
 import tfb.status.undertow.extensions.MediaTypeHandler;
-import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.FileUtils;
 import tfb.status.view.Results;
 import tfb.status.view.ShareFailure;
@@ -100,13 +97,10 @@ public final class ShareUploadHandler implements HttpHandler {
 
   @Provides
   @Singleton
-  @ExactPath("/share/upload")
+  @Route(method = "POST", path = "/share/upload")
+  @DisableCache
   public HttpHandler shareUploadHandler() {
-    return HttpHandlers.chain(
-        this,
-        handler -> new MediaTypeHandler().addMediaType("application/json", handler),
-        handler -> new MethodHandler().addMethod(POST, handler),
-        handler -> new DisableCacheHandler(handler));
+    return new MediaTypeHandler().addMediaType("application/json", this);
   }
 
   @Override

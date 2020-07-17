@@ -1,20 +1,16 @@
 package tfb.status.handler;
 
-import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.OK;
 import static io.undertow.util.StatusCodes.SERVICE_UNAVAILABLE;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.DisableCacheHandler;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import tfb.status.handler.routing.ExactPath;
-import tfb.status.hk2.extensions.Provides;
+import tfb.status.handler.routing.DisableCache;
+import tfb.status.handler.routing.Route;
 import tfb.status.service.HealthChecker;
-import tfb.status.undertow.extensions.HttpHandlers;
-import tfb.status.undertow.extensions.MethodHandler;
 
 /**
  * Handles requests to check this application's health.  Responds with {@code
@@ -35,22 +31,14 @@ import tfb.status.undertow.extensions.MethodHandler;
  * </ul>
  */
 @Singleton
+@Route(method = "GET", path = "/health")
+@DisableCache
 public final class HealthCheckHandler implements HttpHandler {
   private final HealthChecker healthChecker;
 
   @Inject
   public HealthCheckHandler(HealthChecker healthChecker) {
     this.healthChecker = Objects.requireNonNull(healthChecker);
-  }
-
-  @Provides
-  @Singleton
-  @ExactPath("/health")
-  public HttpHandler healthCheckHandler() {
-    return HttpHandlers.chain(
-        this,
-        handler -> new MethodHandler().addMethod(GET, handler),
-        handler -> new DisableCacheHandler(handler));
   }
 
   @Override

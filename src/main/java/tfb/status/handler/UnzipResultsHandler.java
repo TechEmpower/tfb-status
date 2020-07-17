@@ -5,13 +5,14 @@ import static com.google.common.net.MediaType.ANY_TEXT_TYPE;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
-import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.INTERNAL_SERVER_ERROR;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
+import static tfb.status.undertow.extensions.RequestValues.pathParameter;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
@@ -19,15 +20,13 @@ import com.google.common.net.MediaType;
 import com.google.common.primitives.Booleans;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.DisableCacheHandler;
-import io.undertow.server.handlers.SetHeaderHandler;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -35,12 +34,12 @@ import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.handler.routing.PrefixPath;
-import tfb.status.hk2.extensions.Provides;
+import tfb.status.handler.routing.DisableCache;
+import tfb.status.handler.routing.Route;
+import tfb.status.handler.routing.SetHeader;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
-import tfb.status.undertow.extensions.HttpHandlers;
-import tfb.status.undertow.extensions.MethodHandler;
+import tfb.status.util.FileUtils;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.UnzippedDirectoryView;
 import tfb.status.view.UnzippedDirectoryView.FileView;
@@ -49,6 +48,15 @@ import tfb.status.view.UnzippedDirectoryView.FileView;
  * Handles requests to extract files from within results.zip files.
  */
 @Singleton
+@Route(method = "GET", path = "/unzip/{zipFile}")
+@Route(method = "GET", path = "/unzip/{zipFile}/*")
+@DisableCache
+// This endpoint is used by the TFB website when rendering results by uuid.
+// Specifically, the TFB website uses this endpoint to fetch the
+// test_metadata.json file associated with a given set of results.  This is only
+// necessary for historic results, since the test metadata was added to the
+// results themselves in January 2020.
+@SetHeader(name = ACCESS_CONTROL_ALLOW_ORIGIN, value = "*")
 public final class UnzipResultsHandler implements HttpHandler {
   private final FileStore fileStore;
   private final MustacheRenderer mustacheRenderer;
@@ -62,69 +70,21 @@ public final class UnzipResultsHandler implements HttpHandler {
     this.mustacheRenderer = Objects.requireNonNull(mustacheRenderer);
   }
 
-  @Provides
-  @Singleton
-  @PrefixPath("/unzip")
-  public HttpHandler unzipResultsHandler() {
-    return HttpHandlers.chain(
-        this,
-        handler -> new MethodHandler().addMethod(GET, handler),
-        handler -> new DisableCacheHandler(handler),
-
-        // This endpoint is used by the TFB website when rendering results by
-        // uuid.  Specifically, the TFB website uses this endpoint to fetch the
-        // test_metadata.json file associated with a given set of results.  This
-        // is only necessary for historic results, since the test metadata was
-        // added to the results themselves in January 2020.
-        handler -> new SetHeaderHandler(handler,
-                                        ACCESS_CONTROL_ALLOW_ORIGIN,
-                                        "*"));
-  }
-
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
-    if (exchange.getRelativePath().isEmpty()) {
-      exchange.setStatusCode(NOT_FOUND);
-      return;
-    }
-
-    String relativePath =
-        exchange.getRelativePath().substring(1); // omit leading slash
-
-    Path requestedFile;
-    try {
-      requestedFile = fileStore.resultsDirectory().resolve(relativePath);
-    } catch (InvalidPathException ignored) {
-      exchange.setStatusCode(NOT_FOUND);
-      return;
-    }
-
-    if (!requestedFile.equals(requestedFile.normalize())
-        || !requestedFile.startsWith(fileStore.resultsDirectory())) {
-      exchange.setStatusCode(NOT_FOUND);
-      return;
-    }
-
-    Path zipFileAndEntry =
-        fileStore.resultsDirectory().relativize(requestedFile);
+    String zipFileName = pathParameter(exchange, "zipFile").orElseThrow();
+    String entrySubPath = pathParameter(exchange, "*").orElse(null);
 
     Path zipFile =
-        fileStore.resultsDirectory().resolve(zipFileAndEntry.getName(0));
+        FileUtils.resolveChildPath(
+            fileStore.resultsDirectory(),
+            zipFileName);
 
-    if (!Files.isRegularFile(zipFile)
+    if (zipFile == null
+        || !Files.isRegularFile(zipFile)
         || !MoreFiles.getFileExtension(zipFile).equals("zip")) {
       exchange.setStatusCode(NOT_FOUND);
       return;
-    }
-
-    String entrySubPath;
-    if (zipFileAndEntry.getNameCount() == 1)
-      entrySubPath = "";
-    else {
-      Path rawSubPath =
-          zipFileAndEntry.subpath(1, zipFileAndEntry.getNameCount());
-
-      entrySubPath = Joiner.on('/').join(rawSubPath);
     }
 
     ZipFiles.findZipEntry(
@@ -132,7 +92,7 @@ public final class UnzipResultsHandler implements HttpHandler {
         zipFile,
 
         /* entryPath= */
-        entrySubPath,
+        (entrySubPath == null) ? "" : entrySubPath,
 
         /* ifPresent= */
         (Path zipEntry) -> {
@@ -148,16 +108,23 @@ public final class UnzipResultsHandler implements HttpHandler {
           }
 
           else if (Files.isDirectory(zipEntry)) {
+            var path = new ArrayList<String>();
+            path.add(zipFileName);
+
+            if (entrySubPath != null)
+              for (String part : Splitter.on('/').split(entrySubPath))
+                path.add(part);
+
             var breadcrumbs = new ArrayList<FileView>();
-            for (int i = 1; i <= zipFileAndEntry.getNameCount(); i++) {
-              Path directory = zipFileAndEntry.subpath(0, i);
+            for (int i = 1; i <= path.size(); i++) {
+              List<String> directoryPath = path.subList(0, i);
               breadcrumbs.add(
                   new FileView(
-                      /* fileName= */ directory.getFileName().toString(),
-                      /* fullPath= */ Joiner.on('/').join(directory),
+                      /* fileName= */ directoryPath.get(directoryPath.size() - 1),
+                      /* fullPath= */ Joiner.on('/').join(directoryPath),
                       /* size= */ null,
                       /* isDirectory= */ true,
-                      /* isSelected= */ i == zipFileAndEntry.getNameCount()));
+                      /* isSelected= */ i == path.size()));
             }
 
             var children = new ArrayList<FileView>();

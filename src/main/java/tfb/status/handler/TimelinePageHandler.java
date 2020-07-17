@@ -3,16 +3,15 @@ package tfb.status.handler;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
-import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
+import static tfb.status.undertow.extensions.RequestValues.pathParameter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -22,18 +21,14 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.handler.routing.PrefixPath;
-import tfb.status.hk2.extensions.Provides;
+import tfb.status.handler.routing.DisableCache;
+import tfb.status.handler.routing.Route;
 import tfb.status.service.FileStore;
 import tfb.status.service.MustacheRenderer;
-import tfb.status.undertow.extensions.HttpHandlers;
-import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.Results;
 import tfb.status.view.TimelinePageView;
@@ -45,6 +40,8 @@ import tfb.status.view.TimelinePageView.TestTypeOptionView;
  * Handles requests for the timeline page.
  */
 @Singleton
+@Route(method = "GET", path = "/timeline/{framework}/{testType}")
+@DisableCache
 public final class TimelinePageHandler implements HttpHandler {
   private final FileStore fileStore;
   private final MustacheRenderer mustacheRenderer;
@@ -61,30 +58,15 @@ public final class TimelinePageHandler implements HttpHandler {
     this.objectMapper = Objects.requireNonNull(objectMapper);
   }
 
-  @Provides
-  @Singleton
-  @PrefixPath("/timeline")
-  public HttpHandler timelinePageHandler() {
-    return HttpHandlers.chain(
-        this,
-        handler -> new MethodHandler().addMethod(GET, handler),
-        handler -> new DisableCacheHandler(handler));
-  }
-
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
-    String relativePath = exchange.getRelativePath();
-    Matcher matcher = REQUEST_PATH_PATTERN.matcher(relativePath);
 
-    if (!matcher.matches()) {
-      exchange.setStatusCode(NOT_FOUND);
-      return;
-    }
-
-    String selectedFramework = matcher.group("framework");
+    String selectedFramework =
+        pathParameter(exchange, "framework").orElseThrow();
 
     Results.TestType selectedTestType =
-        Results.TestType.deserialize(matcher.group("testType"));
+        Results.TestType.deserialize(
+            pathParameter(exchange, "testType").orElseThrow());
 
     if (selectedTestType == null) {
       exchange.setStatusCode(NOT_FOUND);
@@ -111,6 +93,7 @@ public final class TimelinePageHandler implements HttpHandler {
                   /* entryReader= */
                   inputStream ->
                       objectMapper.readValue(inputStream, Results.class));
+
         } catch (IOException e) {
           logger.warn(
               "Ignoring results.zip file {} whose results.json file "
@@ -197,8 +180,4 @@ public final class TimelinePageHandler implements HttpHandler {
     exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
     exchange.getResponseSender().send(html, UTF_8);
   }
-
-  // Matches "/gemini-mysql/fortune", for example.
-  private static final Pattern REQUEST_PATH_PATTERN =
-      Pattern.compile("^/(?<framework>[\\w-]+)/(?<testType>[\\w-]+)$");
 }

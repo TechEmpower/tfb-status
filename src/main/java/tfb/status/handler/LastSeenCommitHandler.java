@@ -2,23 +2,19 @@ package tfb.status.handler;
 
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
-import static io.undertow.util.Methods.GET;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.NO_CONTENT;
 import static tfb.status.undertow.extensions.RequestValues.queryParameter;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.DisableCacheHandler;
 import java.io.IOException;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import tfb.status.handler.routing.ExactPath;
-import tfb.status.hk2.extensions.Provides;
+import tfb.status.handler.routing.DisableCache;
+import tfb.status.handler.routing.Route;
 import tfb.status.service.HomeResultsReader;
-import tfb.status.undertow.extensions.HttpHandlers;
-import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.HomePageView.ResultsView;
 
 /**
@@ -48,22 +44,14 @@ import tfb.status.view.HomePageView.ResultsView;
  * to consume -- plain text, with no parsing required.
  */
 @Singleton
+@Route(method = "GET", path = "/last-seen-commit")
+@DisableCache
 public final class LastSeenCommitHandler implements HttpHandler {
   private final HomeResultsReader homeResultsReader;
 
   @Inject
   public LastSeenCommitHandler(HomeResultsReader homeResultsReader) {
     this.homeResultsReader = Objects.requireNonNull(homeResultsReader);
-  }
-
-  @Provides
-  @Singleton
-  @ExactPath("/last-seen-commit")
-  public HttpHandler lastSeenCommitHandler() {
-    return HttpHandlers.chain(
-        this,
-        handler -> new MethodHandler().addMethod(GET, handler),
-        handler -> new DisableCacheHandler(handler));
   }
 
   @Override

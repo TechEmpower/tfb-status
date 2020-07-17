@@ -1,11 +1,8 @@
 package tfb.status.handler;
 
-import static io.undertow.util.Methods.GET;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.DisableCacheHandler;
-import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.WebSocketChannel;
@@ -22,13 +19,13 @@ import org.glassfish.hk2.api.messaging.MessageReceiver;
 import org.glassfish.hk2.api.messaging.SubscribeTo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tfb.status.handler.routing.ExactPath;
+import tfb.status.handler.routing.DisableCache;
+import tfb.status.handler.routing.Route;
+import tfb.status.handler.routing.SetHeader;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.service.TaskScheduler;
-import tfb.status.undertow.extensions.HttpHandlers;
-import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.view.HomePageView.ResultsView;
 import tfb.status.view.UpdatedResultsEvent;
 
@@ -73,17 +70,13 @@ public final class HomeUpdatesHandler {
 
   @Provides
   @Singleton
-  @ExactPath("/updates")
+  @Route(method = "GET", path = "/updates")
+  @DisableCache
+  // Prevent proxies such as nginx from buffering our output, which would break
+  // this endpoint.
+  @SetHeader(name = "X-Accel-Buffering", value = "no")
   public HttpHandler homeUpdatesHandler() {
-    return HttpHandlers.chain(
-        wsHandler,
-
-        // Prevent proxies such as nginx from buffering our output, which
-        // would break this endpoint.
-        handler -> new SetHeaderHandler(handler, "X-Accel-Buffering", "no"),
-
-        handler -> new MethodHandler().addMethod(GET, handler),
-        handler -> new DisableCacheHandler(handler));
+    return wsHandler;
   }
 
   /**

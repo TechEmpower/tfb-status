@@ -5,7 +5,7 @@ import io.undertow.server.handlers.PathHandler;
 import java.util.Objects;
 import java.util.UUID;
 import javax.inject.Singleton;
-import tfb.status.handler.routing.PrefixPath;
+import tfb.status.handler.routing.Route;
 import tfb.status.hk2.extensions.Provides;
 
 /**
@@ -18,8 +18,8 @@ public final class TestHandler {
 
   @Provides
   @Singleton
-  @PrefixPath("/test")
-  public HttpHandler testHandler() {
+  @Route(method = "*", path = "/test/*")
+  public HttpHandler getHandler() {
     return pathHandler;
   }
 
@@ -31,8 +31,8 @@ public final class TestHandler {
    */
   public String addHandler(HttpHandler handler) {
     Objects.requireNonNull(handler);
-    String path = "/" + UUID.randomUUID().toString();
+    String path = "/test/" + UUID.randomUUID().toString();
     pathHandler.addExactPath(path, handler);
-    return "/test" + path;
+    return path;
   }
 }

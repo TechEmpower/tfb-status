@@ -2,8 +2,13 @@ package tfb.status.undertow.extensions;
 
 import com.google.common.collect.Iterables;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
+import io.undertow.server.handlers.PathTemplateHandler;
+import io.undertow.util.PathTemplateMatch;
+import io.undertow.util.PathTemplateMatcher;
 import java.util.Deque;
 import java.util.Objects;
+import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -70,5 +75,36 @@ public final class RequestValues {
     } catch (NumberFormatException ignored) {
       return valueIfMalformed;
     }
+  }
+
+  /**
+   * Reads a path parameter from the request.
+   *
+   * <p>This assumes the request was processed by a {@link PathTemplateMatcher},
+   * and the result of {@link PathTemplateMatcher#match(String)} on the {@link
+   * HttpServerExchange#getRelativePath()} was attached to the request at {@link
+   * PathTemplateMatch#ATTACHMENT_KEY}.  {@link RoutingHandler} and {@link
+   * PathTemplateHandler} implement this behavior, for example.
+   *
+   * @param exchange the HTTP request/response
+   * @param parameterName the name of the path parameter
+   * @return the value of the path parameter with the specified name, or an
+   *         empty optional if there is no path parameter with the specified
+   *         name
+   */
+  public static Optional<String> pathParameter(HttpServerExchange exchange,
+                                               String parameterName) {
+
+    Objects.requireNonNull(exchange);
+    Objects.requireNonNull(parameterName);
+
+    PathTemplateMatch match =
+        exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
+
+    if (match == null)
+      return Optional.empty();
+
+    String value = match.getParameters().get(parameterName);
+    return Optional.ofNullable(value);
   }
 }

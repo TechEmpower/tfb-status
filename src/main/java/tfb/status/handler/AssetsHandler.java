@@ -1,12 +1,13 @@
 package tfb.status.handler;
 
 import static com.google.common.net.MediaType.ANY_TEXT_TYPE;
-import static io.undertow.util.Methods.GET;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static tfb.status.undertow.extensions.RequestValues.pathParameter;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.MediaType;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
@@ -17,10 +18,8 @@ import java.util.Map;
 import java.util.Objects;
 import javax.inject.Singleton;
 import tfb.status.config.AssetsConfig;
-import tfb.status.handler.routing.PrefixPath;
+import tfb.status.handler.routing.Route;
 import tfb.status.hk2.extensions.Provides;
-import tfb.status.undertow.extensions.HttpHandlers;
-import tfb.status.undertow.extensions.MethodHandler;
 
 /**
  * Handles HTTP requests for static assets such as JavaScript and CSS files.
@@ -34,15 +33,16 @@ public final class AssetsHandler {
 
   @Provides
   @Singleton
-  @PrefixPath("/assets")
+  @Route(method = "GET", path = "/assets/*")
   public static HttpHandler assetsHandler(AssetsConfig config,
                                           FileSystem fileSystem) {
     Objects.requireNonNull(config);
     Objects.requireNonNull(fileSystem);
 
-    return HttpHandlers.chain(
-        newResourceHandler(config, fileSystem),
-        handler -> new MethodHandler().addMethod(GET, handler));
+    HttpHandler handler = newResourceHandler(config, fileSystem);
+    handler = new FixResourcePathHandler(handler);
+
+    return handler;
   }
 
   private static HttpHandler newResourceHandler(AssetsConfig config,
@@ -100,4 +100,23 @@ public final class AssetsHandler {
       ImmutableSet.of(
           ANY_TEXT_TYPE,
           MediaType.create("application", "javascript"));
+
+  /**
+   * Trims the "/assets" prefix from the front of the request path, since that
+   * prefix would confuse the {@link ResourceHandler}.
+   */
+  private static final class FixResourcePathHandler implements HttpHandler {
+    private final HttpHandler next;
+
+    FixResourcePathHandler(HttpHandler next) {
+      this.next = Objects.requireNonNull(next);
+    }
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+      String rest = pathParameter(exchange, "*").orElseThrow();
+      exchange.setRelativePath("/" + rest);
+      next.handleRequest(exchange);
+    }
+  }
 }

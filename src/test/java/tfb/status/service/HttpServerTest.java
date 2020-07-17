@@ -1,4 +1,4 @@
-package tfb.status.handler;
+package tfb.status.service;
 
 import static io.undertow.util.StatusCodes.INTERNAL_SERVER_ERROR;
 import static io.undertow.util.StatusCodes.OK;
@@ -20,10 +20,10 @@ import tfb.status.testlib.LogTester;
 import tfb.status.testlib.TestServicesInjector;
 
 /**
- * Tests for {@link RootHandler}.
+ * Tests for {@link HttpServer}.
  */
 @ExtendWith(TestServicesInjector.class)
-public final class RootHandlerTest {
+public final class HttpServerTest {
   /**
    * Verifies that incoming HTTP requests are logged.
    */

@@ -3,22 +3,53 @@ package tfb.status.service;
 import static io.undertow.UndertowOptions.ENABLE_HTTP2;
 import static io.undertow.UndertowOptions.RECORD_REQUEST_START_TIME;
 import static io.undertow.UndertowOptions.SHUTDOWN_TIMEOUT;
+import static io.undertow.util.StatusCodes.NOT_FOUND;
 
 import com.google.common.io.MoreFiles;
+import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.undertow.Undertow;
+import io.undertow.server.DefaultResponseListener;
+import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
+import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.server.handlers.DisableCacheHandler;
+import io.undertow.server.handlers.GracefulShutdownHandler;
+import io.undertow.server.handlers.PathTemplateHandler;
+import io.undertow.server.handlers.SetHeaderHandler;
+import io.undertow.server.handlers.accesslog.AccessLogHandler;
+import io.undertow.util.HttpString;
+import io.undertow.util.Methods;
+import io.undertow.util.PathTemplateMatch;
+import io.undertow.util.PathTemplateMatcher;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.net.ssl.SSLContext;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.ActiveDescriptor;
+import org.glassfish.hk2.api.Filter;
+import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PreDestroy;
+import org.glassfish.hk2.api.ServiceHandle;
+import org.glassfish.hk2.api.ServiceLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.HttpServerConfig;
-import tfb.status.handler.routing.AllPaths;
+import tfb.status.handler.routing.DisableCache;
+import tfb.status.handler.routing.Route;
+import tfb.status.handler.routing.Routes;
+import tfb.status.handler.routing.SetHeader;
+import tfb.status.handler.routing.SetHeaders;
+import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.KeyStores;
 
 /**
@@ -31,18 +62,21 @@ import tfb.status.util.KeyStores;
 public final class HttpServer implements PreDestroy {
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String serverInfo;
+  private final RootHandler handler;
 
   @GuardedBy("this") private final Undertow server;
   @GuardedBy("this") private boolean isRunning;
 
   @Inject
   public HttpServer(HttpServerConfig config,
-                    @AllPaths HttpHandler handler,
-                    FileSystem fileSystem) {
+                    FileSystem fileSystem,
+                    ServiceLocator locator) {
 
     Objects.requireNonNull(config);
-    Objects.requireNonNull(handler);
     Objects.requireNonNull(fileSystem);
+    Objects.requireNonNull(locator);
+
+    handler = new RootHandler(config, locator);
 
     Undertow.Builder builder = Undertow.builder();
     builder.setHandler(handler);
@@ -88,6 +122,7 @@ public final class HttpServer implements PreDestroy {
    * Starts this HTTP server if it is currently stopped.
    */
   public synchronized void start() {
+    // TODO: Throw if this server was already stopped?
     if (isRunning) return;
 
     server.start();
@@ -107,10 +142,452 @@ public final class HttpServer implements PreDestroy {
   public synchronized void stop() {
     if (!isRunning) return;
 
-    // Blocks this thread for up to SHUTDOWN_TIMEOUT milliseconds.
+    // Blocks this thread for up to config.gracefulShutdownTimeoutMillis.
+    handler.shutdown();
+
+    // Blocks this thread for up to config.forcefulShutdownTimeoutMillis.
     server.stop();
 
     isRunning = false;
     logger.info("stopped [{}]", serverInfo);
+  }
+
+  /**
+   * Handles every incoming HTTP request, routing to other handlers based on
+   * method and path.
+   *
+   * <p>This handler provides the following features in addition to routing:
+   *
+   * <ul>
+   * <li>Incoming HTTP requests are logged.
+   * <li>Exceptions thrown from other handlers are logged.
+   * <li>Incoming HTTP requests are {@linkplain
+   *     HttpServerExchange#startBlocking() blocking}.  Other handlers are
+   *     permitted to perform blocking operations such as {@link
+   *     HttpServerExchange#getInputStream()} and {@link
+   *     HttpServerExchange#getOutputStream()}.
+   * <li>{@linkplain #shutdown() Shutdown} is handled gracefully.
+   * </ul>
+   */
+  private static final class RootHandler implements HttpHandler {
+    private final HttpServerConfig config;
+    private final GracefulShutdownHandler shutdownHandler;
+    private final HttpHandler delegateHandler;
+    private final Logger logger = LoggerFactory.getLogger("http");
+
+    RootHandler(HttpServerConfig config, ServiceLocator locator) {
+      this.config = Objects.requireNonNull(config);
+      Objects.requireNonNull(locator);
+
+      HttpHandler handler = newRoutingHandler(locator);
+      handler = shutdownHandler = new GracefulShutdownHandler(handler);
+      handler = newAccessLoggingHandler(handler, logger);
+      handler = new ExceptionLoggingHandler(handler, logger);
+      handler = new BlockingHandler(handler);
+
+      delegateHandler = handler;
+    }
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+      delegateHandler.handleRequest(exchange);
+    }
+
+    /**
+     * Shuts down this root handler, allowing already in-progress HTTP requests
+     * to complete and rejecting new HTTP requests with {@code 503 Service
+     * Unavailable}.
+     *
+     * <p>It is not necessarily the case that all HTTP requests have completed
+     * or have been terminated when this method returns.  This method will wait
+     * {@link HttpServerConfig#gracefulShutdownTimeoutMillis} for the requests
+     * to complete naturally, but if the requests haven't completed after that
+     * amount of time, this method will return anyway.
+     */
+    public void shutdown() {
+      shutdownHandler.shutdown();
+      boolean allRequestsComplete;
+      try {
+        allRequestsComplete =
+            shutdownHandler.awaitShutdown(config.gracefulShutdownTimeoutMillis);
+      } catch (InterruptedException e) {
+        logger.warn(
+            "Shutdown was interrupted before all in-progress HTTP requests "
+                + "could complete",
+            e);
+        Thread.currentThread().interrupt();
+        return;
+      }
+      if (!allRequestsComplete)
+        logger.warn(
+            "Not all in-progress HTTP requests could complete within a "
+                + "reasonable amount of time; shutting down anyway");
+    }
+  }
+
+  /**
+   * An HTTP handler that forwards requests to the other handlers based on their
+   * {@link Route} annotations.  Discovers the {@link Route}-annotated handlers
+   * using a {@link ServiceLocator}.  Initializes those other handlers lazily,
+   * instantiating each handler when a request matching that handler's {@link
+   * Route} annotation is received.  Modifies outgoing responses according to
+   * the handlers' {@link DisableCache} and {@link SetHeader} annotations.
+   *
+   * @throws InvalidRouteException if any of the discovered {@link Route}
+   *         annotations are invalid
+   */
+  private static HttpHandler newRoutingHandler(ServiceLocator locator) {
+    Objects.requireNonNull(locator);
+
+    var pathHandler = new PathMatchHandler();
+
+    Filter routesFilter =
+        descriptor ->
+            descriptor.getQualifiers().contains(Route.class.getName())
+                || descriptor.getQualifiers().contains(Routes.class.getName());
+
+    for (ActiveDescriptor<?> nonReifiedDescriptor
+        : locator.getDescriptors(routesFilter)) {
+
+      ActiveDescriptor<?> untypedDescriptor =
+          locator.reifyDescriptor(nonReifiedDescriptor);
+
+      boolean isHttpHandler =
+          untypedDescriptor
+              .getContractTypes()
+              .stream()
+              .anyMatch(
+                  type -> TypeToken.of(type).isSubtypeOf(HttpHandler.class));
+
+      if (!isHttpHandler)
+        throw new InvalidRouteException(
+            "@"
+                + Route.class.getSimpleName()
+                + " annotation in implementation class "
+                + untypedDescriptor.getImplementationClass()
+                + " annotates a service that does not include a subtype of "
+                + HttpHandler.class.getSimpleName()
+                + " in its contracts; the service's contracts are: "
+                + untypedDescriptor.getContractTypes());
+
+      // This unchecked cast is safe because we confirmed that this descriptor
+      // advertises some subtype of HttpHandler in its contracts, meaning it
+      // must produce an instance that is some subtype of HttpHandler.
+      @SuppressWarnings("unchecked")
+      ActiveDescriptor<? extends HttpHandler> typedDescriptor =
+          (ActiveDescriptor<? extends HttpHandler>) untypedDescriptor;
+
+      var routes = new ArrayList<Route>();
+      var setHeaders = new ArrayList<SetHeader>();
+      DisableCache disableCache = null;
+
+      for (Annotation annotation : typedDescriptor.getQualifierAnnotations()) {
+        if (annotation.annotationType() == Route.class)
+          routes.add((Route) annotation);
+        else if (annotation.annotationType() == Routes.class)
+          routes.addAll(Arrays.asList(((Routes) annotation).value()));
+        else if (annotation.annotationType() == SetHeader.class)
+          setHeaders.add((SetHeader) annotation);
+        else if (annotation.annotationType() == SetHeaders.class)
+          setHeaders.addAll(Arrays.asList(((SetHeaders) annotation).value()));
+        else if (annotation.annotationType() == DisableCache.class)
+          disableCache = (DisableCache) annotation;
+      }
+
+      if (routes.isEmpty())
+        // This should only be possible when the handler is annotated with
+        // @Routes({}).  Solution: don't do that.
+        throw new InvalidRouteException(
+            "@"
+                + Routes.class.getSimpleName()
+                + " annotation in implementation class "
+                + untypedDescriptor.getImplementationClass()
+                + " is empty; avoid using @"
+                + Routes.class.getSimpleName()
+                + " directly and use @"
+                + Route.class.getSimpleName()
+                + " instead");
+
+      HttpHandler thisHandler =
+          new LazyHandler(locator, typedDescriptor);
+
+      if (disableCache != null)
+        thisHandler = new DisableCacheHandler(thisHandler);
+
+      for (SetHeader setHeader : setHeaders)
+        thisHandler =
+            new SetHeaderHandler(
+                /* next= */ thisHandler,
+                /* header= */ setHeader.name(),
+                /* value= */ setHeader.value());
+
+      for (Route route : routes) {
+        if (route.method().equals("*")) {
+          String path = route.path();
+          try {
+            // Throws if there is any other handler for this path.
+            pathHandler.addPath(path, thisHandler);
+          } catch (IllegalStateException e) {
+            throw new InvalidRouteException(
+                routeConflictMessage(route),
+                e);
+          }
+
+        } else {
+          HttpHandler currentHandler =
+              pathHandler.get(route.path());
+
+          MethodHandler methodHandler;
+
+          if (currentHandler instanceof MethodHandler)
+            methodHandler = (MethodHandler) currentHandler;
+
+          else {
+            methodHandler = new MethodHandler();
+            String path = route.path();
+            try {
+              // Throws if there is a method="*" handler for this path.  Also
+              // may throw if there is a different but conflicting path - when
+              // two paths are the same except for the path template variable
+              // names, for example.
+              pathHandler.addPath(path, methodHandler);
+            } catch (IllegalStateException e) {
+              throw new InvalidRouteException(
+                  routeConflictMessage(route),
+                  e);
+            }
+          }
+
+          HttpString method = Methods.fromString(route.method());
+          try {
+            // Throws if there is another handler for this method and path.
+            methodHandler.addMethod(method, thisHandler);
+          } catch (IllegalStateException e) {
+            throw new InvalidRouteException(
+                routeConflictMessage(route),
+                e);
+          }
+        }
+      }
+    }
+
+    return pathHandler;
+  }
+
+  private static String routeConflictMessage(Route route) {
+    Objects.requireNonNull(route);
+    return "@"
+        + Route.class.getSimpleName()
+        + " annotation with method \""
+        + route.method()
+        + " and path \""
+        + route.path()
+        + "\" conflicts with another @"
+        + Route.class.getSimpleName()
+        + " annotation for the same path";
+  }
+
+  /**
+   * An exception thrown from {@link #newRoutingHandler(ServiceLocator)} when a
+   * particular {@link Route} annotation appears to be invalid.
+   */
+  private static final class InvalidRouteException
+      extends RuntimeException {
+
+    InvalidRouteException(String message) {
+      super(Objects.requireNonNull(message));
+    }
+
+    InvalidRouteException(String message, Throwable cause) {
+      super(Objects.requireNonNull(message),
+            Objects.requireNonNull(cause));
+    }
+
+    private static final long serialVersionUID = 0;
+  }
+
+  /**
+   * An HTTP handler that forwards requests to other handlers based on the
+   * {@linkplain HttpServerExchange#getRelativePath() path} of each request.
+   *
+   * <p>This class is like {@link PathTemplateHandler}, except this class
+   * exposes a {@link #get(String)} method to inspect already-added handlers.
+   *
+   * <p>This class is like {@link RoutingHandler} without the logic for
+   * method-dependent routing.  We prefer to implement the method-dependent
+   * routing ourselves using {@link MethodHandler} because it supports {@code
+   * HEAD} and {@code OPTIONS}.
+   */
+  private static final class PathMatchHandler implements HttpHandler {
+    private final PathTemplateMatcher<HttpHandler> matcher =
+        new PathTemplateMatcher<HttpHandler>();
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+      PathTemplateMatcher.PathMatchResult<HttpHandler> match =
+          matcher.match(exchange.getRelativePath());
+
+      if (match == null) {
+        exchange.setStatusCode(NOT_FOUND);
+        return;
+      }
+
+      exchange.putAttachment(PathTemplateMatch.ATTACHMENT_KEY, match);
+      match.getValue().handleRequest(exchange);
+    }
+
+    /**
+     * Maps a path to a handler.
+     *
+     * @param path the request path to be matched
+     * @param handler the handler for requests matching this path
+     * @throws IllegalStateException if this path was already mapped to another
+     *         handler
+     */
+    public void addPath(String path, HttpHandler handler) {
+      Objects.requireNonNull(path);
+      Objects.requireNonNull(handler);
+      matcher.add(path, handler);
+    }
+
+    /**
+     * Returns the handler mapped to the specified path, or {@code null} if
+     * there is no such handler.
+     *
+     * @param path the request path to be matched
+     */
+    public @Nullable HttpHandler get(String path) {
+      Objects.requireNonNull(path);
+      return matcher.get(path);
+    }
+  }
+
+  /**
+   * An HTTP handler that is lazily loaded from a {@link ServiceLocator}.  For
+   * each incoming request, the handler will be obtained from its {@link
+   * ServiceLocator#getServiceHandle(ActiveDescriptor)}, that handler will
+   * handle the request, and then {@link ServiceHandle#close()} will be called
+   * if the handler has {@link PerLookup} scope.
+   */
+  private static final class LazyHandler implements HttpHandler {
+    private final ServiceLocator locator;
+    private final ActiveDescriptor<? extends HttpHandler> descriptor;
+
+    LazyHandler(ServiceLocator locator,
+                ActiveDescriptor<? extends HttpHandler> descriptor) {
+
+      this.locator = Objects.requireNonNull(locator);
+      this.descriptor = Objects.requireNonNull(descriptor);
+    }
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+      ServiceHandle<? extends HttpHandler> serviceHandle =
+          locator.getServiceHandle(descriptor);
+
+      if (descriptor.getScopeAnnotation() == PerLookup.class)
+        exchange.addExchangeCompleteListener(
+            new CloseServiceHandleListener(serviceHandle));
+
+      HttpHandler handler = serviceHandle.getService();
+      handler.handleRequest(exchange);
+    }
+
+    private static final class CloseServiceHandleListener
+        implements ExchangeCompletionListener {
+
+      private final ServiceHandle<?> serviceHandle;
+
+      CloseServiceHandleListener(ServiceHandle<?> serviceHandle) {
+        this.serviceHandle = Objects.requireNonNull(serviceHandle);
+      }
+
+      @Override
+      public void exchangeEvent(HttpServerExchange exchange,
+                                NextListener nextListener) {
+
+        // TODO: What happens when serviceHandle.close() throws?
+        try {
+          serviceHandle.close();
+        } finally {
+          nextListener.proceed();
+        }
+      }
+    }
+  }
+
+  /**
+   * An HTTP handler that logs all incoming requests and that delegates to a
+   * caller-supplied HTTP handler.
+   */
+  private static HttpHandler newAccessLoggingHandler(HttpHandler handler,
+                                                     Logger logger) {
+    Objects.requireNonNull(handler);
+    Objects.requireNonNull(logger);
+
+    String formatString =
+        String.join(
+            " :: ",
+            "%{REQUEST_LINE}",
+            "%{RESPONSE_CODE} %{RESPONSE_REASON_PHRASE}",
+            "%{BYTES_SENT} bytes",
+            "%{RESPONSE_TIME} ms");
+
+    return new AccessLogHandler(
+        /* next= */ handler,
+        /* accessLogReceiver= */ message -> logger.info(message),
+        /* formatString= */ formatString,
+        /* classLoader= */ Thread.currentThread().getContextClassLoader());
+  }
+
+  /**
+   * An HTTP handler that ensures that <em>all</em> uncaught exceptions from a
+   * caller-supplied HTTP handler are logged.
+   *
+   * <p>By default, Undertow only logs <em>some</em> uncaught exceptions.  In
+   * particular, it does not log uncaught {@link IOException}s.  This class
+   * fixes that problem.
+   */
+  // TODO: Figure out how to disable Undertow's default exception logging.
+  private static final class ExceptionLoggingHandler implements HttpHandler {
+    private final HttpHandler handler;
+    private final ExchangeCompletionListener listener;
+
+    ExceptionLoggingHandler(HttpHandler handler, Logger logger) {
+      this.handler = Objects.requireNonNull(handler);
+      this.listener = new ExceptionLoggingListener(logger);
+    }
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+      exchange.addExchangeCompleteListener(listener);
+      handler.handleRequest(exchange);
+    }
+
+    private static final class ExceptionLoggingListener
+        implements ExchangeCompletionListener {
+
+      private final Logger logger;
+
+      ExceptionLoggingListener(Logger logger) {
+        this.logger = Objects.requireNonNull(logger);
+      }
+
+      @Override
+      public void exchangeEvent(HttpServerExchange exchange,
+                                NextListener nextListener) {
+        Throwable exception =
+            exchange.getAttachment(DefaultResponseListener.EXCEPTION);
+
+        if (exception != null)
+          logger.error(
+              "Uncaught exception from HTTP handler {} {}",
+              exchange.getRequestMethod(),
+              exchange.getRequestURI(),
+              exception);
+
+        nextListener.proceed();
+      }
+    }
   }
 }
