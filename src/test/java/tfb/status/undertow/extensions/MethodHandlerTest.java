@@ -8,9 +8,11 @@ import static io.undertow.util.Methods.POST;
 import static io.undertow.util.StatusCodes.METHOD_NOT_ALLOWED;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.base.Splitter;
 import io.undertow.server.HttpHandler;
+import io.undertow.util.HttpString;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -29,6 +31,21 @@ import tfb.status.testlib.TestServicesInjector;
 @ExtendWith(TestServicesInjector.class)
 public final class MethodHandlerTest {
   /**
+   * Verifies that {@link MethodHandler#addMethod(HttpString, HttpHandler)}
+   * throws an exception for an already-added method.
+   */
+  @Test
+  public void testDuplicateMethodRejected() {
+    MethodHandler handler =
+        new MethodHandler()
+            .addMethod(GET, exchange -> {});
+
+    assertThrows(
+        IllegalStateException.class,
+        () -> handler.addMethod(GET, exchange -> {}));
+  }
+
+  /**
    * Verifies that a {@link MethodHandler} with no handlers added only allows
    * OPTIONS requests.
    */
@@ -36,7 +53,7 @@ public final class MethodHandlerTest {
   public void testNoMethodsAllowed(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpHandler handler = new MethodHandler();
+    MethodHandler handler = new MethodHandler();
 
     String path = http.addHandler(handler);
 
@@ -90,7 +107,7 @@ public final class MethodHandlerTest {
   public void testGetOnly(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpHandler handler =
+    MethodHandler handler =
         new MethodHandler()
             .addMethod(GET, new FixedResponseBodyHandler("getHandler"));
 
@@ -148,7 +165,7 @@ public final class MethodHandlerTest {
   public void testPostOnly(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpHandler handler =
+    MethodHandler handler =
         new MethodHandler()
             .addMethod(POST, new FixedResponseBodyHandler("postHandler"));
 
@@ -205,7 +222,7 @@ public final class MethodHandlerTest {
   public void testGetAndPost(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpHandler handler =
+    MethodHandler handler =
         new MethodHandler()
             .addMethod(GET, new FixedResponseBodyHandler("getHandler"))
             .addMethod(POST, new FixedResponseBodyHandler("postHandler"));
@@ -265,7 +282,7 @@ public final class MethodHandlerTest {
   public void testOverrideOptions(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpHandler handler =
+    MethodHandler handler =
         new MethodHandler()
             .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler"));
 
