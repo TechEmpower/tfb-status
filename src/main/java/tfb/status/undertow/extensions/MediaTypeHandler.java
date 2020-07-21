@@ -59,14 +59,8 @@ public final class MediaTypeHandler implements HttpHandler {
     Objects.requireNonNull(handler);
 
     for (Mapping mapping : mappings)
-      if (mediaType.is(mapping.mediaType))
-        throw new IllegalStateException(
-            "This [media type, handler] mapping is unusable because all "
-                + "requests that could match the specified media type \""
-                + mediaType
-                + "\" would instead match the media type \""
-                + mapping.mediaType
-                + "\", which was already mapped to another handler");
+      if (mediaType.equals(mapping.mediaType))
+        throw new IllegalStateException(mediaType + " already has a handler");
 
     mappings.add(new Mapping(mediaType, handler));
     return this;
@@ -75,13 +69,21 @@ public final class MediaTypeHandler implements HttpHandler {
   @Override
   public void handleRequest(HttpServerExchange exchange) throws Exception {
     MediaType requestedMediaType = detectMediaType(exchange);
-    for (Mapping mapping : mappings) {
-      if (requestedMediaType.is(mapping.mediaType)) {
-        mapping.handler.handleRequest(exchange);
-        return;
-      }
-    }
-    exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
+
+    // TODO: Document the algorithm for choosing the most specific media type.
+    // TODO: Use an algorithm that does not depend on the ordering of mappings.
+    Mapping mostSpecific = null;
+
+    for (Mapping mapping : mappings)
+      if (requestedMediaType.is(mapping.mediaType))
+        if (mostSpecific == null
+            || mapping.mediaType.is(mostSpecific.mediaType))
+          mostSpecific = mapping;
+
+    if (mostSpecific == null)
+      exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
+    else
+      mostSpecific.handler.handleRequest(exchange);
   }
 
   /**

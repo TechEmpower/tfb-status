@@ -30,7 +30,7 @@ public final class MediaTypeHandlerTest {
   public void testNoMediaTypesAllowed(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpHandler handler = new MediaTypeHandler();
+    MediaTypeHandler handler = new MediaTypeHandler();
 
     String path = http.addHandler(handler);
 
@@ -64,7 +64,7 @@ public final class MediaTypeHandlerTest {
   public void testUnrelatedMediaTypes(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpHandler handler =
+    MediaTypeHandler handler =
         new MediaTypeHandler()
             .addMediaType(
                 "text/plain",
@@ -128,14 +128,17 @@ public final class MediaTypeHandlerTest {
   public void testMostSpecificMediaType(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpHandler handler =
+    MediaTypeHandler handler =
         new MediaTypeHandler()
-            .addMediaType(
-                "text/plain;charset=utf-8",
-                new FixedResponseBodyHandler("utf8Handler"))
+            // Intentional ordering of addMediaType calls.
             .addMediaType(
                 "text/plain",
                 new FixedResponseBodyHandler("plainHandler"))
+            // Add a more specific media type.
+            .addMediaType(
+                "text/plain;charset=utf-8",
+                new FixedResponseBodyHandler("utf8Handler"))
+            // Add a less specific media type.
             .addMediaType(
                 "text/*",
                 new FixedResponseBodyHandler("otherHandler"));
@@ -209,15 +212,14 @@ public final class MediaTypeHandlerTest {
   }
 
   /**
-   * Verifies that a {@link MediaTypeHandler} throws an exception when the
-   * caller attempts to add a handler whose media type is completely encompassed
-   * by a previously-added handler's media type.
+   * Verifies that {@link MediaTypeHandler#addMediaType(String, HttpHandler)}
+   * throws an exception for an already-added method.
    */
   @Test
-  public void testUnusableHandlerRejected() {
+  public void testDuplicateMediaTypeRejected() {
     MediaTypeHandler handler =
         new MediaTypeHandler()
-            .addMediaType("text/*", exchange -> {});
+            .addMediaType("text/plain", exchange -> {});
 
     assertThrows(
         IllegalStateException.class,
@@ -233,10 +235,11 @@ public final class MediaTypeHandlerTest {
   public void testAnyMediaType(HttpTester http)
       throws IOException, InterruptedException {
 
-    HttpHandler handler =
-        new MediaTypeHandler().addMediaType(
-            "*/*",
-            new FixedResponseBodyHandler("wildcardHandler"));
+    MediaTypeHandler handler =
+        new MediaTypeHandler()
+            .addMediaType(
+                "*/*",
+                new FixedResponseBodyHandler("wildcardHandler"));
 
     String path = http.addHandler(handler);
 
