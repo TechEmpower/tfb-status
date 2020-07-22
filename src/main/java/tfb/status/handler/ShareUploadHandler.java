@@ -42,10 +42,8 @@ import org.slf4j.LoggerFactory;
 import tfb.status.config.ShareConfig;
 import tfb.status.handler.routing.DisableCache;
 import tfb.status.handler.routing.Route;
-import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.EmailSender;
 import tfb.status.service.FileStore;
-import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.util.FileUtils;
 import tfb.status.view.Results;
 import tfb.status.view.ShareFailure;
@@ -69,6 +67,8 @@ import tfb.status.view.ShareSuccess;
  * access the raw JSON and how to visualize it on the TFB website.
  */
 @Singleton
+@Route(method = "POST", path = "/share/upload", consumes = "application/json")
+@DisableCache
 public final class ShareUploadHandler implements HttpHandler {
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final ShareConfig config;
@@ -93,14 +93,6 @@ public final class ShareUploadHandler implements HttpHandler {
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.clock = Objects.requireNonNull(clock);
     this.emailSender = Objects.requireNonNull(emailSender);
-  }
-
-  @Provides
-  @Singleton
-  @Route(method = "POST", path = "/share/upload")
-  @DisableCache
-  public HttpHandler shareUploadHandler() {
-    return new MediaTypeHandler().addMediaType("application/json", this);
   }
 
   @Override

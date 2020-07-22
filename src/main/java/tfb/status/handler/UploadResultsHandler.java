@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.MoreFiles;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.AttachmentHandler;
-import io.undertow.util.AttachmentKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -30,7 +28,6 @@ import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.Authenticator;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;
-import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.util.ZipFiles;
 import tfb.status.view.HomePageView.ResultsView;
 import tfb.status.view.Results;
@@ -68,34 +65,26 @@ public final class UploadResultsHandler implements HttpHandler {
 
   @Provides
   @Singleton
-  @Route(method = "POST", path = "/upload")
+  @Route(method = "POST", path = "/upload", consumes = JSON_CONTENT_TYPE)
+  @Route(method = "POST", path = "/upload", consumes = ZIP_CONTENT_TYPE)
   @DisableCache
   public HttpHandler uploadResultsHandler(Authenticator authenticator) {
     Objects.requireNonNull(authenticator);
-
-    HttpHandler handler = this;
-
-    handler = authenticator.newRequiredAuthHandler(handler);
-
-    handler =
-        new MediaTypeHandler()
-            .addMediaType("application/json", setIsJson(true, handler))
-            .addMediaType("application/zip", setIsJson(false, handler));
-
-    return handler;
+    return authenticator.newRequiredAuthHandler(this);
   }
 
-  private static HttpHandler setIsJson(boolean isJson, HttpHandler next) {
-    Objects.requireNonNull(next);
-    return new AttachmentHandler<Boolean>(IS_JSON, next, isJson);
-  }
+  private static final String JSON_CONTENT_TYPE = "application/json";
+  private static final String ZIP_CONTENT_TYPE = "application/zip";
 
-  private static final AttachmentKey<Boolean> IS_JSON =
-      AttachmentKey.create(Boolean.class);
+  private static boolean isJson(HttpServerExchange exchange) {
+    Objects.requireNonNull(exchange);
+    Route matchedRoute = exchange.getAttachment(Route.MATCHED_ROUTE);
+    return matchedRoute.consumes().equals(JSON_CONTENT_TYPE);
+  }
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
-    boolean isJson = exchange.getAttachment(IS_JSON);
+    boolean isJson = isJson(exchange);
     String fileExtension = isJson ? "json" : "zip";
 
     Path tempFile =

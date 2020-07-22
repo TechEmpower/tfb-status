@@ -3,7 +3,6 @@ package tfb.status.service;
 import static io.undertow.UndertowOptions.ENABLE_HTTP2;
 import static io.undertow.UndertowOptions.RECORD_REQUEST_START_TIME;
 import static io.undertow.UndertowOptions.SHUTDOWN_TIMEOUT;
-import static io.undertow.util.StatusCodes.NOT_FOUND;
 
 import com.google.common.io.MoreFiles;
 import com.google.common.reflect.TypeToken;
@@ -13,28 +12,25 @@ import io.undertow.server.DefaultResponseListener;
 import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
+import io.undertow.server.handlers.AttachmentHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
-import io.undertow.util.HttpString;
-import io.undertow.util.Methods;
-import io.undertow.util.PathTemplateMatch;
-import io.undertow.util.PathTemplateMatcher;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.net.ssl.SSLContext;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.PerLookup;
@@ -49,6 +45,7 @@ import tfb.status.handler.routing.Route;
 import tfb.status.handler.routing.Routes;
 import tfb.status.handler.routing.SetHeader;
 import tfb.status.handler.routing.SetHeaders;
+import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.KeyStores;
 
@@ -154,7 +151,7 @@ public final class HttpServer implements PreDestroy {
 
   /**
    * Handles every incoming HTTP request, routing to other handlers based on
-   * method and path.
+   * method, path, and media type.
    *
    * <p>This handler provides the following features in addition to routing:
    *
@@ -239,7 +236,8 @@ public final class HttpServer implements PreDestroy {
   private static HttpHandler newRoutingHandler(ServiceLocator locator) {
     Objects.requireNonNull(locator);
 
-    var pathHandler = new PathMatchHandler();
+    // path -> method -> consumes media type -> handler
+    var pathMap = new HashMap<String, Map<String, Map<String, HttpHandler>>>();
 
     Filter routesFilter =
         descriptor ->
@@ -263,9 +261,9 @@ public final class HttpServer implements PreDestroy {
         throw new InvalidRouteException(
             "@"
                 + Route.class.getSimpleName()
-                + " annotation in implementation class "
+                + " annotation found on service with implementation class "
                 + untypedDescriptor.getImplementationClass()
-                + " annotates a service that does not include a subtype of "
+                + " where the service does not include a subtype of "
                 + HttpHandler.class.getSimpleName()
                 + " in its contracts; the service's contracts are: "
                 + untypedDescriptor.getContractTypes());
@@ -308,83 +306,79 @@ public final class HttpServer implements PreDestroy {
                 + Route.class.getSimpleName()
                 + " instead");
 
-      HttpHandler thisHandler =
+      HttpHandler handler =
           new LazyHandler(locator, typedDescriptor);
 
       if (disableCache != null)
-        thisHandler = new DisableCacheHandler(thisHandler);
+        handler = new DisableCacheHandler(handler);
 
       for (SetHeader setHeader : setHeaders)
-        thisHandler =
+        handler =
             new SetHeaderHandler(
-                /* next= */ thisHandler,
+                /* next= */ handler,
                 /* header= */ setHeader.name(),
                 /* value= */ setHeader.value());
 
-      for (Route route : routes) {
-        if (route.method().equals("*")) {
-          String path = route.path();
-          try {
-            // Throws if there is any other handler for this path.
-            pathHandler.addPath(path, thisHandler);
-          } catch (IllegalStateException e) {
-            throw new InvalidRouteException(
-                routeConflictMessage(route),
-                e);
-          }
-
-        } else {
-          HttpHandler currentHandler =
-              pathHandler.get(route.path());
-
-          MethodHandler methodHandler;
-
-          if (currentHandler instanceof MethodHandler)
-            methodHandler = (MethodHandler) currentHandler;
-
-          else {
-            methodHandler = new MethodHandler();
-            String path = route.path();
-            try {
-              // Throws if there is a method="*" handler for this path.  Also
-              // may throw if there is a different but conflicting path - when
-              // two paths are the same except for the path template variable
-              // names, for example.
-              pathHandler.addPath(path, methodHandler);
-            } catch (IllegalStateException e) {
-              throw new InvalidRouteException(
-                  routeConflictMessage(route),
-                  e);
-            }
-          }
-
-          HttpString method = Methods.fromString(route.method());
-          try {
-            // Throws if there is another handler for this method and path.
-            methodHandler.addMethod(method, thisHandler);
-          } catch (IllegalStateException e) {
-            throw new InvalidRouteException(
-                routeConflictMessage(route),
-                e);
-          }
-        }
-      }
+      for (Route route : routes)
+        pathMap
+            .computeIfAbsent(route.path(), path -> new HashMap<>())
+            .computeIfAbsent(route.method(), method -> new HashMap<>())
+            .merge(
+                route.consumes(),
+                new AttachmentHandler<>(Route.MATCHED_ROUTE, handler, route),
+                (handler1, handler2) -> {
+                  throw new InvalidRouteException(
+                      "There are multiple @"
+                          + Route.class.getSimpleName()
+                          + " annotations with path \""
+                          + route.path()
+                          + "\", method \""
+                          + route.method()
+                          + "\", and consumes \""
+                          + route.consumes()
+                          + "\"; the combination of these fields must be "
+                          + "globally unique");
+                });
     }
 
-    return pathHandler;
-  }
+    var pathHandler = new PathTemplateHandler();
 
-  private static String routeConflictMessage(Route route) {
-    Objects.requireNonNull(route);
-    return "@"
-        + Route.class.getSimpleName()
-        + " annotation with method \""
-        + route.method()
-        + " and path \""
-        + route.path()
-        + "\" conflicts with another @"
-        + Route.class.getSimpleName()
-        + " annotation for the same path";
+    pathMap.forEach(
+        (String path, Map<String, Map<String, HttpHandler>> methodMap) -> {
+          var methodHandler = new MethodHandler();
+
+          try {
+            pathHandler.add(path, methodHandler);
+          } catch (IllegalStateException e) {
+            throw new InvalidRouteException(
+                "@"
+                    + Route.class.getSimpleName()
+                    + " annotation with path \""
+                    + path
+                    + "\" conflicts with another "
+                    + Route.class.getSimpleName()
+                    + " annotation with a differently-spelled but functionally "
+                    + "equivalent path; if they are meant to have the same "
+                    + "path, then check that each path string uses the same "
+                    + "spelling for each variable at each position, and check "
+                    + "that leading and trailing slashes are included "
+                    + "consistently or omitted consistently",
+                e);
+          }
+
+          methodMap.forEach(
+              (String method, Map<String, HttpHandler> mediaTypeMap) -> {
+                var mediaTypeHandler = new MediaTypeHandler();
+                methodHandler.addMethod(method, mediaTypeHandler);
+
+                mediaTypeMap.forEach(
+                    (String mediaType, HttpHandler handler) -> {
+                      mediaTypeHandler.addMediaType(mediaType, handler);
+                    });
+              });
+        });
+
+    return pathHandler;
   }
 
   /**
@@ -404,62 +398,6 @@ public final class HttpServer implements PreDestroy {
     }
 
     private static final long serialVersionUID = 0;
-  }
-
-  /**
-   * An HTTP handler that forwards requests to other handlers based on the
-   * {@linkplain HttpServerExchange#getRelativePath() path} of each request.
-   *
-   * <p>This class is like {@link PathTemplateHandler}, except this class
-   * exposes a {@link #get(String)} method to inspect already-added handlers.
-   *
-   * <p>This class is like {@link RoutingHandler} without the logic for
-   * method-dependent routing.  We prefer to implement the method-dependent
-   * routing ourselves using {@link MethodHandler} because it supports {@code
-   * HEAD} and {@code OPTIONS}.
-   */
-  private static final class PathMatchHandler implements HttpHandler {
-    private final PathTemplateMatcher<HttpHandler> matcher =
-        new PathTemplateMatcher<HttpHandler>();
-
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      PathTemplateMatcher.PathMatchResult<HttpHandler> match =
-          matcher.match(exchange.getRelativePath());
-
-      if (match == null) {
-        exchange.setStatusCode(NOT_FOUND);
-        return;
-      }
-
-      exchange.putAttachment(PathTemplateMatch.ATTACHMENT_KEY, match);
-      match.getValue().handleRequest(exchange);
-    }
-
-    /**
-     * Maps a path to a handler.
-     *
-     * @param path the request path to be matched
-     * @param handler the handler for requests matching this path
-     * @throws IllegalStateException if this path was already mapped to another
-     *         handler
-     */
-    public void addPath(String path, HttpHandler handler) {
-      Objects.requireNonNull(path);
-      Objects.requireNonNull(handler);
-      matcher.add(path, handler);
-    }
-
-    /**
-     * Returns the handler mapped to the specified path, or {@code null} if
-     * there is no such handler.
-     *
-     * @param path the request path to be matched
-     */
-    public @Nullable HttpHandler get(String path) {
-      Objects.requireNonNull(path);
-      return matcher.get(path);
-    }
   }
 
   /**

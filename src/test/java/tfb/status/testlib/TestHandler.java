@@ -18,7 +18,11 @@ public final class TestHandler {
 
   @Provides
   @Singleton
-  @Route(method = "*", path = "/test/*")
+  @Route(method = "GET", path = "/test/*")
+  @Route(method = "POST", path = "/test/*")
+  // Pass through HEAD and OPTIONS for the sake of MethodHandlerTest.
+  @Route(method = "HEAD", path = "/test/*")
+  @Route(method = "OPTIONS", path = "/test/*")
   public HttpHandler getHandler() {
     return pathHandler;
   }

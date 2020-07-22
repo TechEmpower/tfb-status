@@ -11,6 +11,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import io.undertow.util.Methods;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -32,6 +33,18 @@ public final class MethodHandler implements HttpHandler {
   private final Map<HttpString, HttpHandler> handlers = new ConcurrentHashMap<>();
 
   /**
+   * Shortcut for {@link #addMethod(HttpString, HttpHandler)}.
+   *
+   * @throws IllegalArgumentException if the input is not a valid method
+   */
+  @CanIgnoreReturnValue
+  public MethodHandler addMethod(String method, HttpHandler handler) {
+    Objects.requireNonNull(method);
+    Objects.requireNonNull(handler);
+    return addMethod(Methods.fromString(method), handler);
+  }
+
+  /**
    * Maps a method to a handler.
    *
    * @param method the required method of the request, see {@link
@@ -49,8 +62,8 @@ public final class MethodHandler implements HttpHandler {
     handlers.merge(
         method,
         handler,
-        (m, h) -> {
-          throw new IllegalStateException(m + " already has a handler");
+        (handler1, handler2) -> {
+          throw new IllegalStateException(method + " already has a handler");
         });
 
     return this;

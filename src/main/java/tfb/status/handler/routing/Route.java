@@ -2,6 +2,7 @@ package tfb.status.handler.routing;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
@@ -13,13 +14,15 @@ import tfb.status.undertow.extensions.RequestValues;
 /**
  * Indicates that the annotated service is an {@link HttpHandler} that handles
  * requests with the specified {@linkplain HttpServerExchange#getRequestMethod()
- * method} and {@linkplain HttpServerExchange#getRelativePath() path}.
+ * method}, {@linkplain HttpServerExchange#getRelativePath() path}, and media
+ * type.
  *
- * <p>A single handler may declare multiple routes to indicate that it accepts
- * requests matching any of those routes.
+ * <p>A single HTTP handler may be annotated with multiple routes to indicate
+ * that it accepts requests matching any of those routes.
  *
- * <p>Multiple route declarations may share the same {@link #path()} as long as
- * they do not share the same {@link #method()}.
+ * <p>Multiple routes may refer to the same path as long as they refer to
+ * different methods or media types.  It is an error to declare two identical
+ * routes.
  *
  * <p>Support for OPTIONS requests is added automatically to all paths.  Support
  * for HEAD requests is added automatically to all paths that have a GET {@link
@@ -27,9 +30,17 @@ import tfb.status.undertow.extensions.RequestValues;
  * path-specific basis by declaring a route whose {@link #method()} is OPTIONS
  * or HEAD.
  *
- * <p>The special {@link #method()} value {@code "*"} indicates that the
- * annotated handler will handle <em>all</em> methods, including OPTIONS and
- * HEAD.  In this case, no other route may use the same {@link #path()}.
+ * <p>Routing is implemented in this order:
+ * <ol>
+ * <li>By request path.  If there is no route with a matching {@link #path()},
+ *     then the response is {@code 404 Not Found}.
+ * <li>By request method.  If there is no route with that {@link #method()}, and
+ *     the method is not one of the automatically-supported methods, then the
+ *     response is {@code 405 Method Not Allowed}.
+ * <li>By request media type, which is determined from the {@code Content-Type}
+ *     header of the request.  If there is no route that {@link #consumes()}
+ *     that media type, then the response is {@code 415 Unsupported Media Type}.
+ * </ol>
  */
 @Repeatable(Routes.class)
 @Qualifier
@@ -42,8 +53,8 @@ import tfb.status.undertow.extensions.RequestValues;
 })
 public @interface Route {
   /**
-   * The specific HTTP method matched by this route, such as "GET" or "POST", or
-   * "*" if this route matches all HTTP methods.
+   * The {@linkplain HttpServerExchange#getRequestMethod() request method}
+   * matched by this route, such as GET or POST.
    */
   String method();
 
@@ -61,4 +72,21 @@ public @interface Route {
    * RequestValues#pathParameter(HttpServerExchange, String)}.
    */
   String path();
+
+  /**
+   * The request media type matched by this route.  The default value
+   * <code>*&#47;*</code> matches all requests, including requests that do not
+   * include a {@code Content-Type} header.
+   */
+  String consumes() default "*/*";
+
+  /**
+   * The key for an {@linkplain HttpServerExchange#getAttachment(AttachmentKey)
+   * attachment} added to all requests that match some route, where the value of
+   * the attachment is the matching {@link Route} annotation.
+   *
+   * <p>This may be useful when an HTTP handler annotated with multiple routes
+   * should behave differently depending on which route is matched.
+   */
+  AttachmentKey<Route> MATCHED_ROUTE = AttachmentKey.create(Route.class);
 }
