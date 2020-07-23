@@ -18,6 +18,18 @@ public final class MoreAssertions {
   }
 
   /**
+   * Shortcut for {@link #assertMediaType(MediaType, String)}.
+   *
+   * @throws IllegalArgumentException if the input is not a valid media type
+   *         (see {@link MediaType#parse(String)})
+   */
+  public static void assertMediaType(String expected,
+                                     @Nullable String actual) {
+    Objects.requireNonNull(expected);
+    assertMediaType(MediaType.parse(expected), actual);
+  }
+
+  /**
    * Asserts that the actual media type is {@linkplain MediaType#is(MediaType)
    * compatible} with the expected media type.
    */

@@ -1,7 +1,6 @@
 package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.ZIP;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
@@ -123,7 +122,7 @@ public final class UploadResultsHandlerTest {
       HttpRequest.Builder requestWithNewJson =
           HttpRequest.newBuilder(http.uri("/upload"))
                      .POST(asBodyPublisher(newResultsBytes))
-                     .header(CONTENT_TYPE, JSON_UTF_8.toString());
+                     .header(CONTENT_TYPE, "application/json");
 
       HttpResponse<Void> responseToNewJson =
           http.client().send(
@@ -191,7 +190,7 @@ public final class UploadResultsHandlerTest {
       HttpRequest.Builder requestWithUpdatedJson =
           HttpRequest.newBuilder(http.uri("/upload"))
                      .POST(asBodyPublisher(updatedResultsBytes))
-                     .header(CONTENT_TYPE, JSON_UTF_8.toString());
+                     .header(CONTENT_TYPE, "application/json");
 
       HttpResponse<Void> responseToUpdatedJson =
           http.client().send(

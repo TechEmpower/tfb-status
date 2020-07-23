@@ -2,7 +2,6 @@ package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.HTML_UTF_8;
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +58,7 @@ public final class DetailPageHandlerTest {
     assertEquals(OK, response.statusCode());
 
     assertMediaType(
-        JSON_UTF_8,
+        "application/json",
         response.headers()
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));

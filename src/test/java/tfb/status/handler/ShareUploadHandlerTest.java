@@ -1,7 +1,6 @@
 package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.CREATED;
 import static io.undertow.util.StatusCodes.OK;
@@ -70,14 +69,14 @@ public final class ShareUploadHandlerTest {
         http.client().send(
             HttpRequest.newBuilder(http.uri("/share/upload"))
                        .POST(asBodyPublisher(resultsBytes))
-                       .header(CONTENT_TYPE, JSON_UTF_8.toString())
+                       .header(CONTENT_TYPE, "application/json")
                        .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(CREATED, response.statusCode());
 
     assertMediaType(
-        JSON_UTF_8,
+        "application/json",
         response.headers()
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
@@ -149,14 +148,14 @@ public final class ShareUploadHandlerTest {
         http.client().send(
             HttpRequest.newBuilder(http.uri("/share/upload"))
                        .POST(HttpRequest.BodyPublishers.ofString("not json"))
-                       .header(CONTENT_TYPE, JSON_UTF_8.toString())
+                       .header(CONTENT_TYPE, "application/json")
                        .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(BAD_REQUEST, response.statusCode());
 
     assertMediaType(
-        JSON_UTF_8,
+        "application/json",
         response.headers()
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
@@ -207,14 +206,14 @@ public final class ShareUploadHandlerTest {
         http.client().send(
             HttpRequest.newBuilder(http.uri("/share/upload"))
                        .POST(asBodyPublisher(resultsBytes))
-                       .header(CONTENT_TYPE, JSON_UTF_8.toString())
+                       .header(CONTENT_TYPE, "application/json")
                        .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(BAD_REQUEST, response.statusCode());
 
     assertMediaType(
-        JSON_UTF_8,
+        "application/json",
         response.headers()
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
@@ -273,14 +272,14 @@ public final class ShareUploadHandlerTest {
         http.client().send(
             HttpRequest.newBuilder(http.uri("/share/upload"))
                        .POST(asBodyPublisher(paddedResultsBytes))
-                       .header(CONTENT_TYPE, JSON_UTF_8.toString())
+                       .header(CONTENT_TYPE, "application/json")
                        .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(REQUEST_ENTITY_TOO_LARGE, response.statusCode());
 
     assertMediaType(
-        JSON_UTF_8,
+        "application/json",
         response.headers()
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
@@ -323,14 +322,14 @@ public final class ShareUploadHandlerTest {
             http.client().send(
                 HttpRequest.newBuilder(http.uri("/share/upload"))
                            .POST(asBodyPublisher(resultsBytes))
-                           .header(CONTENT_TYPE, JSON_UTF_8.toString())
+                           .header(CONTENT_TYPE, "application/json")
                            .build(),
                 HttpResponse.BodyHandlers.ofString());
 
         assertEquals(SERVICE_UNAVAILABLE, response.statusCode());
 
         assertMediaType(
-            JSON_UTF_8,
+            "application/json",
             response.headers()
                     .firstValue(CONTENT_TYPE)
                     .orElse(null));

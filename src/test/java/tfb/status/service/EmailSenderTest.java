@@ -1,6 +1,5 @@
 package tfb.status.service;
 
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,7 +82,7 @@ public final class EmailSenderTest {
     DataSource attachment =
         emailSender.createAttachment(
             /* fileName= */ "foo.json",
-            /* mediaType= */ JSON_UTF_8,
+            /* mediaType= */ MediaType.create("application", "json"),
             /* fileBytes= */ CharSource.wrap(attachedJson).asByteSource(UTF_8));
 
     emailSender.sendEmail(subject, "textContent", List.of(attachment));
@@ -130,7 +129,7 @@ public final class EmailSenderTest {
         secondPart.getFileName());
 
     assertMediaType(
-        JSON_UTF_8,
+        "application/json",
         secondPart.getContentType());
 
     String receivedJson;
