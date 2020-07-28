@@ -1,8 +1,6 @@
 package tfb.status.handler;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.MediaType.HTML_UTF_8;
-import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
@@ -40,7 +38,10 @@ import tfb.status.view.TimelinePageView.TestTypeOptionView;
  * Handles requests for the timeline page.
  */
 @Singleton
-@Route(method = "GET", path = "/timeline/{framework}/{testType}")
+@Route(
+    method = "GET",
+    path = "/timeline/{framework}/{testType}",
+    produces = "text/html; charset=utf-8")
 @DisableCache
 public final class TimelinePageHandler implements HttpHandler {
   private final FileStore fileStore;
@@ -177,7 +178,6 @@ public final class TimelinePageHandler implements HttpHandler {
             /* frameworkOptions= */ frameworkOptions);
 
     String html = mustacheRenderer.render("timeline.mustache", timelinePageView);
-    exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
     exchange.getResponseSender().send(html, UTF_8);
   }
 }

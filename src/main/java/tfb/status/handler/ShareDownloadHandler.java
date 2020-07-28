@@ -1,8 +1,6 @@
 package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
-import static com.google.common.net.MediaType.JSON_UTF_8;
-import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static tfb.status.undertow.extensions.RequestValues.pathParameter;
 
@@ -26,7 +24,10 @@ import tfb.status.util.FileUtils;
  * Handles requests to download results.json files that were shared by users.
  */
 @Singleton
-@Route(method = "GET", path = "/share/download/{shareIdDotJson}")
+@Route(
+    method = "GET",
+    path = "/share/download/{shareIdDotJson}",
+    produces = "application/json")
 // This endpoint is used by the TFB website when rendering results by share id.
 @SetHeader(name = ACCESS_CONTROL_ALLOW_ORIGIN, value = "*")
 public final class ShareDownloadHandler implements HttpHandler {
@@ -60,8 +61,6 @@ public final class ShareDownloadHandler implements HttpHandler {
       exchange.setStatusCode(NOT_FOUND);
       return;
     }
-
-    exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
 
     // We could parse the "Accept-Encoding" request header to determine if the
     // client supports gzip, and if so, add "Content-Encoding: gzip" to the

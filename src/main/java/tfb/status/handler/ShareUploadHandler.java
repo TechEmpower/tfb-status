@@ -1,9 +1,7 @@
 package tfb.status.handler;
 
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.UrlEscapers.urlFragmentEscaper;
 import static com.google.common.net.UrlEscapers.urlPathSegmentEscaper;
-import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Headers.LOCATION;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.CREATED;
@@ -67,7 +65,11 @@ import tfb.status.view.ShareSuccess;
  * access the raw JSON and how to visualize it on the TFB website.
  */
 @Singleton
-@Route(method = "POST", path = "/share/upload", consumes = "application/json")
+@Route(
+    method = "POST",
+    path = "/share/upload",
+    consumes = "application/json",
+    produces = "application/json")
 @DisableCache
 public final class ShareUploadHandler implements HttpHandler {
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -101,7 +103,6 @@ public final class ShareUploadHandler implements HttpHandler {
     if (outcome.failure != null) {
       String json = objectMapper.writeValueAsString(outcome.failure);
       exchange.setStatusCode(statusCodeForFailure(outcome.failure.kind));
-      exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
       exchange.getResponseSender().send(json, UTF_8);
       return;
     }
@@ -110,7 +111,6 @@ public final class ShareUploadHandler implements HttpHandler {
     String json = objectMapper.writeValueAsString(outcome.success);
     exchange.setStatusCode(CREATED);
     exchange.getResponseHeaders().put(LOCATION, outcome.success.resultsUrl);
-    exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
     exchange.getResponseSender().send(json, UTF_8);
   }
 

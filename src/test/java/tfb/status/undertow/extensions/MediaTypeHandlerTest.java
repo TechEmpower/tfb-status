@@ -1,6 +1,7 @@
 package tfb.status.undertow.extensions;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.MediaType.ANY_TYPE;
 import static io.undertow.util.StatusCodes.OK;
 import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -213,7 +214,7 @@ public final class MediaTypeHandlerTest {
 
   /**
    * Verifies that {@link MediaTypeHandler#addMediaType(String, HttpHandler)}
-   * throws an exception for an already-added method.
+   * throws an exception for an already-added media type.
    */
   @Test
   public void testDuplicateMediaTypeRejected() {
@@ -238,7 +239,7 @@ public final class MediaTypeHandlerTest {
     MediaTypeHandler handler =
         new MediaTypeHandler()
             .addMediaType(
-                "*/*",
+                ANY_TYPE,
                 new FixedResponseBodyHandler("wildcardHandler"));
 
     String path = http.addHandler(handler);

@@ -45,6 +45,7 @@ import tfb.status.handler.routing.Route;
 import tfb.status.handler.routing.Routes;
 import tfb.status.handler.routing.SetHeader;
 import tfb.status.handler.routing.SetHeaders;
+import tfb.status.undertow.extensions.AcceptHandler;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.util.KeyStores;
@@ -236,8 +237,8 @@ public final class HttpServer implements PreDestroy {
   private static HttpHandler newRoutingHandler(ServiceLocator locator) {
     Objects.requireNonNull(locator);
 
-    // path -> method -> consumes media type -> handler
-    var pathMap = new HashMap<String, Map<String, Map<String, HttpHandler>>>();
+    // path -> method -> consumes media type -> produces media type -> handler
+    var pathMap = new HashMap<String, Map<String, Map<String, Map<String, HttpHandler>>>>();
 
     Filter routesFilter =
         descriptor ->
@@ -323,8 +324,9 @@ public final class HttpServer implements PreDestroy {
         pathMap
             .computeIfAbsent(route.path(), path -> new HashMap<>())
             .computeIfAbsent(route.method(), method -> new HashMap<>())
+            .computeIfAbsent(route.consumes(), consumes -> new HashMap<>())
             .merge(
-                route.consumes(),
+                route.produces(),
                 new AttachmentHandler<>(Route.MATCHED_ROUTE, handler, route),
                 (handler1, handler2) -> {
                   throw new InvalidRouteException(
@@ -334,8 +336,10 @@ public final class HttpServer implements PreDestroy {
                           + route.path()
                           + "\", method \""
                           + route.method()
-                          + "\", and consumes \""
+                          + "\", consumes \""
                           + route.consumes()
+                          + "\", and produces \""
+                          + route.produces()
                           + "\"; the combination of these fields must be "
                           + "globally unique");
                 });
@@ -344,7 +348,7 @@ public final class HttpServer implements PreDestroy {
     var pathHandler = new PathTemplateHandler();
 
     pathMap.forEach(
-        (String path, Map<String, Map<String, HttpHandler>> methodMap) -> {
+        (String path, Map<String, Map<String, Map<String, HttpHandler>>> methodMap) -> {
           var methodHandler = new MethodHandler();
 
           try {
@@ -367,13 +371,19 @@ public final class HttpServer implements PreDestroy {
           }
 
           methodMap.forEach(
-              (String method, Map<String, HttpHandler> mediaTypeMap) -> {
-                var mediaTypeHandler = new MediaTypeHandler();
-                methodHandler.addMethod(method, mediaTypeHandler);
+              (String method, Map<String, Map<String, HttpHandler>> consumesMap) -> {
+                var consumesHandler = new MediaTypeHandler();
+                methodHandler.addMethod(method, consumesHandler);
 
-                mediaTypeMap.forEach(
-                    (String mediaType, HttpHandler handler) -> {
-                      mediaTypeHandler.addMediaType(mediaType, handler);
+                consumesMap.forEach(
+                    (String consumes, Map<String, HttpHandler> producesMap) -> {
+                      var producesHandler = new AcceptHandler();
+                      consumesHandler.addMediaType(consumes, producesHandler);
+
+                      producesMap.forEach(
+                          (String produces, HttpHandler handler) -> {
+                            producesHandler.addMediaType(produces, handler);
+                          });
                     });
               });
         });

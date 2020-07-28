@@ -2,6 +2,7 @@ package tfb.status.undertow.extensions;
 
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
+import static java.util.Comparator.comparing;
 
 import com.google.common.net.MediaType;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -16,6 +17,21 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * media type (the {@code Content-Type} header) of each request.  If the media
  * type of the incoming request does not map to any of the other HTTP handlers,
  * then this handler responds with {@code 415 Unsupported Media Type}.
+ *
+ * <p>A media type in the {@code Content-Type} header of a request is compatible
+ * with a media type that was {@linkplain #addMediaType(MediaType, HttpHandler)
+ * added} to this handler when the request's media type {@link
+ * MediaType#is(MediaType)} the handler's media type.  For example, a request
+ * with {@code Content-Type: text/plain;charset=utf-8} is compatible with the
+ * handler media types {@code text/plain;charset=utf-8}, {@code text/plain},
+ * {@code text/*}, and <code>*&#47;*</code>, but that request is not compatible
+ * with the handler media types {@code text/plain;charset=us-ascii} or {@code
+ * text/plain;charset=utf-8;format=flowed}.
+ *
+ * <p>A request with no {@code Content-Type} header or a present but {@linkplain
+ * MediaType#parse(String) unparseable} {@code Content-Type} header is
+ * considered to have <code>Content-Type: *&#47;*</code>, meaning that it is
+ * only compatible with the handler for the <code>*&#47;*</code> media type.
  */
 public final class MediaTypeHandler implements HttpHandler {
   private final List<Mapping> mappings = new CopyOnWriteArrayList<>();
@@ -68,22 +84,23 @@ public final class MediaTypeHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws Exception {
-    MediaType requestedMediaType = detectMediaType(exchange);
+    MediaType requestMediaType = detectMediaType(exchange);
 
-    // TODO: Document the algorithm for choosing the most specific media type.
-    // TODO: Use an algorithm that does not depend on the ordering of mappings.
-    Mapping mostSpecific = null;
+    Mapping bestMatch =
+        mappings.stream()
+                .filter(mapping -> requestMediaType.is(mapping.mediaType))
+                .max(
+                    comparing(
+                        mapping -> mapping.mediaType,
+                        MediaTypes.SPECIFICITY_ORDER))
+                .orElse(null);
 
-    for (Mapping mapping : mappings)
-      if (requestedMediaType.is(mapping.mediaType))
-        if (mostSpecific == null
-            || mapping.mediaType.is(mostSpecific.mediaType))
-          mostSpecific = mapping;
+    if (bestMatch != null) {
+      bestMatch.handler.handleRequest(exchange);
+      return;
+    }
 
-    if (mostSpecific == null)
-      exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
-    else
-      mostSpecific.handler.handleRequest(exchange);
+    exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
   }
 
   /**

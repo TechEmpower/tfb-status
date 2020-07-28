@@ -1,7 +1,5 @@
 package tfb.status.handler;
 
-import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
-import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static io.undertow.util.StatusCodes.NO_CONTENT;
 import static tfb.status.undertow.extensions.RequestValues.queryParameter;
@@ -44,7 +42,10 @@ import tfb.status.view.HomePageView.ResultsView;
  * to consume -- plain text, with no parsing required.
  */
 @Singleton
-@Route(method = "GET", path = "/last-seen-commit")
+@Route(
+    method = "GET",
+    path = "/last-seen-commit",
+    produces = "text/plain; charset=utf-8")
 @DisableCache
 public final class LastSeenCommitHandler implements HttpHandler {
   private final HomeResultsReader homeResultsReader;
@@ -74,10 +75,6 @@ public final class LastSeenCommitHandler implements HttpHandler {
       exchange.setStatusCode(NO_CONTENT);
       return;
     }
-
-    exchange.getResponseHeaders().put(
-        CONTENT_TYPE,
-        PLAIN_TEXT_UTF_8.toString());
 
     exchange.getResponseSender().send(mostRecent.commitId);
   }

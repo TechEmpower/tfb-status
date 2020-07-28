@@ -1,7 +1,5 @@
 package tfb.status.handler;
 
-import static com.google.common.net.MediaType.HTML_UTF_8;
-import static io.undertow.util.Headers.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.undertow.server.HttpHandler;
@@ -20,7 +18,7 @@ import tfb.status.service.MustacheRenderer;
  * as text.
  */
 @Singleton
-@Route(method = "GET", path = "/share")
+@Route(method = "GET", path = "/share", produces = "text/html; charset=utf-8")
 @DisableCache
 public final class SharePageHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;
@@ -33,7 +31,6 @@ public final class SharePageHandler implements HttpHandler {
   @Override
   public void handleRequest(HttpServerExchange exchange) {
     String html = mustacheRenderer.render("share.mustache");
-    exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
     exchange.getResponseSender().send(html, UTF_8);
   }
 }

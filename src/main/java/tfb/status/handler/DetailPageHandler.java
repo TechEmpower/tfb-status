@@ -2,7 +2,6 @@ package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static com.google.common.net.MediaType.HTML_UTF_8;
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static tfb.status.undertow.extensions.RequestValues.pathParameter;
@@ -28,6 +27,7 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests for the results detail page.
  */
 @Singleton
+// TODO: Use different routes for html and json.
 @Route(method = "GET", path = "/results/{uuidDotJson}")
 @DisableCache
 // The JSON version of this endpoint is used by the TFB website when rendering
@@ -75,7 +75,7 @@ public final class DetailPageHandler implements HttpHandler {
 
     if (isJson) {
       String json = objectMapper.writeValueAsString(detailPageView);
-      exchange.getResponseHeaders().put(CONTENT_TYPE, JSON_UTF_8.toString());
+      exchange.getResponseHeaders().put(CONTENT_TYPE, "application/json");
       exchange.getResponseSender().send(json);
     } else {
       String html = mustacheRenderer.render("detail.mustache", detailPageView);

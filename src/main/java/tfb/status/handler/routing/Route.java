@@ -2,6 +2,7 @@ package tfb.status.handler.routing;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.AttachmentKey;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -9,13 +10,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
+import tfb.status.undertow.extensions.AcceptHandler;
+import tfb.status.undertow.extensions.MediaTypeHandler;
+import tfb.status.undertow.extensions.MethodHandler;
 import tfb.status.undertow.extensions.RequestValues;
 
 /**
  * Indicates that the annotated service is an {@link HttpHandler} that handles
  * requests with the specified {@linkplain HttpServerExchange#getRequestMethod()
  * method}, {@linkplain HttpServerExchange#getRelativePath() path}, and media
- * type.
+ * type, and that produces responses with the specified media type.
  *
  * <p>A single HTTP handler may be annotated with multiple routes to indicate
  * that it accepts requests matching any of those routes.
@@ -31,15 +35,23 @@ import tfb.status.undertow.extensions.RequestValues;
  * or HEAD.
  *
  * <p>Routing is implemented in this order:
+ *
  * <ol>
- * <li>By request path.  If there is no route with a matching {@link #path()},
- *     then the response is {@code 404 Not Found}.
- * <li>By request method.  If there is no route with that {@link #method()}, and
- *     the method is not one of the automatically-supported methods, then the
- *     response is {@code 405 Method Not Allowed}.
+ * <li>By request path, using a {@link PathTemplateHandler}.  If there is no
+ *     route with a matching {@link #path()}, then the response is {@code 404
+ *     Not Found}.
+ * <li>By request method, using a {@link MethodHandler}.  If there is no route
+ *     with that {@link #method()}, and the method is not one of the
+ *     automatically-supported methods, then the response is {@code 405 Method
+ *     Not Allowed}.
  * <li>By request media type, which is determined from the {@code Content-Type}
- *     header of the request.  If there is no route that {@link #consumes()}
- *     that media type, then the response is {@code 415 Unsupported Media Type}.
+ *     header of the request, using a {@link MediaTypeHandler}.  If there is no
+ *     route that {@link #consumes()} that media type, then the response is
+ *     {@code 415 Unsupported Media Type}.
+ * <li>By accepted response media type, which is determined from the {@code
+ *     Accept} header of the request, using an {@link AcceptHandler}.  If there
+ *     is no route that {@link #produces()} that media type, then the response
+ *     is {@code 406 Not Acceptable}.
  * </ol>
  */
 @Repeatable(Routes.class)
@@ -79,6 +91,14 @@ public @interface Route {
    * include a {@code Content-Type} header.
    */
   String consumes() default "*/*";
+
+  /**
+   * The media type of responses from this route, to be matched against the
+   * {@code Accept} header of the incoming request.  The default value
+   * <code>*&#47;*</code> matches requests with any well-formed {@code Accept}
+   * header and requests without an {@code Accept} header.
+   */
+  String produces() default "*/*";
 
   /**
    * The key for an {@linkplain HttpServerExchange#getAttachment(AttachmentKey)

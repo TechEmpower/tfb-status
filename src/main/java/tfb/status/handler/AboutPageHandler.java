@@ -1,8 +1,6 @@
 package tfb.status.handler;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.MediaType.HTML_UTF_8;
-import static io.undertow.util.Headers.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableMap;
@@ -26,7 +24,7 @@ import tfb.status.view.AboutPageView.GitPropertyView;
  * Handles requests for the about page.
  */
 @Singleton
-@Route(method = "GET", path = "/about")
+@Route(method = "GET", path = "/about", produces = "text/html; charset=utf-8")
 @DisableCache
 public final class AboutPageHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;
@@ -71,7 +69,6 @@ public final class AboutPageHandler implements HttpHandler {
                 .collect(toImmutableList()));
 
     String html = mustacheRenderer.render("about.mustache", aboutPageView);
-    exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
     exchange.getResponseSender().send(html, UTF_8);
   }
 }

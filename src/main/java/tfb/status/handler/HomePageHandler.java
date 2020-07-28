@@ -1,7 +1,5 @@
 package tfb.status.handler;
 
-import static com.google.common.net.MediaType.HTML_UTF_8;
-import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.BAD_REQUEST;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static tfb.status.undertow.extensions.RequestValues.queryParameterAsInt;
@@ -27,7 +25,7 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests for the home page.
  */
 @Singleton
-@Route(method = "GET", path = "/")
+@Route(method = "GET", path = "/", produces = "text/html; charset=utf-8")
 @DisableCache
 public final class HomePageHandler implements HttpHandler {
   private final MustacheRenderer mustacheRenderer;
@@ -93,7 +91,6 @@ public final class HomePageHandler implements HttpHandler {
             /* announcement= */ announcement);
 
     String html = mustacheRenderer.render("home.mustache", homePageView);
-    exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
     exchange.getResponseSender().send(html, UTF_8);
   }
 }
