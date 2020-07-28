@@ -75,6 +75,7 @@ public final class DetailPageHandlerTest {
    * Verifies that a GET request for the results detail page with an unknown
    * uuid produces a {@code 404 Not Found} response.
    */
+  @Test
   public void testUnknownUuid(HttpTester http)
       throws IOException, InterruptedException {
 
