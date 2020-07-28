@@ -1,6 +1,7 @@
 package tfb.status.handler.routing;
 
 import io.undertow.server.handlers.SetHeaderHandler;
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
@@ -17,6 +18,7 @@ import javax.inject.Qualifier;
  */
 @Repeatable(SetHeaders.class)
 @Qualifier
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({
     ElementType.TYPE,

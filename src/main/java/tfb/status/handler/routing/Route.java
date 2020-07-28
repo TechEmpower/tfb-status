@@ -4,6 +4,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.AttachmentKey;
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
@@ -56,6 +57,7 @@ import tfb.status.undertow.extensions.RequestValues;
  */
 @Repeatable(Routes.class)
 @Qualifier
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({
     ElementType.TYPE,
