@@ -3,10 +3,10 @@ package tfb.status.service;
 import static java.util.Comparator.comparing;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.Immutable;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -40,12 +40,11 @@ public final class DiffGenerator {
     Objects.requireNonNull(oldResults);
     Objects.requireNonNull(newResults);
 
-    var distinctFrameworks = new HashSet<String>();
-    distinctFrameworks.addAll(oldResults.frameworks);
-    distinctFrameworks.addAll(newResults.frameworks);
-
     var lines = new ArrayList<DiffLine>();
-    for (String framework : distinctFrameworks) {
+
+    for (String framework : Sets.union(oldResults.frameworks,
+                                       newResults.frameworks)) {
+
       for (Results.TestType testType : Results.TestType.values()) {
         double oldRps = oldResults.rps(testType, framework);
         double newRps = newResults.rps(testType, framework);
