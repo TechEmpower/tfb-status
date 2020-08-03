@@ -9,7 +9,7 @@ import tfb.status.undertow.extensions.FixedResponseBodyHandler;
 /**
  * Handles requests for robots.txt.
  */
-public final class RobotsHandler{
+public final class RobotsHandler {
   private RobotsHandler() {
     throw new AssertionError("This class cannot be instantiated");
   }

@@ -33,8 +33,8 @@ public final class SharePageHandlerTest {
     assertMediaType(
         HTML_UTF_8,
         response.headers()
-            .firstValue(CONTENT_TYPE)
-            .orElse(null));
+                .firstValue(CONTENT_TYPE)
+                .orElse(null));
 
     assertHtmlDocument(response.body());
   }
