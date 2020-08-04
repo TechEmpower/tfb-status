@@ -208,6 +208,9 @@ public final class AcceptHandler implements HttpHandler {
         case '\\':
           i++;
           break;
+        default:
+          // Do nothing.
+          break;
       }
       i++;
     }

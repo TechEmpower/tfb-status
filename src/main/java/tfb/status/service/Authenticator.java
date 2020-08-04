@@ -253,6 +253,10 @@ public final class Authenticator {
    * @return {@code true} if the account exists
    * @throws IOException if an I/O error occurs while verifying the account
    */
+  // Callers should be forced to deal with IOException even if the current
+  // implementation does not throw it, since we want to retain the ability to
+  // refactor this implementation such that it does throw IOException.
+  @SuppressWarnings({ "CheckedExceptionNotThrown", "RedundantThrows" })
   public boolean accountExists(String accountId)
       throws IOException {
 

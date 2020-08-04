@@ -438,6 +438,10 @@
               -XepAllDisabledChecksAsWarnings
               -->
 
+              <!-- Exclude the hk2.extensions package from analysis.  We do not
+                   plan on making any changes to these classes. -->
+              -XepExcludedPaths:(.*/)?tfb/status/hk2/extensions/.*
+
               <!-- These two opt-in checks don't apply to our project because
                    we're not running on Java 7 or Android. -->
               -Xep:Java7ApiChecker:OFF
@@ -466,6 +470,11 @@
                    instance would do, then it should probably be non-static even
                    if it doesn't refer to instance-level state. -->
               -Xep:MethodCanBeStatic:OFF
+
+              <!-- The advice offered by this check is incorrect.  It is not the
+                   case that "using more than one qualifier annotation on the
+                   same element is not allowed". -->
+              -Xep:InjectMoreThanOneQualifier:OFF
 
             </arg>
 
