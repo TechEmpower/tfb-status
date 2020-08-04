@@ -5,7 +5,7 @@
 # modify whatever settings you want.  The structure of configuration files is
 # defined by the following class:
 #
-#   src/main/java/tfb/status/bootstrap/ApplicationConfig.java
+#   src/main/java/tfb/status/config/ApplicationConfig.java
 #
 # Refer to that class for documentation about each of the available
 # configuration settings.
