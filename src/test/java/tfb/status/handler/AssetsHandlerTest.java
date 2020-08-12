@@ -2,6 +2,7 @@ package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.JAVASCRIPT_UTF_8;
+import static io.undertow.util.StatusCodes.FORBIDDEN;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -60,5 +61,34 @@ public final class AssetsHandlerTest {
         http.getString("/assets/does_not_exist.txt");
 
     assertEquals(NOT_FOUND, response.statusCode());
+    assertEquals("", response.body());
+  }
+
+  /**
+   * Verifies that a GET request for an assets directory results in either
+   * {@code 404 Not Found} or {@code 403 Forbidden}.
+   */
+  @Test
+  public void testDirectoryNotFound(HttpTester http)
+      throws IOException, InterruptedException {
+
+    HttpResponse<String> response1 = http.getString("/assets");
+    assertEquals(NOT_FOUND, response1.statusCode());
+    assertEquals("", response1.body());
+
+    // We'd prefer 404 Not Found for all of these, but 403 Forbidden is the
+    // behavior of Undertow's ResourceHandler.
+
+    HttpResponse<String> response2 = http.getString("/assets/");
+    assertEquals(FORBIDDEN, response2.statusCode());
+    assertEquals("", response2.body());
+
+    HttpResponse<String> response3 = http.getString("/assets/js");
+    assertEquals(FORBIDDEN, response3.statusCode());
+    assertEquals("", response3.body());
+
+    HttpResponse<String> response4 = http.getString("/assets/js/");
+    assertEquals(FORBIDDEN, response4.statusCode());
+    assertEquals("", response4.body());
   }
 }

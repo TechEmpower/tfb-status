@@ -56,6 +56,7 @@ public final class AssetsHandler {
         var resourceManager = new ClassPathResourceManager(classLoader, "assets");
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setMimeMappings(newMimeMappings());
+        resourceHandler.setWelcomeFiles();
         yield resourceHandler;
       }
       case FILE_SYSTEM -> {
@@ -63,6 +64,7 @@ public final class AssetsHandler {
         var resourceManager = new PathResourceManager(assetsRoot);
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setMimeMappings(newMimeMappings());
+        resourceHandler.setWelcomeFiles();
         resourceHandler.setCacheTime(0);
         yield resourceHandler;
       }

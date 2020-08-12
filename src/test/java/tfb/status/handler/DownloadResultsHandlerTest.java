@@ -1,5 +1,7 @@
 package tfb.status.handler;
 
+import static io.undertow.util.StatusCodes.FORBIDDEN;
+import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -71,5 +73,24 @@ public final class DownloadResultsHandlerTest {
     }
 
     assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid);
+  }
+
+  /**
+   * Verifies that a GET request for the root results directory results in
+   * either {@code 404 Not Found} or {@code 403 Forbidden}.
+   */
+  @Test
+  public void testDirectoryNotFound(HttpTester http)
+      throws IOException, InterruptedException {
+
+    HttpResponse<String> response1 = http.getString("/raw");
+    assertEquals(NOT_FOUND, response1.statusCode());
+    assertEquals("", response1.body());
+
+    // We'd prefer 404 Not Found for this, but 403 Forbidden is the behavior of
+    // Undertow's ResourceHandler.
+    HttpResponse<String> response2 = http.getString("/raw/");
+    assertEquals(FORBIDDEN, response2.statusCode());
+    assertEquals("", response2.body());
   }
 }

@@ -30,13 +30,11 @@ public final class DownloadResultsHandler {
   public static HttpHandler downloadResultsHandler(FileStore fileStore) {
     Objects.requireNonNull(fileStore);
 
-    HttpHandler handler =
-        new ResourceHandler(
-            new PathResourceManager(fileStore.resultsDirectory()));
+    var resourceManager = new PathResourceManager(fileStore.resultsDirectory());
+    var resourceHandler = new ResourceHandler(resourceManager);
+    resourceHandler.setWelcomeFiles();
 
-    handler = new FixResourcePathHandler(handler);
-
-    return handler;
+    return new FixResourcePathHandler(resourceHandler);
   }
 
   /**
