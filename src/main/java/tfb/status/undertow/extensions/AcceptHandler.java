@@ -7,7 +7,6 @@ import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.Headers.VARY;
 import static io.undertow.util.StatusCodes.NOT_ACCEPTABLE;
 import static io.undertow.util.StatusCodes.NO_CONTENT;
-import static java.util.Comparator.comparing;
 import static java.util.Comparator.comparingDouble;
 
 import com.google.common.collect.ImmutableList;
@@ -21,8 +20,9 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ResponseCommitListener;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Stream;
 
 /**
@@ -69,17 +69,10 @@ import java.util.stream.Stream;
  * section 5.3.2: Accept</a>.
  */
 public final class AcceptHandler implements HttpHandler {
-  private final List<Mapping> mappings = new CopyOnWriteArrayList<>();
-
-  private static final class Mapping {
-    final MediaType mediaType;
-    final HttpHandler handler;
-
-    Mapping(MediaType mediaType, HttpHandler handler) {
-      this.mediaType = Objects.requireNonNull(mediaType);
-      this.handler = Objects.requireNonNull(handler);
-    }
-  }
+  private final ConcurrentSkipListMap<MediaType, HttpHandler> handlers =
+      new ConcurrentSkipListMap<>(
+          MediaTypes.SPECIFICITY_ORDER.reversed()
+              .thenComparing(mediaType -> mediaType.toString()));
 
   /**
    * Shortcut for {@link #addMediaType(MediaType, HttpHandler)}.
@@ -109,11 +102,13 @@ public final class AcceptHandler implements HttpHandler {
     Objects.requireNonNull(mediaType);
     Objects.requireNonNull(handler);
 
-    for (Mapping mapping : mappings)
-      if (mediaType.equals(mapping.mediaType))
-        throw new IllegalStateException(mediaType + " already has a handler");
+    handlers.merge(
+        mediaType,
+        handler,
+        (handler1, handler2) -> {
+          throw new IllegalStateException(mediaType + " already has a handler");
+        });
 
-    mappings.add(new Mapping(mediaType, handler));
     return this;
   }
 
@@ -121,26 +116,33 @@ public final class AcceptHandler implements HttpHandler {
   public void handleRequest(HttpServerExchange exchange) throws Exception {
     exchange.getResponseHeaders().add(VARY, "Accept");
 
-    for (MediaType accepted : acceptedMediaTypes(exchange)) {
+    for (MediaType acceptedMediaType : acceptedMediaTypes(exchange)) {
 
-      Mapping bestMatch =
-          mappings.stream()
-                  .filter(mapping -> isCompatible(mapping.mediaType, accepted))
-                  .max(
-                      comparing(
-                          mapping -> mapping.mediaType,
-                          MediaTypes.SPECIFICITY_ORDER))
-                  .orElse(null);
+      Map.Entry<MediaType, HttpHandler> bestMatch =
+          handlers
+              .entrySet()
+              .stream()
+              .filter(
+                  entry -> {
+                    MediaType producedMediaType = entry.getKey();
+                    return isCompatible(producedMediaType, acceptedMediaType);
+                  })
+              .findFirst()
+              .orElse(null);
 
-      if (bestMatch != null) {
-        if (!bestMatch.mediaType.hasWildcard())
-          exchange.addResponseCommitListener(
-              new SetContentTypeListener(bestMatch.mediaType));
+      if (bestMatch == null)
+        continue;
 
-        // TODO: Attach the accepted media type to the exchange?
-        bestMatch.handler.handleRequest(exchange);
-        return;
-      }
+      MediaType producedMediaType = bestMatch.getKey();
+      HttpHandler handler = bestMatch.getValue();
+
+      if (!producedMediaType.hasWildcard())
+        exchange.addResponseCommitListener(
+            new SetContentTypeListener(producedMediaType));
+
+      // TODO: Attach the accepted media type to the exchange?
+      handler.handleRequest(exchange);
+      return;
     }
 
     exchange.setStatusCode(NOT_ACCEPTABLE);

@@ -2,15 +2,14 @@ package tfb.status.undertow.extensions;
 
 import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.UNSUPPORTED_MEDIA_TYPE;
-import static java.util.Comparator.comparing;
 
 import com.google.common.net.MediaType;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * An HTTP handler that forwards requests to other HTTP handlers based on the
@@ -34,17 +33,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * only compatible with the handler for the <code>*&#47;*</code> media type.
  */
 public final class MediaTypeHandler implements HttpHandler {
-  private final List<Mapping> mappings = new CopyOnWriteArrayList<>();
-
-  private static final class Mapping {
-    final MediaType mediaType;
-    final HttpHandler handler;
-
-    Mapping(MediaType mediaType, HttpHandler handler) {
-      this.mediaType = Objects.requireNonNull(mediaType);
-      this.handler = Objects.requireNonNull(handler);
-    }
-  }
+  private final ConcurrentSkipListMap<MediaType, HttpHandler> handlers =
+      new ConcurrentSkipListMap<>(
+          MediaTypes.SPECIFICITY_ORDER
+              .reversed()
+              .thenComparing(mediaType -> mediaType.toString()));
 
   /**
    * Shortcut for {@link #addMediaType(MediaType, HttpHandler)}.
@@ -74,11 +67,13 @@ public final class MediaTypeHandler implements HttpHandler {
     Objects.requireNonNull(mediaType);
     Objects.requireNonNull(handler);
 
-    for (Mapping mapping : mappings)
-      if (mediaType.equals(mapping.mediaType))
-        throw new IllegalStateException(mediaType + " already has a handler");
+    handlers.merge(
+        mediaType,
+        handler,
+        (handler1, handler2) -> {
+          throw new IllegalStateException(mediaType + " already has a handler");
+        });
 
-    mappings.add(new Mapping(mediaType, handler));
     return this;
   }
 
@@ -86,21 +81,25 @@ public final class MediaTypeHandler implements HttpHandler {
   public void handleRequest(HttpServerExchange exchange) throws Exception {
     MediaType requestMediaType = detectMediaType(exchange);
 
-    Mapping bestMatch =
-        mappings.stream()
-                .filter(mapping -> requestMediaType.is(mapping.mediaType))
-                .max(
-                    comparing(
-                        mapping -> mapping.mediaType,
-                        MediaTypes.SPECIFICITY_ORDER))
-                .orElse(null);
+    Map.Entry<MediaType, HttpHandler> bestMatch =
+        handlers
+            .entrySet()
+            .stream()
+            .filter(
+                entry -> {
+                  MediaType consumedMediaType = entry.getKey();
+                  return requestMediaType.is(consumedMediaType);
+                })
+            .findFirst()
+            .orElse(null);
 
-    if (bestMatch != null) {
-      bestMatch.handler.handleRequest(exchange);
+    if (bestMatch == null) {
+      exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
       return;
     }
 
-    exchange.setStatusCode(UNSUPPORTED_MEDIA_TYPE);
+    HttpHandler handler = bestMatch.getValue();
+    handler.handleRequest(exchange);
   }
 
   /**
