@@ -24,7 +24,7 @@ public final class MutableTicker extends Ticker {
   }
 
   /**
-   * Adds the specific amount of time to this ticker.
+   * Adds the specified amount of time to this ticker.
    *
    * @param amountToAdd the amount of time to add
    */
