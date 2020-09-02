@@ -7,13 +7,13 @@ import static io.undertow.util.Methods.OPTIONS;
 import static io.undertow.util.StatusCodes.METHOD_NOT_ALLOWED;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,50 +23,23 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>This handler supports OPTIONS automatically.
  *
- * <p>This handler supports HEAD automatically if it has a handler for GET
+ * <p>This handler supports HEAD automatically if it contains a handler for GET
  * requests.
  *
  * <p>For all unsupported HTTP methods, this handler responds with {@code 405
  * Method Not Allowed}.
+ *
+ * <p>Instances of this class are immutable.  Use {@link #builder()} to obtain a
+ * new, mutable {@link Builder} instance, use {@link Builder#add(HttpString,
+ * HttpHandler)} to add mappings to that builder, and then use {@link
+ * Builder#build()} to obtain an immutable {@link MethodHandler} instance
+ * containing those mappings.
  */
 public final class MethodHandler implements HttpHandler {
-  private final Map<HttpString, HttpHandler> handlers = new ConcurrentHashMap<>();
+  private final ImmutableMap<HttpString, HttpHandler> handlers;
 
-  /**
-   * Shortcut for {@link #addMethod(HttpString, HttpHandler)}.
-   *
-   * @throws IllegalArgumentException if the input is not a valid method
-   */
-  @CanIgnoreReturnValue
-  public MethodHandler addMethod(String method, HttpHandler handler) {
-    Objects.requireNonNull(method);
-    Objects.requireNonNull(handler);
-    return addMethod(Methods.fromString(method), handler);
-  }
-
-  /**
-   * Maps a method to a handler.
-   *
-   * @param method the required method of the request, see {@link
-   *        io.undertow.util.Methods}
-   * @param handler the handler for requests having this method
-   * @return this {@link MethodHandler} instance (for chaining)
-   * @throws IllegalStateException if this method was already mapped to another
-   *         handler
-   */
-  @CanIgnoreReturnValue
-  public MethodHandler addMethod(HttpString method, HttpHandler handler) {
-    Objects.requireNonNull(method);
-    Objects.requireNonNull(handler);
-
-    handlers.merge(
-        method,
-        handler,
-        (handler1, handler2) -> {
-          throw new IllegalStateException(method + " already has a handler");
-        });
-
-    return this;
+  private MethodHandler(ImmutableMap<HttpString, HttpHandler> handlers) {
+    this.handlers = Objects.requireNonNull(handlers);
   }
 
   @Override
@@ -114,5 +87,69 @@ public final class MethodHandler implements HttpHandler {
 
     String headerValue = Joiner.on(", ").join(methods);
     exchange.getResponseHeaders().put(ALLOW, headerValue);
+  }
+
+  /**
+   * Returns a new, initially-empty {@link Builder} instance.
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /**
+   * A mutable builder class used to construct {@link MethodHandler} instances.
+   */
+  public static final class Builder {
+    private final ConcurrentHashMap<HttpString, HttpHandler> handlers =
+        new ConcurrentHashMap<>();
+
+    private Builder() {}
+
+    /**
+     * Shortcut for {@link #add(HttpString, HttpHandler)}.
+     *
+     * @throws IllegalArgumentException if the input is not a valid method
+     */
+    @CanIgnoreReturnValue
+    public Builder add(String method, HttpHandler handler) {
+      Objects.requireNonNull(method);
+      Objects.requireNonNull(handler);
+      return add(Methods.fromString(method), handler);
+    }
+
+    /**
+     * Maps a method to a handler.
+     *
+     * @param method the required method of the request, see {@link
+     *        io.undertow.util.Methods}
+     * @param handler the handler for requests having this method
+     * @return this {@link Builder} instance (for chaining)
+     * @throws IllegalStateException if this method was already mapped to
+     *         another handler
+     */
+    @CanIgnoreReturnValue
+    public Builder add(HttpString method, HttpHandler handler) {
+      Objects.requireNonNull(method);
+      Objects.requireNonNull(handler);
+
+      handlers.merge(
+          method,
+          handler,
+          (handler1, handler2) -> {
+            throw new IllegalStateException(method + " already has a handler");
+          });
+
+      return this;
+    }
+
+    /**
+     * Returns a new {@link MethodHandler} instance containing the mappings that
+     * have been added to this {@link Builder}.  Subsequent modifications to
+     * this {@link Builder} do not affect previously-returned {@link
+     * MethodHandler} instances.
+     */
+    public MethodHandler build() {
+      return new MethodHandler(ImmutableMap.copyOf(handlers));
+    }
   }
 }

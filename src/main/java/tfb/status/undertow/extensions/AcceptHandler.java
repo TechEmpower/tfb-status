@@ -10,6 +10,7 @@ import static io.undertow.util.StatusCodes.NO_CONTENT;
 import static java.util.Comparator.comparingDouble;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.net.MediaType;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -44,8 +45,9 @@ import java.util.stream.Stream;
  * >The Vary response header</a>.
  *
  * <p>A media type in the {@code Accept} header of a request is compatible with
- * a media type that was {@linkplain #addMediaType(MediaType, HttpHandler)
- * added} to this handler when all of the following statements are true:
+ * a media type that was {@linkplain Builder#add(MediaType,
+ * HttpHandler) added} to this handler when all of the following statements are
+ * true:
  *
  * <ul>
  * <li>Their {@linkplain MediaType#type() types} are equal, or at least one has
@@ -67,49 +69,18 @@ import java.util.stream.Stream;
  *
  * <p>See <a href="https://tools.ietf.org/html/rfc7231#section-5.3.2">RFC 7231,
  * section 5.3.2: Accept</a>.
+ *
+ * <p>Instances of this class are immutable.  Use {@link #builder()} to obtain a
+ * new, mutable {@link Builder} instance, use {@link Builder#add(MediaType,
+ * HttpHandler)} to add mappings to that builder, and then use {@link
+ * Builder#build()} to obtain an immutable {@link AcceptHandler} instance
+ * containing those mappings.
  */
 public final class AcceptHandler implements HttpHandler {
-  private final ConcurrentSkipListMap<MediaType, HttpHandler> handlers =
-      new ConcurrentSkipListMap<>(
-          MediaTypes.SPECIFICITY_ORDER.reversed()
-              .thenComparing(mediaType -> mediaType.toString()));
+  private final ImmutableMap<MediaType, HttpHandler> handlers;
 
-  /**
-   * Shortcut for {@link #addMediaType(MediaType, HttpHandler)}.
-   *
-   * @throws IllegalArgumentException if the input is not a valid media type
-   *         (see {@link MediaType#parse(String)})
-   */
-  @CanIgnoreReturnValue
-  public AcceptHandler addMediaType(String mediaType, HttpHandler handler) {
-    Objects.requireNonNull(mediaType);
-    Objects.requireNonNull(handler);
-    return addMediaType(MediaType.parse(mediaType), handler);
-  }
-
-  /**
-   * Maps a media type to a handler.
-   *
-   * @param mediaType the response media type ({@code Content-Type} header) of
-   *        responses from the handler
-   * @param handler the handler for requests accepting this media type
-   * @return this {@link AcceptHandler} instance (for chaining)
-   * @throws IllegalStateException if this media type was already mapped to
-   *         another handler
-   */
-  @CanIgnoreReturnValue
-  public AcceptHandler addMediaType(MediaType mediaType, HttpHandler handler) {
-    Objects.requireNonNull(mediaType);
-    Objects.requireNonNull(handler);
-
-    handlers.merge(
-        mediaType,
-        handler,
-        (handler1, handler2) -> {
-          throw new IllegalStateException(mediaType + " already has a handler");
-        });
-
-    return this;
+  private AcceptHandler(ImmutableMap<MediaType, HttpHandler> handlers) {
+    this.handlers = Objects.requireNonNull(handlers);
   }
 
   @Override
@@ -353,6 +324,75 @@ public final class AcceptHandler implements HttpHandler {
         return;
 
       exchange.getResponseHeaders().put(CONTENT_TYPE, mediaType.toString());
+    }
+  }
+
+  /**
+   * Returns a new, initially-empty {@link Builder} instance.
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /**
+   * A mutable builder class used to construct {@link AcceptHandler} instances.
+   */
+  public static final class Builder {
+    private final ConcurrentSkipListMap<MediaType, HttpHandler> handlers =
+        new ConcurrentSkipListMap<>(
+            MediaTypes.SPECIFICITY_ORDER
+                .reversed()
+                .thenComparing(mediaType -> mediaType.toString()));
+
+    private Builder() {}
+
+    /**
+     * Shortcut for {@link #add(MediaType, HttpHandler)}.
+     *
+     * @throws IllegalArgumentException if the input is not a valid media type
+     *         (see {@link MediaType#parse(String)})
+     */
+    @CanIgnoreReturnValue
+    public Builder add(String mediaType, HttpHandler handler) {
+      Objects.requireNonNull(mediaType);
+      Objects.requireNonNull(handler);
+      return add(MediaType.parse(mediaType), handler);
+    }
+
+    /**
+     * Maps a media type to a handler.
+     *
+     * @param mediaType the response media type ({@code Content-Type} header) of
+     *        responses from the handler
+     * @param handler the handler for requests accepting this media type
+     * @return this {@link AcceptHandler} instance (for chaining)
+     * @throws IllegalStateException if this media type was already mapped to
+     *         another handler
+     */
+    @CanIgnoreReturnValue
+    public Builder add(MediaType mediaType, HttpHandler handler) {
+      Objects.requireNonNull(mediaType);
+      Objects.requireNonNull(handler);
+
+      handlers.merge(
+          mediaType,
+          handler,
+          (handler1, handler2) -> {
+            throw new IllegalStateException(
+                mediaType + " already has a handler");
+          });
+
+      return this;
+    }
+
+    /**
+     * Returns a new {@link AcceptHandler} instance containing the mappings that
+     * have been added to this {@link Builder}.  Subsequent modifications to
+     * this {@link Builder} do not affect previously-returned {@link
+     * AcceptHandler} instances.
+     */
+    public AcceptHandler build() {
+      return new AcceptHandler(ImmutableMap.copyOf(handlers));
     }
   }
 }

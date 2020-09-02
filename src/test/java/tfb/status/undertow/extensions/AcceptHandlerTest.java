@@ -43,7 +43,7 @@ public final class AcceptHandlerTest {
   public void testNoMediaTypesAllowed(HttpTester http)
       throws IOException, InterruptedException {
 
-    AcceptHandler handler = new AcceptHandler();
+    AcceptHandler handler = AcceptHandler.builder().build();
 
     String path = http.addHandler(handler);
 
@@ -75,13 +75,15 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain",
                 new FixedResponseBodyHandler("plaintextHandler"))
-            .addMediaType(
+            .add(
                 "application/json",
-                new FixedResponseBodyHandler("jsonHandler"));
+                new FixedResponseBodyHandler("jsonHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -139,19 +141,21 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            // Intentional ordering of addMediaType calls.
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            // Intentional ordering of .add(...) calls.
+            .add(
                 "text/plain",
                 new FixedResponseBodyHandler("plainHandler"))
             // Add a more specific media type.
-            .addMediaType(
+            .add(
                 "text/plain;charset=utf-8",
                 new FixedResponseBodyHandler("utf8Handler"))
             // Add a less specific media type.
-            .addMediaType(
+            .add(
                 "text/*",
-                new FixedResponseBodyHandler("otherHandler"));
+                new FixedResponseBodyHandler("otherHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -231,25 +235,27 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/*",
                 new FixedResponseBodyHandler("textHandler"))
-            .addMediaType(
+            .add(
                 "text/*; charset=utf-8",
                 new FixedResponseBodyHandler("textUtf8Handler"))
-            .addMediaType(
+            .add(
                 "text/html",
                 new FixedResponseBodyHandler("htmlHandler"))
-            .addMediaType(
+            .add(
                 "text/html; charset=utf-8",
                 new FixedResponseBodyHandler("htmlUtf8Handler"))
-            .addMediaType(
+            .add(
                 "*/*",
                 new FixedResponseBodyHandler("anyHandler"))
-            .addMediaType(
+            .add(
                 "*/*; charset=utf-8",
-                new FixedResponseBodyHandler("anyUtf8Handler"));
+                new FixedResponseBodyHandler("anyUtf8Handler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -364,18 +370,19 @@ public final class AcceptHandlerTest {
   }
 
   /**
-   * Verifies that {@link AcceptHandler#addMediaType(String, HttpHandler)}
-   * throws an exception for an already-added method.
+   * Verifies that {@link AcceptHandler.Builder#add(String,
+   * HttpHandler)} throws an exception for an already-added method.
    */
   @Test
   public void testDuplicateMediaTypeRejected() {
-    AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType("text/plain", exchange -> {});
+    AcceptHandler.Builder builder =
+        AcceptHandler
+            .builder()
+            .add("text/plain", exchange -> {});
 
     assertThrows(
         IllegalStateException.class,
-        () -> handler.addMediaType("text/plain", exchange -> {}));
+        () -> builder.add("text/plain", exchange -> {}));
   }
 
   /**
@@ -389,10 +396,12 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 ANY_TYPE,
-                new FixedResponseBodyHandler("wildcardHandler"));
+                new FixedResponseBodyHandler("wildcardHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -436,16 +445,18 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain;format=flowed",
                 new FixedResponseBodyHandler("textHandler"))
-            .addMediaType(
+            .add(
                 // Provides a more specific media type than the text handler,
                 // but matches against a less specific type in the Accept
                 // header.
                 "foo/bar;a=1;b=2",
-                new FixedResponseBodyHandler("otherHandler"));
+                new FixedResponseBodyHandler("otherHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -471,10 +482,12 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain",
-                new FixedResponseBodyHandler("textHandler"));
+                new FixedResponseBodyHandler("textHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -505,10 +518,12 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/*",
-                new FixedResponseBodyHandler("textHandler"));
+                new FixedResponseBodyHandler("textHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -538,13 +553,15 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain",
                 new SetHeaderHandler(
                     new FixedResponseBodyHandler("textHandler"),
                     CONTENT_TYPE,
-                    "application/json"));
+                    "application/json"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -575,12 +592,14 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain",
                 exchange -> {
                   throw new IOException();
-                });
+                })
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -610,10 +629,12 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain",
-                exchange -> {});
+                exchange -> {})
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -644,12 +665,14 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain",
                 exchange -> {
                   exchange.setStatusCode(NO_CONTENT);
-                });
+                })
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -679,12 +702,14 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain",
                 exchange -> {
                   exchange.setStatusCode(BAD_REQUEST);
-                });
+                })
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -714,13 +739,15 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain",
                 exchange -> {
                   exchange.setStatusCode(BAD_REQUEST);
                   exchange.getResponseSender().send("bad");
-                });
+                })
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -751,18 +778,20 @@ public final class AcceptHandlerTest {
       throws IOException, InterruptedException {
 
     AcceptHandler handler =
-        new AcceptHandler()
-            .addMediaType(
+        AcceptHandler
+            .builder()
+            .add(
                 "text/plain;a=1",
                 exchange -> {
                   exchange.getResponseSender().send("handler1");
                 })
-            .addMediaType(
+            .add(
                 "text/plain;a=2",
                 exchange -> {
                   exchange.getResponseHeaders().add(Headers.VARY, USER_AGENT);
                   exchange.getResponseSender().send("handler2");
-                });
+                })
+            .build();
 
     String path = http.addHandler(handler);
 

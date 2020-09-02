@@ -31,18 +31,19 @@ import tfb.status.testlib.TestServicesInjector;
 @ExtendWith(TestServicesInjector.class)
 public final class MethodHandlerTest {
   /**
-   * Verifies that {@link MethodHandler#addMethod(HttpString, HttpHandler)}
-   * throws an exception for an already-added method.
+   * Verifies that {@link MethodHandler.Builder#add(HttpString,
+   * HttpHandler)} throws an exception for an already-added method.
    */
   @Test
   public void testDuplicateMethodRejected() {
-    MethodHandler handler =
-        new MethodHandler()
-            .addMethod(GET, exchange -> {});
+    MethodHandler.Builder builder =
+        MethodHandler
+            .builder()
+            .add(GET, exchange -> {});
 
     assertThrows(
         IllegalStateException.class,
-        () -> handler.addMethod(GET, exchange -> {}));
+        () -> builder.add(GET, exchange -> {}));
   }
 
   /**
@@ -53,7 +54,7 @@ public final class MethodHandlerTest {
   public void testNoMethodsAllowed(HttpTester http)
       throws IOException, InterruptedException {
 
-    MethodHandler handler = new MethodHandler();
+    MethodHandler handler = MethodHandler.builder().build();
 
     String path = http.addHandler(handler);
 
@@ -108,8 +109,10 @@ public final class MethodHandlerTest {
       throws IOException, InterruptedException {
 
     MethodHandler handler =
-        new MethodHandler()
-            .addMethod(GET, new FixedResponseBodyHandler("getHandler"));
+        MethodHandler
+            .builder()
+            .add(GET, new FixedResponseBodyHandler("getHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -166,8 +169,10 @@ public final class MethodHandlerTest {
       throws IOException, InterruptedException {
 
     MethodHandler handler =
-        new MethodHandler()
-            .addMethod(POST, new FixedResponseBodyHandler("postHandler"));
+        MethodHandler
+            .builder()
+            .add(POST, new FixedResponseBodyHandler("postHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -223,9 +228,11 @@ public final class MethodHandlerTest {
       throws IOException, InterruptedException {
 
     MethodHandler handler =
-        new MethodHandler()
-            .addMethod(GET, new FixedResponseBodyHandler("getHandler"))
-            .addMethod(POST, new FixedResponseBodyHandler("postHandler"));
+        MethodHandler
+            .builder()
+            .add(GET, new FixedResponseBodyHandler("getHandler"))
+            .add(POST, new FixedResponseBodyHandler("postHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 
@@ -283,8 +290,10 @@ public final class MethodHandlerTest {
       throws IOException, InterruptedException {
 
     MethodHandler handler =
-        new MethodHandler()
-            .addMethod(OPTIONS, new FixedResponseBodyHandler("optionsHandler"));
+        MethodHandler
+            .builder()
+            .add(OPTIONS, new FixedResponseBodyHandler("optionsHandler"))
+            .build();
 
     String path = http.addHandler(handler);
 

@@ -349,8 +349,30 @@ public final class HttpServer implements PreDestroy {
 
     pathMap.forEach(
         (String path, Map<String, Map<String, Map<String, HttpHandler>>> methodMap) -> {
-          var methodHandler = new MethodHandler();
+          MethodHandler.Builder methodsBuilder = MethodHandler.builder();
 
+          methodMap.forEach(
+              (String method, Map<String, Map<String, HttpHandler>> consumesMap) -> {
+                MediaTypeHandler.Builder consumesBuilder = MediaTypeHandler.builder();
+
+                consumesMap.forEach(
+                    (String consumes, Map<String, HttpHandler> producesMap) -> {
+                      AcceptHandler.Builder producesBuilder = AcceptHandler.builder();
+
+                      producesMap.forEach(
+                          (String produces, HttpHandler handler) -> {
+                            producesBuilder.add(produces, handler);
+                          });
+
+                      AcceptHandler producesHandler = producesBuilder.build();
+                      consumesBuilder.add(consumes, producesHandler);
+                    });
+
+                MediaTypeHandler consumesHandler = consumesBuilder.build();
+                methodsBuilder.add(method, consumesHandler);
+              });
+
+          MethodHandler methodHandler = methodsBuilder.build();
           try {
             pathHandler.add(path, methodHandler);
           } catch (IllegalStateException e) {
@@ -369,23 +391,6 @@ public final class HttpServer implements PreDestroy {
                     + "consistently or omitted consistently",
                 e);
           }
-
-          methodMap.forEach(
-              (String method, Map<String, Map<String, HttpHandler>> consumesMap) -> {
-                var consumesHandler = new MediaTypeHandler();
-                methodHandler.addMethod(method, consumesHandler);
-
-                consumesMap.forEach(
-                    (String consumes, Map<String, HttpHandler> producesMap) -> {
-                      var producesHandler = new AcceptHandler();
-                      consumesHandler.addMediaType(consumes, producesHandler);
-
-                      producesMap.forEach(
-                          (String produces, HttpHandler handler) -> {
-                            producesHandler.addMediaType(produces, handler);
-                          });
-                    });
-              });
         });
 
     return pathHandler;
