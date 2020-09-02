@@ -131,7 +131,7 @@ public final class UploadResultsHandler implements HttpHandler {
     Files.move(
         /* source= */ tempFile,
         /* target= */ permanentFile,
-        /* options= */ REPLACE_EXISTING);
+        /* options...= */ REPLACE_EXISTING);
 
     if (uuid != null)
       updatedResultsTopic.publish(new UpdatedResultsEvent(uuid));
