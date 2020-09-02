@@ -33,7 +33,7 @@ public final class AssetsHandler {
 
   @Provides
   @Singleton
-  @Route(method = "GET", path = "/assets/*")
+  @Route(method = "GET", path = "/assets/{assetPath:.+}")
   public static HttpHandler assetsHandler(AssetsConfig config,
                                           FileSystem fileSystem) {
     Objects.requireNonNull(config);
@@ -116,8 +116,8 @@ public final class AssetsHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-      String rest = pathParameter(exchange, "*").orElseThrow();
-      exchange.setRelativePath("/" + rest);
+      String assetPath = pathParameter(exchange, "assetPath").orElseThrow();
+      exchange.setRelativePath("/" + assetPath);
       next.handleRequest(exchange);
     }
   }

@@ -24,7 +24,7 @@ public final class DownloadResultsHandler {
 
   @Provides
   @Singleton
-  @Route(method = "GET", path = "/raw/*")
+  @Route(method = "GET", path = "/raw/{resultsFileName}")
   // This endpoint is used by the TFB website when rendering results by uuid.
   @SetHeader(name = ACCESS_CONTROL_ALLOW_ORIGIN, value = "*")
   public static HttpHandler downloadResultsHandler(FileStore fileStore) {
@@ -50,8 +50,10 @@ public final class DownloadResultsHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-      String rest = pathParameter(exchange, "*").orElseThrow();
-      exchange.setRelativePath("/" + rest);
+      String resultsFileName =
+          pathParameter(exchange, "resultsFileName").orElseThrow();
+
+      exchange.setRelativePath("/" + resultsFileName);
       next.handleRequest(exchange);
     }
   }

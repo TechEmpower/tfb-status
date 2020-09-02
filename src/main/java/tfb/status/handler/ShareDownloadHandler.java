@@ -10,8 +10,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -26,7 +24,7 @@ import tfb.status.util.FileUtils;
 @Singleton
 @Route(
     method = "GET",
-    path = "/share/download/{shareIdDotJson}",
+    path = "/share/download/{shareId:[\\w-]+}.json",
     produces = "application/json")
 // This endpoint is used by the TFB website when rendering results by share id.
 @SetHeader(name = ACCESS_CONTROL_ALLOW_ORIGIN, value = "*")
@@ -40,17 +38,7 @@ public final class ShareDownloadHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws Exception {
-
-    String shareIdDotJson =
-        pathParameter(exchange, "shareIdDotJson").orElseThrow();
-
-    Matcher matcher = SHARE_ID_DOT_JSON_PATTERN.matcher(shareIdDotJson);
-    if (!matcher.matches()) {
-      exchange.setStatusCode(NOT_FOUND);
-      return;
-    }
-
-    String shareId = matcher.group("shareId");
+    String shareId = pathParameter(exchange, "shareId").orElseThrow();
 
     Path sharedFile =
         FileUtils.resolveChildPath(
@@ -71,8 +59,4 @@ public final class ShareDownloadHandler implements HttpHandler {
       gzipInputStream.transferTo(exchange.getOutputStream());
     }
   }
-
-  // Matches "6f221937-b8e5-4b22-a52d-020d2538fa64.json", for example.
-  private static final Pattern SHARE_ID_DOT_JSON_PATTERN =
-      Pattern.compile("^(?<shareId>[\\w-]+)\\.json$");
 }

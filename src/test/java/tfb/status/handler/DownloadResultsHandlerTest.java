@@ -1,6 +1,5 @@
 package tfb.status.handler;
 
-import static io.undertow.util.StatusCodes.FORBIDDEN;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static io.undertow.util.StatusCodes.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -87,10 +86,8 @@ public final class DownloadResultsHandlerTest {
     assertEquals(NOT_FOUND, response1.statusCode());
     assertEquals("", response1.body());
 
-    // We'd prefer 404 Not Found for this, but 403 Forbidden is the behavior of
-    // Undertow's ResourceHandler.
     HttpResponse<String> response2 = http.getString("/raw/");
-    assertEquals(FORBIDDEN, response2.statusCode());
+    assertEquals(NOT_FOUND, response2.statusCode());
     assertEquals("", response2.body());
   }
 }

@@ -16,7 +16,6 @@ import io.undertow.server.handlers.AttachmentHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.DisableCacheHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
-import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import java.io.IOException;
@@ -48,6 +47,7 @@ import tfb.status.handler.routing.SetHeaders;
 import tfb.status.undertow.extensions.AcceptHandler;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
+import tfb.status.undertow.extensions.PathPatternHandler;
 import tfb.status.util.KeyStores;
 
 /**
@@ -345,7 +345,7 @@ public final class HttpServer implements PreDestroy {
                 });
     }
 
-    var pathHandler = new PathTemplateHandler();
+    PathPatternHandler.Builder pathsBuilder = PathPatternHandler.builder();
 
     pathMap.forEach(
         (String path, Map<String, Map<String, Map<String, HttpHandler>>> methodMap) -> {
@@ -374,7 +374,7 @@ public final class HttpServer implements PreDestroy {
 
           MethodHandler methodHandler = methodsBuilder.build();
           try {
-            pathHandler.add(path, methodHandler);
+            pathsBuilder.add(path, methodHandler);
           } catch (IllegalStateException e) {
             throw new InvalidRouteException(
                 "@"
@@ -386,14 +386,12 @@ public final class HttpServer implements PreDestroy {
                     + " annotation with a differently-spelled but functionally "
                     + "equivalent path; if they are meant to have the same "
                     + "path, then check that each path string uses the same "
-                    + "spelling for each variable at each position, and check "
-                    + "that leading and trailing slashes are included "
-                    + "consistently or omitted consistently",
+                    + "spelling for each variable at each position",
                 e);
           }
         });
 
-    return pathHandler;
+    return pathsBuilder.build();
   }
 
   /**

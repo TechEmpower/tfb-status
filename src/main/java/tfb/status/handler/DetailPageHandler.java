@@ -1,8 +1,6 @@
 package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
-import static com.google.common.net.MediaType.HTML_UTF_8;
-import static io.undertow.util.Headers.CONTENT_TYPE;
 import static io.undertow.util.StatusCodes.NOT_FOUND;
 import static tfb.status.undertow.extensions.RequestValues.pathParameter;
 
@@ -11,8 +9,6 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import tfb.status.handler.routing.DisableCache;
@@ -27,8 +23,14 @@ import tfb.status.view.HomePageView.ResultsView;
  * Handles requests for the results detail page.
  */
 @Singleton
-// TODO: Use different routes for html and json.
-@Route(method = "GET", path = "/results/{uuidDotJson}")
+@Route(
+    method = "GET",
+    path = "/results/{uuid:[\\w-]+}",
+    produces = "text/html; charset=utf-8")
+@Route(
+    method = "GET",
+    path = "/results/{uuid:[\\w-]+}.json",
+    produces = "application/json")
 @DisableCache
 // The JSON version of this endpoint is used by the TFB website when rendering
 // results by uuid.  Specifically, the TFB website uses this endpoint to
@@ -52,18 +54,12 @@ public final class DetailPageHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
+    String uuid = pathParameter(exchange, "uuid").orElseThrow();
 
-    String uuidDotJson =
-        pathParameter(exchange, "uuidDotJson").orElseThrow();
-
-    Matcher matcher = UUID_DOT_JSON_PATTERN.matcher(uuidDotJson);
-    if (!matcher.matches()) {
-      exchange.setStatusCode(NOT_FOUND);
-      return;
-    }
-
-    String uuid = matcher.group("uuid");
-    boolean isJson = uuidDotJson.endsWith(".json");
+    boolean isJson =
+        exchange.getAttachment(Route.MATCHED_ROUTE)
+                .produces()
+                .equals("application/json");
 
     ResultsView result = homeResultsReader.resultsByUuid(uuid);
     if (result == null) {
@@ -75,17 +71,10 @@ public final class DetailPageHandler implements HttpHandler {
 
     if (isJson) {
       String json = objectMapper.writeValueAsString(detailPageView);
-      exchange.getResponseHeaders().put(CONTENT_TYPE, "application/json");
       exchange.getResponseSender().send(json);
     } else {
       String html = mustacheRenderer.render("detail.mustache", detailPageView);
-      exchange.getResponseHeaders().put(CONTENT_TYPE, HTML_UTF_8.toString());
       exchange.getResponseSender().send(html);
     }
   }
-
-  // Matches "6f221937-b8e5-4b22-a52d-020d2538fa64.json", for example.  The
-  // trailing ".json" is optional.
-  private static final Pattern UUID_DOT_JSON_PATTERN =
-      Pattern.compile("^(?<uuid>[\\w-]+)(\\.json)?$");
 }

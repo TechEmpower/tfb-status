@@ -18,11 +18,11 @@ public final class TestHandler {
 
   @Provides
   @Singleton
-  @Route(method = "GET", path = "/test/*")
-  @Route(method = "POST", path = "/test/*")
+  @Route(method = "GET", path = "/test/{anyPath:.+}")
+  @Route(method = "POST", path = "/test/{anyPath:.+}")
   // Pass through HEAD and OPTIONS for the sake of MethodHandlerTest.
-  @Route(method = "HEAD", path = "/test/*")
-  @Route(method = "OPTIONS", path = "/test/*")
+  @Route(method = "HEAD", path = "/test/{anyPath:.+}")
+  @Route(method = "OPTIONS", path = "/test/{anyPath:.+}")
   public HttpHandler getHandler() {
     return pathHandler;
   }
@@ -36,7 +36,7 @@ public final class TestHandler {
   public String addHandler(HttpHandler handler) {
     Objects.requireNonNull(handler);
     String path = "/test/" + UUID.randomUUID().toString();
-    pathHandler.addExactPath(path, handler);
+    pathHandler.addPrefixPath(path, handler);
     return path;
   }
 }

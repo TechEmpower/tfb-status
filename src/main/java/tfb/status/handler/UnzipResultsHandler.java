@@ -49,7 +49,7 @@ import tfb.status.view.UnzippedDirectoryView.FileView;
  */
 @Singleton
 @Route(method = "GET", path = "/unzip/{zipFile}")
-@Route(method = "GET", path = "/unzip/{zipFile}/*")
+@Route(method = "GET", path = "/unzip/{zipFile}/{entrySubPath:.+}")
 @DisableCache
 // This endpoint is used by the TFB website when rendering results by uuid.
 // Specifically, the TFB website uses this endpoint to fetch the
@@ -73,7 +73,7 @@ public final class UnzipResultsHandler implements HttpHandler {
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
     String zipFileName = pathParameter(exchange, "zipFile").orElseThrow();
-    String entrySubPath = pathParameter(exchange, "*").orElse(null);
+    String entrySubPath = pathParameter(exchange, "entrySubPath").orElse(null);
 
     Path zipFile =
         FileUtils.resolveChildPath(

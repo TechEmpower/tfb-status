@@ -76,12 +76,12 @@ public final class AssetsHandlerTest {
     assertEquals(NOT_FOUND, response1.statusCode());
     assertEquals("", response1.body());
 
+    HttpResponse<String> response2 = http.getString("/assets/");
+    assertEquals(NOT_FOUND, response2.statusCode());
+    assertEquals("", response2.body());
+
     // We'd prefer 404 Not Found for all of these, but 403 Forbidden is the
     // behavior of Undertow's ResourceHandler.
-
-    HttpResponse<String> response2 = http.getString("/assets/");
-    assertEquals(FORBIDDEN, response2.statusCode());
-    assertEquals("", response2.body());
 
     HttpResponse<String> response3 = http.getString("/assets/js");
     assertEquals(FORBIDDEN, response3.statusCode());
