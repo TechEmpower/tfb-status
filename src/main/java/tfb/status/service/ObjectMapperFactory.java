@@ -19,8 +19,6 @@ public final class ObjectMapperFactory {
   public static ObjectMapper objectMapper() {
     return new ObjectMapper()
         .registerModule(new GuavaModule())
-        .configure(
-            DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-            false);
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
   }
 }

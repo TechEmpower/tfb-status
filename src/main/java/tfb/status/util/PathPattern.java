@@ -448,16 +448,24 @@ public final class PathPattern {
 
     static MatchResult positive(ImmutableMap<String, String> variables) {
       Objects.requireNonNull(variables);
-      return variables.isEmpty()
-          ? POSITIVE_NO_VARIABLES
-          : new MatchResult(true, variables);
+
+      if (variables.isEmpty())
+        return POSITIVE_NO_VARIABLES;
+
+      return new MatchResult(
+          /* matches= */ true,
+          /* variables= */ variables);
     }
 
     static final MatchResult NEGATIVE =
-        new MatchResult(false, ImmutableMap.of());
+        new MatchResult(
+            /* matches= */ false,
+            /* variables= */ ImmutableMap.of());
 
     static final MatchResult POSITIVE_NO_VARIABLES =
-        new MatchResult(true, ImmutableMap.of());
+        new MatchResult(
+            /* matches= */ true,
+            /* variables= */ ImmutableMap.of());
 
     /**
      * Returns {@code true} if the path pattern matches the request path.

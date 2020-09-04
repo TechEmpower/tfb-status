@@ -35,8 +35,7 @@ final class PathRouterInternals {
   /**
    * The comparator used by {@link PathRouter.Builder#build()}.
    */
-  static final
-  Comparator<Endpoint<?>> DEFAULT_ENDPOINT_COMPARATOR =
+  static final Comparator<Endpoint<?>> DEFAULT_ENDPOINT_COMPARATOR =
       comparing((Endpoint<?> endpoint) -> endpoint.pathPattern(),
                 PathPattern.SPECIFICITY_COMPARATOR
                     .reversed()
@@ -147,7 +146,11 @@ final class PathRouterInternals {
         if (!pathPatterns.add(pathPattern)) {
           PathPattern conflictingKey =
               Iterables.getOnlyElement(
-                  pathPatterns.subSet(pathPattern, true, pathPattern, true));
+                  pathPatterns.subSet(
+                      /* fromElement= */ pathPattern,
+                      /* fromInclusive= */ true,
+                      /* toElement= */ pathPattern,
+                      /* toInclusive= */ true));
 
           if (pathPattern.equals(conflictingKey))
             throw new IllegalStateException(
