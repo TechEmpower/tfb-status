@@ -62,17 +62,22 @@ public class PathPatternBenchmark {
   })
   private String pattern;
 
-  private PathPattern pathPattern;
+  private PathPattern compiledPattern;
 
   @Setup
   public void setup() {
-    pathPattern = PathPattern.of(pattern);
-    if (!pathPattern.match(path).matches())
+    compiledPattern = PathPattern.of(pattern);
+    if (!compiledPattern.match(path).matches())
       throw new AssertionError();
   }
 
   @Benchmark
+  public PathPattern of() {
+    return PathPattern.of(pattern);
+  }
+
+  @Benchmark
   public PathPattern.MatchResult match() {
-    return pathPattern.match(path);
+    return compiledPattern.match(path);
   }
 }
