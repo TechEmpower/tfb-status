@@ -67,8 +67,9 @@ import java.util.stream.Stream;
  * to be incompatible with all handlers and will always receive a {@code 406 Not
  * Acceptable} response.
  *
- * <p>See <a href="https://tools.ietf.org/html/rfc7231#section-5.3.2">RFC 7231,
- * section 5.3.2: Accept</a>.
+ * <p>For a general definition of the {@code Accept} header, see
+ * <a href="https://tools.ietf.org/html/rfc7231#section-5.3.2">RFC 7231, section
+ * 5.3.2: Accept</a>.
  *
  * <p>Instances of this class are immutable.  Use {@link #builder()} to obtain a
  * new, mutable {@link Builder} instance, use {@link Builder#add(MediaType,

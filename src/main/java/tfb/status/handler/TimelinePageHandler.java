@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -75,7 +76,10 @@ public final class TimelinePageHandler implements HttpHandler {
     }
 
     var allFrameworks = new HashSet<String>();
-    var missingTestTypes = EnumSet.allOf(Results.TestType.class);
+
+    Set<Results.TestType> missingTestTypes =
+        EnumSet.allOf(Results.TestType.class);
+
     var dataPoints = new ArrayList<DataPointView>();
 
     try (DirectoryStream<Path> zipFiles =

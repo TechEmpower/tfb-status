@@ -2,7 +2,6 @@ package tfb.status.handler.routing;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.AttachmentKey;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -14,7 +13,9 @@ import javax.inject.Qualifier;
 import tfb.status.undertow.extensions.AcceptHandler;
 import tfb.status.undertow.extensions.MediaTypeHandler;
 import tfb.status.undertow.extensions.MethodHandler;
+import tfb.status.undertow.extensions.PathPatternHandler;
 import tfb.status.undertow.extensions.RequestValues;
+import tfb.status.util.PathPattern;
 
 /**
  * Indicates that the annotated service is an {@link HttpHandler} that handles
@@ -38,7 +39,7 @@ import tfb.status.undertow.extensions.RequestValues;
  * <p>Routing is implemented in this order:
  *
  * <ol>
- * <li>By request path, using a {@link PathTemplateHandler}.  If there is no
+ * <li>By request path, using a {@link PathPatternHandler}.  If there is no
  *     route with a matching {@link #path()}, then the response is {@code 404
  *     Not Found}.
  * <li>By request method, using a {@link MethodHandler}.  If there is no route
@@ -73,17 +74,10 @@ public @interface Route {
   String method();
 
   /**
-   * The {@linkplain HttpServerExchange#getRelativePath() request path} matched
-   * by this route.
-   *
-   * <p>This path string is a template that may contain variables, as in {@code
-   * /users/{userId}}.  This template may end with {@code /*} to indicate that
-   * this route matches any number of trailing path parts; the template
-   * {@code /users/{userId}/*} would match a request to the path {@code
-   * /users/123/settings/email}, for example.  The values of these variables
-   * &mdash; {@code userId} and {@code *} in the previous example &mdash; can be
-   * read from a request using {@link
-   * RequestValues#pathParameter(HttpServerExchange, String)}.
+   * The {@linkplain PathPattern path pattern} that defines which {@linkplain
+   * HttpServerExchange#getRelativePath() request paths} are matched by this
+   * route.  The values of path variables can be read from a request using
+   * {@link RequestValues#pathParameter(HttpServerExchange, String)}.
    */
   String path();
 

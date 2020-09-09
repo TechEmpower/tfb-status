@@ -59,7 +59,7 @@ public final class MethodHandler implements HttpHandler {
 
     if (method.equals(HEAD)) {
       //
-      // Undertow has special handling for HEAD built-in.  It ensures that the
+      // Undertow has built-in handling for HEAD requests.  It ensures that the
       // response body remains empty even if our GET handler tries to write
       // something.
       //
