@@ -205,7 +205,8 @@ public final class HomeResultsReader implements PreDestroy {
     };
   }
 
-  private FileSummary readJsonFile(Path jsonFile) throws IOException {
+  @VisibleForTesting
+  FileSummary readJsonFile(Path jsonFile) throws IOException {
     Objects.requireNonNull(jsonFile);
 
     Results results;
@@ -230,7 +231,8 @@ public final class HomeResultsReader implements PreDestroy {
         /* hasTestMetadataFile= */ false);
   }
 
-  private @Nullable FileSummary readZipFile(Path zipFile) throws IOException {
+  @VisibleForTesting
+  @Nullable FileSummary readZipFile(Path zipFile) throws IOException {
     Objects.requireNonNull(zipFile);
 
     Results results =
@@ -732,7 +734,8 @@ public final class HomeResultsReader implements PreDestroy {
    * Information extracted from a results.json or results.zip file.
    */
   @Immutable
-  private static final class FileSummary {
+  @VisibleForTesting
+  static final class FileSummary {
     final String fileName;
     final @Nullable String uuid;
     final @Nullable String commitId;
