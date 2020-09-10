@@ -32,13 +32,7 @@ public final class DiffGeneratorTest {
     var execution =
         new SingleWrkExecution(
             /* totalRequests= */ 789,
-            /* latencyAvg= */ null,
-            /* latencyMax= */ null,
-            /* latencyStdev= */ null,
-            /* status5xx= */ 0,
-            /* write= */ 0,
-            /* read= */ 0,
-            /* connect= */ 0);
+            /* status5xx= */ 0);
 
     var rawData =
         new RawData(

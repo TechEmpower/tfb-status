@@ -649,30 +649,6 @@ public final class Results {
      */
     public final long totalRequests;
 
-    // TODO: Can we remove the latency fields?  This application doesn't use
-    //       them.
-
-    /**
-     * The average HTTP request latency reported by wrk as a decimal number
-     * followed by time units, such as "1.23ms" or "45.67us", or {@code null} if
-     * this information is unavailable.
-     */
-    public final @Nullable String latencyAvg;
-
-    /**
-     * The maximum HTTP request latency reported by wrk as a decimal number
-     * followed by time units, such as "1.23ms" or "45.67us", or {@code null} if
-     * this information is unavailable.
-     */
-    public final @Nullable String latencyMax;
-
-    /**
-     * The standard deviation of the HTTP request latency reported by wrk as a
-     * decimal number followed by a percent sign, such as "67.89%", or {@code
-     * null} if this information is unavailable.
-     */
-    public final @Nullable String latencyStdev;
-
     /**
      * The total number of HTTP requests completed by wrk having response status
      * codes not in the 2xx or 3xx range.
@@ -682,63 +658,17 @@ public final class Results {
      */
     @JsonProperty("5xx") public final int status5xx;
 
-    // TODO: Can we remove the socket error fields?  This application doesn't
-    //       use them.  If we can't remove them, then we should probably add the
-    //       "timeout" field which is not included here for whatever reason.
-
-    /**
-     * The total number of socket write errors encountered by wrk during this
-     * execution.
-     */
-    public final int write;
-
-    /**
-     * The total number of socket read errors encountered by wrk during this
-     * execution.
-     */
-    public final int read;
-
-    /**
-     * The total number of socket connect errors encountered by wrk during this
-     * execution.
-     */
-    public final int connect;
-
     @JsonCreator
     public SingleWrkExecution(
 
         @JsonProperty(value = "totalRequests", required = false)
         long totalRequests,
 
-        @JsonProperty(value = "latencyAvg", required = false)
-        @Nullable String latencyAvg,
-
-        @JsonProperty(value = "latencyMax", required = false)
-        @Nullable String latencyMax,
-
-        @JsonProperty(value = "latencyStdev", required = false)
-        @Nullable String latencyStdev,
-
         @JsonProperty(value = "5xx", required = false)
-        int status5xx,
-
-        @JsonProperty(value = "write", required = false)
-        int write,
-
-        @JsonProperty(value = "read", required = false)
-        int read,
-
-        @JsonProperty(value = "connect", required = false)
-        int connect) {
+        int status5xx) {
 
       this.totalRequests = totalRequests;
-      this.latencyAvg = latencyAvg;
-      this.latencyMax = latencyMax;
-      this.latencyStdev = latencyStdev;
       this.status5xx = status5xx;
-      this.write = write;
-      this.read = read;
-      this.connect = connect;
     }
 
     /**
@@ -758,13 +688,7 @@ public final class Results {
       } else {
         SingleWrkExecution that = (SingleWrkExecution) object;
         return this.totalRequests == that.totalRequests
-            && this.status5xx == that.status5xx
-            && this.write == that.write
-            && this.read == that.read
-            && this.connect == that.connect
-            && Objects.equals(this.latencyAvg, that.latencyAvg)
-            && Objects.equals(this.latencyMax, that.latencyMax)
-            && Objects.equals(this.latencyStdev, that.latencyStdev);
+            && this.status5xx == that.status5xx;
       }
     }
 
@@ -772,13 +696,7 @@ public final class Results {
     public int hashCode() {
       int hash = 1;
       hash = 31 * hash + Long.hashCode(totalRequests);
-      hash = 31 * hash + Objects.hashCode(latencyAvg);
-      hash = 31 * hash + Objects.hashCode(latencyMax);
-      hash = 31 * hash + Objects.hashCode(latencyStdev);
       hash = 31 * hash + Integer.hashCode(status5xx);
-      hash = 31 * hash + Integer.hashCode(write);
-      hash = 31 * hash + Integer.hashCode(read);
-      hash = 31 * hash + Integer.hashCode(connect);
       return hash;
     }
   }
