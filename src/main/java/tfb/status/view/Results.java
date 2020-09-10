@@ -17,6 +17,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A representation of the results.json file from a TFB run.
+ *
+ * <p>This class contains a subset of the fields defined in a results.json file.
+ * In general, a field that is defined in results.json files will be added to
+ * this class when this application uses that field, and unused fields will be
+ * omitted from this class.
+ *
+ * <p>Instances of this class are deserialized from JSON.  Instances of this
+ * class are serialized to JSON in tests only; the serialized form of this class
+ * is never exposed to users.
  */
 @Immutable
 public final class Results {
@@ -342,11 +351,40 @@ public final class Results {
    */
   @Immutable
   public static final class TestTypeToFrameworks {
+    /**
+     * The names of frameworks associated with the JSON serialization test in
+     * this mapping.
+     */
     public final @Nullable ImmutableSet<String> json;
+
+    /**
+     * The names of frameworks associated with the plaintext test in this
+     * mapping.
+     */
     public final @Nullable ImmutableSet<String> plaintext;
+
+    /**
+     * The names of frameworks associated with the single query test in this
+     * mapping.
+     */
     public final @Nullable ImmutableSet<String> db;
+
+    /**
+     * The names of frameworks associated with the multiple queries test in this
+     * mapping.
+     */
     public final @Nullable ImmutableSet<String> query;
+
+    /**
+     * The names of frameworks associated with the data updates test in this
+     * mapping.
+     */
     public final @Nullable ImmutableSet<String> update;
+
+    /**
+     * The names of frameworks associated with the fortunes test in this
+     * mapping.
+     */
     public final @Nullable ImmutableSet<String> fortune;
 
     @JsonProperty("cached_query")
@@ -453,13 +491,46 @@ public final class Results {
    */
   @Immutable
   public static final class RawData {
+    /**
+     * Maps framework names to those frameworks' raw results in the JSON
+     * serialization test.
+     */
     public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> json;
+
+    /**
+     * Maps framework names to those frameworks' raw results in the plaintext
+     * test.
+     */
     public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> plaintext;
+
+    /**
+     * Maps framework names to those frameworks' raw results in the single query
+     * test.
+     */
     public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> db;
+
+    /**
+     * Maps framework names to those frameworks' raw results in the multiple
+     * queries test.
+     */
     public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> query;
+
+    /**
+     * Maps framework names to those frameworks' raw results in the data updates
+     * test.
+     */
     public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> update;
+
+    /**
+     * Maps framework names to those frameworks' raw results in the fortunes
+     * test.
+     */
     public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> fortune;
 
+    /**
+     * Maps framework names to those frameworks' raw results in the cached
+     * queries test.
+     */
     @JsonProperty("cached_query")
     public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> cachedQuery;
 
@@ -568,13 +639,69 @@ public final class Results {
   @Immutable
   @JsonInclude(NON_DEFAULT)
   public static final class SingleWrkExecution {
+    /**
+     * The total number of HTTP requests <em>completed</em> by wrk regardless of
+     * the response status code, not including requests that failed to complete
+     * due to timeouts or socket-level errors.
+     *
+     * <p>Subtract {@link #status5xx} from this number to determine the total
+     * number of successful HTTP requests.
+     */
     public final long totalRequests;
+
+    // TODO: Can we remove the latency fields?  This application doesn't use
+    //       them.
+
+    /**
+     * The average HTTP request latency reported by wrk as a decimal number
+     * followed by time units, such as "1.23ms" or "45.67us", or {@code null} if
+     * this information is unavailable.
+     */
     public final @Nullable String latencyAvg;
+
+    /**
+     * The maximum HTTP request latency reported by wrk as a decimal number
+     * followed by time units, such as "1.23ms" or "45.67us", or {@code null} if
+     * this information is unavailable.
+     */
     public final @Nullable String latencyMax;
+
+    /**
+     * The standard deviation of the HTTP request latency reported by wrk as a
+     * decimal number followed by a percent sign, such as "67.89%", or {@code
+     * null} if this information is unavailable.
+     */
     public final @Nullable String latencyStdev;
+
+    /**
+     * The total number of HTTP requests completed by wrk having response status
+     * codes not in the 2xx or 3xx range.
+     *
+     * <p>Subtract this number from {@link #totalRequests} to determine the
+     * total number of successful HTTP requests.
+     */
     @JsonProperty("5xx") public final int status5xx;
+
+    // TODO: Can we remove the socket error fields?  This application doesn't
+    //       use them.  If we can't remove them, then we should probably add the
+    //       "timeout" field which is not included here for whatever reason.
+
+    /**
+     * The total number of socket write errors encountered by wrk during this
+     * execution.
+     */
     public final int write;
+
+    /**
+     * The total number of socket read errors encountered by wrk during this
+     * execution.
+     */
     public final int read;
+
+    /**
+     * The total number of socket connect errors encountered by wrk during this
+     * execution.
+     */
     public final int connect;
 
     @JsonCreator
@@ -615,7 +742,8 @@ public final class Results {
     }
 
     /**
-     * The total number of successful requests during this execution.
+     * The total number of successful HTTP requests completed by wrk during this
+     * execution.
      */
     long successfulRequests() {
       return totalRequests - status5xx;
@@ -660,8 +788,28 @@ public final class Results {
    */
   @Immutable
   public static final class GitInfo {
+    /**
+     * The current commit id of the local repository.  Equivalent to the output
+     * of {@code git rev-parse HEAD}.
+     */
     public final String commitId;
+
+    /**
+     * The name of the remote repository from which the local repository was
+     * cloned, such as "https://github.com/TechEmpower/FrameworkBenchmarks.git".
+     * Equivalent to the output of {@code git config --get remote.origin.url}.
+     */
     public final String repositoryUrl;
+
+    /**
+     * The current branch name of the local repository, or {@code null} if that
+     * information is unavailable.  Equivalent to the output of {@code git
+     * rev-parse --abbrev-ref HEAD}.
+     *
+     * <p>This field was added a few weeks after the {@link #commitId} and
+     * {@link #repositoryUrl} fields, so there are a few runs where this field
+     * is {@code null} and those other fields are non-{@code null}.
+     */
     public final @Nullable String branchName;
 
     @JsonCreator
@@ -718,10 +866,24 @@ public final class Results {
     // These enum constants are arranged in the same order as the test type tabs
     // on the TFB website.
 
+    /**
+     * The JSON serialization test.
+     */
     JSON("json"),
+
+    /**
+     * The single query test.
+     */
     DB("db"),
+
+    /**
+     * The multiple queries test.
+     */
     QUERY("query"),
 
+    /**
+     * The cached queries test.
+     */
     // We renamed the "cached_query" test type to "cached-query" on July 2,
     // 2020.  This application will continue to support both names forever.  In
     // the timeline view, for example, we want to be able to plot "cached_query"
@@ -729,8 +891,19 @@ public final class Results {
     // newer results.json files.
     CACHED_QUERY("cached_query", "cached-query"),
 
+    /**
+     * The fortunes test.
+     */
     FORTUNE("fortune"),
+
+    /**
+     * The data updates test.
+     */
     UPDATE("update"),
+
+    /**
+     * The plaintext test.
+     */
     PLAINTEXT("plaintext");
 
     /**
