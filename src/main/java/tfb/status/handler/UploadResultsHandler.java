@@ -65,26 +65,21 @@ public final class UploadResultsHandler implements HttpHandler {
 
   @Provides
   @Singleton
-  @Route(method = "POST", path = "/upload", consumes = JSON_CONTENT_TYPE)
-  @Route(method = "POST", path = "/upload", consumes = ZIP_CONTENT_TYPE)
+  @Route(method = "POST", path = "/upload", consumes = "application/json")
+  @Route(method = "POST", path = "/upload", consumes = "application/zip")
   @DisableCache
   public HttpHandler uploadResultsHandler(Authenticator authenticator) {
     Objects.requireNonNull(authenticator);
     return authenticator.newRequiredAuthHandler(this);
   }
 
-  private static final String JSON_CONTENT_TYPE = "application/json";
-  private static final String ZIP_CONTENT_TYPE = "application/zip";
-
-  private static boolean isJson(HttpServerExchange exchange) {
-    Objects.requireNonNull(exchange);
-    Route matchedRoute = exchange.getAttachment(Route.MATCHED_ROUTE);
-    return matchedRoute.consumes().equals(JSON_CONTENT_TYPE);
-  }
-
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
-    boolean isJson = isJson(exchange);
+    boolean isJson =
+        exchange.getAttachment(Route.MATCHED_ROUTE)
+                .consumes()
+                .equals("application/json");
+
     String fileExtension = isJson ? "json" : "zip";
 
     Path tempFile =
