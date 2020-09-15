@@ -22,11 +22,11 @@ public final class RobotsHandler {
       produces = "text/plain; charset=utf-8")
   public static HttpHandler robotsHandler() {
     return new FixedResponseBodyHandler(
-        String.join(
-            "\n",
-            "User-agent: *",
-            "Allow: /$",
-            "Allow: /assets",
-            "Disallow: /"));
+        """
+        User-agent: *
+        Allow: /$
+        Allow: /assets
+        Disallow: /
+        """);
   }
 }
