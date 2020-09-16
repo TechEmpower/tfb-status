@@ -493,6 +493,7 @@
               -Xep:SwitchDefault:OFF
               -Xep:UnnecessaryDefaultInEnumSwitch:OFF
               -Xep:MissingDefault:OFF
+              -Xep:AnnotationPosition:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
