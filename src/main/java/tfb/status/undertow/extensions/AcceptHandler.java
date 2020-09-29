@@ -54,11 +54,12 @@ import java.util.stream.Stream;
  *     a wildcard type.
  * <li>Their {@linkplain MediaType#subtype() subtypes} are equal, or at least
  *     one has a wildcard subtype.
- * <li>For each key that appears in the parameters of both media types, the
- *     values associated with that key in either media type must also be
- *     associated with that key in the other media type.  For example, {@code
- *     text/html;level=1} is compatible with {@code text/html;charset=utf-8} but
- *     not compatible with {@code text/html;level=2}.
+ * <li>For each key that appears in the {@linkplain MediaType#parameters()
+ *     parameters} of both media types, the values associated with that key in
+ *     either media type must also be associated with that key in the other
+ *     media type.  For example, {@code text/html;level=1} is compatible with
+ *     {@code text/html;charset=utf-8} but not compatible with {@code
+ *     text/html;level=2}.
  * </ul>
  *
  * <p>A request with no {@code Accept} header is considered to have
