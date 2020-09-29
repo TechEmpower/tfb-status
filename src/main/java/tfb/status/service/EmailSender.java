@@ -33,6 +33,7 @@ import tfb.status.config.EmailConfig;
 @Singleton
 public final class EmailSender {
   private final @Nullable EmailConfig config;
+  private final @Nullable OverridePort overridePort;
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   /**
@@ -40,16 +41,38 @@ public final class EmailSender {
    *
    * @param config the configuration for emails, or {@code null} if outbound
    *        emails should be quietly discarded
+   * @param overridePort a service that produces the port number of the mail
+   *        server on demand, which may be useful when the mail server listens
+   *        on a dynamically assigned ephemeral port, or {@code null} if the
+   *        {@linkplain EmailConfig#port configured port number} will be used
    * @throws IllegalArgumentException if the configuration is invalid
    */
   @Inject
-  public EmailSender(@Nullable EmailConfig config) {
+  public EmailSender(@Nullable EmailConfig config,
+                     @Nullable OverridePort overridePort) {
+
     if (config != null) {
       verifyHostAndPort(config.host, config.port);
       verifyEmailAddress(config.from);
       verifyEmailAddress(config.to);
     }
+
     this.config = config;
+    this.overridePort = overridePort;
+  }
+
+  /**
+   * A service that produces the port number of the mail server on demand.  If
+   * this service exists, then the value returned by {@link #getPort()} is
+   * considered to override the {@linkplain EmailConfig#port configured port
+   * number}.
+   */
+  @FunctionalInterface
+  public interface OverridePort {
+    /**
+     * Returns the port number of the mail server.
+     */
+    int getPort();
   }
 
   private static void verifyHostAndPort(String host, int port) {
@@ -92,12 +115,17 @@ public final class EmailSender {
       return;
     }
 
+    int port =
+        (overridePort == null)
+            ? config.port
+            : overridePort.getPort();
+
     var from = new InternetAddress(config.from);
     var to = new InternetAddress(config.to);
 
     var environment = new Properties();
     environment.setProperty("mail.smtp.host", config.host);
-    environment.setProperty("mail.smtp.port", String.valueOf(config.port));
+    environment.setProperty("mail.smtp.port", String.valueOf(port));
     environment.setProperty("mail.smtp.starttls.enable", "true");
 
     Session session = Session.getInstance(environment);

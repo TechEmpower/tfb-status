@@ -4,6 +4,7 @@ import static io.undertow.UndertowOptions.ENABLE_HTTP2;
 import static io.undertow.UndertowOptions.RECORD_REQUEST_START_TIME;
 import static io.undertow.UndertowOptions.SHUTDOWN_TIMEOUT;
 
+import com.google.common.collect.Iterables;
 import com.google.common.io.MoreFiles;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
@@ -20,6 +21,7 @@ import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.net.InetSocketAddress;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -148,6 +150,29 @@ public final class HttpServer implements PreDestroy {
 
     isRunning = false;
     logger.info("stopped [{}]", serverInfo);
+  }
+
+  /**
+   * Returns the port number that has been assigned to this server.
+   *
+   * <p>When the {@linkplain HttpServerConfig#port configured port number} is
+   * non-zero, the assigned port number will equal the configured port number.
+   * Otherwise, when the configured port number is zero, the host system will
+   * dynamically assign an ephemeral port for this server, and this method
+   * returns that dynamically assigned port number.
+   *
+   * @throws IllegalStateException if this server is not running
+   */
+  public synchronized int assignedPort() {
+    if (!isRunning)
+      throw new IllegalStateException("This server is not running");
+
+    Undertow.ListenerInfo listener =
+        Iterables.getOnlyElement(server.getListenerInfo());
+
+    InetSocketAddress address = (InetSocketAddress) listener.getAddress();
+
+    return address.getPort();
   }
 
   /**

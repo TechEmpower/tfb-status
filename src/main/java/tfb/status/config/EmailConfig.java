@@ -20,6 +20,12 @@ public final class EmailConfig {
 
   /**
    * The port for the mail server.
+   *
+   * <p>If this value is zero, then the mail server listens on an ephemeral
+   * port.  The ephemeral port is dynamically assigned to the mail server by the
+   * host system as the mail server is started.  Mail clients are responsible
+   * for determining the ephemeral port number of the server somehow.  The
+   * algorithm for doing so is not specified by this class.
    */
   public final int port;
 

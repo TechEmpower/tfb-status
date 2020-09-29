@@ -22,6 +22,12 @@ public final class HttpServerConfig {
   /**
    * The port number for the HTTP server.  The HTTP server listens for incoming
    * HTTP requests on this port only.
+   *
+   * <p>If this value is zero, then the HTTP server listens on an ephemeral
+   * port.  The ephemeral port is dynamically assigned to the HTTP server by the
+   * host system as the HTTP server is started.  HTTP clients are responsible
+   * for determining the ephemeral port number of the server somehow.  The
+   * algorithm for doing so is not specified by this class.
    */
   public final int port;
 

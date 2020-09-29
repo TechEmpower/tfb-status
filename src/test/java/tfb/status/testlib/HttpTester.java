@@ -28,15 +28,18 @@ import tfb.status.service.HttpServer;
 @Singleton
 public final class HttpTester {
   private final Provider<HttpClient> clientProvider;
+  private final Provider<HttpServer> serverProvider;
   private final Provider<HttpServerConfig> configProvider;
   private final Provider<TestHandler> testHandlerProvider;
 
   @Inject
   public HttpTester(Provider<HttpClient> clientProvider,
+                    Provider<HttpServer> serverProvider,
                     Provider<HttpServerConfig> configProvider,
                     Provider<TestHandler> testHandlerProvider) {
 
     this.clientProvider = Objects.requireNonNull(clientProvider);
+    this.serverProvider = Objects.requireNonNull(serverProvider);
     this.configProvider = Objects.requireNonNull(configProvider);
     this.testHandlerProvider = Objects.requireNonNull(testHandlerProvider);
   }
@@ -85,7 +88,12 @@ public final class HttpTester {
 
     HttpServerConfig config = configProvider.get();
     boolean encrypted = config.keyStore != null;
-    int port = config.port;
+
+    // If we're using an ephemeral port, we won't know which port number we're
+    // using until the server is started.
+    HttpServer server = serverProvider.get();
+    server.start();
+    int port = server.assignedPort();
 
     boolean nonStandardPort =
         (encrypted && port != 443) || (!encrypted && port != 80);

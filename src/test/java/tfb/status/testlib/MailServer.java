@@ -2,18 +2,23 @@ package tfb.status.testlib;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import com.icegreen.greenmail.smtp.SmtpServer;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PreDestroy;
 import tfb.status.config.EmailConfig;
+import tfb.status.hk2.extensions.Provides;
 import tfb.status.service.EmailSender;
+import tfb.status.service.EmailSender.OverridePort;
 
 /**
  * A locally-hosted mail server that receives emails from {@link EmailSender}
@@ -24,8 +29,8 @@ import tfb.status.service.EmailSender;
  */
 @Singleton
 public final class MailServer implements PreDestroy {
-  @GuardedBy("this")
-  private final @Nullable GreenMail server;
+  @GuardedBy("this") private final @Nullable GreenMail server;
+  @GuardedBy("this") private boolean isRunning;
 
   @Inject
   public MailServer(Optional<EmailConfig> optionalConfig) {
@@ -49,19 +54,70 @@ public final class MailServer implements PreDestroy {
   }
 
   /**
-   * Starts this server.
+   * Starts this server if it is currently stopped.
    */
   public synchronized void start() {
+    if (isRunning) return;
+
     if (server != null)
       server.start();
+
+    isRunning = true;
   }
 
   /**
-   * Stops this server.
+   * Stops this server if it is currently running.
    */
   public synchronized void stop() {
+    if (!isRunning) return;
+
     if (server != null)
       server.stop();
+
+    isRunning = false;
+  }
+
+  /**
+   * Returns the port number that has been assigned to this server.
+   *
+   * <p>When the {@linkplain EmailConfig#port configured port number} is
+   * non-zero, the assigned port number will equal the configured port number.
+   * Otherwise, when the configured port number is zero, the host system will
+   * dynamically assign an ephemeral port for this server, and this method
+   * returns that dynamically assigned port number.
+   *
+   * @throws IllegalStateException if this server is not running
+   */
+  public synchronized int assignedPort() {
+    if (server == null)
+      throw new IllegalStateException(
+          "Email is disabled in this application's config");
+
+    if (!isRunning)
+      throw new IllegalStateException("This server is not running");
+
+    SmtpServer smtp = Objects.requireNonNull(server.getSmtp());
+    return smtp.getPort();
+  }
+
+  /**
+   * Provides a service that reveals the {@link #assignedPort()} of this mail
+   * server to the {@link EmailSender}.  This allows the server and client to
+   * communicate over an ephemeral port.  Returns {@code null} when email is
+   * disabled.
+   */
+  @Provides
+  @PerLookup
+  public synchronized @Nullable OverridePort overridePort() {
+    if (server == null)
+      return null;
+
+    return () -> {
+      // If we're using an ephemeral port, we won't know which port number we're
+      // using until the server is started.
+      start();
+      return assignedPort();
+    };
   }
 
   /**
