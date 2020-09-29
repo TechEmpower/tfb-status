@@ -1,10 +1,9 @@
 package tfb.status.handler;
 
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
-import static tfb.status.undertow.extensions.RequestValues.pathParameter;
 
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import java.util.Objects;
@@ -34,27 +33,8 @@ public final class DownloadResultsHandler {
     var resourceHandler = new ResourceHandler(resourceManager);
     resourceHandler.setWelcomeFiles();
 
-    return new FixResourcePathHandler(resourceHandler);
-  }
-
-  /**
-   * Trims the "/raw" prefix from the front of the request path, since that
-   * prefix would confuse the {@link ResourceHandler}.
-   */
-  private static final class FixResourcePathHandler implements HttpHandler {
-    private final HttpHandler next;
-
-    FixResourcePathHandler(HttpHandler next) {
-      this.next = Objects.requireNonNull(next);
-    }
-
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      String resultsFileName =
-          pathParameter(exchange, "resultsFileName").orElseThrow();
-
-      exchange.setRelativePath("/" + resultsFileName);
-      next.handleRequest(exchange);
-    }
+    // Trim the "/raw" prefix from the front of the request path, since that
+    // prefix would confuse the ResourceHandler.
+    return new PathHandler().addPrefixPath("/raw", resourceHandler);
   }
 }

@@ -2,12 +2,11 @@ package tfb.status.handler;
 
 import static com.google.common.net.MediaType.ANY_TEXT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static tfb.status.undertow.extensions.RequestValues.pathParameter;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.MediaType;
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
@@ -40,7 +39,10 @@ public final class AssetsHandler {
     Objects.requireNonNull(fileSystem);
 
     HttpHandler handler = newResourceHandler(config, fileSystem);
-    handler = new FixResourcePathHandler(handler);
+
+    // Trim the "/assets" prefix from the front of the request path, since that
+    // prefix would confuse the ResourceHandler.
+    handler = new PathHandler().addPrefixPath("/assets", handler);
 
     return handler;
   }
@@ -102,23 +104,4 @@ public final class AssetsHandler {
       ImmutableSet.of(
           ANY_TEXT_TYPE,
           MediaType.create("application", "javascript"));
-
-  /**
-   * Trims the "/assets" prefix from the front of the request path, since that
-   * prefix would confuse the {@link ResourceHandler}.
-   */
-  private static final class FixResourcePathHandler implements HttpHandler {
-    private final HttpHandler next;
-
-    FixResourcePathHandler(HttpHandler next) {
-      this.next = Objects.requireNonNull(next);
-    }
-
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      String assetPath = pathParameter(exchange, "assetPath").orElseThrow();
-      exchange.setRelativePath("/" + assetPath);
-      next.handleRequest(exchange);
-    }
-  }
 }
