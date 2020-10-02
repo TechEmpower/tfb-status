@@ -54,7 +54,7 @@ public final class AssetsHandler {
 
     return switch (config.mode) {
       case CLASS_PATH -> {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        ClassLoader classLoader = AssetsHandler.class.getClassLoader();
         var resourceManager = new ClassPathResourceManager(classLoader, "assets");
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setMimeMappings(newMimeMappings());

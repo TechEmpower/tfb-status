@@ -42,7 +42,7 @@ public final class AssetsHandlerTest {
                 .firstValue(CONTENT_TYPE)
                 .orElse(null));
 
-    ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+    ClassLoader classLoader = getClass().getClassLoader();
     URL url = classLoader.getResource("assets/js/home.js");
     assertNotNull(url);
     String expected = Resources.asCharSource(url, UTF_8).read();

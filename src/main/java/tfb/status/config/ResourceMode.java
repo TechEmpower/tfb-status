@@ -31,7 +31,7 @@ public enum ResourceMode {
       var thisClass = DefaultModeHolder.class;
       String classFilePath = thisClass.getName().replace('.', '/') + ".class";
 
-      ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+      ClassLoader classLoader = thisClass.getClassLoader();
       URL classFileUrl = classLoader.getResource(classFilePath);
 
       if (classFileUrl == null)

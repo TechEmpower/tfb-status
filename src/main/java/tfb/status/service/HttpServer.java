@@ -509,11 +509,13 @@ public final class HttpServer implements PreDestroy {
             "%{BYTES_SENT} bytes",
             "%{RESPONSE_TIME} ms");
 
+    ClassLoader classLoader = HttpServer.class.getClassLoader();
+
     return new AccessLogHandler(
         /* next= */ handler,
         /* accessLogReceiver= */ message -> logger.info(message),
         /* formatString= */ formatString,
-        /* classLoader= */ Thread.currentThread().getContextClassLoader());
+        /* classLoader= */ classLoader);
   }
 
   /**

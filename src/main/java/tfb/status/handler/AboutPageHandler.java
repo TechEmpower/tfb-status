@@ -37,11 +37,10 @@ public final class AboutPageHandler implements HttpHandler {
   @Override
   public void handleRequest(HttpServerExchange exchange) throws IOException {
     ImmutableMap<String, String> gitProperties;
+    ClassLoader classLoader = getClass().getClassLoader();
 
     try (InputStream inputStream =
-             Thread.currentThread()
-                   .getContextClassLoader()
-                   .getResourceAsStream("git.properties")) {
+             classLoader.getResourceAsStream("git.properties")) {
 
       if (inputStream == null)
         gitProperties = ImmutableMap.of();
