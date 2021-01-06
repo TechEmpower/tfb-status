@@ -25,7 +25,7 @@
        These rules are written by us and are not infallible.  They'll need to be
        maintained especially as we add new dependencies.
 
-       As a measure of success, the "mvn versions display-dependency-updates"
+       As a measure of success, the "mvn versions display-dependency-updates -U"
        command should *always* show *only* versions that we want to upgrade to
        *immediately*.  If that is ever not the case, then we should modify these
        rules to ignore those versions.
@@ -51,6 +51,7 @@
       <ignoreVersions>
         <ignoreVersion type="regex">.+\.pr[\d]+</ignoreVersion>
         <ignoreVersion type="regex">.+\.rc[\d]+</ignoreVersion>
+        <ignoreVersion type="regex">.+\-rc[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
