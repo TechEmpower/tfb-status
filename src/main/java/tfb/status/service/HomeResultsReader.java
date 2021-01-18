@@ -347,25 +347,22 @@ public final class HomeResultsReader implements PreDestroy {
 
     for (Results.TestType testType : Results.TestType.values()) {
       for (String framework : results.frameworks) {
-        switch (results.testOutcome(testType, framework)) {
+        // Use a switch expression for exhaustiveness even though we don't need
+        // the yielded value.
+        int ignored = switch (results.testOutcome(testType, framework)) {
           case FAILED -> {
             failedTests++;
             frameworkToFailedTestTypes.put(framework, testType);
+            yield 2;
           }
 
-          case SUCCEEDED -> successfulTests++;
+          case SUCCEEDED -> {
+            successfulTests++;
+            yield 1;
+          }
 
-          case NOT_IMPLEMENTED_OR_NOT_YET_TESTED -> {} // Do nothing.
-
-          default ->
-              throw new AssertionError(
-                  "Unknown test outcome "
-                      + results.testOutcome(testType, framework)
-                      + " for framework "
-                      + framework
-                      + " and test type "
-                      + testType);
-        }
+          case NOT_IMPLEMENTED_OR_NOT_YET_TESTED -> 0; // Do nothing.
+        };
       }
     }
 
