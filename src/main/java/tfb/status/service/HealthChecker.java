@@ -92,7 +92,7 @@ public final class HealthChecker implements PreDestroy {
       synchronized (lock) {
         isHealthy = true;
       }
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       synchronized (lock) {
         isHealthy = false;
       }
