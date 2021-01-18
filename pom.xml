@@ -25,7 +25,7 @@
     <caffeine.version>2.8.8</caffeine.version>
     <checkerframework.version>3.9.0</checkerframework.version>
     <crawler-commons.version>1.1</crawler-commons.version>
-    <error-prone.version>2.4.0</error-prone.version>
+    <error-prone.version>2.5.1</error-prone.version>
     <extra-enforcer-rules.version>1.3</extra-enforcer-rules.version>
     <git-commit-id-plugin.version>4.0.2</git-commit-id-plugin.version>
     <greenmail.version>1.6.1</greenmail.version>
@@ -495,14 +495,11 @@
               <!-- These checks seem interesting but they either throw
                    exceptions or report too many false positives.
 
-                   We last tried these checks in Error Prone 2.4.0. -->
-              -Xep:FieldMissingNullable:OFF
+                   We last tried these checks in Error Prone 2.5.1. -->
               -Xep:UnnecessaryParentheses:OFF
               -Xep:FallThrough:OFF
               -Xep:SwitchDefault:OFF
-              -Xep:UnnecessaryDefaultInEnumSwitch:OFF
               -Xep:MissingDefault:OFF
-              -Xep:AnnotationPosition:OFF
 
               <!-- We disagree that adding a "@Var" annotation to every
                    non-constant variable would make our code more readable.
@@ -521,6 +518,19 @@
                    case that "using more than one qualifier annotation on the
                    same element is not allowed". -->
               -Xep:InjectMoreThanOneQualifier:OFF
+
+              <!-- We disagree that @Inject constructors should have
+                   package-private visibility.  We do not want to assume that
+                   the dependency injection framework will be able to invoke
+                   non-public APIs of our classes. -->
+              -Xep:UnnecessarilyVisible:OFF
+
+              <!-- This check generates too much noise for our record-like
+                   classes.  We implemented equals and hashCode in those classes
+                   for the sake of tests.  That had a poor bloat-to-benefit
+                   ratio, and toString would be worse.  When we convert those
+                   classes into records, we can re-enable this check. -->
+              -Xep:HashCodeToString:OFF
 
             </arg>
 
