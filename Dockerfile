@@ -10,12 +10,12 @@ FROM maven:3.6.3-openjdk-15 AS base_build_image
 # java.naming        javax.naming.NamingException            logback
 # java.xml           org.xml.sax.InputSource                 logback
 # jdk.crypto.ec      sun.security.ec.SunEC                   jakarta.mail (for STARTTLS)
-# jdk.unsupported    sun.misc.Unsafe                         caffeine
+# jdk.jdwp.agent     (native code)                           java -agentlib:jdwp
+# jdk.unsupported    sun.misc.Unsafe                         jboss-threads
 # jdk.zipfs          jdk.nio.zipfs.ZipFileSystemProvider     tfb.status.util.ZipFiles
-# jdk.jdwp.agent                                             remote debugging
 # ------------------------------------------------------------------------------
 FROM base_build_image AS build_jre
-RUN jlink --add-modules java.datatransfer,java.logging,java.management,java.naming,java.xml,jdk.crypto.ec,jdk.unsupported,jdk.zipfs,jdk.jdwp.agent \
+RUN jlink --add-modules java.datatransfer,java.logging,java.management,java.naming,java.xml,jdk.crypto.ec,jdk.jdwp.agent,jdk.unsupported,jdk.zipfs \
           --output /opt/jre
 
 # Trick Maven into downloading our dependencies before we copy over our "src"
