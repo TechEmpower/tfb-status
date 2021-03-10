@@ -31,7 +31,7 @@
     <greenmail.version>1.6.2</greenmail.version>
     <guava.version>30.1-jre</guava.version>
     <hk2.version>2.6.1</hk2.version>
-    <jackson.version>2.12.1</jackson.version>
+    <jackson.version>2.12.2</jackson.version>
 
     <!-- Version 2.x of jakarta.activation and jakarta.mail are available, but
          they changed package names from javax.* to jakarta.*.  GreenMail still
@@ -60,7 +60,7 @@
     <mustache.version>0.9.7</mustache.version>
     <slf4j.version>1.7.30</slf4j.version>
     <threeten-extra.version>1.6.0</threeten-extra.version>
-    <undertow.version>2.2.4.Final</undertow.version>
+    <undertow.version>2.2.5.Final</undertow.version>
     <versions-maven-plugin.version>2.8.1</versions-maven-plugin.version>
   </properties>
 
