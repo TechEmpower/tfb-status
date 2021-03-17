@@ -1,6 +1,5 @@
 package tfb.status.testlib;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 import com.google.common.net.MediaType;
@@ -171,7 +170,7 @@ public final class MoreAssertions {
 
     assertIterableEquals(
         expected,
-        actual.lines().collect(toList()));
+        actual.lines().toList());
   }
 
   /**

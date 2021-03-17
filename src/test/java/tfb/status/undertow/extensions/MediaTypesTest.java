@@ -1,6 +1,5 @@
 package tfb.status.undertow.extensions;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.net.MediaType;
@@ -29,6 +28,6 @@ public final class MediaTypesTest {
         List.of(text, plainTextUtf8Flowed, any, plainTextUtf8, plainText)
             .stream()
             .sorted(MediaTypes.SPECIFICITY_ORDER)
-            .collect(toList()));
+            .toList());
   }
 }
