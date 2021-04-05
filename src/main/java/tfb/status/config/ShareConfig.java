@@ -3,9 +3,9 @@ package tfb.status.config;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
+import jakarta.inject.Singleton;
 import java.time.Duration;
 import java.util.Objects;
-import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import tfb.status.service.FileStore;
 

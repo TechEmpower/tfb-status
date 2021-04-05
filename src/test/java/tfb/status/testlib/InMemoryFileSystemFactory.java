@@ -2,6 +2,7 @@ package tfb.status.testlib;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
@@ -9,7 +10,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-import javax.inject.Singleton;
 import org.glassfish.hk2.api.Rank;
 import tfb.status.hk2.extensions.Provides;
 

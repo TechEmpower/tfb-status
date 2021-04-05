@@ -1,7 +1,7 @@
 package tfb.status.testlib;
 
+import jakarta.inject.Singleton;
 import java.time.Clock;
-import javax.inject.Singleton;
 import org.glassfish.hk2.api.Rank;
 import org.threeten.extra.MutableClock;
 import tfb.status.hk2.extensions.Provides;

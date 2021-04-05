@@ -2,9 +2,9 @@ package tfb.status.testlib;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
+import jakarta.inject.Singleton;
 import java.util.Objects;
 import java.util.UUID;
-import javax.inject.Singleton;
 import tfb.status.handler.routing.Route;
 import tfb.status.hk2.extensions.Provides;
 

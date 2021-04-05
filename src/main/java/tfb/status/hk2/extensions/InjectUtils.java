@@ -2,6 +2,8 @@ package tfb.status.hk2.extensions;
 
 import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
 
+import jakarta.inject.Qualifier;
+import jakarta.inject.Scope;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Parameter;
@@ -10,8 +12,6 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
-import javax.inject.Qualifier;
-import javax.inject.Scope;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Injectee;
 import org.glassfish.hk2.api.Self;

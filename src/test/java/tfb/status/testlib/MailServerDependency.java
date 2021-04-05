@@ -2,10 +2,10 @@ package tfb.status.testlib;
 
 import static org.glassfish.hk2.api.InstanceLifecycleEventType.PRE_PRODUCTION;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 import java.util.Objects;
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 import org.glassfish.hk2.api.Filter;
 import org.glassfish.hk2.api.InstanceLifecycleEvent;
 import org.glassfish.hk2.api.InstanceLifecycleListener;

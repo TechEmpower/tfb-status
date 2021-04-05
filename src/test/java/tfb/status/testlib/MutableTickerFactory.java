@@ -1,7 +1,7 @@
 package tfb.status.testlib;
 
 import com.google.common.base.Ticker;
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import org.glassfish.hk2.api.Rank;
 import tfb.status.hk2.extensions.Provides;
 

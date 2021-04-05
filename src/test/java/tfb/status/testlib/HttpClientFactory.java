@@ -1,10 +1,10 @@
 package tfb.status.testlib;
 
 import com.google.common.io.MoreFiles;
+import jakarta.inject.Singleton;
 import java.net.http.HttpClient;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
-import javax.inject.Singleton;
 import javax.net.ssl.SSLContext;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.hk2.extensions.Provides;

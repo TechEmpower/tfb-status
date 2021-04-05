@@ -6,6 +6,8 @@ import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableList;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableSet;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -19,8 +21,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.DynamicConfigurationListener;
 import org.glassfish.hk2.api.PerLookup;

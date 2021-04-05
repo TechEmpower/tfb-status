@@ -1,12 +1,12 @@
 package tfb.status.service;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import jakarta.inject.Inject;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.Future;
-import javax.inject.Inject;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PreDestroy;
 import org.slf4j.Logger;

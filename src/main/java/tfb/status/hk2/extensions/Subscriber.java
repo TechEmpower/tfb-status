@@ -2,6 +2,7 @@ package tfb.status.hk2.extensions;
 
 import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
 
+import jakarta.inject.Qualifier;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -10,7 +11,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import javax.inject.Qualifier;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.Unqualified;
 import org.glassfish.hk2.api.messaging.MessageReceiver;

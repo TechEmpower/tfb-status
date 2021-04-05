@@ -28,21 +28,13 @@
     <error-prone.version>2.6.0</error-prone.version>
     <extra-enforcer-rules.version>1.3</extra-enforcer-rules.version>
     <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
-    <greenmail.version>1.6.3</greenmail.version>
+    <greenmail.version>2.0.0-alpha-1</greenmail.version>
     <guava.version>30.1.1-jre</guava.version>
-    <hk2.version>2.6.1</hk2.version>
+    <hk2.version>3.0.1</hk2.version>
     <jackson.version>2.12.2</jackson.version>
-
-    <!-- Version 2.x of jakarta.activation and jakarta.mail are available, but
-         they changed package names from javax.* to jakarta.*.  GreenMail still
-         refers to the old package names, so we can't upgrade until GreenMail
-         does.
-
-         See: https://github.com/greenmail-mail-test/greenmail/issues/317
-    -->
-    <jakarta-activation.version>1.2.2</jakarta-activation.version>
-    <jakarta-mail.version>1.6.5</jakarta-mail.version>
-
+    <jakarta-activation.version>2.0.0</jakarta-activation.version>
+    <jakarta-inject.version>2.0.0</jakarta-inject.version>
+    <jakarta-mail.version>2.0.0</jakarta-mail.version>
     <jimfs.version>1.2</jimfs.version>
     <jmh.version>1.29</jmh.version>
     <junit-jupiter.version>5.7.1</junit-jupiter.version>
@@ -157,9 +149,9 @@
       <version>${jakarta-activation.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.glassfish.hk2.external</groupId>
-      <artifactId>jakarta.inject</artifactId>
-      <version>${hk2.version}</version>
+      <groupId>jakarta.inject</groupId>
+      <artifactId>jakarta.inject-api</artifactId>
+      <version>${jakarta-inject.version}</version>
     </dependency>
     <dependency>
       <groupId>org.glassfish.hk2</groupId>

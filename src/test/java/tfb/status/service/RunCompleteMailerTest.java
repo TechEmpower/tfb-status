@@ -3,8 +3,8 @@ package tfb.status.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import jakarta.mail.MessagingException;
 import java.io.IOException;
-import javax.mail.MessagingException;
 import org.glassfish.hk2.api.messaging.Topic;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

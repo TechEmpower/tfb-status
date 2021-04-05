@@ -4,9 +4,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Objects;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import tfb.status.handler.routing.DisableCache;
 import tfb.status.handler.routing.Route;
 import tfb.status.service.MustacheRenderer;

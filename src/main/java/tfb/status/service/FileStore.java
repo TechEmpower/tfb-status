@@ -1,13 +1,13 @@
 package tfb.status.service;
 
 import com.google.common.io.MoreFiles;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import tfb.status.config.FileStoreConfig;
 
 /**

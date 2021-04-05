@@ -3,7 +3,7 @@ package tfb.status.service;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import tfb.status.hk2.extensions.Provides;
 
 /**

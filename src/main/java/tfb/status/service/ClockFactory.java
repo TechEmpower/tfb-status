@@ -1,11 +1,11 @@
 package tfb.status.service;
 
+import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import javax.inject.Singleton;
 import tfb.status.hk2.extensions.Provides;
 
 /**

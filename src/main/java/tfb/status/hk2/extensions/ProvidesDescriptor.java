@@ -6,6 +6,7 @@ import static tfb.status.hk2.extensions.CompatibleWithJava8.setCopyOf;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableMap;
 import static tfb.status.hk2.extensions.CompatibleWithJava8.toUnmodifiableSet;
 
+import jakarta.inject.Named;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
@@ -17,7 +18,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.inject.Named;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.DescriptorType;
 import org.glassfish.hk2.api.DescriptorVisibility;

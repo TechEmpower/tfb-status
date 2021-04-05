@@ -1,13 +1,13 @@
 package tfb.status.handler.routing;
 
 import io.undertow.server.handlers.SetHeaderHandler;
+import jakarta.inject.Qualifier;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.inject.Qualifier;
 
 /**
  * Indicates that responses from an HTTP handler will include the specified

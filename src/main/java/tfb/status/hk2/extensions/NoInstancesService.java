@@ -2,10 +2,10 @@ package tfb.status.hk2.extensions;
 
 import static tfb.status.hk2.extensions.CompatibleWithJava8.setOf;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.DynamicConfiguration;
 import org.glassfish.hk2.api.DynamicConfigurationService;

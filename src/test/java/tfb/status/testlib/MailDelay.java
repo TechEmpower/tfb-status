@@ -2,11 +2,11 @@ package tfb.status.testlib;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.mail.MessagingException;
 import java.time.Duration;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.mail.MessagingException;
 import tfb.status.service.EmailSender;
 
 /**

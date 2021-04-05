@@ -6,13 +6,13 @@ import static tfb.status.undertow.extensions.RequestValues.pathParameter;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.zip.GZIPInputStream;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import tfb.status.handler.routing.Route;
 import tfb.status.handler.routing.SetHeader;
 import tfb.status.service.FileStore;

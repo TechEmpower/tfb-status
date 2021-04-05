@@ -5,12 +5,12 @@ import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheNotFoundException;
 import com.github.mustachejava.resolver.ClasspathResolver;
 import com.github.mustachejava.resolver.FileSystemResolver;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.io.StringWriter;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Objects;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import tfb.status.config.MustacheConfig;
 
 /**

@@ -1,7 +1,7 @@
 package tfb.status.handler;
 
 import io.undertow.server.HttpHandler;
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import tfb.status.handler.routing.Route;
 import tfb.status.hk2.extensions.Provides;
 import tfb.status.undertow.extensions.FixedResponseBodyHandler;
