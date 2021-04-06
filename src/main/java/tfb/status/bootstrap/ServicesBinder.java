@@ -1,6 +1,7 @@
 package tfb.status.bootstrap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.extras.provides.ProvidesListener;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import tfb.status.handler.AboutPageHandler;
 import tfb.status.handler.AssetsHandler;
@@ -17,7 +18,6 @@ import tfb.status.handler.ShareUploadHandler;
 import tfb.status.handler.TimelinePageHandler;
 import tfb.status.handler.UnzipResultsHandler;
 import tfb.status.handler.UploadResultsHandler;
-import tfb.status.hk2.extensions.ProvidesListener;
 import tfb.status.hk2.extensions.TopicsModule;
 import tfb.status.service.ApplicationConfigFactory;
 import tfb.status.service.Authenticator;

@@ -3,8 +3,8 @@ package tfb.status.testlib;
 import static org.glassfish.hk2.utilities.ServiceLocatorUtilities.createAndPopulateServiceLocator;
 
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.extras.provides.NoInstancesFilter;
 import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
-import tfb.status.hk2.extensions.NoInstancesFilter;
 
 /**
  * Utility methods for obtaining instances of services during tests.

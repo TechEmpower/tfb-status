@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.handler.routing.DisableCache;
 import tfb.status.handler.routing.Route;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 import tfb.status.service.Authenticator;
 import tfb.status.service.FileStore;
 import tfb.status.service.HomeResultsReader;

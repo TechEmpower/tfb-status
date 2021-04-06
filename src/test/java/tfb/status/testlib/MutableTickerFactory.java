@@ -3,7 +3,7 @@ package tfb.status.testlib;
 import com.google.common.base.Ticker;
 import jakarta.inject.Singleton;
 import org.glassfish.hk2.api.Rank;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * Provides the {@link Ticker} used by this application during tests, which is a

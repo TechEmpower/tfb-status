@@ -4,7 +4,7 @@ import jakarta.inject.Singleton;
 import java.time.Clock;
 import org.glassfish.hk2.api.Rank;
 import org.threeten.extra.MutableClock;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * Provides the {@link Clock} used by this application during tests, which is a

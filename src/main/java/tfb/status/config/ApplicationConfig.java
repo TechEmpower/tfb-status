@@ -7,7 +7,7 @@ import jakarta.inject.Singleton;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PerLookup;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * The parent configuration object for this entire application, containing all

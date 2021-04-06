@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import tfb.status.handler.routing.DisableCache;
 import tfb.status.handler.routing.Route;
 import tfb.status.handler.routing.SetHeader;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 import tfb.status.service.HomeResultsReader;
 import tfb.status.service.MustacheRenderer;
 import tfb.status.service.TaskScheduler;

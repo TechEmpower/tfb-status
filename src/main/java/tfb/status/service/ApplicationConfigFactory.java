@@ -17,7 +17,7 @@ import org.jvnet.hk2.annotations.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.ApplicationConfig;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * Provides the {@link ApplicationConfig} used by this application.

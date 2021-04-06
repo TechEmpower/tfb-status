@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import tfb.status.config.AssetsConfig;
 import tfb.status.handler.routing.Route;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * Handles HTTP requests for static assets such as JavaScript and CSS files.

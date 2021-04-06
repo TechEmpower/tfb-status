@@ -6,7 +6,7 @@ import jakarta.inject.Singleton;
 import java.util.Objects;
 import java.util.UUID;
 import tfb.status.handler.routing.Route;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * Forwards requests to HTTP handlers that were {@linkplain

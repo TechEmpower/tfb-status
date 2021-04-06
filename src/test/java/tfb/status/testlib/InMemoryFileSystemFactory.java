@@ -11,7 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.glassfish.hk2.api.Rank;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * Provides the {@link FileSystem} used by this application during tests.

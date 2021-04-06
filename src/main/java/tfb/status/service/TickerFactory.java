@@ -3,7 +3,7 @@ package tfb.status.service;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import jakarta.inject.Singleton;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * Provides the {@link Ticker} used by this application.

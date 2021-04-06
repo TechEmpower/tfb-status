@@ -7,7 +7,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import javax.net.ssl.SSLContext;
 import tfb.status.config.HttpServerConfig;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 import tfb.status.service.HttpServer;
 import tfb.status.util.KeyStores;
 

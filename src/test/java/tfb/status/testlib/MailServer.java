@@ -16,7 +16,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.PreDestroy;
 import tfb.status.config.EmailConfig;
-import tfb.status.hk2.extensions.Provides;
+import org.glassfish.hk2.extras.provides.Provides;
 import tfb.status.service.EmailSender;
 import tfb.status.service.EmailSender.OverridePort;
 
