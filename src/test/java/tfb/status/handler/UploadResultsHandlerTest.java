@@ -16,7 +16,6 @@ import static tfb.status.testlib.MoreAssertions.assertContains;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteSource;
-import com.google.common.io.MoreFiles;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.IOException;
@@ -262,15 +261,9 @@ public final class UploadResultsHandlerTest {
       // Upload the final results zip.
       //
 
-      // The JDK's version of this, `HttpRequest.BodyPublishers.ofFile(Path)`,
-      // is incompatible with the in-memory file system that we use during
-      // tests.
-      HttpRequest.BodyPublisher zipFilePublisher =
-          asBodyPublisher(MoreFiles.asByteSource(zipFile));
-
       HttpRequest.Builder requestWithZip =
           HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(zipFilePublisher)
+                     .POST(HttpRequest.BodyPublishers.ofFile(zipFile))
                      .header(CONTENT_TYPE, ZIP.toString());
 
       HttpResponse<Void> responseToZip =
