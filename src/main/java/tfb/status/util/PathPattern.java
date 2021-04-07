@@ -409,8 +409,8 @@ public final class PathPattern {
    */
   @Override
   public boolean equals(@Nullable Object object) {
-    return object instanceof PathPattern
-        && source.equals(((PathPattern) object).source);
+    return object instanceof PathPattern that
+        && source.equals(that.source);
   }
 
   @Override
@@ -487,15 +487,9 @@ public final class PathPattern {
      */
     @Override
     public boolean equals(@Nullable Object object) {
-      if (object == this) {
-        return true;
-      } else if (!(object instanceof MatchResult)) {
-        return false;
-      } else {
-        MatchResult that = (MatchResult) object;
-        return this.matches == that.matches
-            && this.variables.equals(that.variables);
-      }
+      return object instanceof MatchResult that
+          && this.matches == that.matches
+          && this.variables.equals(that.variables);
     }
 
     @Override

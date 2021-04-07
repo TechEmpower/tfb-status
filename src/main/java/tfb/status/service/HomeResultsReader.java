@@ -692,14 +692,8 @@ public final class HomeResultsReader implements PreDestroy {
 
     @Override
     public boolean equals(@Nullable Object object) {
-      if (object == this)
-        return true;
-
-      if (!(object instanceof FileKey))
-        return false;
-
-      var that = (FileKey) object;
-      return this.file.equals(that.file)
+      return object instanceof FileKey that
+          && this.file.equals(that.file)
           && this.lastModifiedTime.equals(that.lastModifiedTime);
     }
 

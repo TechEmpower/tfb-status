@@ -557,11 +557,8 @@ final class PathRouterInternals {
 
     @Override
     public boolean equals(@Nullable Object object) {
-      if (!(object instanceof Substring))
-        return false;
-
-      Substring that = (Substring) object;
-      return this.length == that.length
+      return object instanceof Substring that
+          && this.length == that.length
           && this.string.regionMatches(this.offset,
                                        that.string,
                                        that.offset,
