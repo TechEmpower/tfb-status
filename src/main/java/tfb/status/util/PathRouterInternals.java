@@ -561,8 +561,11 @@ final class PathRouterInternals {
         return false;
 
       Substring that = (Substring) object;
-      return this.string.regionMatches(
-          this.offset, that.string, that.offset, length);
+      return this.length == that.length
+          && this.string.regionMatches(this.offset,
+                                       that.string,
+                                       that.offset,
+                                       this.length);
     }
 
     @Override
