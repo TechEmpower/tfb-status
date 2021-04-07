@@ -117,7 +117,7 @@ public final class UploadResultsHandler implements HttpHandler {
       return;
     }
 
-    String uuid = results.uuid;
+    String uuid = results.uuid();
 
     Path permanentFile = destinationForIncomingFile(uuid, fileExtension);
 
@@ -159,15 +159,15 @@ public final class UploadResultsHandler implements HttpHandler {
     if (oldResults == null)
       return newResultsFile(fileExtension);
 
-    if (oldResults.jsonFileName != null
-        && oldResults.jsonFileName.endsWith("." + fileExtension))
+    if (oldResults.jsonFileName() != null
+        && oldResults.jsonFileName().endsWith("." + fileExtension))
       return fileStore.resultsDirectory()
-                      .resolve(oldResults.jsonFileName);
+                      .resolve(oldResults.jsonFileName());
 
-    if (oldResults.zipFileName != null
-        && oldResults.zipFileName.endsWith("." + fileExtension))
+    if (oldResults.zipFileName() != null
+        && oldResults.zipFileName().endsWith("." + fileExtension))
       return fileStore.resultsDirectory()
-                      .resolve(oldResults.zipFileName);
+                      .resolve(oldResults.zipFileName());
 
     return newResultsFile(fileExtension);
   }

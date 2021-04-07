@@ -87,7 +87,7 @@ public final class HttpTester {
       throw new IllegalArgumentException("The path must start with '/'");
 
     HttpServerConfig config = configProvider.get();
-    boolean encrypted = config.keyStore != null;
+    boolean encrypted = config.keyStore() != null;
 
     // If we're using an ephemeral port, we won't know which port number we're
     // using until the server is started.

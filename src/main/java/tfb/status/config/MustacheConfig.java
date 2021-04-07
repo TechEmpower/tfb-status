@@ -9,37 +9,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The configuration for Mustache templates rendered by this application.
+ *
+ * @param mode Indicates whether Mustache templates will be loaded from the file
+ *        system or from the class path.  See {@link ResourceMode}.
  */
 @Immutable
 @Singleton
-public final class MustacheConfig {
-  /**
-   * Indicates whether Mustache templates will be loaded from the file system or
-   * from the class path.  See {@link ResourceMode}.
-   */
-  public final ResourceMode mode;
+public record MustacheConfig(ResourceMode mode) {
 
-  public MustacheConfig(ResourceMode mode) {
-    this.mode = Objects.requireNonNull(mode);
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
-    if (object == this) {
-      return true;
-    } else if (!(object instanceof MustacheConfig)) {
-      return false;
-    } else {
-      MustacheConfig that = (MustacheConfig) object;
-      return this.mode == that.mode;
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 1;
-    hash = 31 * hash + mode.hashCode();
-    return hash;
+  public MustacheConfig {
+    Objects.requireNonNull(mode);
   }
 
   @JsonCreator

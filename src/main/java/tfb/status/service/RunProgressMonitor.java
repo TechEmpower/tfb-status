@@ -69,7 +69,7 @@ public final class RunProgressMonitor implements PreDestroy {
 
     Objects.requireNonNull(event);
 
-    String uuid = event.uuid;
+    String uuid = event.uuid();
     ResultsView results = homeResultsReader.resultsByUuid(uuid);
     if (results == null) {
       logger.warn(
@@ -78,7 +78,7 @@ public final class RunProgressMonitor implements PreDestroy {
       return;
     }
 
-    String environment = results.environmentDescription;
+    String environment = results.environmentDescription();
     if (environment == null)
       return;
 
@@ -86,7 +86,7 @@ public final class RunProgressMonitor implements PreDestroy {
     // for the results.zip, or (b) if this is a continuous benchmarking
     // environment that starts a new run every time it finishes a run.
     boolean expectMore =
-        (results.zipFileName == null) // case (a)
+        (results.zipFileName() == null) // case (a)
             || environment.equals("Citrine"); // case (b)
     // TODO: It's not great to have "Citrine" hardcoded.  How else can we detect
     //       that this is a continuous benchmarking environment?
@@ -99,7 +99,7 @@ public final class RunProgressMonitor implements PreDestroy {
 
     Objects.requireNonNull(environment);
 
-    if (environmentToTask.size() >= config.maxEnvironments
+    if (environmentToTask.size() >= config.maxEnvironments()
         && !environmentToTask.containsKey(environment)) {
       logger.warn(
           "Ignoring progress from environment {} because there are "
@@ -129,7 +129,7 @@ public final class RunProgressMonitor implements PreDestroy {
                 complain(environment);
               },
               /* delay= */
-              Duration.ofSeconds(config.environmentTimeoutSeconds));
+              Duration.ofSeconds(config.environmentTimeoutSeconds()));
         });
   }
 

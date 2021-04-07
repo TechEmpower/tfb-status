@@ -45,73 +45,23 @@ final class PathRouterInternals {
    * The implementation of {@link MatchingEndpoint} returned by the default
    * {@link PathRouter} implementations.
    */
-  private static final class Match<V> implements MatchingEndpoint<V> {
-    private final PathPattern pathPattern;
-    private final V value;
-    private final ImmutableMap<String, String> variables;
+  private record Match<V>(PathPattern pathPattern,
+                          V value,
+                          ImmutableMap<String, String> variables)
+      implements MatchingEndpoint<V> {
 
-    Match(PathPattern pathPattern,
-          V value,
-          ImmutableMap<String, String> variables) {
-
-      this.pathPattern = Objects.requireNonNull(pathPattern);
-      this.value = Objects.requireNonNull(value);
-      this.variables = Objects.requireNonNull(variables);
-    }
-
-    @Override
-    public PathPattern pathPattern() {
-      return pathPattern;
-    }
-
-    @Override
-    public V value() {
-      return value;
-    }
-
-    @Override
-    public ImmutableMap<String, String> variables() {
-      return variables;
+    Match {
+      Objects.requireNonNull(pathPattern);
+      Objects.requireNonNull(value);
+      Objects.requireNonNull(variables);
     }
 
     Match<V> withVariables(ImmutableMap<String, String> variables) {
       Objects.requireNonNull(variables);
 
-      return variables.equals(this.variables)
+      return variables.equals(variables())
           ? this
-          : new Match<>(pathPattern, value, variables);
-    }
-
-    @Override
-    public boolean equals(@Nullable Object object) {
-      if (object == this) {
-        return true;
-      } else if (!(object instanceof Match)) {
-        return false;
-      } else {
-        Match<?> that = (Match<?>) object;
-        return this.pathPattern.equals(that.pathPattern)
-            && this.value.equals(that.value)
-            && this.variables.equals(that.variables);
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      int hash = 1;
-      hash = 31 * hash + pathPattern.hashCode();
-      hash = 31 * hash + value.hashCode();
-      hash = 31 * hash + variables.hashCode();
-      return hash;
-    }
-
-    @Override
-    public String toString() {
-      return getClass().getSimpleName()
-          + "[pathPattern=" + pathPattern
-          + ", value=" + value
-          + ", variables=" + variables
-          + "]";
+          : new Match<>(pathPattern(), value(), variables);
     }
   }
 
@@ -316,8 +266,8 @@ final class PathRouterInternals {
       entries.sort(PREFIX_LENGTH_COMPARATOR);
 
       for (PrefixAndValue entry : entries) {
-        String prefix = entry.prefix;
-        int value = entry.value;
+        String prefix = entry.prefix();
+        int value = entry.value();
 
         Node node = head;
 
@@ -421,19 +371,16 @@ final class PathRouterInternals {
       }
     }
 
-    private static final class PrefixAndValue {
-      final String prefix;
-      final int value;
+    private record PrefixAndValue(String prefix, int value) {
 
-      PrefixAndValue(String prefix, int value) {
-        this.prefix = Objects.requireNonNull(prefix);
-        this.value = value;
+      PrefixAndValue {
+        Objects.requireNonNull(prefix);
       }
     }
 
     private static final Comparator<PrefixAndValue> PREFIX_LENGTH_COMPARATOR =
         comparing(
-            entry -> entry.prefix,
+            entry -> entry.prefix(),
             comparingInt(prefix -> prefix.length()));
   }
 
@@ -484,31 +431,22 @@ final class PathRouterInternals {
       long values = 0;
 
       do {
-        values |= node.values;
-        if (node.length == 0 || node.offset + node.length > key.capacity())
+        values |= node.values();
+        if (node.length() == 0 || node.offset() + node.length() > key.capacity())
           break;
-        key.setPosition(node.offset, node.length);
-        node = node.childNodes.get(key);
+        key.setPosition(node.offset(), node.length());
+        node = node.childNodes().get(key);
       } while (node != null);
 
       return values;
     }
 
-    private static final class Node {
-      final int offset;
-      final int length;
-      final long values;
-      final ImmutableMap<Substring, Node> childNodes;
-
-      Node(int offset,
-           int length,
-           long values,
-           ImmutableMap<Substring, Node> childNodes) {
-
-        this.offset = offset;
-        this.length = length;
-        this.values = values;
-        this.childNodes = Objects.requireNonNull(childNodes);
+    private record Node(int offset,
+                        int length,
+                        long values,
+                        ImmutableMap<Substring, Node> childNodes) {
+      Node {
+        Objects.requireNonNull(childNodes);
       }
     }
   }
@@ -545,32 +483,25 @@ final class PathRouterInternals {
       var values = new BitSet();
 
       do {
-        for (int i : node.values)
+        for (int i : node.values())
           values.set(i);
-        if (node.length == 0 || node.offset + node.length > key.capacity())
+        if (node.length() == 0 || node.offset() + node.length() > key.capacity())
           break;
-        key.setPosition(node.offset, node.length);
-        node = node.childNodes.get(key);
+        key.setPosition(node.offset(), node.length());
+        node = node.childNodes().get(key);
       } while (node != null);
 
       return values;
     }
 
-    private static final class Node {
-      final int offset;
-      final int length;
-      final int[] values;
-      final ImmutableMap<Substring, Node> childNodes;
+    private record Node(int offset,
+                        int length,
+                        int[] values,
+                        ImmutableMap<Substring, Node> childNodes) {
 
-      Node(int offset,
-           int length,
-           int[] values,
-           ImmutableMap<Substring, Node> childNodes) {
-
-        this.offset = offset;
-        this.length = length;
-        this.values = Objects.requireNonNull(values);
-        this.childNodes = Objects.requireNonNull(childNodes);
+      Node {
+        Objects.requireNonNull(values);
+        Objects.requireNonNull(childNodes);
       }
     }
   }

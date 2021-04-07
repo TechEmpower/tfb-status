@@ -12,128 +12,39 @@ import org.glassfish.hk2.extras.provides.Provides;
 /**
  * The parent configuration object for this entire application, containing all
  * other component-specific configuration objects.
+ *
+ * @param http See {@link HttpServerConfig}.
+ * @param assets See {@link AssetsConfig}.
+ * @param mustache See {@link MustacheConfig}.
+ * @param fileStore See {@link FileStoreConfig}.
+ * @param runProgressMonitor See {@link RunProgressMonitorConfig}.
+ * @param runCompleteMailer See {@link RunCompleteMailerConfig}.
+ * @param share See {@link ShareConfig}.
+ * @param healthCheck See {@link HealthCheckConfig}.
+ * @param email The configuration for outbound emails, or {@code null} if
+ *              outbound emails are disabled.  See {@link EmailConfig}.
  */
 @Immutable
 @Singleton
-public final class ApplicationConfig {
-  /**
-   * See {@link HttpServerConfig}.
-   */
-  @Provides
-  public final HttpServerConfig http;
+public record ApplicationConfig(@Provides HttpServerConfig http,
+                                @Provides AssetsConfig assets,
+                                @Provides MustacheConfig mustache,
+                                @Provides FileStoreConfig fileStore,
+                                @Provides RunProgressMonitorConfig runProgressMonitor,
+                                @Provides RunCompleteMailerConfig runCompleteMailer,
+                                @Provides ShareConfig share,
+                                @Provides HealthCheckConfig healthCheck,
+                                @Provides @PerLookup @Nullable EmailConfig email) {
 
-  /**
-   * See {@link AssetsConfig}.
-   */
-  @Provides
-  public final AssetsConfig assets;
-
-  /**
-   * See {@link MustacheConfig}.
-   */
-  @Provides
-  public final MustacheConfig mustache;
-
-  /**
-   * See {@link FileStoreConfig}.
-   */
-  @Provides
-  public final FileStoreConfig fileStore;
-
-  /**
-   * See {@link RunProgressMonitorConfig}.
-   */
-  @Provides
-  public final RunProgressMonitorConfig runProgressMonitor;
-
-  /**
-   * See {@link RunCompleteMailerConfig}.
-   */
-  @Provides
-  public final RunCompleteMailerConfig runCompleteMailer;
-
-  /**
-   * See {@link ShareConfig}.
-   */
-  @Provides
-  public final ShareConfig share;
-
-  /**
-   * See {@link HealthCheckConfig}.
-   */
-  @Provides
-  public final HealthCheckConfig healthCheck;
-
-  /**
-   * The configuration for outbound emails, or {@code null} if outbound emails
-   * are disabled.  See {@link EmailConfig}.
-   */
-  public final @Nullable EmailConfig email;
-
-  // We can't annotate the `email` field directly with @Provides.  The scope it
-  // would inherit from this class is @Singleton, and @Singleton doesn't support
-  // null values.  We want the scope of the field to be @PerLookup, which does
-  // support null values, but @PerLookup can't target fields.
-  @Provides
-  @PerLookup
-  public @Nullable EmailConfig email() {
-    return email;
-  }
-
-  public ApplicationConfig(HttpServerConfig http,
-                           AssetsConfig assets,
-                           MustacheConfig mustache,
-                           FileStoreConfig fileStore,
-                           RunProgressMonitorConfig runProgressMonitor,
-                           RunCompleteMailerConfig runCompleteMailer,
-                           ShareConfig share,
-                           HealthCheckConfig healthCheck,
-                           @Nullable EmailConfig email) {
-
-    this.http = Objects.requireNonNull(http);
-    this.assets = Objects.requireNonNull(assets);
-    this.mustache = Objects.requireNonNull(mustache);
-    this.fileStore = Objects.requireNonNull(fileStore);
-    this.runProgressMonitor = Objects.requireNonNull(runProgressMonitor);
-    this.runCompleteMailer = Objects.requireNonNull(runCompleteMailer);
-    this.share = Objects.requireNonNull(share);
-    this.healthCheck = Objects.requireNonNull(healthCheck);
-    this.email = email;
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
-    if (object == this) {
-      return true;
-    } else if (!(object instanceof ApplicationConfig)) {
-      return false;
-    } else {
-      ApplicationConfig that = (ApplicationConfig) object;
-      return this.http.equals(that.http)
-          && this.assets.equals(that.assets)
-          && this.mustache.equals(that.mustache)
-          && this.fileStore.equals(that.fileStore)
-          && this.runProgressMonitor.equals(that.runProgressMonitor)
-          && this.runCompleteMailer.equals(that.runCompleteMailer)
-          && this.share.equals(that.share)
-          && this.healthCheck.equals(that.healthCheck)
-          && Objects.equals(this.email, that.email);
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 1;
-    hash = 31 * hash + http.hashCode();
-    hash = 31 * hash + assets.hashCode();
-    hash = 31 * hash + mustache.hashCode();
-    hash = 31 * hash + fileStore.hashCode();
-    hash = 31 * hash + runProgressMonitor.hashCode();
-    hash = 31 * hash + runCompleteMailer.hashCode();
-    hash = 31 * hash + share.hashCode();
-    hash = 31 * hash + healthCheck.hashCode();
-    hash = 31 * hash + Objects.hashCode(email);
-    return hash;
+  public ApplicationConfig {
+    Objects.requireNonNull(http);
+    Objects.requireNonNull(assets);
+    Objects.requireNonNull(mustache);
+    Objects.requireNonNull(fileStore);
+    Objects.requireNonNull(runProgressMonitor);
+    Objects.requireNonNull(runCompleteMailer);
+    Objects.requireNonNull(share);
+    Objects.requireNonNull(healthCheck);
   }
 
   @JsonCreator

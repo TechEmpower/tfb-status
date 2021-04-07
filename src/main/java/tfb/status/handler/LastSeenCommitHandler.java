@@ -67,15 +67,15 @@ public final class LastSeenCommitHandler implements HttpHandler {
         homeResultsReader
             .results()
             .stream()
-            .filter(result -> environment.equals(result.environmentDescription))
+            .filter(result -> environment.equals(result.environmentDescription()))
             .findFirst()
             .orElse(null);
 
-    if (mostRecent == null || mostRecent.commitId == null) {
+    if (mostRecent == null || mostRecent.commitId() == null) {
       exchange.setStatusCode(NO_CONTENT);
       return;
     }
 
-    exchange.getResponseSender().send(mostRecent.commitId);
+    exchange.getResponseSender().send(mostRecent.commitId());
   }
 }

@@ -192,19 +192,19 @@ public final class PathPattern {
       pattern.append("^");
 
       for (Token substring : tokens) {
-        isLiteral = isLiteral && substring.type == TokenType.LITERAL;
+        isLiteral = isLiteral && substring.type() == TokenType.LITERAL;
 
-        if (literal != null && substring.type != TokenType.LITERAL) {
+        if (literal != null && substring.type() != TokenType.LITERAL) {
           pattern.append(Pattern.quote(literal.toString()));
           literal = null;
         }
 
-        int fromIndex = substring.fromIndex;
-        int toIndex = substring.toIndex;
+        int fromIndex = substring.fromIndex();
+        int toIndex = substring.toIndex();
 
         // Use a switch expression for exhaustiveness even though we don't need
         // the yielded value.
-        int ignored = switch (substring.type) {
+        int ignored = switch (substring.type()) {
           case LITERAL -> {
             literalCharacterCount += toIndex - fromIndex;
 
@@ -278,15 +278,10 @@ public final class PathPattern {
     }
 
     @Immutable
-    private static final class Token {
-      final int fromIndex;
-      final int toIndex;
-      final TokenType type;
+    private record Token(int fromIndex, int toIndex, TokenType type) {
 
-      Token(int fromIndex, int toIndex, TokenType type) {
-        this.fromIndex = fromIndex;
-        this.toIndex = toIndex;
-        this.type = Objects.requireNonNull(type);
+      Token {
+        Objects.requireNonNull(type);
       }
     }
 

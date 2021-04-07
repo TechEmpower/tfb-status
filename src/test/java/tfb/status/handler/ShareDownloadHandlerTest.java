@@ -36,7 +36,7 @@ public final class ShareDownloadHandlerTest {
 
     Results results = objectMapper.readValue(responseBytes, Results.class);
 
-    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid());
   }
 
   /**

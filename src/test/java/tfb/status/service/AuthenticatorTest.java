@@ -320,13 +320,11 @@ public final class AuthenticatorTest {
   }
 
   @Immutable
-  private static final class Account {
-    final String accountId;
-    final String password;
+  private record Account(String accountId, String password) {
 
-    Account(String accountId, String password) {
-      this.accountId = Objects.requireNonNull(accountId);
-      this.password = Objects.requireNonNull(password);
+    Account {
+      Objects.requireNonNull(accountId);
+      Objects.requireNonNull(password);
     }
   }
 

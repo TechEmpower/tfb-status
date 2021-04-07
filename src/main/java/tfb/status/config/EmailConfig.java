@@ -5,70 +5,28 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import jakarta.inject.Singleton;
 import java.util.Objects;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The configuration for emails sent by this application.
+ *
+ * @param host The hostname of the mail server.
+ * @param port The port for the mail server.  If this value is zero, then the
+ *        mail server listens on an ephemeral port.  The ephemeral port is
+ *        dynamically assigned to the mail server by the host system as the mail
+ *        server is started.  Mail clients are responsible for determining the
+ *        ephemeral port number of the server somehow.  The algorithm for doing
+ *        so is not specified by this class.
+ * @param from The email address for the "from" field.
+ * @param to The email address for the "to" field.
  */
 @Immutable
 @Singleton
-public final class EmailConfig {
-  /**
-   * The hostname of the mail server.
-   */
-  public final String host;
+public record EmailConfig(String host, int port, String from, String to) {
 
-  /**
-   * The port for the mail server.
-   *
-   * <p>If this value is zero, then the mail server listens on an ephemeral
-   * port.  The ephemeral port is dynamically assigned to the mail server by the
-   * host system as the mail server is started.  Mail clients are responsible
-   * for determining the ephemeral port number of the server somehow.  The
-   * algorithm for doing so is not specified by this class.
-   */
-  public final int port;
-
-  /**
-   * The email address for the "from" field.
-   */
-  public final String from;
-
-  /**
-   * The email address for the "to" field.
-   */
-  public final String to;
-
-  public EmailConfig(String host, int port, String from, String to) {
-    this.host = Objects.requireNonNull(host);
-    this.port = port;
-    this.from = Objects.requireNonNull(from);
-    this.to = Objects.requireNonNull(to);
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
-    if (object == this) {
-      return true;
-    } else if (!(object instanceof EmailConfig)) {
-      return false;
-    } else {
-      EmailConfig that = (EmailConfig) object;
-      return this.port == that.port
-          && this.host.equals(that.host)
-          && this.from.equals(that.from)
-          && this.to.equals(that.to);
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 1;
-    hash = 31 * hash + host.hashCode();
-    hash = 31 * hash + Integer.hashCode(port);
-    hash = 31 * hash + from.hashCode();
-    hash = 31 * hash + to.hashCode();
-    return hash;
+  public EmailConfig {
+    Objects.requireNonNull(host);
+    Objects.requireNonNull(from);
+    Objects.requireNonNull(to);
   }
 
   @JsonCreator

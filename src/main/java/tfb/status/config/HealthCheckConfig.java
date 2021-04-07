@@ -9,38 +9,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The configuration for this application's health checks.
+ *
+ * @param intervalSeconds The number of seconds between the end of a health
+ *        check and the start of the next health check.
  */
 @Immutable
 @Singleton
-public final class HealthCheckConfig {
-  /**
-   * The number of seconds between the end of a health check and the start of
-   * the next health check.
-   */
-  public final int intervalSeconds;
-
-  public HealthCheckConfig(int intervalSeconds) {
-    this.intervalSeconds = intervalSeconds;
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
-    if (object == this) {
-      return true;
-    } else if (!(object instanceof HealthCheckConfig)) {
-      return false;
-    } else {
-      HealthCheckConfig that = (HealthCheckConfig) object;
-      return this.intervalSeconds == that.intervalSeconds;
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 1;
-    hash = 31 * hash + Integer.hashCode(intervalSeconds);
-    return hash;
-  }
+public record HealthCheckConfig(int intervalSeconds) {
 
   @JsonCreator
   public static HealthCheckConfig create(

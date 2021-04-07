@@ -9,36 +9,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The configuration for miscellaneous files managed by this application.
+ *
+ * @param root The root directory for miscellaneous files managed by this
+ *        application.
  */
 @Immutable
 @Singleton
-public final class FileStoreConfig {
-  /**
-   * The root directory for miscellaneous files managed by this application.
-   */
-  public final String root;
+public record FileStoreConfig(String root) {
 
-  public FileStoreConfig(String root) {
-    this.root = Objects.requireNonNull(root);
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
-    if (object == this) {
-      return true;
-    } else if (!(object instanceof FileStoreConfig)) {
-      return false;
-    } else {
-      FileStoreConfig that = (FileStoreConfig) object;
-      return this.root.equals(that.root);
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 1;
-    hash = 31 * hash + root.hashCode();
-    return hash;
+  public FileStoreConfig {
+    Objects.requireNonNull(root);
   }
 
   @JsonCreator

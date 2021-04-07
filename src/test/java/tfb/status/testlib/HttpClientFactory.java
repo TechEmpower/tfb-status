@@ -27,13 +27,13 @@ final class HttpClientFactory {
 
     HttpClient.Builder builder = HttpClient.newBuilder();
 
-    if (config.keyStore != null) {
-      Path keyStoreFile = fileSystem.getPath(config.keyStore.path);
+    if (config.keyStore() != null) {
+      Path keyStoreFile = fileSystem.getPath(config.keyStore().path());
 
       SSLContext sslContext =
           KeyStores.readClientSslContext(
               /* keyStoreBytes= */ MoreFiles.asByteSource(keyStoreFile),
-              /* password= */ config.keyStore.password.toCharArray());
+              /* password= */ config.keyStore().password().toCharArray());
 
       builder.sslContext(sslContext);
     }

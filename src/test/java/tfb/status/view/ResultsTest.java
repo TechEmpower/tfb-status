@@ -52,9 +52,9 @@ public final class ResultsTest {
     assertEquals(oldResults, newResults);
 
     // Confirm that we're not dealing with empty/missing data.
-    assertNotNull(newResults.succeeded.cachedQuery);
-    assertFalse(newResults.succeeded.cachedQuery.isEmpty());
-    assertNotNull(newResults.rawData.cachedQuery);
-    assertFalse(newResults.rawData.cachedQuery.isEmpty());
+    assertNotNull(newResults.succeeded().cachedQuery());
+    assertFalse(newResults.succeeded().cachedQuery().isEmpty());
+    assertNotNull(newResults.rawData().cachedQuery());
+    assertFalse(newResults.rawData().cachedQuery().isEmpty());
   }
 }

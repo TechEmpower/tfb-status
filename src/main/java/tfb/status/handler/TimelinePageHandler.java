@@ -115,12 +115,12 @@ public final class TimelinePageHandler implements HttpHandler {
           continue;
         }
 
-        if (results.startTime == null)
+        if (results.startTime() == null)
           // We could try to read the timestamp from somewhere else, but it's
           // not worth the added complexity.
           continue;
 
-        allFrameworks.addAll(results.frameworks);
+        allFrameworks.addAll(results.frameworks());
 
         missingTestTypes.removeIf(
             testType ->
@@ -137,7 +137,7 @@ public final class TimelinePageHandler implements HttpHandler {
         if (rps != 0) {
           dataPoints.add(
               new DataPointView(
-                  /* time= */ results.startTime,
+                  /* time= */ results.startTime(),
                   /* rps= */ rps));
         }
       }
@@ -148,7 +148,7 @@ public final class TimelinePageHandler implements HttpHandler {
       return;
     }
 
-    dataPoints.sort(comparing(dataPoint -> dataPoint.time));
+    dataPoints.sort(comparing(dataPoint -> dataPoint.time()));
 
     ImmutableList<TestTypeOptionView> testTypeOptions =
         Arrays

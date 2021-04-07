@@ -82,8 +82,8 @@ public final class ResultsTester {
 
   /**
    * Generates new results with a unique and non-{@code null} {@link
-   * Results#uuid}, {@link Results#name}, and {@link
-   * Results#environmentDescription}.
+   * Results#uuid()}, {@link Results#name()}, and {@link
+   * Results#environmentDescription()}.
    */
   public Results newResults() throws IOException {
     Path oldJsonFile =
@@ -103,18 +103,18 @@ public final class ResultsTester {
         /* uuid= */ newUuid,
         /* name= */ newName,
         /* environmentDescription= */ newEnvironment,
-        /* startTime= */ oldResults.startTime,
-        /* completionTime= */ oldResults.completionTime,
-        /* duration= */ oldResults.duration,
-        /* frameworks= */ oldResults.frameworks,
-        /* completed= */ oldResults.completed,
-        /* succeeded= */ oldResults.succeeded,
-        /* failed= */ oldResults.failed,
-        /* rawData= */ oldResults.rawData,
-        /* queryIntervals= */ oldResults.queryIntervals,
-        /* concurrencyLevels= */ oldResults.concurrencyLevels,
-        /* git= */ oldResults.git,
-        /* testMetadata= */ oldResults.testMetadata);
+        /* startTime= */ oldResults.startTime(),
+        /* completionTime= */ oldResults.completionTime(),
+        /* duration= */ oldResults.duration(),
+        /* frameworks= */ oldResults.frameworks(),
+        /* completed= */ oldResults.completed(),
+        /* succeeded= */ oldResults.succeeded(),
+        /* failed= */ oldResults.failed(),
+        /* rawData= */ oldResults.rawData(),
+        /* queryIntervals= */ oldResults.queryIntervals(),
+        /* concurrencyLevels= */ oldResults.concurrencyLevels(),
+        /* git= */ oldResults.git(),
+        /* testMetadata= */ oldResults.testMetadata());
   }
 
   /**
@@ -129,7 +129,7 @@ public final class ResultsTester {
 
     String fileName =
         "fake_results_"
-            + ((results.uuid == null) ? "" : results.uuid)
+            + ((results.uuid() == null) ? "" : results.uuid())
             + ".json";
 
     Path file = fileStore.resultsDirectory().resolve(fileName);
@@ -161,7 +161,7 @@ public final class ResultsTester {
 
     String fileName =
         "fake_results_"
-            + ((results.uuid == null) ? "" : results.uuid)
+            + ((results.uuid() == null) ? "" : results.uuid())
             + ".zip";
 
     Path file = fileStore.resultsDirectory().resolve(fileName);

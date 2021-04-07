@@ -59,7 +59,7 @@ import tfb.status.view.ShareSuccess;
  *
  * <p>The results.json file must conform to {@link Results}, meaning that it can
  * deserialize from JSON without error.  The results.json file must have
- * non-empty {@link Results#testMetadata}.
+ * non-empty {@link Results#testMetadata()}.
  *
  * <p>Upon a successful upload, the response body is JSON that describes how to
  * access the raw JSON and how to visualize it on the TFB website.
@@ -102,7 +102,7 @@ public final class ShareUploadHandler implements HttpHandler {
     ShareOutcome outcome = share(exchange.getInputStream());
     if (outcome.failure != null) {
       String json = objectMapper.writeValueAsString(outcome.failure);
-      exchange.setStatusCode(statusCodeForFailure(outcome.failure.kind));
+      exchange.setStatusCode(statusCodeForFailure(outcome.failure.kind()));
       exchange.getResponseSender().send(json, UTF_8);
       return;
     }
@@ -110,7 +110,7 @@ public final class ShareUploadHandler implements HttpHandler {
     Objects.requireNonNull(outcome.success);
     String json = objectMapper.writeValueAsString(outcome.success);
     exchange.setStatusCode(CREATED);
-    exchange.getResponseHeaders().put(LOCATION, outcome.success.resultsUrl);
+    exchange.getResponseHeaders().put(LOCATION, outcome.success.resultsUrl());
     exchange.getResponseSender().send(json, UTF_8);
   }
 
@@ -121,7 +121,7 @@ public final class ShareUploadHandler implements HttpHandler {
    * isn't too large, and that the share directory is not full.  This method
    * then validates the contents of the file, ensuring that it de-serializes to
    * a {@link Results} object successfully, and that it contains a non-empty
-   * {@link Results#testMetadata}.
+   * {@link Results#testMetadata()}.
    *
    * @param resultsBytes the bytes of the results.json file to be shared
    * @return an object describing the success or failure of the call
@@ -139,9 +139,9 @@ public final class ShareUploadHandler implements HttpHandler {
     long shareDirectorySize =
         FileUtils.directorySizeInBytes(fileStore.shareDirectory());
 
-    if (shareDirectorySize >= config.maxDirectorySizeInBytes) {
+    if (shareDirectorySize >= config.maxDirectorySizeInBytes()) {
       onShareDirectoryFull(
-          config.maxDirectorySizeInBytes,
+          config.maxDirectorySizeInBytes(),
           shareDirectorySize);
 
       return new ShareOutcome(
@@ -159,16 +159,16 @@ public final class ShareUploadHandler implements HttpHandler {
       InputStream limitedBytes =
           ByteStreams.limit(
               resultsBytes,
-              config.maxFileSizeInBytes + 1);
+              config.maxFileSizeInBytes() + 1);
 
       long fileSize = Files.copy(limitedBytes, tempFile, REPLACE_EXISTING);
 
-      if (fileSize > config.maxFileSizeInBytes)
+      if (fileSize > config.maxFileSizeInBytes())
         return new ShareOutcome(
             new ShareFailure(
                 ShareFailure.Kind.FILE_TOO_LARGE,
                 "Share uploads cannot exceed "
-                    + config.maxFileSizeInBytes
+                    + config.maxFileSizeInBytes()
                     + " bytes."));
 
       Results results;
@@ -182,7 +182,7 @@ public final class ShareUploadHandler implements HttpHandler {
                 "Invalid results JSON"));
       }
 
-      if (results.testMetadata == null || results.testMetadata.isEmpty())
+      if (results.testMetadata() == null || results.testMetadata().isEmpty())
         return new ShareOutcome(
             new ShareFailure(
                 ShareFailure.Kind.MISSING_TEST_METADATA,
@@ -203,12 +203,12 @@ public final class ShareUploadHandler implements HttpHandler {
       }
 
       String resultsUrl =
-          config.tfbStatusOrigin
+          config.tfbStatusOrigin()
               + "/share/download/"
               + urlPathSegmentEscaper().escape(shareId + ".json");
 
       String visualizeResultsUrl =
-          config.tfbWebsiteOrigin
+          config.tfbWebsiteOrigin()
               + "/benchmarks/#"
               + urlFragmentEscaper().escape("section=test&shareid=" + shareId);
 
@@ -278,7 +278,7 @@ public final class ShareUploadHandler implements HttpHandler {
 
       if (previous != null) {
         Instant nextEmailTime =
-            previous.plusSeconds(config.minSecondsBetweenEmails);
+            previous.plusSeconds(config.minSecondsBetweenEmails());
 
         if (now.isBefore(nextEmailTime)) {
           logger.warn(

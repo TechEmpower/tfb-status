@@ -86,15 +86,15 @@ public final class ShareUploadHandlerTest {
             response.body(),
             ShareSuccess.class);
 
-    String downloadPath = "/share/download/" + success.shareId + ".json";
+    String downloadPath = "/share/download/" + success.shareId() + ".json";
 
     assertEquals(
-        shareConfig.tfbStatusOrigin + downloadPath,
-        success.resultsUrl);
+        shareConfig.tfbStatusOrigin() + downloadPath,
+        success.resultsUrl());
 
     assertStartsWith(
-        shareConfig.tfbWebsiteOrigin + "/benchmarks/",
-        success.visualizeResultsUrl);
+        shareConfig.tfbWebsiteOrigin() + "/benchmarks/",
+        success.visualizeResultsUrl());
 
     //
     // Confirm the new results exist on the server now.
@@ -167,12 +167,12 @@ public final class ShareUploadHandlerTest {
 
     assertEquals(
         ShareFailure.Kind.INVALID_JSON,
-        failure.kind);
+        failure.kind());
   }
 
   /**
    * Verifies that {@code POST /share/upload} produces a {@code 400 Bad Request}
-   * response for a results.json file with no {@link Results#testMetadata}.
+   * response for a results.json file with no {@link Results#testMetadata()}.
    */
   @Test
   public void testPost_noTestMetadata(HttpTester http,
@@ -184,20 +184,20 @@ public final class ShareUploadHandlerTest {
 
     Results results =
         new Results(
-            /* uuid= */ template.uuid,
-            /* name= */ template.name,
-            /* environmentDescription= */ template.environmentDescription,
-            /* startTime= */ template.startTime,
-            /* completionTime= */ template.completionTime,
-            /* duration= */ template.duration,
-            /* frameworks= */ template.frameworks,
-            /* completed= */ template.completed,
-            /* succeeded= */ template.succeeded,
-            /* failed= */ template.failed,
-            /* rawData= */ template.rawData,
-            /* queryIntervals= */ template.queryIntervals,
-            /* concurrencyLevels= */ template.concurrencyLevels,
-            /* git= */ template.git,
+            /* uuid= */ template.uuid(),
+            /* name= */ template.name(),
+            /* environmentDescription= */ template.environmentDescription(),
+            /* startTime= */ template.startTime(),
+            /* completionTime= */ template.completionTime(),
+            /* duration= */ template.duration(),
+            /* frameworks= */ template.frameworks(),
+            /* completed= */ template.completed(),
+            /* succeeded= */ template.succeeded(),
+            /* failed= */ template.failed(),
+            /* rawData= */ template.rawData(),
+            /* queryIntervals= */ template.queryIntervals(),
+            /* concurrencyLevels= */ template.concurrencyLevels(),
+            /* git= */ template.git(),
             /* testMetadata= */ null);
 
     ByteSource resultsBytes = resultsTester.asByteSource(results);
@@ -225,7 +225,7 @@ public final class ShareUploadHandlerTest {
 
     assertEquals(
         ShareFailure.Kind.MISSING_TEST_METADATA,
-        failure.kind);
+        failure.kind());
   }
 
   /**
@@ -246,7 +246,7 @@ public final class ShareUploadHandlerTest {
 
     // Make the uploaded file exactly too large.
     long paddingNeeded =
-        shareConfig.maxFileSizeInBytes + 1 - resultsBytes.size();
+        shareConfig.maxFileSizeInBytes() + 1 - resultsBytes.size();
 
     ByteSource padding =
         new ByteSource() {
@@ -291,7 +291,7 @@ public final class ShareUploadHandlerTest {
 
     assertEquals(
         ShareFailure.Kind.FILE_TOO_LARGE,
-        failure.kind);
+        failure.kind());
   }
 
   /**
@@ -341,7 +341,7 @@ public final class ShareUploadHandlerTest {
 
         assertEquals(
             ShareFailure.Kind.SHARE_DIRECTORY_FULL,
-            failure.kind);
+            failure.kind());
       }
 
       /**
@@ -371,7 +371,7 @@ public final class ShareUploadHandlerTest {
                FileChannel.open(junk, CREATE_NEW, WRITE)) {
         fileChannel.write(
             ByteBuffer.wrap(new byte[0]),
-            shareConfig.maxDirectorySizeInBytes);
+            shareConfig.maxDirectorySizeInBytes());
       }
 
       shareTester.assertShareDirectoryFull();
@@ -396,7 +396,7 @@ public final class ShareUploadHandlerTest {
       //       @PerLookup scope, and the "clock" field of the service being
       //       tested should be made @VisibleForTesting, and the test for that
       //       service should directly reference that field.
-      clock.add(Duration.ofSeconds(shareConfig.minSecondsBetweenEmails));
+      clock.add(Duration.ofSeconds(shareConfig.minSecondsBetweenEmails()));
 
       shareTester.assertShareDirectoryFull();
       Thread.sleep(mailDelay.timeToSendOneEmail().toMillis());

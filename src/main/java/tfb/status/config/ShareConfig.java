@@ -11,80 +11,34 @@ import tfb.status.service.FileStore;
 
 /**
  * The configuration for sharing results.json files.
+ *
+ * @param minSecondsBetweenEmails The minimum number of seconds that must pass
+ *        after sending one email before sending another.  This is used to
+ *        prevent accidental self-spam if there are multiple requests to upload
+ *        results when the share directory is full.
+ * @param maxDirectorySizeInBytes The maximum size of the {@link
+ *        FileStore#shareDirectory()} in bytes.
+ * @param maxFileSizeInBytes The maximum size of a single file (before zip
+ *        compression) that can be uploaded to the {@link
+ *        FileStore#shareDirectory()} in bytes.
+ * @param tfbStatusOrigin The <a href="https://url.spec.whatwg.org/#origin"
+ *        >origin</a> for this application, containing the scheme and domain but
+ *        no path.  Must not end with a slash.
+ * @param tfbWebsiteOrigin The <a href="https://url.spec.whatwg.org/#origin"
+ *        >origin</a> for the main TFB website, containing the scheme and domain
+ *        but no path.  Must not end with a slash.
  */
 @Immutable
 @Singleton
-public final class ShareConfig {
-  /**
-   * The minimum number of seconds that must pass after sending one email before
-   * sending another.  This is used to prevent accidental self-spam if there are
-   * multiple requests to upload results when the share directory is full.
-   */
-  public final long minSecondsBetweenEmails;
+public record ShareConfig(long minSecondsBetweenEmails,
+                          long maxDirectorySizeInBytes,
+                          long maxFileSizeInBytes,
+                          String tfbStatusOrigin,
+                          String tfbWebsiteOrigin) {
 
-  /**
-   * The maximum size of the {@link FileStore#shareDirectory()} in bytes.
-   */
-  public final long maxDirectorySizeInBytes;
-
-  /**
-   * The maximum size of a single file (before zip compression) that can be
-   * uploaded to the {@link FileStore#shareDirectory()} in bytes.
-   */
-  public final long maxFileSizeInBytes;
-
-  /**
-   * The <a href="https://url.spec.whatwg.org/#origin">origin</a> for this
-   * application, containing the scheme and domain but no path.  Must not end
-   * with a slash.
-   */
-  public final String tfbStatusOrigin;
-
-  /**
-   * The <a href="https://url.spec.whatwg.org/#origin">origin</a> for the main
-   * TFB website, containing the scheme and domain but no path.  Must not end
-   * with a slash.
-   */
-  public final String tfbWebsiteOrigin;
-
-  public ShareConfig(long minSecondsBetweenEmails,
-                     long maxDirectorySizeInBytes,
-                     long maxFileSizeInBytes,
-                     String tfbStatusOrigin,
-                     String tfbWebsiteOrigin) {
-
-    this.minSecondsBetweenEmails = minSecondsBetweenEmails;
-    this.maxDirectorySizeInBytes = maxDirectorySizeInBytes;
-    this.maxFileSizeInBytes = maxFileSizeInBytes;
-    this.tfbStatusOrigin = Objects.requireNonNull(tfbStatusOrigin);
-    this.tfbWebsiteOrigin = Objects.requireNonNull(tfbWebsiteOrigin);
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
-    if (object == this) {
-      return true;
-    } else if (!(object instanceof ShareConfig)) {
-      return false;
-    } else {
-      ShareConfig that = (ShareConfig) object;
-      return this.minSecondsBetweenEmails == that.minSecondsBetweenEmails
-          && this.maxDirectorySizeInBytes == that.maxDirectorySizeInBytes
-          && this.maxFileSizeInBytes == that.maxFileSizeInBytes
-          && this.tfbStatusOrigin.equals(that.tfbStatusOrigin)
-          && this.tfbWebsiteOrigin.equals(that.tfbWebsiteOrigin);
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 1;
-    hash = 31 * hash + Long.hashCode(minSecondsBetweenEmails);
-    hash = 31 * hash + Long.hashCode(maxDirectorySizeInBytes);
-    hash = 31 * hash + Long.hashCode(maxFileSizeInBytes);
-    hash = 31 * hash + tfbStatusOrigin.hashCode();
-    hash = 31 * hash + tfbWebsiteOrigin.hashCode();
-    return hash;
+  public ShareConfig {
+    Objects.requireNonNull(tfbStatusOrigin);
+    Objects.requireNonNull(tfbWebsiteOrigin);
   }
 
   @JsonCreator

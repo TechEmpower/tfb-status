@@ -88,27 +88,27 @@ public final class HttpServer implements PreDestroy {
     // indefinitely.
     builder.setServerOption(
         SHUTDOWN_TIMEOUT,
-        config.forcefulShutdownTimeoutMillis);
+        config.forcefulShutdownTimeoutMillis());
 
-    if (config.keyStore == null)
-      builder.addHttpListener(config.port, config.host);
+    if (config.keyStore() == null)
+      builder.addHttpListener(config.port(), config.host());
 
     else {
-      Path keyStoreFile = fileSystem.getPath(config.keyStore.path);
+      Path keyStoreFile = fileSystem.getPath(config.keyStore().path());
 
       SSLContext sslContext =
           KeyStores.readServerSslContext(
               /* keyStoreBytes= */ MoreFiles.asByteSource(keyStoreFile),
-              /* password= */ config.keyStore.password.toCharArray());
+              /* password= */ config.keyStore().password().toCharArray());
 
-      builder.addHttpsListener(config.port, config.host, sslContext);
+      builder.addHttpsListener(config.port(), config.host(), sslContext);
       builder.setServerOption(ENABLE_HTTP2, true);
     }
 
     serverInfo =
-        "host=" + config.host
-            + ", port=" + config.port
-            + ", encrypted=" + (config.keyStore != null);
+        "host=" + config.host()
+            + ", port=" + config.port()
+            + ", encrypted=" + (config.keyStore() != null);
 
     server = builder.build();
   }
@@ -135,7 +135,7 @@ public final class HttpServer implements PreDestroy {
    *
    * <p>It is not necessarily the case that all HTTP request-handling threads
    * have stopped when this method returns.  This method will wait
-   * {@link HttpServerConfig#forcefulShutdownTimeoutMillis} for the threads to
+   * {@link HttpServerConfig#forcefulShutdownTimeoutMillis()} for the threads to
    * stop, but if some threads are still running after that amount of time, this
    * method will return anyway.
    */
@@ -155,7 +155,7 @@ public final class HttpServer implements PreDestroy {
   /**
    * Returns the port number that has been assigned to this server.
    *
-   * <p>When the {@linkplain HttpServerConfig#port configured port number} is
+   * <p>When the {@linkplain HttpServerConfig#port() configured port number} is
    * non-zero, the assigned port number will equal the configured port number.
    * Otherwise, when the configured port number is zero, the host system will
    * dynamically assign an ephemeral port for this server, and this method
@@ -223,7 +223,7 @@ public final class HttpServer implements PreDestroy {
      *
      * <p>It is not necessarily the case that all HTTP requests have completed
      * or have been terminated when this method returns.  This method will wait
-     * {@link HttpServerConfig#gracefulShutdownTimeoutMillis} for the requests
+     * {@link HttpServerConfig#gracefulShutdownTimeoutMillis()} for the requests
      * to complete naturally, but if the requests haven't completed after that
      * amount of time, this method will return anyway.
      */
@@ -232,7 +232,8 @@ public final class HttpServer implements PreDestroy {
       boolean allRequestsComplete;
       try {
         allRequestsComplete =
-            shutdownHandler.awaitShutdown(config.gracefulShutdownTimeoutMillis);
+            shutdownHandler.awaitShutdown(
+                config.gracefulShutdownTimeoutMillis());
       } catch (InterruptedException e) {
         logger.warn(
             "Shutdown was interrupted before all in-progress HTTP requests "

@@ -42,8 +42,8 @@ public final class DiffGenerator {
 
     var lines = new ArrayList<DiffLine>();
 
-    for (String framework : Sets.union(oldResults.frameworks,
-                                       newResults.frameworks)) {
+    for (String framework : Sets.union(oldResults.frameworks(),
+                                       newResults.frameworks())) {
 
       for (Results.TestType testType : Results.TestType.values()) {
         double oldRps = oldResults.rps(testType, framework);
@@ -138,21 +138,14 @@ public final class DiffGenerator {
   }
 
   @Immutable
-  private static final class DiffLine {
-    final String framework;
-    final Results.TestType testType;
-    final double oldRps;
-    final double newRps;
+  private record DiffLine(String framework,
+                          Results.TestType testType,
+                          double oldRps,
+                          double newRps) {
 
-    DiffLine(String framework,
-             Results.TestType testType,
-             double oldRps,
-             double newRps) {
-
-      this.framework = Objects.requireNonNull(framework);
-      this.testType = Objects.requireNonNull(testType);
-      this.oldRps = oldRps;
-      this.newRps = newRps;
+    DiffLine {
+      Objects.requireNonNull(framework);
+      Objects.requireNonNull(testType);
     }
   }
 

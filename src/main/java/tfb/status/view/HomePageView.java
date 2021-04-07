@@ -11,158 +11,98 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * A view of the home page.
  */
 @Immutable
-public final class HomePageView {
-  public final ImmutableList<ResultsView> results;
-  public final int skip;
-  public final int limit;
-  public final int next;
-  public final boolean hasNext;
-  public final @Nullable String announcement;
+public record HomePageView(ImmutableList<ResultsView> results,
+                           int skip,
+                           int limit,
+                           int next,
+                           boolean hasNext,
+                           @Nullable String announcement) {
 
-  public HomePageView(ImmutableList<ResultsView> results,
-                      int skip,
-                      int limit,
-                      int next,
-                      boolean hasNext,
-                      @Nullable String announcement) {
-
-    this.results = Objects.requireNonNull(results);
-    this.skip = skip;
-    this.limit = limit;
-    this.next = next;
-    this.hasNext = hasNext;
-    this.announcement = announcement;
+  public HomePageView {
+    Objects.requireNonNull(results);
   }
 
   /**
    * A view of a single run.
    */
   @Immutable
-  public static final class ResultsView {
-    public final @Nullable String uuid;
-    public final @Nullable String name;
-    public final @Nullable String environmentDescription;
-    public final int completedFrameworks;
-    public final int frameworksWithCleanSetup;
-    public final int frameworksWithSetupProblems;
-    public final int totalFrameworks;
-    public final int successfulTests;
-    public final int failedTests;
-    public final @Nullable String startTime;
-    public final @Nullable String completionTime;
-    public final @Nullable String lastUpdated;
-    public final @Nullable String elapsedDuration;
-    public final @Nullable String estimatedRemainingDuration;
-    public final @Nullable String commitId;
-    public final @Nullable String repositoryUrl;
-    public final @Nullable String branchName;
-    public final @Nullable String browseRepositoryUrl;
-    public final @Nullable String browseCommitUrl;
-    public final @Nullable String browseBranchUrl;
-    public final ImmutableList<Failure> failures;
-    public final @Nullable String jsonFileName;
-    public final @Nullable String zipFileName;
-    public final @Nullable String visualizeResultsUrl;
+  public record ResultsView(
+
+      @JsonProperty(value = "uuid", required = true)
+      @Nullable String uuid,
+
+      @JsonProperty(value = "name", required = true)
+      @Nullable String name,
+
+      @JsonProperty(value = "environmentDescription", required = true)
+      @Nullable String environmentDescription,
+
+      @JsonProperty(value = "completedFrameworks", required = true)
+      int completedFrameworks,
+
+      @JsonProperty(value = "frameworksWithCleanSetup", required = true)
+      int frameworksWithCleanSetup,
+
+      @JsonProperty(value = "frameworksWithSetupProblems", required = true)
+      int frameworksWithSetupProblems,
+
+      @JsonProperty(value = "totalFrameworks", required = true)
+      int totalFrameworks,
+
+      @JsonProperty(value = "successfulTests", required = true)
+      int successfulTests,
+
+      @JsonProperty(value = "failedTests", required = true)
+      int failedTests,
+
+      @JsonProperty(value = "startTime", required = true)
+      @Nullable String startTime,
+
+      @JsonProperty(value = "completionTime", required = true)
+      @Nullable String completionTime,
+
+      @JsonProperty(value = "lastUpdated", required = true)
+      @Nullable String lastUpdated,
+
+      @JsonProperty(value = "elapsedDuration", required = true)
+      @Nullable String elapsedDuration,
+
+      @JsonProperty(value = "estimatedRemainingDuration", required = true)
+      @Nullable String estimatedRemainingDuration,
+
+      @JsonProperty(value = "commitId", required = true)
+      @Nullable String commitId,
+
+      @JsonProperty(value = "repositoryUrl", required = true)
+      @Nullable String repositoryUrl,
+
+      @JsonProperty(value = "branchName", required = true)
+      @Nullable String branchName,
+
+      @JsonProperty(value = "browseRepositoryUrl", required = true)
+      @Nullable String browseRepositoryUrl,
+
+      @JsonProperty(value = "browseCommitUrl", required = true)
+      @Nullable String browseCommitUrl,
+
+      @JsonProperty(value = "browseBranchUrl", required = true)
+      @Nullable String browseBranchUrl,
+
+      @JsonProperty(value = "failures", required = true)
+      ImmutableList<Failure> failures,
+
+      @JsonProperty(value = "jsonFileName", required = true)
+      @Nullable String jsonFileName,
+
+      @JsonProperty(value = "zipFileName", required = true)
+      @Nullable String zipFileName,
+
+      @JsonProperty(value = "visualizeResultsUrl", required = true)
+      @Nullable String visualizeResultsUrl) {
 
     @JsonCreator
-    public ResultsView(
-
-        @JsonProperty(value = "uuid", required = true)
-        @Nullable String uuid,
-
-        @JsonProperty(value = "name", required = true)
-        @Nullable String name,
-
-        @JsonProperty(value = "environmentDescription", required = true)
-        @Nullable String environmentDescription,
-
-        @JsonProperty(value = "completedFrameworks", required = true)
-        int completedFrameworks,
-
-        @JsonProperty(value = "frameworksWithCleanSetup", required = true)
-        int frameworksWithCleanSetup,
-
-        @JsonProperty(value = "frameworksWithSetupProblems", required = true)
-        int frameworksWithSetupProblems,
-
-        @JsonProperty(value = "totalFrameworks", required = true)
-        int totalFrameworks,
-
-        @JsonProperty(value = "successfulTests", required = true)
-        int successfulTests,
-
-        @JsonProperty(value = "failedTests", required = true)
-        int failedTests,
-
-        @JsonProperty(value = "startTime", required = true)
-        @Nullable String startTime,
-
-        @JsonProperty(value = "completionTime", required = true)
-        @Nullable String completionTime,
-
-        @JsonProperty(value = "lastUpdated", required = true)
-        @Nullable String lastUpdated,
-
-        @JsonProperty(value = "elapsedDuration", required = true)
-        @Nullable String elapsedDuration,
-
-        @JsonProperty(value = "estimatedRemainingDuration", required = true)
-        @Nullable String estimatedRemainingDuration,
-
-        @JsonProperty(value = "commitId", required = true)
-        @Nullable String commitId,
-
-        @JsonProperty(value = "repositoryUrl", required = true)
-        @Nullable String repositoryUrl,
-
-        @JsonProperty(value = "branchName", required = true)
-        @Nullable String branchName,
-
-        @JsonProperty(value = "browseRepositoryUrl", required = true)
-        @Nullable String browseRepositoryUrl,
-
-        @JsonProperty(value = "browseCommitUrl", required = true)
-        @Nullable String browseCommitUrl,
-
-        @JsonProperty(value = "browseBranchUrl", required = true)
-        @Nullable String browseBranchUrl,
-
-        @JsonProperty(value = "failures", required = true)
-        ImmutableList<Failure> failures,
-
-        @JsonProperty(value = "jsonFileName", required = true)
-        @Nullable String jsonFileName,
-
-        @JsonProperty(value = "zipFileName", required = true)
-        @Nullable String zipFileName,
-
-        @JsonProperty(value = "visualizeResultsUrl", required = true)
-        @Nullable String visualizeResultsUrl) {
-
-      this.uuid = uuid;
-      this.name = name;
-      this.environmentDescription = environmentDescription;
-      this.completedFrameworks = completedFrameworks;
-      this.frameworksWithCleanSetup = frameworksWithCleanSetup;
-      this.frameworksWithSetupProblems = frameworksWithSetupProblems;
-      this.totalFrameworks = totalFrameworks;
-      this.successfulTests = successfulTests;
-      this.failedTests = failedTests;
-      this.startTime = startTime;
-      this.completionTime = completionTime;
-      this.lastUpdated = lastUpdated;
-      this.elapsedDuration = elapsedDuration;
-      this.estimatedRemainingDuration = estimatedRemainingDuration;
-      this.commitId = commitId;
-      this.repositoryUrl = repositoryUrl;
-      this.branchName = branchName;
-      this.browseRepositoryUrl = browseRepositoryUrl;
-      this.browseCommitUrl = browseCommitUrl;
-      this.browseBranchUrl = browseBranchUrl;
-      this.failures = Objects.requireNonNull(failures);
-      this.jsonFileName = jsonFileName;
-      this.zipFileName = zipFileName;
-      this.visualizeResultsUrl = visualizeResultsUrl;
+    public ResultsView {
+      Objects.requireNonNull(failures);
     }
 
     // Provide backwards compatibility with the TFB website, which reads the
@@ -184,11 +124,9 @@ public final class HomePageView {
     }
 
     @Immutable
-    public static final class FileName {
-      public final String fileName;
-
-      public FileName(String fileName) {
-        this.fileName = Objects.requireNonNull(fileName);
+    public record FileName(String fileName) {
+      public FileName {
+        Objects.requireNonNull(fileName);
       }
     }
 
@@ -197,26 +135,21 @@ public final class HomePageView {
      * test type.
      */
     @Immutable
-    public static final class Failure {
-      public final String framework;
-      public final ImmutableList<String> failedTestTypes;
-      public final boolean hadSetupProblems;
+    public record Failure (
+
+        @JsonProperty(value = "framework", required = true)
+        String framework,
+
+        @JsonProperty(value = "failedTestTypes", required = true)
+        ImmutableList<String> failedTestTypes,
+
+        @JsonProperty(value = "hadSetupProblems", required = true)
+        boolean hadSetupProblems) {
 
       @JsonCreator
-      public Failure(
-
-          @JsonProperty(value = "framework", required = true)
-          String framework,
-
-          @JsonProperty(value = "failedTestTypes", required = true)
-          ImmutableList<String> failedTestTypes,
-
-          @JsonProperty(value = "hadSetupProblems", required = true)
-          boolean hadSetupProblems) {
-
-        this.framework = Objects.requireNonNull(framework);
-        this.failedTestTypes = Objects.requireNonNull(failedTestTypes);
-        this.hadSetupProblems = hadSetupProblems;
+      public Failure {
+        Objects.requireNonNull(framework);
+        Objects.requireNonNull(failedTestTypes);
       }
     }
   }

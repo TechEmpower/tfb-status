@@ -52,7 +52,7 @@ public final class AssetsHandler {
     Objects.requireNonNull(config);
     Objects.requireNonNull(fileSystem);
 
-    return switch (config.mode) {
+    return switch (config.mode()) {
       case CLASS_PATH -> {
         ClassLoader classLoader = AssetsHandler.class.getClassLoader();
         var resourceManager = new ClassPathResourceManager(classLoader, "assets");

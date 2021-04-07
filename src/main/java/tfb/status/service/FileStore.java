@@ -36,7 +36,7 @@ public final class FileStore {
     Objects.requireNonNull(config);
     Objects.requireNonNull(fileSystem);
 
-    Path root = fileSystem.getPath(config.root);
+    Path root = fileSystem.getPath(config.root());
     createDirectoryIfNecessary(root);
 
     resultsDirectory = root.resolve("results");

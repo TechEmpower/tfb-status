@@ -74,8 +74,8 @@ public final class HealthChecker implements PreDestroy {
         healthCheckTask =
             taskScheduler.repeat(
                 /* task= */ () -> updateHealth(),
-                /* initialDelay= */ Duration.ofSeconds(config.intervalSeconds),
-                /* interval= */ Duration.ofSeconds(config.intervalSeconds));
+                /* initialDelay= */ Duration.ofSeconds(config.intervalSeconds()),
+                /* interval= */ Duration.ofSeconds(config.intervalSeconds()));
       }
 
       return isHealthy;
@@ -84,7 +84,7 @@ public final class HealthChecker implements PreDestroy {
 
   /**
    * Immediately performs a health check on the current thread and updates the
-   * value of {@link #isHealthy} with the result.
+   * value of {@link #isHealthy()} with the result.
    */
   private void updateHealth() {
     try {

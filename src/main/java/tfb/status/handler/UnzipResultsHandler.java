@@ -153,11 +153,11 @@ public final class UnzipResultsHandler implements HttpHandler {
             }
 
             Comparator<FileView> directoriesFirst =
-                comparing(file -> file.isDirectory,
+                comparing(file -> file.isDirectory(),
                           Booleans.trueFirst());
 
             Comparator<FileView> byFileName =
-                comparing(file -> file.fileName,
+                comparing(file -> file.fileName(),
                           String.CASE_INSENSITIVE_ORDER);
 
             children.sort(directoriesFirst.thenComparing(byFileName));

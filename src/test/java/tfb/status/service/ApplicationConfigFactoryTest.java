@@ -49,39 +49,39 @@ public final class ApplicationConfigFactoryTest {
     assertNotNull(config);
 
     assertEquals(
-        config.http,
+        config.http(),
         httpServerConfigProvider.get());
 
     assertEquals(
-        config.assets,
+        config.assets(),
         assetsConfigProvider.get());
 
     assertEquals(
-        config.mustache,
+        config.mustache(),
         mustacheConfigProvider.get());
 
     assertEquals(
-        config.fileStore,
+        config.fileStore(),
         fileStoreConfigProvider.get());
 
     assertEquals(
-        config.runProgressMonitor,
+        config.runProgressMonitor(),
         runProgressMonitorConfigProvider.get());
 
     assertEquals(
-        config.runCompleteMailer,
+        config.runCompleteMailer(),
         runCompleteMailerConfigProvider.get());
 
     assertEquals(
-        config.share,
+        config.share(),
         shareConfigProvider.get());
 
     assertEquals(
-        config.healthCheck,
+        config.healthCheck(),
         healthCheckConfigProvider.get());
 
     assertEquals(
-        config.email,
+        config.email(),
         emailConfigProvider.get());
   }
 

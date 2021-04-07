@@ -66,7 +66,7 @@ public final class MustacheRenderer {
     Objects.requireNonNull(config);
     Objects.requireNonNull(fileSystem);
 
-    return switch (config.mode) {
+    return switch (config.mode()) {
       case CLASS_PATH -> {
         var resolver = new ClasspathResolver("mustache");
         var onlyFactory = new DefaultMustacheFactory(resolver);

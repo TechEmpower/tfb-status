@@ -36,18 +36,18 @@ public final class RunProgressMonitorTest {
       throws IOException, MessagingException, InterruptedException {
 
     Results newResults = resultsTester.newResults();
-    assertNotNull(newResults.uuid);
-    assertNotNull(newResults.environmentDescription);
+    assertNotNull(newResults.uuid());
+    assertNotNull(newResults.environmentDescription());
 
     resultsTester.saveJsonToResultsDirectory(newResults);
 
-    String uuid = newResults.uuid;
-    String environment = newResults.environmentDescription;
+    String uuid = newResults.uuid();
+    String environment = newResults.environmentDescription();
 
     // The amount of time after the final update for an environment is recorded
     // and before we receive an email telling us the environment has timed out.
     Duration expectedDelay =
-        Duration.ofSeconds(config.environmentTimeoutSeconds)
+        Duration.ofSeconds(config.environmentTimeoutSeconds())
                 .plus(mailDelay.timeToSendOneEmail());
 
     String subject =

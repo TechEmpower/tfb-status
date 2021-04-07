@@ -8,30 +8,24 @@ import tfb.status.config.ShareConfig;
 
 /**
  * A view of a failed attempt by a user to share a results.json file.
+ *
+ * @param kind The kind of failure that occurred.
+ * @param message A message describing why the results could not be shared,
+ *        which may be displayed directly to the user.
  */
 @Immutable
-public final class ShareFailure {
-  /**
-   * The kind of failure that occurred.
-   */
-  public final Kind kind;
+public record ShareFailure(
 
-  /**
-   * A message describing why the results could not be shared, which may be
-   * displayed directly to the user.
-   */
-  public final String message;
+    @JsonProperty(value = "kind", required = true)
+    Kind kind,
+
+    @JsonProperty(value = "message", required = true)
+    String message) {
 
   @JsonCreator
-  public ShareFailure(
-      @JsonProperty(value = "kind", required = true)
-      Kind kind,
-
-      @JsonProperty(value = "message", required = true)
-      String message) {
-
-    this.kind = Objects.requireNonNull(kind);
-    this.message = Objects.requireNonNull(message);
+  public ShareFailure {
+    Objects.requireNonNull(kind);
+    Objects.requireNonNull(message);
   }
 
   /**
@@ -40,20 +34,20 @@ public final class ShareFailure {
   public enum Kind {
     /**
      * The results cannot be shared because the share directory has reached its
-     * {@linkplain ShareConfig#maxDirectorySizeInBytes maximum size}.
+     * {@linkplain ShareConfig#maxDirectorySizeInBytes() maximum size}.
      */
     SHARE_DIRECTORY_FULL,
 
     /**
      * The results cannot be shared because the results.json file exceeds the
-     * {@linkplain ShareConfig#maxFileSizeInBytes maximum size} for individual
+     * {@linkplain ShareConfig#maxFileSizeInBytes() maximum size} for individual
      * files.
      */
     FILE_TOO_LARGE,
 
     /**
-     * The results cannot be shared because its {@link Results#testMetadata} is
-     * {@code null} or empty.
+     * The results cannot be shared because its {@link Results#testMetadata()}
+     * is {@code null} or empty.
      */
     MISSING_TEST_METADATA,
 

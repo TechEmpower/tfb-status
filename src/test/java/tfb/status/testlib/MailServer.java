@@ -43,7 +43,7 @@ public final class MailServer implements PreDestroy {
       server =
           new GreenMail(
               new ServerSetup(
-                  /* port= */ config.port,
+                  /* port= */ config.port(),
                   /* bindAddress= */ "localhost",
                   /* protocol= */ "smtp"));
   }
@@ -80,7 +80,7 @@ public final class MailServer implements PreDestroy {
   /**
    * Returns the port number that has been assigned to this server.
    *
-   * <p>When the {@linkplain EmailConfig#port configured port number} is
+   * <p>When the {@linkplain EmailConfig#port() configured port number} is
    * non-zero, the assigned port number will equal the configured port number.
    * Otherwise, when the configured port number is zero, the host system will
    * dynamically assign an ephemeral port for this server, and this method

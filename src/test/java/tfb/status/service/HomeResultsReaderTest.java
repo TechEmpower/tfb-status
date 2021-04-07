@@ -35,7 +35,7 @@ public final class HomeResultsReaderTest {
     // new results in another test.
     ImmutableList<ResultsView> resultsList = homeResultsReader.results();
     ResultsView firstResult = resultsList.get(0);
-    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", firstResult.uuid);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", firstResult.uuid());
   }
 
   /**
@@ -53,79 +53,79 @@ public final class HomeResultsReaderTest {
 
     assertNotNull(results);
 
-    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid);
-    assertEquals("Continuous Benchmarking Run 2019-12-11 21:15:18", results.name);
-    assertEquals("Citrine", results.environmentDescription);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid());
+    assertEquals("Continuous Benchmarking Run 2019-12-11 21:15:18", results.name());
+    assertEquals("Citrine", results.environmentDescription());
 
-    assertEquals("results.2019-12-11-13-21-02-404.json", results.jsonFileName);
-    assertEquals("results.2019-12-16-03-22-48-407.zip", results.zipFileName);
+    assertEquals("results.2019-12-11-13-21-02-404.json", results.jsonFileName());
+    assertEquals("results.2019-12-16-03-22-48-407.zip", results.zipFileName());
 
-    assertEquals(659, results.totalFrameworks);
-    assertEquals(659, results.completedFrameworks);
-    assertEquals(2247, results.successfulTests);
-    assertEquals(229, results.failedTests);
-    assertEquals(613, results.frameworksWithCleanSetup);
-    assertEquals(46, results.frameworksWithSetupProblems);
+    assertEquals(659, results.totalFrameworks());
+    assertEquals(659, results.completedFrameworks());
+    assertEquals(2247, results.successfulTests());
+    assertEquals(229, results.failedTests());
+    assertEquals(613, results.frameworksWithCleanSetup());
+    assertEquals(46, results.frameworksWithSetupProblems());
 
-    assertEquals("2019-12-11 at 9:15 PM", results.startTime);
-    assertEquals("2019-12-16 at 11:22 AM", results.completionTime);
+    assertEquals("2019-12-11 at 9:15 PM", results.startTime());
+    assertEquals("2019-12-16 at 11:22 AM", results.completionTime());
 
     // TODO: Avoid using the last modified time of the file on disk, which may
     //       change for reasons completely unrelated to the run itself, and use
     //       something from the results.json file to give us a last modified
     //       time instead.
-    assertNotNull(results.zipFileName);
-    Path zipFile = fileStore.resultsDirectory().resolve(results.zipFileName);
+    assertNotNull(results.zipFileName());
+    Path zipFile = fileStore.resultsDirectory().resolve(results.zipFileName());
     assertEquals(
         Files.getLastModifiedTime(zipFile)
              .toInstant()
              .atZone(clock.getZone())
              .toLocalDateTime()
              .format(HomeResultsReader.DISPLAYED_TIME_FORMATTER),
-        results.lastUpdated);
+        results.lastUpdated());
 
-    assertEquals("~110 hours", results.elapsedDuration);
-    assertNull(results.estimatedRemainingDuration);
+    assertEquals("~110 hours", results.elapsedDuration());
+    assertNull(results.estimatedRemainingDuration());
 
     assertEquals(
         "https://github.com/TechEmpower/FrameworkBenchmarks.git",
-        results.repositoryUrl);
+        results.repositoryUrl());
 
-    assertEquals("master", results.branchName);
+    assertEquals("master", results.branchName());
 
     assertEquals(
         "57c558b30dd57e2421b8cbaeedfa90c1a59f02fe",
-        results.commitId);
+        results.commitId());
 
     assertEquals(
         "https://github.com/TechEmpower/FrameworkBenchmarks",
-        results.browseRepositoryUrl);
+        results.browseRepositoryUrl());
 
     assertEquals(
         "https://github.com/TechEmpower/FrameworkBenchmarks/tree/master",
-        results.browseBranchUrl);
+        results.browseBranchUrl());
 
     assertEquals(
         "https://github.com/TechEmpower/FrameworkBenchmarks/tree/57c558b30dd57e2421b8cbaeedfa90c1a59f02fe",
-        results.browseCommitUrl);
+        results.browseCommitUrl());
 
     assertEquals(
         "https://www.techempower.com/benchmarks/#section=test&runid=598923fe-6491-41bd-a2b6-047f70860aed",
-        results.visualizeResultsUrl);
+        results.visualizeResultsUrl());
 
-    assertEquals(172, results.failures.size());
+    assertEquals(172, results.failures().size());
 
     assertEquals(
         46,
-        results.failures.stream()
-                        .filter(failure -> failure.hadSetupProblems)
-                        .count());
+        results.failures().stream()
+                          .filter(failure -> failure.hadSetupProblems())
+                          .count());
 
     assertEquals(
         126,
-        results.failures.stream()
-                        .filter(failure -> !failure.failedTestTypes.isEmpty())
-                        .count());
+        results.failures().stream()
+                          .filter(failure -> !failure.failedTestTypes().isEmpty())
+                          .count());
   }
 
   /**
@@ -149,14 +149,14 @@ public final class HomeResultsReaderTest {
       throws IOException {
 
     Results results = resultsTester.newResults();
-    assertNotNull(results.uuid);
-    assertNotNull(results.testMetadata);
+    assertNotNull(results.uuid());
+    assertNotNull(results.testMetadata());
 
     resultsTester.saveJsonToResultsDirectory(results);
 
-    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid());
     assertNotNull(view);
-    assertNotNull(view.visualizeResultsUrl);
+    assertNotNull(view.visualizeResultsUrl());
   }
 
   /**
@@ -169,14 +169,14 @@ public final class HomeResultsReaderTest {
       throws IOException {
 
     Results results = newResultsWithoutMetadata(resultsTester);
-    assertNotNull(results.uuid);
-    assertNull(results.testMetadata);
+    assertNotNull(results.uuid());
+    assertNull(results.testMetadata());
 
     resultsTester.saveJsonToResultsDirectory(results);
 
-    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid());
     assertNotNull(view);
-    assertNull(view.visualizeResultsUrl);
+    assertNull(view.visualizeResultsUrl());
   }
 
   /**
@@ -190,8 +190,8 @@ public final class HomeResultsReaderTest {
       throws IOException {
 
     Results results = resultsTester.newResults();
-    assertNotNull(results.uuid);
-    assertNotNull(results.testMetadata);
+    assertNotNull(results.uuid());
+    assertNotNull(results.testMetadata());
 
     Path zipFile = resultsTester.saveZipToResultsDirectory(results);
 
@@ -208,9 +208,9 @@ public final class HomeResultsReaderTest {
         /* ifAbsent= */
         () -> fail("test_metadata.json file must be present"));
 
-    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid());
     assertNotNull(view);
-    assertNotNull(view.visualizeResultsUrl);
+    assertNotNull(view.visualizeResultsUrl());
   }
 
   /**
@@ -224,8 +224,8 @@ public final class HomeResultsReaderTest {
       throws IOException {
 
     Results results = newResultsWithoutMetadata(resultsTester);
-    assertNotNull(results.uuid);
-    assertNull(results.testMetadata);
+    assertNotNull(results.uuid());
+    assertNull(results.testMetadata());
 
     Path zipFile = resultsTester.saveZipToResultsDirectory(results);
 
@@ -242,9 +242,9 @@ public final class HomeResultsReaderTest {
         /* ifAbsent= */
         () -> fail("test_metadata.json file must be present"));
 
-    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid());
     assertNotNull(view);
-    assertNotNull(view.visualizeResultsUrl);
+    assertNotNull(view.visualizeResultsUrl());
   }
 
   /**
@@ -258,8 +258,8 @@ public final class HomeResultsReaderTest {
       throws IOException {
 
     Results results = newResultsWithoutMetadata(resultsTester);
-    assertNotNull(results.uuid);
-    assertNull(results.testMetadata);
+    assertNotNull(results.uuid());
+    assertNull(results.testMetadata());
 
     Path zipFile = resultsTester.saveZipToResultsDirectory(results);
 
@@ -276,9 +276,9 @@ public final class HomeResultsReaderTest {
         /* ifAbsent= */
         () -> fail("test_metadata.json file must be present"));
 
-    ResultsView view = homeResultsReader.resultsByUuid(results.uuid);
+    ResultsView view = homeResultsReader.resultsByUuid(results.uuid());
     assertNotNull(view);
-    assertNull(view.visualizeResultsUrl);
+    assertNull(view.visualizeResultsUrl());
   }
 
   private static Results newResultsWithoutMetadata(ResultsTester resultsTester)
@@ -287,20 +287,20 @@ public final class HomeResultsReaderTest {
     Results template = resultsTester.newResults();
 
     return new Results(
-        /* uuid= */ template.uuid,
-        /* name= */ template.name,
-        /* environmentDescription= */ template.environmentDescription,
-        /* startTime= */ template.startTime,
-        /* completionTime= */ template.completionTime,
-        /* duration= */ template.duration,
-        /* frameworks= */ template.frameworks,
-        /* completed= */ template.completed,
-        /* succeeded= */ template.succeeded,
-        /* failed= */ template.failed,
-        /* rawData= */ template.rawData,
-        /* queryIntervals= */ template.queryIntervals,
-        /* concurrencyLevels= */ template.concurrencyLevels,
-        /* git= */ template.git,
+        /* uuid= */ template.uuid(),
+        /* name= */ template.name(),
+        /* environmentDescription= */ template.environmentDescription(),
+        /* startTime= */ template.startTime(),
+        /* completionTime= */ template.completionTime(),
+        /* duration= */ template.duration(),
+        /* frameworks= */ template.frameworks(),
+        /* completed= */ template.completed(),
+        /* succeeded= */ template.succeeded(),
+        /* failed= */ template.failed(),
+        /* rawData= */ template.rawData(),
+        /* queryIntervals= */ template.queryIntervals(),
+        /* concurrencyLevels= */ template.concurrencyLevels(),
+        /* git= */ template.git(),
         /* testMetadata= */ null);
   }
 }

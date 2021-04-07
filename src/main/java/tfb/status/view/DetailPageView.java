@@ -10,15 +10,13 @@ import tfb.status.view.HomePageView.ResultsView;
  * A view of the results detail page.
  */
 @Immutable
-public final class DetailPageView {
-  public final ResultsView result;
+public record DetailPageView(
+
+    @JsonProperty(value = "result", required = true)
+    ResultsView result) {
 
   @JsonCreator
-  public DetailPageView(
-
-      @JsonProperty(value = "result", required = true)
-      ResultsView result) {
-
-    this.result = Objects.requireNonNull(result);
+  public DetailPageView {
+    Objects.requireNonNull(result);
   }
 }

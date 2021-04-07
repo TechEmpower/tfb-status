@@ -44,7 +44,7 @@ public final class EmailSender {
    * @param overridePort a service that produces the port number of the mail
    *        server on demand, which may be useful when the mail server listens
    *        on a dynamically assigned ephemeral port, or {@code null} if the
-   *        {@linkplain EmailConfig#port configured port number} will be used
+   *        {@linkplain EmailConfig#port() configured port number} will be used
    * @throws IllegalArgumentException if the configuration is invalid
    */
   @Inject
@@ -52,9 +52,9 @@ public final class EmailSender {
                      @Nullable OverridePort overridePort) {
 
     if (config != null) {
-      verifyHostAndPort(config.host, config.port);
-      verifyEmailAddress(config.from);
-      verifyEmailAddress(config.to);
+      verifyHostAndPort(config.host(), config.port());
+      verifyEmailAddress(config.from());
+      verifyEmailAddress(config.to());
     }
 
     this.config = config;
@@ -64,7 +64,7 @@ public final class EmailSender {
   /**
    * A service that produces the port number of the mail server on demand.  If
    * this service exists, then the value returned by {@link #getPort()} is
-   * considered to override the {@linkplain EmailConfig#port configured port
+   * considered to override the {@linkplain EmailConfig#port() configured port
    * number}.
    */
   @FunctionalInterface
@@ -117,14 +117,14 @@ public final class EmailSender {
 
     int port =
         (overridePort == null)
-            ? config.port
+            ? config.port()
             : overridePort.getPort();
 
-    var from = new InternetAddress(config.from);
-    var to = new InternetAddress(config.to);
+    var from = new InternetAddress(config.from());
+    var to = new InternetAddress(config.to());
 
     var environment = new Properties();
-    environment.setProperty("mail.smtp.host", config.host);
+    environment.setProperty("mail.smtp.host", config.host());
     environment.setProperty("mail.smtp.port", String.valueOf(port));
     environment.setProperty("mail.smtp.starttls.enable", "true");
 

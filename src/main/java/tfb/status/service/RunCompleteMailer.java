@@ -70,7 +70,7 @@ public final class RunCompleteMailer {
 
     Objects.requireNonNull(event);
 
-    String uuid = event.uuid;
+    String uuid = event.uuid();
     ResultsView results = homeResultsReader.resultsByUuid(uuid);
     if (results == null) {
       logger.warn(
@@ -80,11 +80,11 @@ public final class RunCompleteMailer {
     }
 
     // A run is complete once it has results.zip file.
-    if (results.zipFileName == null)
+    if (results.zipFileName() == null)
       return;
 
     Path newZipFile =
-        fileStore.resultsDirectory().resolve(results.zipFileName);
+        fileStore.resultsDirectory().resolve(results.zipFileName());
 
     maybeSendEmail(newZipFile);
   }
@@ -106,7 +106,8 @@ public final class RunCompleteMailer {
       Instant now = clock.instant();
       Instant previous = this.previousEmailTime;
       if (previous != null) {
-        Instant nextEmailTime = previous.plusSeconds(config.minSecondsBetweenEmails);
+        Instant nextEmailTime =
+            previous.plusSeconds(config.minSecondsBetweenEmails());
         if (now.isBefore(nextEmailTime)) {
           logger.warn(
               "Suppressing email for new zip file {} because "
@@ -242,15 +243,15 @@ public final class RunCompleteMailer {
   private static boolean areResultsComparable(Results a, Results b) {
     Objects.requireNonNull(a);
     Objects.requireNonNull(b);
-    return a.environmentDescription != null
-        && b.environmentDescription != null
-        && a.environmentDescription.equals(b.environmentDescription)
-        && a.git != null
-        && b.git != null
-        && a.git.branchName != null
-        && b.git.branchName != null
-        && a.git.branchName.equals(b.git.branchName)
-        && a.git.repositoryUrl.equals(b.git.repositoryUrl);
+    return a.environmentDescription() != null
+        && b.environmentDescription() != null
+        && a.environmentDescription().equals(b.environmentDescription())
+        && a.git() != null
+        && b.git() != null
+        && a.git().branchName() != null
+        && b.git().branchName() != null
+        && a.git().branchName().equals(b.git().branchName())
+        && a.git().repositoryUrl().equals(b.git().repositoryUrl());
   }
 
   private String prepareEmailBody(Results results,
@@ -259,14 +260,14 @@ public final class RunCompleteMailer {
     Objects.requireNonNull(results);
 
     String newCommitId =
-        (results.git == null)
+        (results.git() == null)
             ? null
-            : results.git.commitId;
+            : results.git().commitId();
 
     String previousCommitId =
-        (previousResults == null || previousResults.git == null)
+        (previousResults == null || previousResults.git() == null)
             ? null
-            : previousResults.git.commitId;
+            : previousResults.git().commitId();
 
     // TODO: Consider using a template engine.
     var sb = new StringBuilder();
@@ -275,14 +276,14 @@ public final class RunCompleteMailer {
     sb.append("A TFB run has completed in this environment:\n");
     sb.append("\n");
     sb.append("  ");
-    sb.append(results.environmentDescription);
+    sb.append(results.environmentDescription());
     sb.append("\n");
     sb.append("\n");
 
-    if (results.uuid != null) {
+    if (results.uuid() != null) {
       sb.append("Details: ");
       sb.append("https://tfb-status.techempower.com/results/");
-      sb.append(results.uuid);
+      sb.append(results.uuid());
       sb.append("\n");
       sb.append("\n");
     }
@@ -342,7 +343,7 @@ public final class RunCompleteMailer {
   @VisibleForTesting
   public static String runCompleteEmailSubject(Results results) {
     Objects.requireNonNull(results);
-    String name = (results.name == null) ? "(unnamed run)" : results.name;
+    String name = (results.name() == null) ? "(unnamed run)" : results.name();
     return "<tfb> <auto> Run complete: " + name;
   }
 }

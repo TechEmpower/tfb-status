@@ -26,187 +26,110 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * <p>Instances of this class are deserialized from JSON.  Instances of this
  * class are serialized to JSON in tests only; the serialized form of this class
  * is never exposed to users.
+ *
+ * @param uuid The universally unique id for this set of results, or {@code
+ *        null} if that information is unavailable.  This field was added in
+ *        March 2017 and was not present in results gathered prior to that date.
+ * @param name The informal name for this set of results, or {@code null} if
+ *        that information is unavailable.  This field was added in March 2017
+ *        and was not present in results gathered prior to that date.
+ * @param environmentDescription The informal description of the environment
+ *        that produced this set of results, or {@code null} if that information
+ *        is unavailable.  This field was added in March 2017 and was not
+ *        present in results gathered prior to that date.
+ * @param startTime The epoch millisecond timestamp of when this run started, or
+ *        {@code null} if that information is unavailable.  This field was added
+ *        in March 2017 and was not present in results gathered prior to that
+ *        date.
+ * @param completionTime The epoch millisecond timestamp of when this run
+ *        completed, or {@code null} if that information is unavailable.  This
+ *        field was added in March 2017 and was not present in results gathered
+ *        prior to that date.
+ * @param duration The duration in seconds of each test.
+ * @param frameworks The names of the frameworks in the run.
+ * @param completed The mapping of framework names to the times their tests
+ *        completed.
+ * @param succeeded Maps test types to the names of the frameworks that
+ *        succeeded at that test type in this run.  This mapping does not take
+ *        into account whether the framework achieved at least one request
+ *        during the test.
+ * @param failed Maps test types to the names of the frameworks that failed at
+ *        that test type in this run.  This mapping does not take into account
+ *        whether the framework achieved at least one request during the test.
+ * @param rawData Maps test types and framework names to the list of raw results
+ *        for that test type and framework.
+ * @param queryIntervals The different numbers of database queries per HTTP
+ *        request that were tested, for the database-related tests that vary the
+ *        number of queries.
+ * @param concurrencyLevels The different number of client-side request
+ *        concurrency levels that were tested.
+ * @param git Information about the state of the local git repository for this
+ *        run, or {@code null} if the state of the git repository is unknown.
+ *        This field was added in February 2018 and was not present in results
+ *        gathered prior to that date.
+ * @param testMetadata The test metadata, generated during this run (same as
+ *        test_metadata.json).  Test metadata was not always included in the
+ *        results, so this will be {@code null} for old runs.  This field was
+ *        added in January 2020 and was not present in results gathered prior to
+ *        that date.
  */
 @Immutable
-public final class Results {
-  /**
-   * The universally unique id for this set of results, or {@code null} if that
-   * information is unavailable.
-   *
-   * <p>This field was added in March 2017 and was not present in results
-   * gathered prior to that date.
-   */
-  public final @Nullable String uuid;
+public record Results(
 
-  /**
-   * The informal name for this set of results, or {@code null} if that
-   * information is unavailable.
-   *
-   * <p>This field was added in March 2017 and was not present in results
-   * gathered prior to that date.
-   */
-  public final @Nullable String name;
+    @JsonProperty(value = "uuid", required = false)
+    @Nullable String uuid,
 
-  /**
-   * The informal description of the environment that produced this set of
-   * results, or {@code null} if that information is unavailable.
-   *
-   * <p>This field was added in March 2017 and was not present in results
-   * gathered prior to that date.
-   */
-  public final @Nullable String environmentDescription;
+    @JsonProperty(value = "name", required = false)
+    @Nullable String name,
 
-  /**
-   * The epoch millisecond timestamp of when this run started, or {@code null}
-   * if that information is unavailable.
-   *
-   * <p>This field was added in March 2017 and was not present in results
-   * gathered prior to that date.
-   */
-  public final @Nullable Long startTime;
+    @JsonProperty(value = "environmentDescription", required = false)
+    @Nullable String environmentDescription,
 
-  /**
-   * The epoch millisecond timestamp of when this run completed, or {@code null}
-   * if that information is unavailable.
-   *
-   * <p>This field was added in March 2017 and was not present in results
-   * gathered prior to that date.
-   */
-  public final @Nullable Long completionTime;
+    @JsonProperty(value = "startTime", required = false)
+    @Nullable Long startTime,
 
-  /**
-   * The duration in seconds of each test.
-   */
-  public final long duration;
+    @JsonProperty(value = "completionTime", required = false)
+    @Nullable Long completionTime,
 
-  /**
-   * The names of the frameworks in the run.
-   */
-  public final ImmutableSet<String> frameworks;
+    @JsonProperty(value = "duration", required = true)
+    long duration,
 
-  /**
-   * The mapping of framework names to the times their tests completed.
-   */
-  public final ImmutableMap<String, String> completed;
+    @JsonProperty(value = "frameworks", required = true)
+    ImmutableSet<String> frameworks,
 
-  /**
-   * Maps test types to the names of the frameworks that succeeded at that test
-   * type in this run.
-   *
-   * <p>This mapping does not take into account whether the framework achieved
-   * at least one request during the test.
-   */
-  public final TestTypeToFrameworks succeeded;
+    @JsonProperty(value = "completed", required = true)
+    ImmutableMap<String, String> completed,
 
-  /**
-   * Maps test types to the names of the frameworks that failed at that test
-   * type in this run.
-   *
-   * <p>This mapping does not take into account whether the framework achieved
-   * at least one request during the test.
-   */
-  public final TestTypeToFrameworks failed;
+    @JsonProperty(value = "succeeded", required = true)
+    TestTypeToFrameworks succeeded,
 
-  /**
-   * Maps test types and framework names to the list of raw results for that
-   * test type and framework.
-   */
-  public final RawData rawData;
+    @JsonProperty(value = "failed", required = true)
+    TestTypeToFrameworks failed,
 
-  /**
-   * The different numbers of database queries per HTTP request that were
-   * tested, for the database-related tests that vary the number of queries.
-   */
-  public final ImmutableList<Integer> queryIntervals;
+    @JsonProperty(value = "rawData", required = true)
+    RawData rawData,
 
-  /**
-   * The different number of client-side request concurrency levels that were
-   * tested.
-   */
-  public final ImmutableList<Integer> concurrencyLevels;
+    @JsonProperty(value = "queryIntervals", required = true)
+    ImmutableList<Integer> queryIntervals,
 
-  /**
-   * Information about the state of the local git repository for this run, or
-   * {@code null} if the state of the git repository is unknown.
-   *
-   * <p>This field was added in February 2018 and was not present in results
-   * gathered prior to that date.
-   */
-  public final @Nullable GitInfo git;
+    @JsonProperty(value = "concurrencyLevels", required = true)
+    ImmutableList<Integer> concurrencyLevels,
 
-  /**
-   * The test metadata, generated during this run (same as test_metadata.json).
-   * Test metadata was not always included in the results, so this will be
-   * {@code null} for old runs.
-   *
-   * <p>This field was added in January 2020 and was not present in results
-   * gathered prior to that date.
-   */
-  public final @Nullable ImmutableList<TestDefinition> testMetadata;
+    @JsonProperty(value = "git", required = false)
+    @Nullable GitInfo git,
+
+    @JsonProperty(value = "testMetadata", required = false)
+    @Nullable ImmutableList<TestDefinition> testMetadata) {
 
   @JsonCreator
-  public Results(
-
-      @JsonProperty(value = "uuid", required = false)
-      @Nullable String uuid,
-
-      @JsonProperty(value = "name", required = false)
-      @Nullable String name,
-
-      @JsonProperty(value = "environmentDescription", required = false)
-      @Nullable String environmentDescription,
-
-      @JsonProperty(value = "startTime", required = false)
-      @Nullable Long startTime,
-
-      @JsonProperty(value = "completionTime", required = false)
-      @Nullable Long completionTime,
-
-      @JsonProperty(value = "duration", required = true)
-      long duration,
-
-      @JsonProperty(value = "frameworks", required = true)
-      ImmutableSet<String> frameworks,
-
-      @JsonProperty(value = "completed", required = true)
-      ImmutableMap<String, String> completed,
-
-      @JsonProperty(value = "succeeded", required = true)
-      TestTypeToFrameworks succeeded,
-
-      @JsonProperty(value = "failed", required = true)
-      TestTypeToFrameworks failed,
-
-      @JsonProperty(value = "rawData", required = true)
-      RawData rawData,
-
-      @JsonProperty(value = "queryIntervals", required = true)
-      ImmutableList<Integer> queryIntervals,
-
-      @JsonProperty(value = "concurrencyLevels", required = true)
-      ImmutableList<Integer> concurrencyLevels,
-
-      @JsonProperty(value = "git", required = false)
-      @Nullable GitInfo git,
-
-      @JsonProperty(value = "testMetadata", required = false)
-      @Nullable ImmutableList<TestDefinition> testMetadata) {
-
-    this.uuid = uuid;
-    this.name = name;
-    this.environmentDescription = environmentDescription;
-    this.startTime = startTime;
-    this.completionTime = completionTime;
-    this.duration = duration;
-    this.frameworks = Objects.requireNonNull(frameworks);
-    this.completed = Objects.requireNonNull(completed);
-    this.succeeded = Objects.requireNonNull(succeeded);
-    this.failed = Objects.requireNonNull(failed);
-    this.rawData = Objects.requireNonNull(rawData);
-    this.queryIntervals = Objects.requireNonNull(queryIntervals);
-    this.concurrencyLevels = Objects.requireNonNull(concurrencyLevels);
-    this.git = git;
-    this.testMetadata = testMetadata;
+  public Results {
+    Objects.requireNonNull(frameworks);
+    Objects.requireNonNull(completed);
+    Objects.requireNonNull(succeeded);
+    Objects.requireNonNull(failed);
+    Objects.requireNonNull(rawData);
+    Objects.requireNonNull(queryIntervals);
+    Objects.requireNonNull(concurrencyLevels);
   }
 
   /**
@@ -272,53 +195,6 @@ public final class Results {
     return TestOutcome.NOT_IMPLEMENTED_OR_NOT_YET_TESTED;
   }
 
-  @Override
-  public boolean equals(@Nullable Object object) {
-    if (object == this) {
-      return true;
-    } else if (!(object instanceof Results)) {
-      return false;
-    } else {
-      Results that = (Results) object;
-      return this.duration == that.duration
-          && Objects.equals(this.uuid, that.uuid)
-          && Objects.equals(this.name, that.name)
-          && Objects.equals(this.environmentDescription, that.environmentDescription)
-          && Objects.equals(this.startTime, that.startTime)
-          && Objects.equals(this.completionTime, that.completionTime)
-          && this.frameworks.equals(that.frameworks)
-          && this.completed.equals(that.completed)
-          && this.succeeded.equals(that.succeeded)
-          && this.failed.equals(that.failed)
-          && this.rawData.equals(that.rawData)
-          && this.queryIntervals.equals(that.queryIntervals)
-          && this.concurrencyLevels.equals(that.concurrencyLevels)
-          && Objects.equals(this.git, that.git)
-          && Objects.equals(this.testMetadata, that.testMetadata);
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 1;
-    hash = 31 * hash + Objects.hashCode(uuid);
-    hash = 31 * hash + Objects.hashCode(name);
-    hash = 31 * hash + Objects.hashCode(environmentDescription);
-    hash = 31 * hash + Objects.hashCode(startTime);
-    hash = 31 * hash + Objects.hashCode(completionTime);
-    hash = 31 * hash + Long.hashCode(duration);
-    hash = 31 * hash + frameworks.hashCode();
-    hash = 31 * hash + completed.hashCode();
-    hash = 31 * hash + succeeded.hashCode();
-    hash = 31 * hash + failed.hashCode();
-    hash = 31 * hash + rawData.hashCode();
-    hash = 31 * hash + queryIntervals.hashCode();
-    hash = 31 * hash + concurrencyLevels.hashCode();
-    hash = 31 * hash + Objects.hashCode(git);
-    hash = 31 * hash + Objects.hashCode(testMetadata);
-    return hash;
-  }
-
   /**
    * A high-level description of what happened for a particular [framework, test
    * type] combination in a run.
@@ -348,81 +224,49 @@ public final class Results {
 
   /**
    * A mapping of test types to names of frameworks.
+   *
+   * @param json The names of frameworks associated with the JSON serialization
+   *        test in this mapping.
+   * @param plaintext The names of frameworks associated with the plaintext test
+   *        in this mapping.
+   * @param db The names of frameworks associated with the single query test in
+   *        this mapping.
+   * @param query The names of frameworks associated with the multiple queries
+   *        test in this mapping.
+   * @param update The names of frameworks associated with the data updates test
+   *        in this mapping.
+   * @param fortune The names of frameworks associated with the fortunes test in
+   *        this mapping.
+   * @param cachedQuery The names of frameworks associated with the cached
+   *        queries test in this mapping.
    */
   @Immutable
-  public static final class TestTypeToFrameworks {
-    /**
-     * The names of frameworks associated with the JSON serialization test in
-     * this mapping.
-     */
-    public final @Nullable ImmutableSet<String> json;
+  public record TestTypeToFrameworks(
 
-    /**
-     * The names of frameworks associated with the plaintext test in this
-     * mapping.
-     */
-    public final @Nullable ImmutableSet<String> plaintext;
+      @JsonProperty(value = "json", required = false)
+      @Nullable ImmutableSet<String> json,
 
-    /**
-     * The names of frameworks associated with the single query test in this
-     * mapping.
-     */
-    public final @Nullable ImmutableSet<String> db;
+      @JsonProperty(value = "plaintext", required = false)
+      @Nullable ImmutableSet<String> plaintext,
 
-    /**
-     * The names of frameworks associated with the multiple queries test in this
-     * mapping.
-     */
-    public final @Nullable ImmutableSet<String> query;
+      @JsonProperty(value = "db", required = false)
+      @Nullable ImmutableSet<String> db,
 
-    /**
-     * The names of frameworks associated with the data updates test in this
-     * mapping.
-     */
-    public final @Nullable ImmutableSet<String> update;
+      @JsonProperty(value = "query", required = false)
+      @Nullable ImmutableSet<String> query,
 
-    /**
-     * The names of frameworks associated with the fortunes test in this
-     * mapping.
-     */
-    public final @Nullable ImmutableSet<String> fortune;
+      @JsonProperty(value = "update", required = false)
+      @Nullable ImmutableSet<String> update,
 
-    @JsonProperty("cached_query")
-    public final @Nullable ImmutableSet<String> cachedQuery;
+      @JsonProperty(value = "fortune", required = false)
+      @Nullable ImmutableSet<String> fortune,
+
+      @JsonProperty(value = "cached_query", required = false)
+      @JsonAlias("cached-query")
+      @Nullable ImmutableSet<String> cachedQuery) {
 
     @JsonCreator
-    public TestTypeToFrameworks(
-
-        @JsonProperty(value = "json", required = false)
-        @Nullable ImmutableSet<String> json,
-
-        @JsonProperty(value = "plaintext", required = false)
-        @Nullable ImmutableSet<String> plaintext,
-
-        @JsonProperty(value = "db", required = false)
-        @Nullable ImmutableSet<String> db,
-
-        @JsonProperty(value = "query", required = false)
-        @Nullable ImmutableSet<String> query,
-
-        @JsonProperty(value = "update", required = false)
-        @Nullable ImmutableSet<String> update,
-
-        @JsonProperty(value = "fortune", required = false)
-        @Nullable ImmutableSet<String> fortune,
-
-        @JsonProperty(value = "cached_query", required = false)
-        @JsonAlias("cached-query")
-        @Nullable ImmutableSet<String> cachedQuery) {
-
-      this.json = json;
-      this.plaintext = plaintext;
-      this.db = db;
-      this.query = query;
-      this.update = update;
-      this.fortune = fortune;
-      this.cachedQuery = cachedQuery;
-    }
+    public TestTypeToFrameworks {}
 
     /**
      * Returns the names of the frameworks associated with the specified test
@@ -452,126 +296,59 @@ public final class Results {
       Objects.requireNonNull(framework);
       return get(testType).contains(framework);
     }
-
-    @Override
-    public boolean equals(@Nullable Object object) {
-      if (object == this) {
-        return true;
-      } else if (!(object instanceof TestTypeToFrameworks)) {
-        return false;
-      } else {
-        TestTypeToFrameworks that = (TestTypeToFrameworks) object;
-        return Objects.equals(this.json, that.json)
-            && Objects.equals(this.plaintext, that.plaintext)
-            && Objects.equals(this.db, that.db)
-            && Objects.equals(this.query, that.query)
-            && Objects.equals(this.update, that.update)
-            && Objects.equals(this.fortune, that.fortune)
-            && Objects.equals(this.cachedQuery, that.cachedQuery);
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      int hash = 1;
-      hash = 31 * hash + Objects.hashCode(json);
-      hash = 31 * hash + Objects.hashCode(plaintext);
-      hash = 31 * hash + Objects.hashCode(db);
-      hash = 31 * hash + Objects.hashCode(query);
-      hash = 31 * hash + Objects.hashCode(update);
-      hash = 31 * hash + Objects.hashCode(fortune);
-      hash = 31 * hash + Objects.hashCode(cachedQuery);
-      return hash;
-    }
   }
 
   /**
    * Maps test types and framework names to the list of raw results for that
    * test type and framework.
+   *
+   * @param json Maps framework names to those frameworks' raw results in the
+   *        JSON serialization test.
+   * @param plaintext Maps framework names to those frameworks' raw results in
+   *        the plaintext test.
+   * @param db Maps framework names to those frameworks' raw results in the
+   *        single query test.
+   * @param query Maps framework names to those frameworks' raw results in the
+   *        multiple queries test.
+   * @param update Maps framework names to those frameworks' raw results in the
+   *        data updates test.
+   * @param fortune Maps framework names to those frameworks' raw results in the
+   *        fortunes test.
+   * @param cachedQuery Maps framework names to those frameworks' raw results in
+   *        the cached queries test.
    */
   @Immutable
-  public static final class RawData {
-    /**
-     * Maps framework names to those frameworks' raw results in the JSON
-     * serialization test.
-     */
-    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> json;
+  public record RawData(
 
-    /**
-     * Maps framework names to those frameworks' raw results in the plaintext
-     * test.
-     */
-    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> plaintext;
+      // Note: The incoming data cannot be represented as a Map<TestType, ?>
+      //       because its keys are not exclusively test types.  The incoming
+      //       data also contains "slocCounts" and "commitCounts" keys whose
+      //       values are structured differently than the test types' values.
 
-    /**
-     * Maps framework names to those frameworks' raw results in the single query
-     * test.
-     */
-    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> db;
+      @JsonProperty(value = "json", required = false)
+      @Nullable ImmutableListMultimap<String, SingleWrkExecution> json,
 
-    /**
-     * Maps framework names to those frameworks' raw results in the multiple
-     * queries test.
-     */
-    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> query;
+      @JsonProperty(value = "plaintext", required = false)
+      @Nullable ImmutableListMultimap<String, SingleWrkExecution> plaintext,
 
-    /**
-     * Maps framework names to those frameworks' raw results in the data updates
-     * test.
-     */
-    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> update;
+      @JsonProperty(value = "db", required = false)
+      @Nullable ImmutableListMultimap<String, SingleWrkExecution> db,
 
-    /**
-     * Maps framework names to those frameworks' raw results in the fortunes
-     * test.
-     */
-    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> fortune;
+      @JsonProperty(value = "query", required = false)
+      @Nullable ImmutableListMultimap<String, SingleWrkExecution> query,
 
-    /**
-     * Maps framework names to those frameworks' raw results in the cached
-     * queries test.
-     */
-    @JsonProperty("cached_query")
-    public final @Nullable ImmutableListMultimap<String, SingleWrkExecution> cachedQuery;
+      @JsonProperty(value = "update", required = false)
+      @Nullable ImmutableListMultimap<String, SingleWrkExecution> update,
+
+      @JsonProperty(value = "fortune", required = false)
+      @Nullable ImmutableListMultimap<String, SingleWrkExecution> fortune,
+
+      @JsonProperty(value = "cached_query", required = false)
+      @JsonAlias("cached-query")
+      @Nullable ImmutableListMultimap<String, SingleWrkExecution> cachedQuery) {
 
     @JsonCreator
-    public RawData(
-
-        // Note: The incoming data cannot be represented as a Map<TestType, ?>
-        //       because its keys are not exclusively test types.  The incoming
-        //       data also contains "slocCounts" and "commitCounts" keys whose
-        //       values are structured differently than the test types' values.
-
-        @JsonProperty(value = "json", required = false)
-        @Nullable ImmutableListMultimap<String, SingleWrkExecution> json,
-
-        @JsonProperty(value = "plaintext", required = false)
-        @Nullable ImmutableListMultimap<String, SingleWrkExecution> plaintext,
-
-        @JsonProperty(value = "db", required = false)
-        @Nullable ImmutableListMultimap<String, SingleWrkExecution> db,
-
-        @JsonProperty(value = "query", required = false)
-        @Nullable ImmutableListMultimap<String, SingleWrkExecution> query,
-
-        @JsonProperty(value = "update", required = false)
-        @Nullable ImmutableListMultimap<String, SingleWrkExecution> update,
-
-        @JsonProperty(value = "fortune", required = false)
-        @Nullable ImmutableListMultimap<String, SingleWrkExecution> fortune,
-
-        @JsonProperty(value = "cached_query", required = false)
-        @JsonAlias("cached-query")
-        @Nullable ImmutableListMultimap<String, SingleWrkExecution> cachedQuery) {
-
-      this.json = json;
-      this.plaintext = plaintext;
-      this.db = db;
-      this.query = query;
-      this.update = update;
-      this.fortune = fortune;
-      this.cachedQuery = cachedQuery;
-    }
+    public RawData {}
 
     /**
      * Extracts the raw results data for the given test type, grouping by
@@ -600,76 +377,33 @@ public final class Results {
       Objects.requireNonNull(framework);
       return get(testType).get(framework);
     }
-
-    @Override
-    public boolean equals(@Nullable Object object) {
-      if (object == this) {
-        return true;
-      } else if (!(object instanceof RawData)) {
-        return false;
-      } else {
-        RawData that = (RawData) object;
-        return Objects.equals(this.json, that.json)
-            && Objects.equals(this.plaintext, that.plaintext)
-            && Objects.equals(this.db, that.db)
-            && Objects.equals(this.query, that.query)
-            && Objects.equals(this.update, that.update)
-            && Objects.equals(this.fortune, that.fortune)
-            && Objects.equals(this.cachedQuery, that.cachedQuery);
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      int hash = 1;
-      hash = 31 * hash + Objects.hashCode(json);
-      hash = 31 * hash + Objects.hashCode(plaintext);
-      hash = 31 * hash + Objects.hashCode(db);
-      hash = 31 * hash + Objects.hashCode(query);
-      hash = 31 * hash + Objects.hashCode(update);
-      hash = 31 * hash + Objects.hashCode(fortune);
-      hash = 31 * hash + Objects.hashCode(cachedQuery);
-      return hash;
-    }
   }
 
   /**
    * Data collected from a single execution of wrk.
+   *
+   * @param totalRequests The total number of HTTP requests <em>completed</em>
+   *        by wrk regardless of the response status code, not including
+   *        requests that failed to complete due to timeouts or socket-level
+   *        errors.  Subtract {@link #status5xx()} from this number to determine
+   *        the total number of successful HTTP requests.
+   * @param status5xx The total number of HTTP requests completed by wrk having
+   *        response status codes not in the 2xx or 3xx range.  Subtract this
+   *        number from {@link #totalRequests()} to determine the total number
+   *        of successful HTTP requests.
    */
   @Immutable
   @JsonInclude(NON_DEFAULT)
-  public static final class SingleWrkExecution {
-    /**
-     * The total number of HTTP requests <em>completed</em> by wrk regardless of
-     * the response status code, not including requests that failed to complete
-     * due to timeouts or socket-level errors.
-     *
-     * <p>Subtract {@link #status5xx} from this number to determine the total
-     * number of successful HTTP requests.
-     */
-    public final long totalRequests;
+  public record SingleWrkExecution(
 
-    /**
-     * The total number of HTTP requests completed by wrk having response status
-     * codes not in the 2xx or 3xx range.
-     *
-     * <p>Subtract this number from {@link #totalRequests} to determine the
-     * total number of successful HTTP requests.
-     */
-    @JsonProperty("5xx") public final int status5xx;
+      @JsonProperty(value = "totalRequests", required = false)
+      long totalRequests,
+
+      @JsonProperty(value = "5xx", required = false)
+      int status5xx) {
 
     @JsonCreator
-    public SingleWrkExecution(
-
-        @JsonProperty(value = "totalRequests", required = false)
-        long totalRequests,
-
-        @JsonProperty(value = "5xx", required = false)
-        int status5xx) {
-
-      this.totalRequests = totalRequests;
-      this.status5xx = status5xx;
-    }
+    public SingleWrkExecution {}
 
     /**
      * The total number of successful HTTP requests completed by wrk during this
@@ -678,96 +412,41 @@ public final class Results {
     long successfulRequests() {
       return totalRequests - status5xx;
     }
-
-    @Override
-    public boolean equals(@Nullable Object object) {
-      if (object == this) {
-        return true;
-      } else if (!(object instanceof SingleWrkExecution)) {
-        return false;
-      } else {
-        SingleWrkExecution that = (SingleWrkExecution) object;
-        return this.totalRequests == that.totalRequests
-            && this.status5xx == that.status5xx;
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      int hash = 1;
-      hash = 31 * hash + Long.hashCode(totalRequests);
-      hash = 31 * hash + Integer.hashCode(status5xx);
-      return hash;
-    }
   }
 
   /**
    * Information about the state of the local git repository for this run.
+   *
+   * @param commitId The current commit id of the local repository.  Equivalent
+   *        to the output of {@code git rev-parse HEAD}.
+   * @param repositoryUrl The name of the remote repository from which the local
+   *        repository was cloned, such as
+   *        "https://github.com/TechEmpower/FrameworkBenchmarks.git".
+   *        Equivalent to the output of {@code git config --get
+   *        remote.origin.url}.
+   * @param branchName The current branch name of the local repository, or
+   *        {@code null} if that information is unavailable.  Equivalent to the
+   *        output of {@code git rev-parse --abbrev-ref HEAD}.  This field was
+   *        added a few weeks after the {@link #commitId()} and {@link
+   *        #repositoryUrl()} fields, so there are a few runs where this field
+   *        is {@code null} and those other fields are non-{@code null}.
    */
   @Immutable
-  public static final class GitInfo {
-    /**
-     * The current commit id of the local repository.  Equivalent to the output
-     * of {@code git rev-parse HEAD}.
-     */
-    public final String commitId;
+  public record GitInfo(
 
-    /**
-     * The name of the remote repository from which the local repository was
-     * cloned, such as "https://github.com/TechEmpower/FrameworkBenchmarks.git".
-     * Equivalent to the output of {@code git config --get remote.origin.url}.
-     */
-    public final String repositoryUrl;
+      @JsonProperty(value = "commitId", required = true)
+      String commitId,
 
-    /**
-     * The current branch name of the local repository, or {@code null} if that
-     * information is unavailable.  Equivalent to the output of {@code git
-     * rev-parse --abbrev-ref HEAD}.
-     *
-     * <p>This field was added a few weeks after the {@link #commitId} and
-     * {@link #repositoryUrl} fields, so there are a few runs where this field
-     * is {@code null} and those other fields are non-{@code null}.
-     */
-    public final @Nullable String branchName;
+      @JsonProperty(value = "repositoryUrl", required = true)
+      String repositoryUrl,
+
+      @JsonProperty(value = "branchName", required = false)
+      @Nullable String branchName) {
 
     @JsonCreator
-    public GitInfo(
-
-        @JsonProperty(value = "commitId", required = true)
-        String commitId,
-
-        @JsonProperty(value = "repositoryUrl", required = true)
-        String repositoryUrl,
-
-        @JsonProperty(value = "branchName", required = false)
-        @Nullable String branchName) {
-
-      this.commitId = Objects.requireNonNull(commitId);
-      this.repositoryUrl = Objects.requireNonNull(repositoryUrl);
-      this.branchName = branchName;
-    }
-
-    @Override
-    public boolean equals(@Nullable Object object) {
-      if (object == this) {
-        return true;
-      } else if (!(object instanceof GitInfo)) {
-        return false;
-      } else {
-        GitInfo that = (GitInfo) object;
-        return this.commitId.equals(that.commitId)
-            && this.repositoryUrl.equals(that.repositoryUrl)
-            && Objects.equals(this.branchName, that.branchName);
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      int hash = 1;
-      hash = 31 * hash + commitId.hashCode();
-      hash = 31 * hash + repositoryUrl.hashCode();
-      hash = 31 * hash + Objects.hashCode(branchName);
-      return hash;
+    public GitInfo {
+      Objects.requireNonNull(commitId);
+      Objects.requireNonNull(repositoryUrl);
     }
   }
 

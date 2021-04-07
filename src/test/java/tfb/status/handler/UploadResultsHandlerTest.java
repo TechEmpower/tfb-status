@@ -71,9 +71,9 @@ public final class UploadResultsHandlerTest {
     //
 
     Results newResults = resultsTester.newResults();
-    assertNotNull(newResults.uuid);
+    assertNotNull(newResults.uuid());
 
-    String uuid = newResults.uuid;
+    String uuid = newResults.uuid();
 
     //
     // Confirm the new results don't exist on the server yet.
@@ -144,9 +144,9 @@ public final class UploadResultsHandlerTest {
       DetailPageView newDetails =
           objectMapper.readValue(newDetailsBytes, DetailPageView.class);
 
-      assertEquals(uuid, newDetails.result.uuid);
-      assertNotNull(newDetails.result.jsonFileName);
-      assertNull(newDetails.result.zipFileName);
+      assertEquals(uuid, newDetails.result().uuid());
+      assertNotNull(newDetails.result().jsonFileName());
+      assertNull(newDetails.result().zipFileName());
 
       //
       // Confirm that we received a notification about the new results.
@@ -164,20 +164,20 @@ public final class UploadResultsHandlerTest {
       Results updatedResults =
           new Results(
               /* uuid= */ uuid,
-              /* name= */ "modified " + newResults.name,
-              /* environmentDescription= */ newResults.environmentDescription,
-              /* startTime= */ newResults.startTime,
-              /* completionTime= */ newResults.completionTime,
-              /* duration= */ newResults.duration,
-              /* frameworks= */ newResults.frameworks,
-              /* completed= */ newResults.completed,
-              /* succeeded= */ newResults.succeeded,
-              /* failed= */ newResults.failed,
-              /* rawData= */ newResults.rawData,
-              /* queryIntervals= */ newResults.queryIntervals,
-              /* concurrencyLevels= */ newResults.concurrencyLevels,
-              /* git= */ newResults.git,
-              /* testMetadata= */ newResults.testMetadata);
+              /* name= */ "modified " + newResults.name(),
+              /* environmentDescription= */ newResults.environmentDescription(),
+              /* startTime= */ newResults.startTime(),
+              /* completionTime= */ newResults.completionTime(),
+              /* duration= */ newResults.duration(),
+              /* frameworks= */ newResults.frameworks(),
+              /* completed= */ newResults.completed(),
+              /* succeeded= */ newResults.succeeded(),
+              /* failed= */ newResults.failed(),
+              /* rawData= */ newResults.rawData(),
+              /* queryIntervals= */ newResults.queryIntervals(),
+              /* concurrencyLevels= */ newResults.concurrencyLevels(),
+              /* git= */ newResults.git(),
+              /* testMetadata= */ newResults.testMetadata());
 
       //
       // Upload the updated results JSON.
@@ -212,10 +212,10 @@ public final class UploadResultsHandlerTest {
       DetailPageView updatedDetails =
           objectMapper.readValue(updatedDetailsBytes, DetailPageView.class);
 
-      assertEquals(uuid, updatedDetails.result.uuid);
-      assertEquals(updatedResults.name, updatedDetails.result.name);
-      assertNotNull(updatedDetails.result.jsonFileName);
-      assertNull(updatedDetails.result.zipFileName);
+      assertEquals(uuid, updatedDetails.result().uuid());
+      assertEquals(updatedResults.name(), updatedDetails.result().name());
+      assertNotNull(updatedDetails.result().jsonFileName());
+      assertNull(updatedDetails.result().zipFileName());
 
       //
       // Confirm that we received a notification about the updated results.
@@ -233,20 +233,20 @@ public final class UploadResultsHandlerTest {
       Results finalResults =
           new Results(
               /* uuid= */ uuid,
-              /* name= */ "final " + updatedResults.name,
-              /* environmentDescription= */ updatedResults.environmentDescription,
-              /* startTime= */ updatedResults.startTime,
-              /* completionTime= */ updatedResults.completionTime,
-              /* duration= */ updatedResults.duration,
-              /* frameworks= */ updatedResults.frameworks,
-              /* completed= */ updatedResults.completed,
-              /* succeeded= */ updatedResults.succeeded,
-              /* failed= */ updatedResults.failed,
-              /* rawData= */ updatedResults.rawData,
-              /* queryIntervals= */ updatedResults.queryIntervals,
-              /* concurrencyLevels= */ updatedResults.concurrencyLevels,
-              /* git= */ updatedResults.git,
-              /* testMetadata= */ updatedResults.testMetadata);
+              /* name= */ "final " + updatedResults.name(),
+              /* environmentDescription= */ updatedResults.environmentDescription(),
+              /* startTime= */ updatedResults.startTime(),
+              /* completionTime= */ updatedResults.completionTime(),
+              /* duration= */ updatedResults.duration(),
+              /* frameworks= */ updatedResults.frameworks(),
+              /* completed= */ updatedResults.completed(),
+              /* succeeded= */ updatedResults.succeeded(),
+              /* failed= */ updatedResults.failed(),
+              /* rawData= */ updatedResults.rawData(),
+              /* queryIntervals= */ updatedResults.queryIntervals(),
+              /* concurrencyLevels= */ updatedResults.concurrencyLevels(),
+              /* git= */ updatedResults.git(),
+              /* testMetadata= */ updatedResults.testMetadata());
 
       String zipFileName =
           getClass().getSimpleName()
@@ -287,10 +287,10 @@ public final class UploadResultsHandlerTest {
       DetailPageView finalDetails =
           objectMapper.readValue(finalDetailsBytes, DetailPageView.class);
 
-      assertEquals(uuid, finalDetails.result.uuid);
-      assertEquals(finalResults.name, finalDetails.result.name);
-      assertNotNull(finalDetails.result.jsonFileName);
-      assertNotNull(finalDetails.result.zipFileName);
+      assertEquals(uuid, finalDetails.result().uuid());
+      assertEquals(finalResults.name(), finalDetails.result().name());
+      assertNotNull(finalDetails.result().jsonFileName());
+      assertNotNull(finalDetails.result().zipFileName());
 
       //
       // Confirm that we received a notification about the final results.

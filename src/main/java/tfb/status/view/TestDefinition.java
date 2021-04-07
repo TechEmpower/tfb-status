@@ -16,127 +16,64 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * framework.
  */
 @Immutable
-public final class TestDefinition {
-  public final String approach;
-  public final String classification;
-  public final String database;
-  @JsonProperty("database_os")
-  public final String databaseOs;
-  public final String framework;
-  public final String language;
-  public final String orm;
-  public final String os;
-  public final String platform;
-  @JsonProperty("display_name")
-  public final String displayName;
-  public final String name;
-  public final String notes;
-  public final @Nullable String versus;
-  public final String webserver;
+public record TestDefinition(
+
+    @JsonProperty(value = "approach", required = true)
+    String approach,
+
+    @JsonProperty(value = "classification", required = true)
+    String classification,
+
+    @JsonProperty(value = "database", required = true)
+    String database,
+
+    @JsonProperty(value = "database_os", required = true)
+    String databaseOs,
+
+    @JsonProperty(value = "framework", required = true)
+    String framework,
+
+    @JsonProperty(value = "language", required = true)
+    String language,
+
+    @JsonProperty(value = "orm", required = true)
+    String orm,
+
+    @JsonProperty(value = "os", required = true)
+    String os,
+
+    @JsonProperty(value = "platform", required = true)
+    String platform,
+
+    @JsonProperty(value = "name", required = true)
+    String name,
+
+    @JsonProperty(value = "display_name", required = true)
+    String displayName,
+
+    @JsonProperty(value = "notes", required = true)
+    String notes,
+
+    @JsonProperty(value = "versus", required = false)
+    @Nullable String versus,
+
+    @JsonProperty(value = "webserver", required = true)
+    String webserver) {
 
   @JsonCreator
-  public TestDefinition(
-
-      @JsonProperty(value = "approach", required = true)
-      String approach,
-
-      @JsonProperty(value = "classification", required = true)
-      String classification,
-
-      @JsonProperty(value = "database", required = true)
-      String database,
-
-      @JsonProperty(value = "database_os", required = true)
-      String databaseOs,
-
-      @JsonProperty(value = "framework", required = true)
-      String framework,
-
-      @JsonProperty(value = "language", required = true)
-      String language,
-
-      @JsonProperty(value = "orm", required = true)
-      String orm,
-
-      @JsonProperty(value = "os", required = true)
-      String os,
-
-      @JsonProperty(value = "platform", required = true)
-      String platform,
-
-      @JsonProperty(value = "name", required = true)
-      String name,
-
-      @JsonProperty(value = "display_name", required = true)
-      String displayName,
-
-      @JsonProperty(value = "notes", required = true)
-      String notes,
-
-      @JsonProperty(value = "versus", required = false)
-      @Nullable String versus,
-
-      @JsonProperty(value = "webserver", required = true)
-      String webserver) {
-
-    this.approach = Objects.requireNonNull(approach);
-    this.classification = Objects.requireNonNull(classification);
-    this.database = Objects.requireNonNull(database);
-    this.databaseOs = Objects.requireNonNull(databaseOs);
-    this.framework = Objects.requireNonNull(framework);
-    this.language = Objects.requireNonNull(language);
-    this.orm = Objects.requireNonNull(orm);
-    this.os = Objects.requireNonNull(os);
-    this.platform = Objects.requireNonNull(platform);
-    this.name = Objects.requireNonNull(name);
-    this.displayName = Objects.requireNonNull(displayName);
-    this.notes = Objects.requireNonNull(notes);
-    this.versus = versus;
-    this.webserver = Objects.requireNonNull(webserver);
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
-    if (object == this) {
-      return true;
-    } else if (!(object instanceof TestDefinition)) {
-      return false;
-    } else {
-      TestDefinition that = (TestDefinition) object;
-      return this.approach.equals(that.approach)
-          && this.classification.equals(that.classification)
-          && this.database.equals(that.database)
-          && this.databaseOs.equals(that.databaseOs)
-          && this.framework.equals(that.framework)
-          && this.language.equals(that.language)
-          && this.orm.equals(that.orm)
-          && this.os.equals(that.os)
-          && this.platform.equals(that.platform)
-          && this.displayName.equals(that.displayName)
-          && this.name.equals(that.name)
-          && this.notes.equals(that.notes)
-          && Objects.equals(this.versus, that.versus)
-          && this.webserver.equals(that.webserver);
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 1;
-    hash = 31 * hash + approach.hashCode();
-    hash = 31 * hash + classification.hashCode();
-    hash = 31 * hash + database.hashCode();
-    hash = 31 * hash + databaseOs.hashCode();
-    hash = 31 * hash + framework.hashCode();
-    hash = 31 * hash + language.hashCode();
-    hash = 31 * hash + orm.hashCode();
-    hash = 31 * hash + os.hashCode();
-    hash = 31 * hash + platform.hashCode();
-    hash = 31 * hash + displayName.hashCode();
-    hash = 31 * hash + name.hashCode();
-    hash = 31 * hash + notes.hashCode();
-    hash = 31 * hash + Objects.hashCode(versus);
-    hash = 31 * hash + webserver.hashCode();
-    return hash;
+  public TestDefinition {
+    Objects.requireNonNull(approach);
+    Objects.requireNonNull(classification);
+    Objects.requireNonNull(database);
+    Objects.requireNonNull(databaseOs);
+    Objects.requireNonNull(framework);
+    Objects.requireNonNull(language);
+    Objects.requireNonNull(orm);
+    Objects.requireNonNull(os);
+    Objects.requireNonNull(platform);
+    Objects.requireNonNull(name);
+    Objects.requireNonNull(displayName);
+    Objects.requireNonNull(notes);
+    Objects.requireNonNull(webserver);
   }
 }

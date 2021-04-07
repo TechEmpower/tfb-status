@@ -68,7 +68,7 @@ public final class DetailPageHandlerTest {
             response.body(),
             DetailPageView.class);
 
-    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", view.result.uuid);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", view.result().uuid());
   }
 
   /**

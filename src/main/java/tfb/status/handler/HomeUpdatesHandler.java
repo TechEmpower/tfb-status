@@ -93,7 +93,7 @@ public final class HomeUpdatesHandler {
     Objects.requireNonNull(mustacheRenderer);
     Objects.requireNonNull(homeResultsReader);
 
-    String uuid = event.uuid;
+    String uuid = event.uuid();
 
     Set<WebSocketChannel> wsConnections = wsHandler.getPeerConnections();
 

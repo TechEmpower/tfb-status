@@ -6,15 +6,13 @@ import java.util.Objects;
 /**
  * An event that fires when new {@link Results} are uploaded or existing results
  * are updated.
+ *
+ * @param uuid The {@link Results#uuid()} of the updated results.
  */
 @Immutable
-public final class UpdatedResultsEvent {
-  /**
-   * The {@link Results#uuid} of the updated results.
-   */
-  public final String uuid;
+public record UpdatedResultsEvent(String uuid) {
 
-  public UpdatedResultsEvent(String uuid) {
-    this.uuid = Objects.requireNonNull(uuid);
+  public UpdatedResultsEvent {
+    Objects.requireNonNull(uuid);
   }
 }

@@ -120,10 +120,10 @@ public final class HomeResultsReader implements PreDestroy {
 
     readAllFiles().forEach(
         (FileSummary summary) -> {
-          if (summary.uuid == null)
+          if (summary.uuid() == null)
             noUuid.add(summary);
           else
-            byUuid.computeIfAbsent(summary.uuid, uuid -> new ArrayList<>())
+            byUuid.computeIfAbsent(summary.uuid(), uuid -> new ArrayList<>())
                   .add(summary);
         });
 
@@ -153,7 +153,7 @@ public final class HomeResultsReader implements PreDestroy {
 
     ImmutableList<FileSummary> summaries =
         readAllFiles()
-            .filter(summary -> uuid.equals(summary.uuid))
+            .filter(summary -> uuid.equals(summary.uuid()))
             .collect(toImmutableList());
 
     return summaries.isEmpty()
@@ -267,7 +267,7 @@ public final class HomeResultsReader implements PreDestroy {
     // commit_id.txt file.  We used to capture the git commit id in its own file
     // before we added it to results.json.
     String backupCommitId;
-    if (results.git != null)
+    if (results.git() != null)
       backupCommitId = null;
     else
       backupCommitId =
@@ -286,7 +286,7 @@ public final class HomeResultsReader implements PreDestroy {
     // test_metadata.json file.  We used to capture the test metadata in its own
     // file before we added it to results.json.
     boolean hasTestMetadataFile;
-    if (results.testMetadata != null)
+    if (results.testMetadata() != null)
       hasTestMetadataFile = false;
     else
       hasTestMetadataFile =
@@ -314,9 +314,9 @@ public final class HomeResultsReader implements PreDestroy {
     Objects.requireNonNull(fileName);
     Objects.requireNonNull(lastUpdated);
 
-    String uuid = results.uuid;
-    String name = results.name;
-    String environmentDescription = results.environmentDescription;
+    String uuid = results.uuid();
+    String name = results.name();
+    String environmentDescription = results.environmentDescription();
 
     // The "completed" map in the results includes frameworks that won't show up
     // in the "succeeded" or "failed" maps because they had an error before they
@@ -326,7 +326,7 @@ public final class HomeResultsReader implements PreDestroy {
     int frameworksWithCleanSetup = 0;
     int frameworksWithSetupProblems = 0;
 
-    for (String message : results.completed.values()) {
+    for (String message : results.completed().values()) {
       if (isCompletedTimestamp(message))
         frameworksWithCleanSetup++;
       else
@@ -336,7 +336,7 @@ public final class HomeResultsReader implements PreDestroy {
     int completedFrameworks =
         frameworksWithCleanSetup + frameworksWithSetupProblems;
 
-    int totalFrameworks = results.frameworks.size();
+    int totalFrameworks = results.frameworks().size();
     int successfulTests = 0;
     int failedTests = 0;
 
@@ -346,7 +346,7 @@ public final class HomeResultsReader implements PreDestroy {
                        .build();
 
     for (Results.TestType testType : Results.TestType.values()) {
-      for (String framework : results.frameworks) {
+      for (String framework : results.frameworks()) {
         // Use a switch expression for exhaustiveness even though we don't need
         // the yielded value.
         int ignored = switch (results.testOutcome(testType, framework)) {
@@ -367,37 +367,37 @@ public final class HomeResultsReader implements PreDestroy {
     }
 
     Instant startTime =
-        (results.startTime == null)
+        (results.startTime() == null)
             ? null
-            : Instant.ofEpochMilli(results.startTime);
+            : Instant.ofEpochMilli(results.startTime());
 
     Instant completionTime =
-        (results.completionTime == null)
+        (results.completionTime() == null)
             ? null
-            : Instant.ofEpochMilli(results.completionTime);
+            : Instant.ofEpochMilli(results.completionTime());
 
     String commitId;
     String repositoryUrl;
     String branchName;
 
-    if (results.git == null) {
+    if (results.git() == null) {
       commitId = backupCommitId;
       repositoryUrl = null;
       branchName = null;
     } else {
-      commitId = results.git.commitId;
-      repositoryUrl = results.git.repositoryUrl;
-      branchName = results.git.branchName;
+      commitId = results.git().commitId();
+      repositoryUrl = results.git().repositoryUrl();
+      branchName = results.git().branchName();
     }
 
     boolean hasTestMetadata =
-        results.testMetadata != null || hasTestMetadataFile;
+        results.testMetadata() != null || hasTestMetadataFile;
 
     var failures = new ArrayList<Failure>();
 
     var frameworksWithSetupIssues = new HashSet<String>();
 
-    results.completed.forEach(
+    results.completed().forEach(
         (String framework, String message) -> {
           if (!isCompletedTimestamp(message)) {
             frameworksWithSetupIssues.add(framework);
@@ -427,7 +427,7 @@ public final class HomeResultsReader implements PreDestroy {
               hadSetupProblems));
     }
 
-    failures.sort(comparing(failure -> failure.framework,
+    failures.sort(comparing(failure -> failure.framework(),
                             String.CASE_INSENSITIVE_ORDER));
 
     return new FileSummary(
@@ -458,14 +458,14 @@ public final class HomeResultsReader implements PreDestroy {
     FileSummary mostRecentZip = null;
 
     for (FileSummary summary : summaries) {
-      if (summary.fileName.endsWith(".json")) {
+      if (summary.fileName().endsWith(".json")) {
         if (mostRecentJson == null
-            || summary.lastUpdated.isAfter(mostRecentJson.lastUpdated)) {
+            || summary.lastUpdated().isAfter(mostRecentJson.lastUpdated())) {
           mostRecentJson = summary;
         }
-      } else if (summary.fileName.endsWith(".zip")) {
+      } else if (summary.fileName().endsWith(".zip")) {
         if (mostRecentZip == null
-            || summary.lastUpdated.isAfter(mostRecentZip.lastUpdated)) {
+            || summary.lastUpdated().isAfter(mostRecentZip.lastUpdated())) {
           mostRecentZip = summary;
         }
       }
@@ -482,22 +482,22 @@ public final class HomeResultsReader implements PreDestroy {
       throw new IllegalArgumentException(
           "There must be at least one results file");
 
-    String uuid = summary.uuid;
-    String name = summary.name;
-    String environmentDescription = summary.environmentDescription;
-    int frameworksWithCleanSetup = summary.frameworksWithCleanSetup;
-    int frameworksWithSetupProblems = summary.frameworksWithSetupProblems;
-    int successfulTests = summary.successfulTests;
-    int failedTests = summary.failedTests;
-    ImmutableList<Failure> failures = summary.failures;
-    int completedFrameworks = summary.completedFrameworks;
-    int totalFrameworks = summary.totalFrameworks;
-    Instant startTime = summary.startTime;
-    Instant completionTime = summary.completionTime;
-    Instant lastUpdated = summary.lastUpdated;
-    String commitId = summary.commitId;
-    String repositoryUrl = summary.repositoryUrl;
-    String branchName = summary.branchName;
+    String uuid = summary.uuid();
+    String name = summary.name();
+    String environmentDescription = summary.environmentDescription();
+    int frameworksWithCleanSetup = summary.frameworksWithCleanSetup();
+    int frameworksWithSetupProblems = summary.frameworksWithSetupProblems();
+    int successfulTests = summary.successfulTests();
+    int failedTests = summary.failedTests();
+    ImmutableList<Failure> failures = summary.failures();
+    int completedFrameworks = summary.completedFrameworks();
+    int totalFrameworks = summary.totalFrameworks();
+    Instant startTime = summary.startTime();
+    Instant completionTime = summary.completionTime();
+    Instant lastUpdated = summary.lastUpdated();
+    String commitId = summary.commitId();
+    String repositoryUrl = summary.repositoryUrl();
+    String branchName = summary.branchName();
 
     Duration elapsedDuration;
     Duration estimatedRemainingDuration;
@@ -590,17 +590,17 @@ public final class HomeResultsReader implements PreDestroy {
     String jsonFileName =
         (mostRecentJson == null)
             ? null
-            : mostRecentJson.fileName;
+            : mostRecentJson.fileName();
 
     String zipFileName =
         (mostRecentZip == null)
             ? null
-            : mostRecentZip.fileName;
+            : mostRecentZip.fileName();
 
     String visualizeResultsUrl;
     if (uuid != null
-        && ((mostRecentJson != null && mostRecentJson.hasTestMetadata)
-            || (mostRecentZip != null && mostRecentZip.hasTestMetadata)))
+        && ((mostRecentJson != null && mostRecentJson.hasTestMetadata())
+            || (mostRecentZip != null && mostRecentZip.hasTestMetadata())))
       visualizeResultsUrl =
           // TODO: Make this origin configurable?
           "https://www.techempower.com/benchmarks/#"
@@ -732,64 +732,31 @@ public final class HomeResultsReader implements PreDestroy {
    */
   @Immutable
   @VisibleForTesting
-  static final class FileSummary {
-    final String fileName;
-    final @Nullable String uuid;
-    final @Nullable String commitId;
-    final @Nullable String repositoryUrl;
-    final @Nullable String branchName;
-    final @Nullable String name;
-    final @Nullable String environmentDescription;
-    final @Nullable Instant startTime;
-    final @Nullable Instant completionTime;
-    final Instant lastUpdated;
-    final int completedFrameworks;
-    final int frameworksWithCleanSetup;
-    final int frameworksWithSetupProblems;
-    final int totalFrameworks;
-    final int successfulTests;
-    final int failedTests;
-    final boolean hasTestMetadata;
-    // TODO: Avoid sharing the Failure data type with HomePageView?
-    final ImmutableList<Failure> failures;
+  record FileSummary(String fileName,
+                     @Nullable String uuid,
+                     @Nullable String commitId,
+                     @Nullable String repositoryUrl,
+                     @Nullable String branchName,
+                     @Nullable String name,
+                     @Nullable String environmentDescription,
+                     @Nullable Instant startTime,
+                     @Nullable Instant completionTime,
+                     Instant lastUpdated,
+                     int completedFrameworks,
+                     int frameworksWithCleanSetup,
+                     int frameworksWithSetupProblems,
+                     int totalFrameworks,
+                     int successfulTests,
+                     int failedTests,
+                     boolean hasTestMetadata,
+                     // TODO: Avoid sharing the Failure data type with
+                     //       HomePageView?
+                     ImmutableList<Failure> failures) {
 
-    FileSummary(String fileName,
-                @Nullable String uuid,
-                @Nullable String commitId,
-                @Nullable String repositoryUrl,
-                @Nullable String branchName,
-                @Nullable String name,
-                @Nullable String environmentDescription,
-                @Nullable Instant startTime,
-                @Nullable Instant completionTime,
-                Instant lastUpdated,
-                int completedFrameworks,
-                int frameworksWithCleanSetup,
-                int frameworksWithSetupProblems,
-                int totalFrameworks,
-                int successfulTests,
-                int failedTests,
-                boolean hasTestMetadata,
-                ImmutableList<Failure> failures) {
-
-      this.fileName = Objects.requireNonNull(fileName);
-      this.uuid = uuid;
-      this.commitId = commitId;
-      this.repositoryUrl = repositoryUrl;
-      this.branchName = branchName;
-      this.name = name;
-      this.environmentDescription = environmentDescription;
-      this.startTime = startTime;
-      this.completionTime = completionTime;
-      this.lastUpdated = Objects.requireNonNull(lastUpdated);
-      this.completedFrameworks = completedFrameworks;
-      this.frameworksWithCleanSetup = frameworksWithCleanSetup;
-      this.frameworksWithSetupProblems = frameworksWithSetupProblems;
-      this.totalFrameworks = totalFrameworks;
-      this.successfulTests = successfulTests;
-      this.failedTests = failedTests;
-      this.hasTestMetadata = hasTestMetadata;
-      this.failures = Objects.requireNonNull(failures);
+    FileSummary {
+      Objects.requireNonNull(fileName);
+      Objects.requireNonNull(lastUpdated);
+      Objects.requireNonNull(failures);
     }
   }
 
@@ -823,9 +790,9 @@ public final class HomeResultsReader implements PreDestroy {
 
   /**
    * {@code true} if the message looks like a timestamp in the {@link
-   * Results#completed} map.
+   * Results#completed()} map.
    *
-   * @param message a value from the {@link Results#completed} map
+   * @param message a value from the {@link Results#completed()} map
    * @return {@code true} if the value is a timestamp, indicating that the
    *         framework started and stopped correctly, or {@code false} if the
    *         message is an error message, indicating that the framework did not
@@ -868,11 +835,11 @@ public final class HomeResultsReader implements PreDestroy {
             // The JSON file name is a better sort key because it should remain
             // constant throughout the whole run, whereas the zip file name is
             // expected to change at the end of the run (from null to non-null).
-            if (results.jsonFileName != null)
-              return results.jsonFileName;
+            if (results.jsonFileName() != null)
+              return results.jsonFileName();
 
-            else if (results.zipFileName != null)
-              return results.zipFileName;
+            else if (results.zipFileName() != null)
+              return results.zipFileName();
 
             else
               return "";

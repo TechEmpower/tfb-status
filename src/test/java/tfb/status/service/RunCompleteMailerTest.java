@@ -32,12 +32,12 @@ public final class RunCompleteMailerTest {
       throws InterruptedException, IOException, MessagingException {
 
     Results results = resultsTester.newResults();
-    assertNotNull(results.uuid);
+    assertNotNull(results.uuid());
 
     resultsTester.saveJsonToResultsDirectory(results);
     resultsTester.saveZipToResultsDirectory(results);
 
-    updatedResultsTopic.publish(new UpdatedResultsEvent(results.uuid));
+    updatedResultsTopic.publish(new UpdatedResultsEvent(results.uuid()));
 
     Thread.sleep(mailDelay.timeToSendOneEmail().toMillis());
 

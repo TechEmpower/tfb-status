@@ -39,7 +39,7 @@ public final class DownloadResultsHandlerTest {
 
     Results results = objectMapper.readValue(responseBytes, Results.class);
 
-    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid());
   }
 
   /**
@@ -71,7 +71,7 @@ public final class DownloadResultsHandlerTest {
       results = objectMapper.readValue(zip, Results.class);
     }
 
-    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid);
+    assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", results.uuid());
   }
 
   /**

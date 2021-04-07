@@ -31,7 +31,7 @@ public final class HealthCheckHandlerTest {
   public void testGet(HealthCheckConfig healthCheckConfig, HttpTester http)
       throws IOException, InterruptedException {
 
-    Duration interval = Duration.ofSeconds(healthCheckConfig.intervalSeconds);
+    Duration interval = Duration.ofSeconds(healthCheckConfig.intervalSeconds());
     Duration executionTime = Duration.ofSeconds(1); // estimated upper bound
     Duration timeUntilHealthUpdated = interval.plus(executionTime);
 

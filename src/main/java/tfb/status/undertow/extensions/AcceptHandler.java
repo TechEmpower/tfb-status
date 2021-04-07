@@ -144,7 +144,7 @@ public final class AcceptHandler implements HttpHandler {
       return tokenizeAcceptHeader(acceptHeader)
           .map(token -> WeightedMediaType.parse(token))
           .sorted(WeightedMediaType.MOST_TO_LEAST_PREFERRED)
-          .map(weighted -> weighted.mediaType)
+          .map(weighted -> weighted.mediaType())
           .collect(toImmutableList());
 
     } catch (IllegalArgumentException ignored) {
@@ -199,20 +199,16 @@ public final class AcceptHandler implements HttpHandler {
    * the "weight".
    */
   @Immutable
-  private static final class WeightedMediaType {
-    final MediaType mediaType;
-    final double qualityValue;
+  private record WeightedMediaType(MediaType mediaType, double qualityValue) {
 
-    WeightedMediaType(MediaType mediaType, double qualityValue) {
-      this.mediaType = Objects.requireNonNull(mediaType);
+    WeightedMediaType {
+      Objects.requireNonNull(mediaType);
 
       if (!(qualityValue >= 0.0 && qualityValue <= 1.0))
         throw new IllegalArgumentException(
             "The quality value must be greater than or equal to zero and less "
                 + "than or equal to one, but the specified quality value was "
                 + qualityValue);
-
-      this.qualityValue = qualityValue;
     }
 
     /**
@@ -256,8 +252,8 @@ public final class AcceptHandler implements HttpHandler {
      * MediaTypes#SPECIFICITY_ORDER specific} media type is preferred.
      */
     static final Comparator<WeightedMediaType> MOST_TO_LEAST_PREFERRED =
-        comparingDouble((WeightedMediaType weighted) -> weighted.qualityValue)
-            .thenComparing(weighted -> weighted.mediaType,
+        comparingDouble((WeightedMediaType weighted) -> weighted.qualityValue())
+            .thenComparing(weighted -> weighted.mediaType(),
                            MediaTypes.SPECIFICITY_ORDER)
             .reversed();
   }
