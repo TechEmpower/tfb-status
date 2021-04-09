@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.undertow.server.HttpHandler;
 import java.io.IOException;
+import java.io.Serial;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -94,6 +95,7 @@ public final class HttpServerTest {
       super(Objects.requireNonNull(message));
     }
 
+    @Serial
     private static final long serialVersionUID = 0;
   }
 

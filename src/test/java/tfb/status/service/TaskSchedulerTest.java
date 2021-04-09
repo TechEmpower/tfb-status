@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import java.io.IOException;
+import java.io.Serial;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
@@ -907,6 +908,7 @@ public final class TaskSchedulerTest {
       super(Objects.requireNonNull(message));
     }
 
+    @Serial
     private static final long serialVersionUID = 0;
   }
 
@@ -915,6 +917,7 @@ public final class TaskSchedulerTest {
       super(Objects.requireNonNull(message));
     }
 
+    @Serial
     private static final long serialVersionUID = 0;
   }
 }

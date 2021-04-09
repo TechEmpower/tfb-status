@@ -3,6 +3,7 @@ package tfb.status.util;
 import com.google.common.io.ByteSource;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serial;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.Objects;
@@ -194,6 +195,7 @@ public final class KeyStores {
       super(Objects.requireNonNull(cause));
     }
 
+    @Serial
     private static final long serialVersionUID = 0;
   }
 }

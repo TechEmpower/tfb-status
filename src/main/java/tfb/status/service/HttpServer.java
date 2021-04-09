@@ -22,6 +22,7 @@ import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.io.IOException;
+import java.io.Serial;
 import java.lang.annotation.Annotation;
 import java.net.InetSocketAddress;
 import java.nio.file.FileSystem;
@@ -436,6 +437,7 @@ public final class HttpServer implements PreDestroy {
             Objects.requireNonNull(cause));
     }
 
+    @Serial
     private static final long serialVersionUID = 0;
   }
 
