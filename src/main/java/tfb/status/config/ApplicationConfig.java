@@ -34,6 +34,9 @@ public record ApplicationConfig(@Provides HttpServerConfig http,
                                 @Provides RunCompleteMailerConfig runCompleteMailer,
                                 @Provides ShareConfig share,
                                 @Provides HealthCheckConfig healthCheck,
+                                // This would inherit the @Singleton scope from
+                                // ApplicationConfig, but singletons must not be
+                                // null, so make this @PerLookup instead.
                                 @Provides @PerLookup @Nullable EmailConfig email) {
 
   public ApplicationConfig {
