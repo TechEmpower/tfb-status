@@ -28,7 +28,7 @@ public final class FileUtils {
 
     if (!Files.isDirectory(directory))
       throw new IllegalArgumentException(
-          "The specified path is not a directory: " + directory.toString());
+          "The specified path is not a directory: " + directory);
 
     try (Stream<Path> stream = Files.walk(directory)) {
       return stream
