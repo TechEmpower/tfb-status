@@ -27,7 +27,6 @@ public record ShareSuccess(
 
   @JsonCreator
   public ShareSuccess {
-
     Objects.requireNonNull(shareId);
     Objects.requireNonNull(resultsUrl);
     Objects.requireNonNull(visualizeResultsUrl);
