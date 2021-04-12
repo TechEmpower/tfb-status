@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jvnet.hk2.annotations.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.EmailConfig;
@@ -49,7 +50,7 @@ public final class EmailSender {
    */
   @Inject
   public EmailSender(@Nullable EmailConfig config,
-                     @Nullable OverridePort overridePort) {
+                     @Optional @Nullable OverridePort overridePort) {
 
     if (config != null) {
       verifyHostAndPort(config.host(), config.port());
