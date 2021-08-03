@@ -17,9 +17,6 @@
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- If true, dependencies won't be copied to target/lib when packaging. -->
-    <skipCopyDependencies>false</skipCopyDependencies>
-
     <bcrypt.version>0.4</bcrypt.version>
     <build-helper-maven-plugin.version>3.2.0</build-helper-maven-plugin.version>
     <caffeine.version>3.0.3</caffeine.version>
@@ -400,7 +397,6 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <skip>${skipCopyDependencies}</skip>
               <includeScope>runtime</includeScope>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
             </configuration>
