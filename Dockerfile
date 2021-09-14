@@ -1,4 +1,4 @@
-FROM maven:3.8.1-openjdk-16 AS base_build_image
+FROM maven:3.8.2-openjdk-16 AS base_build_image
 
 # Produce a small Java runtime that contains only what we need.
 # ------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ RUN --mount=type=cache,target=/root/.m2/repository \
 #       (as long as we switch from surefire 2.22.2 to 3.0.0-M4),
 #       but figure out why that causes surefire to skip many tests.
 
-FROM debian:buster-slim AS run_app
+FROM debian:bullseye-slim AS run_app
 WORKDIR /tfbstatus
 COPY --from=build_jre /opt/jre /opt/jre
 ENV JAVA_HOME "/opt/jre"
