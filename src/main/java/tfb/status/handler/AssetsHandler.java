@@ -16,9 +16,9 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
+import org.glassfish.hk2.extras.provides.Provides;
 import tfb.status.config.AssetsConfig;
 import tfb.status.handler.routing.Route;
-import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * Handles HTTP requests for static assets such as JavaScript and CSS files.

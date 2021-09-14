@@ -8,9 +8,9 @@ import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import jakarta.inject.Singleton;
 import java.util.Objects;
+import org.glassfish.hk2.extras.provides.Provides;
 import tfb.status.handler.routing.Route;
 import tfb.status.handler.routing.SetHeader;
-import org.glassfish.hk2.extras.provides.Provides;
 import tfb.status.service.FileStore;
 
 /**

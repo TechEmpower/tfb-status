@@ -13,11 +13,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glassfish.hk2.extras.provides.Provides;
 import org.jvnet.hk2.annotations.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tfb.status.config.ApplicationConfig;
-import org.glassfish.hk2.extras.provides.Provides;
 
 /**
  * Provides the {@link ApplicationConfig} used by this application.

@@ -2,8 +2,8 @@ package tfb.status.handler;
 
 import io.undertow.server.HttpHandler;
 import jakarta.inject.Singleton;
-import tfb.status.handler.routing.Route;
 import org.glassfish.hk2.extras.provides.Provides;
+import tfb.status.handler.routing.Route;
 import tfb.status.undertow.extensions.FixedResponseBodyHandler;
 
 /**
