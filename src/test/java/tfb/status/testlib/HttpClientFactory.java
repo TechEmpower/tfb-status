@@ -5,6 +5,7 @@ import jakarta.inject.Singleton;
 import java.net.http.HttpClient;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
+import java.time.Duration;
 import javax.net.ssl.SSLContext;
 import tfb.status.config.HttpServerConfig;
 import org.glassfish.hk2.extras.provides.Provides;
@@ -26,6 +27,7 @@ final class HttpClientFactory {
                                       HttpServer httpServer) {
 
     HttpClient.Builder builder = HttpClient.newBuilder();
+    builder.connectTimeout(Duration.ofSeconds(10));
 
     if (config.keyStore() != null) {
       Path keyStoreFile = fileSystem.getPath(config.keyStore().path());

@@ -1,7 +1,6 @@
 package tfb.status.handler;
 import static tfb.status.testlib.MoreAssertions.assertContains;
 
-import java.net.URI;
 import java.net.http.WebSocket;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -36,8 +35,6 @@ public final class HomeUpdatesHandlerTest {
 
     String uuid = "598923fe-6491-41bd-a2b6-047f70860aed";
 
-    URI uri = http.webSocketUri("/updates");
-
     // TODO: Read home updates in a parallel-friendly way.
     var future = new CompletableFuture<String>();
 
@@ -54,9 +51,7 @@ public final class HomeUpdatesHandlerTest {
         };
 
     WebSocket webSocket =
-        http.client()
-            .newWebSocketBuilder()
-            .buildAsync(uri, listener)
+        http.newWebSocketAsync("/updates", listener)
             .get(1, TimeUnit.SECONDS);
 
     try {

@@ -12,7 +12,6 @@ import com.google.errorprone.annotations.Immutable;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Collections;
@@ -161,12 +160,10 @@ public final class AuthenticatorTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     for (Account account : VALID_ACCOUNTS) {
       HttpResponse<String> response =
           http.client().send(
-              http.addAuthorization(HttpRequest.newBuilder(uri),
+              http.addAuthorization(http.newRequestBuilder(path),
                                     account.accountId,
                                     account.password)
                   .build(),
@@ -195,11 +192,9 @@ public final class AuthenticatorTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(UNAUTHORIZED, response.statusCode());
@@ -224,12 +219,10 @@ public final class AuthenticatorTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     for (Account account : INVALID_ACCOUNTS) {
       HttpResponse<String> response =
           http.client().send(
-              http.addAuthorization(HttpRequest.newBuilder(uri),
+              http.addAuthorization(http.newRequestBuilder(path),
                                     account.accountId,
                                     account.password)
                   .build(),
@@ -258,9 +251,7 @@ public final class AuthenticatorTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
-    HttpRequest.Builder builder = HttpRequest.newBuilder(uri);
+    HttpRequest.Builder builder = http.newRequestBuilder(path);
 
     for (Account account : INVALID_ACCOUNTS) {
       builder = http.addAuthorization(builder,
@@ -307,11 +298,9 @@ public final class AuthenticatorTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response.statusCode());

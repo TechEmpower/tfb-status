@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.undertow.server.HttpHandler;
 import java.io.IOException;
 import java.io.Serial;
-import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Objects;
@@ -115,16 +114,14 @@ public final class HttpServerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     String message =
         "the body of the request, which the server should echo back to us";
 
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .POST(HttpRequest.BodyPublishers.ofString(message))
-                       .build(),
+            http.newRequestBuilder(path)
+                .POST(HttpRequest.BodyPublishers.ofString(message))
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response.statusCode());

@@ -19,7 +19,6 @@ import com.google.common.io.ByteSource;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
@@ -90,8 +89,6 @@ public final class UploadResultsHandlerTest {
 
     var updates = new ConcurrentLinkedQueue<String>();
 
-    URI updatesUri = http.webSocketUri("/updates");
-
     var updatesListener =
         new WebSocket.Listener() {
           @Override
@@ -105,9 +102,7 @@ public final class UploadResultsHandlerTest {
         };
 
     WebSocket updatesWebSocket =
-        http.client()
-            .newWebSocketBuilder()
-            .buildAsync(updatesUri, updatesListener)
+        http.newWebSocketAsync("/updates", updatesListener)
             .get(1, TimeUnit.SECONDS);
 
     try {
@@ -119,9 +114,9 @@ public final class UploadResultsHandlerTest {
       ByteSource newResultsBytes = resultsTester.asByteSource(newResults);
 
       HttpRequest.Builder requestWithNewJson =
-          HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(asBodyPublisher(newResultsBytes))
-                     .header(CONTENT_TYPE, "application/json");
+          http.newRequestBuilder("/upload")
+              .POST(asBodyPublisher(newResultsBytes))
+              .header(CONTENT_TYPE, "application/json");
 
       HttpResponse<Void> responseToNewJson =
           http.client().send(
@@ -187,9 +182,9 @@ public final class UploadResultsHandlerTest {
           resultsTester.asByteSource(updatedResults);
 
       HttpRequest.Builder requestWithUpdatedJson =
-          HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(asBodyPublisher(updatedResultsBytes))
-                     .header(CONTENT_TYPE, "application/json");
+          http.newRequestBuilder("/upload")
+              .POST(asBodyPublisher(updatedResultsBytes))
+              .header(CONTENT_TYPE, "application/json");
 
       HttpResponse<Void> responseToUpdatedJson =
           http.client().send(
@@ -262,9 +257,9 @@ public final class UploadResultsHandlerTest {
       //
 
       HttpRequest.Builder requestWithZip =
-          HttpRequest.newBuilder(http.uri("/upload"))
-                     .POST(HttpRequest.BodyPublishers.ofFile(zipFile))
-                     .header(CONTENT_TYPE, ZIP.toString());
+          http.newRequestBuilder("/upload")
+              .POST(HttpRequest.BodyPublishers.ofFile(zipFile))
+              .header(CONTENT_TYPE, ZIP.toString());
 
       HttpResponse<Void> responseToZip =
           http.client().send(
@@ -334,8 +329,8 @@ public final class UploadResultsHandlerTest {
     ByteSource resultsBytes = resultsTester.asByteSource(results);
 
     HttpRequest.Builder requestWithoutContentType =
-        HttpRequest.newBuilder(http.uri("/upload"))
-                   .POST(asBodyPublisher(resultsBytes));
+        http.newRequestBuilder("/upload")
+            .POST(asBodyPublisher(resultsBytes));
 
     HttpResponse<String> response =
         http.client().send(
@@ -361,10 +356,10 @@ public final class UploadResultsHandlerTest {
 
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(http.uri("/upload"))
-                       .POST(asBodyPublisher(resultsBytes))
-                       .header(CONTENT_TYPE, "application/json")
-                       .build(),
+            http.newRequestBuilder("/upload")
+                .POST(asBodyPublisher(resultsBytes))
+                .header(CONTENT_TYPE, "application/json")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(UNAUTHORIZED, response.statusCode());

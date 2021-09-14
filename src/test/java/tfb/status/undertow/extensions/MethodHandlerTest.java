@@ -14,7 +14,6 @@ import com.google.common.base.Splitter;
 import io.undertow.server.HttpHandler;
 import io.undertow.util.HttpString;
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
@@ -58,39 +57,37 @@ public final class MethodHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response1.statusCode());
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(CONTENT_TYPE, "text/plain")
-                       .POST(HttpRequest.BodyPublishers.ofString("hi"))
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(CONTENT_TYPE, "text/plain")
+                .POST(HttpRequest.BodyPublishers.ofString("hi"))
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response2.statusCode());
 
     HttpResponse<String> response3 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .method("HEAD", HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response3.statusCode());
 
     HttpResponse<String> response4 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response4.statusCode());
@@ -116,11 +113,9 @@ public final class MethodHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response1.statusCode());
@@ -128,19 +123,19 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(CONTENT_TYPE, "text/plain")
-                       .POST(HttpRequest.BodyPublishers.ofString("hi"))
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(CONTENT_TYPE, "text/plain")
+                .POST(HttpRequest.BodyPublishers.ofString("hi"))
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response2.statusCode());
 
     HttpResponse<String> response3 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .method("HEAD", HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response3.statusCode());
@@ -148,9 +143,9 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response4 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response4.statusCode());
@@ -176,21 +171,19 @@ public final class MethodHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response1.statusCode());
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(CONTENT_TYPE, "text/plain")
-                       .POST(HttpRequest.BodyPublishers.ofString("hi"))
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(CONTENT_TYPE, "text/plain")
+                .POST(HttpRequest.BodyPublishers.ofString("hi"))
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response2.statusCode());
@@ -198,18 +191,18 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response3 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .method("HEAD", HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(METHOD_NOT_ALLOWED, response3.statusCode());
 
     HttpResponse<String> response4 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response4.statusCode());
@@ -236,11 +229,9 @@ public final class MethodHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response1.statusCode());
@@ -248,10 +239,10 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(CONTENT_TYPE, "text/plain")
-                       .POST(HttpRequest.BodyPublishers.ofString("hi"))
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(CONTENT_TYPE, "text/plain")
+                .POST(HttpRequest.BodyPublishers.ofString("hi"))
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response2.statusCode());
@@ -259,9 +250,9 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response3 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .method("HEAD", HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response3.statusCode());
@@ -269,9 +260,9 @@ public final class MethodHandlerTest {
 
     HttpResponse<String> response4 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response4.statusCode());
@@ -297,13 +288,11 @@ public final class MethodHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response.statusCode());

@@ -14,9 +14,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import tfb.status.config.HttpServerConfig;
 import tfb.status.service.Authenticator;
@@ -62,6 +65,42 @@ public final class HttpTester {
    */
   public HttpClient client() {
     return clientProvider.get();
+  }
+
+  /**
+   * Returns a new {@link HttpRequest.Builder} instance for making a request to
+   * the local HTTP server.
+   *
+   * @param path the path part of the URI, such as "/robots.txt"
+   */
+  public HttpRequest.Builder newRequestBuilder(String path) {
+    URI uri = uri(path);
+    return HttpRequest
+        .newBuilder(uri)
+        .timeout(Duration.ofSeconds(10));
+  }
+
+  /**
+   * Asynchronously creates a new {@link WebSocket} connected to the local HTTP
+   * server.
+   *
+   * @param path the path part of the URI, such as "/robots.txt"
+   * @param listener the client-side listener to be invoked when data is
+   *        received over the web socket from the server
+   */
+  public CompletableFuture<WebSocket> newWebSocketAsync(
+      String path,
+      WebSocket.Listener listener) {
+
+    Objects.requireNonNull(path);
+    Objects.requireNonNull(listener);
+
+    URI uri = webSocketUri(path);
+
+    return client()
+        .newWebSocketBuilder()
+        .connectTimeout(Duration.ofSeconds(10))
+        .buildAsync(uri, listener);
   }
 
   /**
@@ -121,10 +160,9 @@ public final class HttpTester {
    * Issues a GET request to the local HTTP server, reading the response body as
    * a string.
    *
-   * <p>This is a shortcut for using {@link #client()} and {@link
-   * #uri(String)} for one common case.  To customize the request -- to use
-   * POST instead of GET or to attach custom HTTP headers for example -- use
-   * those other methods directly.
+   * <p>This is a shortcut for using {@link #newRequestBuilder(String)} for one
+   * common case.  To customize the request -- to use POST instead of GET or to
+   * attach custom HTTP headers for example -- use that other method directly.
    *
    * @param path the path part of the URI, such as "/robots.txt"
    */
@@ -133,10 +171,8 @@ public final class HttpTester {
 
     Objects.requireNonNull(path);
 
-    URI uri = uri(path);
-
     return client().send(
-        HttpRequest.newBuilder(uri).build(),
+        newRequestBuilder(path).build(),
         HttpResponse.BodyHandlers.ofString());
   }
 
@@ -144,10 +180,9 @@ public final class HttpTester {
    * Issues a GET request to the local HTTP server, reading the response body as
    * a byte array.
    *
-   * <p>This is a shortcut for using {@link #client()} and {@link
-   * #uri(String)} for one common case.  To customize the request -- to use
-   * POST instead of GET or to attach custom HTTP headers for example -- use
-   * those other methods directly.
+   * <p>This is a shortcut for using {@link #newRequestBuilder(String)} for one
+   * common case.  To customize the request -- to use POST instead of GET or to
+   * attach custom HTTP headers for example -- use that other method directly.
    *
    * @param path the path part of the URI, such as "/robots.txt"
    */
@@ -156,10 +191,8 @@ public final class HttpTester {
 
     Objects.requireNonNull(path);
 
-    URI uri = uri(path);
-
     return client().send(
-        HttpRequest.newBuilder(uri).build(),
+        newRequestBuilder(path).build(),
         HttpResponse.BodyHandlers.ofByteArray());
   }
 

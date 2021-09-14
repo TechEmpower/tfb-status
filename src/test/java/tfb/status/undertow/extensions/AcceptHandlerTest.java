@@ -20,7 +20,6 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
 import io.undertow.util.Headers;
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
@@ -47,20 +46,18 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "text/plain")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "text/plain")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(NOT_ACCEPTABLE, response1.statusCode());
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(NOT_ACCEPTABLE, response2.statusCode());
@@ -87,13 +84,11 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "text/plain")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "text/plain")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response1.statusCode());
@@ -101,9 +96,9 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "application/json")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "application/json")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response2.statusCode());
@@ -111,16 +106,16 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response3 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "foo/bar")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "foo/bar")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(NOT_ACCEPTABLE, response3.statusCode());
 
     HttpResponse<String> response4 =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     // We don't know which handler handled it -- that's unspecified -- but we
@@ -159,13 +154,11 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "text/plain;charset=utf-8")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "text/plain;charset=utf-8")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response1.statusCode());
@@ -173,9 +166,9 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "text/plain;charset=us-ascii")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "text/plain;charset=us-ascii")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response2.statusCode());
@@ -183,9 +176,9 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response3 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "text/plain")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "text/plain")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response3.statusCode());
@@ -193,9 +186,9 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response4 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "text/css")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "text/css")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response4.statusCode());
@@ -203,18 +196,18 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response5 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "foo/bar")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "foo/bar")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(NOT_ACCEPTABLE, response5.statusCode());
 
     HttpResponse<String> response6 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .POST(HttpRequest.BodyPublishers.noBody())
-                       .build(),
+            http.newRequestBuilder(path)
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     // We don't know which handler handled it -- that's unspecified -- but we
@@ -259,13 +252,11 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "application/json, text/xml, text/html")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "application/json, text/xml, text/html")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response1.statusCode());
@@ -273,10 +264,10 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT,
-                               "application/json;q=0.5, text/xml, text/html")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT,
+                        "application/json;q=0.5, text/xml, text/html")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response2.statusCode());
@@ -284,10 +275,10 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response3 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT,
-                               "application/json;q=0.5, text/xml;q=0.5, text/html")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT,
+                        "application/json;q=0.5, text/xml;q=0.5, text/html")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response3.statusCode());
@@ -295,9 +286,9 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response4 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "application/json, text/xml, text/*")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "application/json, text/xml, text/*")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response4.statusCode());
@@ -305,10 +296,10 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response5 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT,
-                               "application/json;q=0.5, text/xml, text/*")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT,
+                        "application/json;q=0.5, text/xml, text/*")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response5.statusCode());
@@ -316,10 +307,10 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response6 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT,
-                               "application/json;q=0.5, text/xml;q=0.5, text/*")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT,
+                        "application/json;q=0.5, text/xml;q=0.5, text/*")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response6.statusCode());
@@ -327,10 +318,10 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response7 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT,
-                               "application/json;q=0.5, text/xml;q=0.5, */*")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT,
+                        "application/json;q=0.5, text/xml;q=0.5, */*")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response7.statusCode());
@@ -338,10 +329,10 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response8 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT,
-                               "application/json;charset=utf-16, text/xml, text/html")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT,
+                        "application/json;charset=utf-16, text/xml, text/html")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response8.statusCode());
@@ -349,10 +340,10 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response9 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT,
-                               "application/json;charset=utf-16;q=0.5, text/xml;charset=utf-16, text/html")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT,
+                        "application/json;charset=utf-16;q=0.5, text/xml;charset=utf-16, text/html")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response9.statusCode());
@@ -360,9 +351,9 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response10 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "application/json;charset=utf-16;q=0.5, text/xml;charset=utf-16;q=0.5, text/html;charset=utf-16")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "application/json;charset=utf-16;q=0.5, text/xml;charset=utf-16;q=0.5, text/html;charset=utf-16")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response10.statusCode());
@@ -405,13 +396,11 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "foo/bar")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "foo/bar")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response1.statusCode());
@@ -419,7 +408,7 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response2.statusCode());
@@ -427,9 +416,9 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response3 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "invalid_media_type")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "invalid_media_type")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(NOT_ACCEPTABLE, response3.statusCode());
@@ -460,13 +449,11 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "*/*, text/*, text/plain, text/plain;format=flowed")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "*/*, text/*, text/plain, text/plain;format=flowed")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response.statusCode());
@@ -491,11 +478,9 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response.statusCode());
@@ -527,11 +512,9 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response.statusCode());
@@ -565,11 +548,9 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response.statusCode());
@@ -603,11 +584,9 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(INTERNAL_SERVER_ERROR, response.statusCode());
@@ -638,11 +617,9 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response.statusCode());
@@ -676,11 +653,9 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(NO_CONTENT, response.statusCode());
@@ -713,11 +688,9 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(BAD_REQUEST, response.statusCode());
@@ -751,11 +724,9 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response =
         http.client().send(
-            HttpRequest.newBuilder(uri).build(),
+            http.newRequestBuilder(path).build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(BAD_REQUEST, response.statusCode());
@@ -795,13 +766,11 @@ public final class AcceptHandlerTest {
 
     String path = http.addHandler(handler);
 
-    URI uri = http.uri(path);
-
     HttpResponse<String> response1 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "text/plain;a=1")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "text/plain;a=1")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response1.statusCode());
@@ -814,9 +783,9 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response2 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "text/plain;a=2")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "text/plain;a=2")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(OK, response2.statusCode());
@@ -829,9 +798,9 @@ public final class AcceptHandlerTest {
 
     HttpResponse<String> response3 =
         http.client().send(
-            HttpRequest.newBuilder(uri)
-                       .header(ACCEPT, "text/plain;a=3")
-                       .build(),
+            http.newRequestBuilder(path)
+                .header(ACCEPT, "text/plain;a=3")
+                .build(),
             HttpResponse.BodyHandlers.ofString());
 
     assertEquals(NOT_ACCEPTABLE, response3.statusCode());
