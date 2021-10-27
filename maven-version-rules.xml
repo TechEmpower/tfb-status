@@ -120,6 +120,12 @@
       </ignoreVersions>
     </rule>
 
+    <rule groupId="jakarta.inject" artifactId="jakarta.inject-api" comparisonMethod="maven">
+      <ignoreVersions>
+        <ignoreVersion type="regex">.+\.MR</ignoreVersion>
+      </ignoreVersions>
+    </rule>
+
   </rules>
 
 </ruleset>
