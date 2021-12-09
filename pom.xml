@@ -19,13 +19,13 @@
 
     <bcrypt.version>0.4</bcrypt.version>
     <build-helper-maven-plugin.version>3.2.0</build-helper-maven-plugin.version>
-    <caffeine.version>3.0.4</caffeine.version>
-    <checkerframework.version>3.18.1</checkerframework.version>
+    <caffeine.version>3.0.5</caffeine.version>
+    <checkerframework.version>3.20.0</checkerframework.version>
     <crawler-commons.version>1.2</crawler-commons.version>
-    <error-prone.version>2.9.0</error-prone.version>
+    <error-prone.version>2.10.0</error-prone.version>
     <extra-enforcer-rules.version>1.4</extra-enforcer-rules.version>
     <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
-    <greenmail.version>2.0.0-alpha-1</greenmail.version>
+    <greenmail.version>2.0.0-alpha-2</greenmail.version>
     <guava.version>31.0.1-jre</guava.version>
     <hk2.version>3.0.2</hk2.version>
     <jackson.version>2.13.0</jackson.version>
@@ -34,8 +34,8 @@
     <jakarta-mail.version>2.0.1</jakarta-mail.version>
     <jimfs.version>1.2</jimfs.version>
     <jmh.version>1.33</jmh.version>
-    <junit-jupiter.version>5.8.1</junit-jupiter.version>
-    <logback.version>1.2.6</logback.version>
+    <junit-jupiter.version>5.8.2</junit-jupiter.version>
+    <logback.version>1.2.7</logback.version>
     <maven-clean-plugin.version>3.1.0</maven-clean-plugin.version>
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
     <maven-dependency-plugin.version>3.2.0</maven-dependency-plugin.version>
@@ -49,7 +49,7 @@
     <mustache.version>0.9.10</mustache.version>
     <slf4j.version>1.7.32</slf4j.version>
     <threeten-extra.version>1.7.0</threeten-extra.version>
-    <undertow.version>2.2.12.Final</undertow.version>
+    <undertow.version>2.2.14.Final</undertow.version>
     <versions-maven-plugin.version>2.8.1</versions-maven-plugin.version>
   </properties>
 
@@ -120,6 +120,13 @@
       <artifactId>jbcrypt</artifactId>
       <version>${bcrypt.version}</version>
     </dependency>
+    <!-- We'll replace this dependency:
+           com.sun.mail:jakarta.mail
+         with these two:
+           jakarta.mail:jakarta.mail-api
+           org.eclipse.angus:jakarta.mail
+         when both of the new dependencies have stable releases.
+    -->
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>jakarta.mail</artifactId>
@@ -140,6 +147,13 @@
       <artifactId>logback-classic</artifactId>
       <version>${logback.version}</version>
     </dependency>
+    <!-- We'll replace this dependency:
+           com.sun.activation:jakarta.activation
+         with these two:
+           jakarta.activation:jakarta.activation-api
+           org.eclipse.angus:angus-activation
+         when both of the new dependencies have stable releases.
+    -->
     <dependency>
       <groupId>com.sun.activation</groupId>
       <artifactId>jakarta.activation</artifactId>
@@ -214,6 +228,20 @@
         <exclusion>
           <groupId>com.sun.mail</groupId>
           <artifactId>javax.mail</artifactId>
+        </exclusion>
+        <!-- GreenMail changed its activation dependency from:
+               com.sun.activation:jakarta.activation
+             to:
+               jakarta.activation:jakarta.activation-api
+             but the latter is not ready for use.  The implementation for that
+             API is:
+               org.eclipse.angus:angus-activation
+             which does not have a stable release.  Therefore, we retain the old
+             activation dependency for now and exclude this one.
+        -->
+        <exclusion>
+          <groupId>jakarta.activation</groupId>
+          <artifactId>jakarta.activation-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -478,6 +506,10 @@
                 <!-- We use jakarta.mail, which is the replacement for the
                      now-obsolete javax.mail. -->
                 <exclude>com.sun.mail:javax.mail</exclude>
+
+                <!-- jakarta.activation-api is not ready for use because there's
+                     no stable release of the implementation for that API. -->
+                <exclude>jakarta.activation:jakarta.activation-api</exclude>
               </excludes>
             </bannedDependencies>
           </rules>
