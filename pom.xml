@@ -20,7 +20,7 @@
     <bcrypt.version>0.4</bcrypt.version>
     <build-helper-maven-plugin.version>3.2.0</build-helper-maven-plugin.version>
     <caffeine.version>3.0.5</caffeine.version>
-    <checkerframework.version>3.20.0</checkerframework.version>
+    <checkerframework.version>3.21.0</checkerframework.version>
     <crawler-commons.version>1.2</crawler-commons.version>
     <error-prone.version>2.10.0</error-prone.version>
     <extra-enforcer-rules.version>1.4</extra-enforcer-rules.version>
@@ -28,14 +28,14 @@
     <greenmail.version>2.0.0-alpha-2</greenmail.version>
     <guava.version>31.0.1-jre</guava.version>
     <hk2.version>3.0.2</hk2.version>
-    <jackson.version>2.13.0</jackson.version>
+    <jackson.version>2.13.1</jackson.version>
     <jakarta-activation.version>2.0.1</jakarta-activation.version>
     <jakarta-inject.version>2.0.1</jakarta-inject.version>
     <jakarta-mail.version>2.0.1</jakarta-mail.version>
     <jimfs.version>1.2</jimfs.version>
-    <jmh.version>1.33</jmh.version>
+    <jmh.version>1.34</jmh.version>
     <junit-jupiter.version>5.8.2</junit-jupiter.version>
-    <logback.version>1.2.7</logback.version>
+    <logback.version>1.2.10</logback.version>
     <maven-clean-plugin.version>3.1.0</maven-clean-plugin.version>
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
     <maven-dependency-plugin.version>3.2.0</maven-dependency-plugin.version>
