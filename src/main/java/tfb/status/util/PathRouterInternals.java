@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import tfb.status.util.PathRouter.Endpoint;
 import tfb.status.util.PathRouter.MatchingEndpoint;
@@ -186,6 +189,15 @@ final class PathRouterInternals {
 
       return null;
     }
+
+    @Override
+    public Stream<MatchingEndpoint<V>> findAll(String path) {
+      return findAllImpl(
+          path,
+          exactMatches,
+          prefixMatches,
+          p -> BitSet.valueOf(new long[] { trie.values(p) }).stream());
+    }
   }
 
   /**
@@ -231,6 +243,45 @@ final class PathRouterInternals {
 
       return null;
     }
+
+    @Override
+    public Stream<MatchingEndpoint<V>> findAll(String path) {
+      return findAllImpl(
+          path,
+          exactMatches,
+          prefixMatches,
+          p -> trie.values(p).stream());
+    }
+  }
+
+  private static <V> Stream<MatchingEndpoint<V>> findAllImpl(
+      String path,
+      ImmutableMap<String, Match<V>> exactMatches,
+      ImmutableList<Match<V>> prefixMatches,
+      Function<String, IntStream> findPrefixIndexes) {
+
+    Objects.requireNonNull(path);
+
+    Match<V> exactMatch = exactMatches.get(path);
+
+    // TODO: Find these indexes lazily?
+    IntStream prefixIndexes = findPrefixIndexes.apply(path);
+
+    Stream<MatchingEndpoint<V>> prefixMatchStream =
+        prefixIndexes.boxed().mapMulti((i, consumer) -> {
+          Match<V> prefixMatch = prefixMatches.get(i);
+
+          PathPattern.MatchResult matchResult =
+              prefixMatch.pathPattern().match(path);
+
+          if (matchResult.matches())
+            consumer.accept(
+                prefixMatch.withVariables(matchResult.variables()));
+        });
+
+    return (exactMatch == null)
+        ? prefixMatchStream
+        : Stream.concat(Stream.of(exactMatch), prefixMatchStream);
   }
 
   /**

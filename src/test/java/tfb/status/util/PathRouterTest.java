@@ -1,6 +1,7 @@
 package tfb.status.util;
 
 import static java.util.Comparator.comparing;
+import static java.util.Comparator.comparingInt;
 import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -340,6 +341,75 @@ public final class PathRouterTest {
     assertFound(router2, "ab", 2, Map.of("letters", "ab"));
   }
 
+  /**
+   * Verifies that {@link PathRouter#findAll(String)} returns all the expected
+   * endpoints in the correct order.
+   */
+  @Test
+  public void testFindAll() {
+    PathRouter<Integer> emptyRouter =
+        PathRouter.<Integer>builder().build();
+
+    PathRouter.Builder<Integer> routerBuilder =
+        PathRouter.<Integer>builder()
+                  // These are written in decreasing specificity, which is the
+                  // default ordering.
+                  .add("help.txt", 1)
+                  .add("help.{extension}", 2)
+                  .add("{filename}.txt", 3)
+                  .add("{filename}.{extension}", 4);
+
+    PathRouter<Integer> routerDefaultOrdering = routerBuilder.build();
+
+    PathRouter<Integer> routerCustomOrdering =
+        routerBuilder.build(
+            // Order by integer value, descending.
+            comparingInt((PathRouter.Endpoint<Integer> endpoint) -> endpoint.value())
+                .reversed());
+
+    assertFindAllResults(
+        emptyRouter,
+        "help.txt",
+        List.of(),
+        List.of());
+
+    assertFindAllResults(
+        routerDefaultOrdering,
+        "not_found",
+        List.of(),
+        List.of());
+
+    assertFindAllResults(
+        routerDefaultOrdering,
+        "help.txt",
+        List.of(1, 2, 3, 4),
+        List.of(
+            Map.of(),
+            Map.of("extension", "txt"),
+            Map.of("filename", "help"),
+            Map.of("filename", "help", "extension", "txt")));
+
+    assertFindAllResults(
+        routerDefaultOrdering,
+        "help.pdf",
+        List.of(2, 4),
+        List.of(
+            Map.of("extension", "pdf"),
+            Map.of("filename", "help", "extension", "pdf")));
+
+    assertFindAllResults(
+        routerCustomOrdering,
+        "help.txt",
+        // The exact match is still first even though the custom comparator
+        // considers it last.
+        List.of(1, 4, 3, 2),
+        List.of(
+            Map.of(),
+            Map.of("filename", "help", "extension", "txt"),
+            Map.of("filename", "help"),
+            Map.of("extension", "txt")));
+  }
+
   private static <V> void assertFound(
       PathRouter<V> router,
       String path,
@@ -393,5 +463,60 @@ public final class PathRouterTest {
             + path
             + ", but instead found "
             + match);
+  }
+
+  private static <V> void assertFindAllResults(
+      PathRouter<V> router,
+      String path,
+      List<V> expectedValueByIndex,
+      List<Map<String, String>> expectedVariablesByIndex) {
+
+    Objects.requireNonNull(router);
+    Objects.requireNonNull(path);
+    Objects.requireNonNull(expectedValueByIndex);
+    Objects.requireNonNull(expectedVariablesByIndex);
+
+    if (expectedValueByIndex.size() != expectedVariablesByIndex.size())
+      throw new IllegalArgumentException(
+          "The sizes of expectedValueByIndex and expectedVariablesByIndex "
+              + "must match");
+
+    List<PathRouter.MatchingEndpoint<V>> matches =
+        router.findAll(path).toList();
+
+    assertEquals(
+        expectedValueByIndex.size(),
+        matches.size(),
+        "Expected to find "
+            + expectedValueByIndex.size()
+            + " matches for path "
+            + path
+            + ", but instead found "
+            + matches.size()
+            + " matches");
+
+    for (int i = 0; i < matches.size(); i++) {
+      PathRouter.MatchingEndpoint<V> match = matches.get(i);
+      V expectedValue = expectedValueByIndex.get(i);
+      Map<String, String> expectedVariables = expectedVariablesByIndex.get(i);
+
+      assertEquals(
+          expectedValue,
+          match.value(),
+          "Expected endpoint value for path "
+              + path
+              + " to be "
+              + expectedValue
+              + ", but the actual value was " + match.value());
+
+      assertEquals(
+          expectedVariables,
+          match.variables(),
+          "Expected endpoint variables for path "
+              + path
+              + " to be "
+              + expectedVariables
+              + ", but the actual variables were " + match.variables());
+    }
   }
 }

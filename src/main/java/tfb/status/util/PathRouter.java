@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -24,6 +25,14 @@ public interface PathRouter<V> {
    * @param path the request path to be matched
    */
   @Nullable MatchingEndpoint<V> find(String path);
+
+  /**
+   * Returns all the matching endpoints for the specified request path ordered
+   * from best match to worst.
+   *
+   * @param path the request path to be matched
+   */
+  Stream<MatchingEndpoint<V>> findAll(String path);
 
   /**
    * An endpoint mapping a {@link PathPattern} to a value.
