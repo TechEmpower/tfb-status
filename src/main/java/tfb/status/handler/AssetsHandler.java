@@ -64,16 +64,6 @@ public final class AssetsHandler {
       case FILE_SYSTEM -> {
         Path assetsRoot = fileSystem.getPath("src/main/resources/assets");
         var resourceManager = new PathResourceManager(assetsRoot);
-        // FIXME: ResourceHandler doesn't seem to write the expected
-        //        Content-Length header in responses to HEAD requests.  Is that
-        //        a bug in ResourceHandler?
-        //
-        //        Also, looking at that code, I suspect there is an unintended
-        //        interaction between HEAD requests and
-        //        resourceHandler.setContentEncodedResourceManager(...) in that
-        //        if a ContentEncodedResourceManager is present, the "is this a
-        //        HEAD request?" check is never performed, so perhaps content is
-        //        written to the response?
         var resourceHandler = new ResourceHandler(resourceManager);
         resourceHandler.setMimeMappings(newMimeMappings());
         resourceHandler.setWelcomeFiles();

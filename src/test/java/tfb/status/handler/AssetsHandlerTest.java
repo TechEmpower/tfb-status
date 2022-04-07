@@ -1,5 +1,6 @@
 package tfb.status.handler;
 
+import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.JAVASCRIPT_UTF_8;
 import static io.undertow.util.StatusCodes.FORBIDDEN;
@@ -50,7 +51,7 @@ public final class AssetsHandlerTest {
   }
 
   /**
-   * Verifies that a GET request for an assets file that does not exists results
+   * Verifies that a GET request for an assets file that does not exist results
    * in {@code 404 Not Found}.
    */
   @Test
@@ -90,5 +91,39 @@ public final class AssetsHandlerTest {
     HttpResponse<String> response4 = http.getString("/assets/js/");
     assertEquals(FORBIDDEN, response4.statusCode());
     assertEquals("", response4.body());
+  }
+
+  /**
+   * Verifies that a HEAD request for an asset file that exists is successful.
+   */
+  @Test
+  public void testHead(HttpTester http)
+      throws IOException, InterruptedException {
+
+    HttpResponse<String> response =
+        http.client().send(
+            http.newRequestBuilder("/assets/js/home.js")
+                .HEAD()
+                .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(OK, response.statusCode());
+    assertEquals("", response.body());
+
+    String contentLength =
+        response.headers()
+                .firstValue(CONTENT_LENGTH)
+                .orElse(null);
+
+    assertNotNull(contentLength);
+
+    long parsedContentLength = Long.parseLong(contentLength);
+
+    ClassLoader classLoader = getClass().getClassLoader();
+    URL url = classLoader.getResource("assets/js/home.js");
+    assertNotNull(url);
+    long fileSizeInBytes = Resources.asByteSource(url).size();
+
+    assertEquals(fileSizeInBytes, parsedContentLength);
   }
 }
