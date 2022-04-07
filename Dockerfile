@@ -1,4 +1,4 @@
-FROM maven:3.8.5-openjdk-17 AS base_build_image
+FROM maven:3.8.5-openjdk-18 AS base_build_image
 
 # Produce a small Java runtime that contains only what we need.
 # ------------------------------------------------------------------------------
