@@ -77,7 +77,7 @@ public final class MethodHandlerTest {
     HttpResponse<String> response3 =
         http.client().send(
             http.newRequestBuilder(path)
-                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .HEAD()
                 .build(),
             HttpResponse.BodyHandlers.ofString());
 
@@ -134,7 +134,7 @@ public final class MethodHandlerTest {
     HttpResponse<String> response3 =
         http.client().send(
             http.newRequestBuilder(path)
-                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .HEAD()
                 .build(),
             HttpResponse.BodyHandlers.ofString());
 
@@ -192,7 +192,7 @@ public final class MethodHandlerTest {
     HttpResponse<String> response3 =
         http.client().send(
             http.newRequestBuilder(path)
-                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .HEAD()
                 .build(),
             HttpResponse.BodyHandlers.ofString());
 
@@ -251,7 +251,7 @@ public final class MethodHandlerTest {
     HttpResponse<String> response3 =
         http.client().send(
             http.newRequestBuilder(path)
-                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .HEAD()
                 .build(),
             HttpResponse.BodyHandlers.ofString());
 
