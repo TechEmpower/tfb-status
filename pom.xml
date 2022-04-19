@@ -45,7 +45,7 @@
     <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
     <maven-resources-plugin.version>3.2.0</maven-resources-plugin.version>
     <maven-site-plugin.version>3.11.0</maven-site-plugin.version>
-    <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
+    <maven-surefire-plugin.version>3.0.0-M6</maven-surefire-plugin.version>
     <mustache.version>0.9.10</mustache.version>
     <slf4j.version>1.7.36</slf4j.version>
     <threeten-extra.version>1.7.0</threeten-extra.version>
