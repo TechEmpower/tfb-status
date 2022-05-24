@@ -81,20 +81,20 @@ public record HomePageView(ImmutableList<ResultsView> results,
    * @param repositoryUrl The name of the remote repository from which the local
    *        repository was cloned, or {@code null} if that information is
    *        unavailable.  See {@link Results.GitInfo#repositoryUrl()}.
-   * @param branchName THe current branch name of the local repository, or
+   * @param branchName The current branch name of the local repository, or
    *        {@code null} if that information is unavailable.  See {@link
    *        Results.GitInfo#branchName()}.
    * @param browseRepositoryUrl The URL of the web page for the {@linkplain
    *        #repositoryUrl() repository} used in this run, suitable for viewing
-   *        in a web browser, or {@link null} if the repository is unknown or if
+   *        in a web browser, or {@code null} if the repository is unknown or if
    *        this application cannot determine the web page for that repository.
    * @param browseCommitUrl The URL of the web page for the {@linkplain
    *        #commitId() commit} used in this run, suitable for viewing in a web
-   *        browser, or {@link null} if the commit is unknown or if this
+   *        browser, or {@code null} if the commit is unknown or if this
    *        application cannot determine the web page for that commit.
    * @param browseBranchUrl The URL of the web page for the {@linkplain
    *        #branchName() branch} used in this run, suitable for viewing in a
-   *        web browser, or {@link null} if the branch is unknown or if this
+   *        web browser, or {@code null} if the branch is unknown or if this
    *        application cannot determine the web page for that branch.
    * @param failures The list of frameworks that failed to start or stop or that
    *        had at least one test failure.
