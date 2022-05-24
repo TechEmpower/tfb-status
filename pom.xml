@@ -19,16 +19,16 @@
 
     <bcrypt.version>0.4</bcrypt.version>
     <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
-    <caffeine.version>3.0.6</caffeine.version>
-    <checkerframework.version>3.21.4</checkerframework.version>
+    <caffeine.version>3.1.0</caffeine.version>
+    <checkerframework.version>3.22.0</checkerframework.version>
     <crawler-commons.version>1.2</crawler-commons.version>
-    <error-prone.version>2.12.1</error-prone.version>
+    <error-prone.version>2.13.1</error-prone.version>
     <extra-enforcer-rules.version>1.5.1</extra-enforcer-rules.version>
     <git-commit-id-plugin.version>5.0.0</git-commit-id-plugin.version>
     <greenmail.version>2.0.0-alpha-2</greenmail.version>
     <guava.version>31.1-jre</guava.version>
-    <hk2.version>3.0.2</hk2.version>
-    <jackson.version>2.13.2</jackson.version>
+    <hk2.version>3.0.3</hk2.version>
+    <jackson.version>2.13.3</jackson.version>
     <jakarta-activation.version>2.0.1</jakarta-activation.version>
     <jakarta-inject.version>2.0.1</jakarta-inject.version>
     <jakarta-mail.version>2.0.1</jakarta-mail.version>
