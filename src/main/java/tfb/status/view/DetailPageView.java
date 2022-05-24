@@ -8,6 +8,8 @@ import tfb.status.view.HomePageView.ResultsView;
 
 /**
  * A view of the results detail page.
+ *
+ * @param result The results of a single run.
  */
 @Immutable
 public record DetailPageView(
