@@ -9,17 +9,16 @@ import tfb.status.hk2.extensions.ServiceLocatorParameterResolver;
  *
  * <p>Example usage:
  *
- * <pre>
- *   &#64;ExtendWith(TestServicesInjector.class)
+ * {@snippet lang="java" :
+ *   @ExtendWith(TestServicesInjector.class)
  *   public final class SomeServiceTest {
- *     &#64;Test
+ *     @Test
  *     public void testSomeBehavior(SomeService service) {
  *       // SomeService and its dependencies are initialized.
  *       // Make assertions about its behavior.
- *       ...
  *     }
  *   }
- * </pre>
+ * }
  */
 public final class TestServicesInjector
     implements ServiceLocatorParameterResolver {

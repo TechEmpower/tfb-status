@@ -73,13 +73,13 @@ public final class Authenticator {
    * can be retrieved using the {@link #requiredAccountId(HttpServerExchange)}
    * method:
    *
-   * <pre>
-   *   &#64;Override
+   * {@snippet lang="java" :
+   *   @Override
    *   public void handleRequest(HttpServerExchange exchange) {
    *     String accountId = authenticator.requiredAccountId(exchange);
-   *     ...
+   *     System.out.println("The current user's id is " + accountId);
    *   }
-   * </pre>
+   * }
    *
    * @param nextHandler the HTTP handler to be invoked after the user has
    *        authenticated successfully
