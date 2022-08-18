@@ -99,6 +99,7 @@
     <rule groupId="ch.qos.logback" comparisonMethod="maven">
       <ignoreVersions>
         <ignoreVersion type="regex">.+\-alpha[\d]+</ignoreVersion>
+        <ignoreVersion type="regex">.+\-beta[\d]+</ignoreVersion>
       </ignoreVersions>
     </rule>
 
