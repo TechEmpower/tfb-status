@@ -10,6 +10,8 @@ http:
 email:
   host: localhost
   port: 0
+  username: fake_username
+  password: fake_password
   from: tfb+testing@techempower.com
   to: tfb+testing@techempower.com
 

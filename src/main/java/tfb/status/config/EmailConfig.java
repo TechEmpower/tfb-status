@@ -16,15 +16,24 @@ import java.util.Objects;
  *        server is started.  Mail clients are responsible for determining the
  *        ephemeral port number of the server somehow.  The algorithm for doing
  *        so is not specified by this class.
+ * @param username The username for authenticating with the mail server.
+ * @param password The password for authenticating with the mail server.
  * @param from The email address for the "from" field.
  * @param to The email address for the "to" field.
  */
 @Immutable
 @Singleton
-public record EmailConfig(String host, int port, String from, String to) {
+public record EmailConfig(String host,
+                          int port,
+                          String username,
+                          String password,
+                          String from,
+                          String to) {
 
   public EmailConfig {
     Objects.requireNonNull(host);
+    Objects.requireNonNull(username);
+    Objects.requireNonNull(password);
     Objects.requireNonNull(from);
     Objects.requireNonNull(to);
   }
@@ -37,12 +46,18 @@ public record EmailConfig(String host, int port, String from, String to) {
       @JsonProperty(value = "port", required = true)
       int port,
 
+      @JsonProperty(value = "username", required = true)
+      String username,
+
+      @JsonProperty(value = "password", required = true)
+      String password,
+
       @JsonProperty(value = "from", required = true)
       String from,
 
       @JsonProperty(value = "to", required = true)
       String to) {
 
-    return new EmailConfig(host, port, from, to);
+    return new EmailConfig(host, port, username, password, from, to);
   }
 }

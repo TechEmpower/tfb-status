@@ -2,6 +2,7 @@ package tfb.status.testlib;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import com.icegreen.greenmail.configuration.GreenMailConfiguration;
 import com.icegreen.greenmail.smtp.SmtpServer;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
@@ -39,13 +40,24 @@ public final class MailServer implements PreDestroy {
     if (config == null)
       server = null;
 
-    else
+    else {
+      var greenMailSetup =
+          new ServerSetup(
+              /* port= */ config.port(),
+              /* bindAddress= */ "localhost",
+              /* protocol= */ "smtp");
+
+      GreenMailConfiguration greenMailConfig =
+          GreenMailConfiguration
+              .aConfig()
+              .withUser(
+                  /* login= */ config.username(),
+                  /* password= */ config.password());
+
       server =
-          new GreenMail(
-              new ServerSetup(
-                  /* port= */ config.port(),
-                  /* bindAddress= */ "localhost",
-                  /* protocol= */ "smtp"));
+          new GreenMail(greenMailSetup)
+              .withConfiguration(greenMailConfig);
+    }
   }
 
   @Override

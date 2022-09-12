@@ -36,6 +36,8 @@
 #email:
 #  host: mail.techempower.com
 #  port: 25
+#  username: mhixson@techempower.com
+#  password: fake_password
 #  from: mhixson@techempower.com
 #  to: mhixson@techempower.com
 

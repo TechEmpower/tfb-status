@@ -7,8 +7,10 @@ import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
+import jakarta.mail.PasswordAuthentication;
 import jakarta.mail.Session;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.AddressException;
@@ -127,9 +129,15 @@ public final class EmailSender {
     var environment = new Properties();
     environment.setProperty("mail.smtp.host", config.host());
     environment.setProperty("mail.smtp.port", String.valueOf(port));
+    environment.setProperty("mail.smtp.auth", String.valueOf(true));
     environment.setProperty("mail.smtp.starttls.enable", "true");
 
-    Session session = Session.getInstance(environment);
+    var authenticator =
+        new PasswordAuthenticator(
+            /* username= */ config.username(),
+            /* password= */ config.password());
+
+    Session session = Session.getInstance(environment, authenticator);
 
     var message = new MimeMessage(session);
     message.setFrom(from);
@@ -200,6 +208,21 @@ public final class EmailSender {
     @Override
     public String getName() {
       return fileName;
+    }
+  }
+
+  private static final class PasswordAuthenticator extends Authenticator {
+    private final String username;
+    private final String password;
+
+    PasswordAuthenticator(String username, String password) {
+      this.username = Objects.requireNonNull(username);
+      this.password = Objects.requireNonNull(password);
+    }
+
+    @Override
+    protected PasswordAuthentication getPasswordAuthentication() {
+      return new PasswordAuthentication(username, password);
     }
   }
 }
