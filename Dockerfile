@@ -1,4 +1,21 @@
-FROM maven:3.8.6-openjdk-18 AS base_build_image
+FROM debian:bullseye-slim AS base_build_image
+RUN apt-get update && \
+    apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN curl -o /tmp/jdk.tgz https://download.java.net/java/GA/jdk19/877d6127e982470ba2a7faa31cc93d04/36/GPL/openjdk-19_linux-x64_bin.tar.gz
+RUN echo -n 'f47aba585cfc9ecff1ed8e023524e8309f4315ed8b80100b40c7dcc232c12f96 /tmp/jdk.tgz' | sha256sum -c
+RUN tar -xvf /tmp/jdk.tgz -C /opt
+RUN rm /tmp/jdk.tgz
+ENV JAVA_HOME /opt/jdk-19
+ENV PATH "${JAVA_HOME}/bin:${PATH}"
+
+RUN curl -o /tmp/maven.tgz https://dlcdn.apache.org/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz
+RUN echo -n 'f790857f3b1f90ae8d16281f902c689e4f136ebe584aba45e4b1fa66c80cba826d3e0e52fdd04ed44b4c66f6d3fe3584a057c26dfcac544a60b301e6d0f91c26 /tmp/maven.tgz' | sha512sum -c
+RUN tar -xvf /tmp/maven.tgz -C /opt
+RUN rm /tmp/maven.tgz
+ENV MAVEN_HOME /opt/apache-maven-3.8.6
+ENV PATH "${MAVEN_HOME}/bin:${PATH}"
 
 # Produce a small Java runtime that contains only what we need.
 # ------------------------------------------------------------------------------
