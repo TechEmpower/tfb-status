@@ -3,18 +3,18 @@ RUN apt-get update && \
     apt-get install -y curl && \
     rm -rf /var/lib/apt/lists/*
 
-RUN curl -o /tmp/jdk.tgz https://download.java.net/java/GA/jdk19/877d6127e982470ba2a7faa31cc93d04/36/GPL/openjdk-19_linux-x64_bin.tar.gz
-RUN echo -n 'f47aba585cfc9ecff1ed8e023524e8309f4315ed8b80100b40c7dcc232c12f96 /tmp/jdk.tgz' | sha256sum -c
+RUN curl -o /tmp/jdk.tgz https://download.java.net/java/GA/jdk19.0.2/fdb695a9d9064ad6b064dc6df578380c/7/GPL/openjdk-19.0.2_linux-x64_bin.tar.gz
+RUN echo -n '34cf8d095cc071e9e10165f5c45023f96ec68397fdaabf6c64bfec1ffeee6198 /tmp/jdk.tgz' | sha256sum -c
 RUN tar -xvf /tmp/jdk.tgz -C /opt
 RUN rm /tmp/jdk.tgz
-ENV JAVA_HOME /opt/jdk-19
+ENV JAVA_HOME /opt/jdk-19.0.2
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
 
-RUN curl -o /tmp/maven.tgz https://dlcdn.apache.org/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz
-RUN echo -n 'f790857f3b1f90ae8d16281f902c689e4f136ebe584aba45e4b1fa66c80cba826d3e0e52fdd04ed44b4c66f6d3fe3584a057c26dfcac544a60b301e6d0f91c26 /tmp/maven.tgz' | sha512sum -c
+RUN curl -o /tmp/maven.tgz https://dlcdn.apache.org/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz
+RUN echo -n '21c2be0a180a326353e8f6d12289f74bc7cd53080305f05358936f3a1b6dd4d91203f4cc799e81761cf5c53c5bbe9dcc13bdb27ec8f57ecf21b2f9ceec3c8d27 /tmp/maven.tgz' | sha512sum -c
 RUN tar -xvf /tmp/maven.tgz -C /opt
 RUN rm /tmp/maven.tgz
-ENV MAVEN_HOME /opt/apache-maven-3.8.6
+ENV MAVEN_HOME /opt/apache-maven-3.8.7
 ENV PATH "${MAVEN_HOME}/bin:${PATH}"
 
 # Produce a small Java runtime that contains only what we need.
