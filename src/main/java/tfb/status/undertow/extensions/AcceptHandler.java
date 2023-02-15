@@ -171,21 +171,15 @@ public final class AcceptHandler implements HttpHandler {
     int i = 0;
     while (i < acceptHeader.length()) {
       switch (acceptHeader.charAt(i)) {
-        case '"':
-          inQuotes = !inQuotes;
-          break;
-        case ',':
+        case '"' -> inQuotes = !inQuotes;
+        case ',' -> {
           if (!inQuotes) {
             tokens.add(acceptHeader.substring(startIndex, i).strip());
             startIndex = i + 1;
           }
-          break;
-        case '\\':
-          i++;
-          break;
-        default:
-          // Do nothing.
-          break;
+        }
+        case '\\' -> i++;
+        default -> {} // Do nothing.
       }
       i++;
     }
