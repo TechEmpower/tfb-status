@@ -1,18 +1,3 @@
-# Maven output
-target/
-
-# Eclipse project files
-.settings/
-.classpath
-.project
-
-# IntelliJ project files
-.idea/
-*.iml
-
-# Default directory for application-managed files
-managed_files/
-
 # The .git/index and .git/logs/* files change each time the project is cloned,
 # even when no changes have been made in the main git repository, defeating
 # Docker's ability to cache the `COPY .git .git` build step.  By excluding these
