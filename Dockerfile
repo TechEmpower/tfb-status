@@ -10,11 +10,11 @@ RUN rm /tmp/jdk.tgz
 ENV JAVA_HOME /opt/jdk-19.0.2
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
 
-RUN curl -o /tmp/maven.tgz https://dlcdn.apache.org/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz
-RUN echo -n '21c2be0a180a326353e8f6d12289f74bc7cd53080305f05358936f3a1b6dd4d91203f4cc799e81761cf5c53c5bbe9dcc13bdb27ec8f57ecf21b2f9ceec3c8d27 /tmp/maven.tgz' | sha512sum -c
+RUN curl -o /tmp/maven.tgz https://dlcdn.apache.org/maven/maven-3/3.9.0/binaries/apache-maven-3.9.0-bin.tar.gz
+RUN echo -n '1ea149f4e48bc7b34d554aef86f948eca7df4e7874e30caf449f3708e4f8487c71a5e5c072a05f17c60406176ebeeaf56b5f895090c7346f8238e2da06cf6ecd /tmp/maven.tgz' | sha512sum -c
 RUN tar -xvf /tmp/maven.tgz -C /opt
 RUN rm /tmp/maven.tgz
-ENV MAVEN_HOME /opt/apache-maven-3.8.7
+ENV MAVEN_HOME /opt/apache-maven-3.9.0
 ENV PATH "${MAVEN_HOME}/bin:${PATH}"
 
 # Produce a small Java runtime that contains only what we need.
