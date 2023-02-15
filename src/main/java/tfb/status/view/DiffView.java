@@ -32,15 +32,15 @@ public record DiffView(DiffSummaryView summary,
    *        that were present in both the old results and the new results.
    * @param totalSame The number of [framework, test type] combinations that
    *        performed roughly as well in the new results as in the old results
-   *        (within some {@linkplain #rpsChangeThreshold ()threshold}.
+   *        (within some {@linkplain #rpsChangeThreshold() threshold}).
    * @param totalBetter The number of [framework, test type] combinations that
    *        performed markedly better in the new results as compared to the old
    *        results (outside of some {@linkplain #rpsChangeThreshold()
-   *        threshold}.
+   *        threshold}).
    * @param totalWorse The number of [framework, test type] combinations that
    *        performed markedly worse in the new results as compared to the old
    *        results (outside of some {@linkplain #rpsChangeThreshold()
-   *        threshold}.
+   *        threshold}).
    * @param rpsChangeThreshold The percentage by which the performance of a
    *        [framework, test type] combination must change between two sets of
    *        results in order to be considered truly different.  We expect

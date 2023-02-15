@@ -10,7 +10,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  *
  * @param breadcrumbs The current directory and all its parents up to the root
  *        of this zip file.  The first item in this list is the root and the
- *        last is the current directory.
+ *        last item is the current directory.
  * @param children The children of the current directory.  This list is sorted
  *        with directories first and files second, and with items of each type
  *        sorted by name (ignoring case).

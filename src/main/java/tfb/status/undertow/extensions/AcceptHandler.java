@@ -260,7 +260,7 @@ public final class AcceptHandler implements HttpHandler {
 
   /**
    * Returns {@code true} if the two media types are compatible with each other,
-   * where "compatible" is defined in the the class-level documentation of
+   * where "compatible" is defined in the class-level documentation of
    * {@link AcceptHandler}.
    *
    * <p>This operation is symmetric.

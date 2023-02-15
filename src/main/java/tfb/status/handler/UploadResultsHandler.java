@@ -38,7 +38,7 @@ import tfb.status.view.UpdatedResultsEvent;
  * file may either be a results.json file (in which case the {@code
  * Content-Type} of the request must be {@code application/json}) or a zip
  * containing the full output of a run, including logs (in which case the {@code
- * Content-Type} must be {@code application/zip}.
+ * Content-Type} must be {@code application/zip}).
  */
 @Singleton
 public final class UploadResultsHandler implements HttpHandler {
