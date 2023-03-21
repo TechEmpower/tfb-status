@@ -11,7 +11,7 @@
   <version>1.0-SNAPSHOT</version>
 
   <properties>
-    <maven.compiler.release>19</maven.compiler.release>
+    <maven.compiler.release>20</maven.compiler.release>
 
     <oldestCompatibleMavenVersion>3.5.0</oldestCompatibleMavenVersion>
 

@@ -3,11 +3,11 @@ RUN apt-get update && \
     apt-get install -y curl && \
     rm -rf /var/lib/apt/lists/*
 
-RUN curl -o /tmp/jdk.tgz https://download.java.net/java/GA/jdk19.0.2/fdb695a9d9064ad6b064dc6df578380c/7/GPL/openjdk-19.0.2_linux-x64_bin.tar.gz
-RUN echo -n '34cf8d095cc071e9e10165f5c45023f96ec68397fdaabf6c64bfec1ffeee6198 /tmp/jdk.tgz' | sha256sum -c
+RUN curl -o /tmp/jdk.tgz https://download.java.net/java/GA/jdk20/bdc68b4b9cbc4ebcb30745c85038d91d/36/GPL/openjdk-20_linux-x64_bin.tar.gz
+RUN echo -n 'bb863b2d542976d1ae4b7b81af3e78b1e4247a64644350b552d298d8dc5980dc /tmp/jdk.tgz' | sha256sum -c
 RUN tar -xvf /tmp/jdk.tgz -C /opt
 RUN rm /tmp/jdk.tgz
-ENV JAVA_HOME /opt/jdk-19.0.2
+ENV JAVA_HOME /opt/jdk-20
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
 
 RUN curl -o /tmp/maven.tgz https://dlcdn.apache.org/maven/maven-3/3.9.0/binaries/apache-maven-3.9.0-bin.tar.gz
