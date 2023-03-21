@@ -17,6 +17,8 @@
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+    <angus-activation.version>2.0.0</angus-activation.version>
+    <angus-mail.version>2.0.1</angus-mail.version>
     <bcrypt.version>0.4</bcrypt.version>
     <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
     <caffeine.version>3.1.5</caffeine.version>
@@ -25,13 +27,11 @@
     <error-prone.version>2.18.0</error-prone.version>
     <extra-enforcer-rules.version>1.6.1</extra-enforcer-rules.version>
     <git-commit-id-plugin.version>5.0.0</git-commit-id-plugin.version>
-    <greenmail.version>2.0.0-alpha-3</greenmail.version>
+    <greenmail.version>2.1.0-alpha-1</greenmail.version>
     <guava.version>31.1-jre</guava.version>
     <hk2.version>3.0.3</hk2.version>
     <jackson.version>2.14.2</jackson.version>
-    <jakarta-activation.version>2.0.1</jakarta-activation.version>
     <jakarta-inject.version>2.0.1</jakarta-inject.version>
-    <jakarta-mail.version>2.0.1</jakarta-mail.version>
     <jimfs.version>1.2</jimfs.version>
     <jmh.version>1.36</jmh.version>
     <junit-jupiter.version>5.9.2</junit-jupiter.version>
@@ -120,18 +120,6 @@
       <artifactId>jbcrypt</artifactId>
       <version>${bcrypt.version}</version>
     </dependency>
-    <!-- We'll replace this dependency:
-           com.sun.mail:jakarta.mail
-         with these two:
-           jakarta.mail:jakarta.mail-api
-           org.eclipse.angus:jakarta.mail
-         when both of the new dependencies have stable releases.
-    -->
-    <dependency>
-      <groupId>com.sun.mail</groupId>
-      <artifactId>jakarta.mail</artifactId>
-      <version>${jakarta-mail.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -147,17 +135,15 @@
       <artifactId>logback-classic</artifactId>
       <version>${logback.version}</version>
     </dependency>
-    <!-- We'll replace this dependency:
-           com.sun.activation:jakarta.activation
-         with these two:
-           jakarta.activation:jakarta.activation-api
-           org.eclipse.angus:angus-activation
-         when both of the new dependencies have stable releases.
-    -->
     <dependency>
-      <groupId>com.sun.activation</groupId>
-      <artifactId>jakarta.activation</artifactId>
-      <version>${jakarta-activation.version}</version>
+      <groupId>org.eclipse.angus</groupId>
+      <artifactId>angus-activation</artifactId>
+      <version>${angus-activation.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.angus</groupId>
+      <artifactId>angus-mail</artifactId>
+      <version>${angus-mail.version}</version>
     </dependency>
     <dependency>
       <groupId>jakarta.inject</groupId>
@@ -222,26 +208,11 @@
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
         </exclusion>
-        <!-- The javax.mail package is now maintained in the jakarta.mail
-             artifact, which we include as a dependency.  This other javax.mail
-             artifact is obsolete. -->
+        <!-- This dependency is broken because of duplicate class issues, but
+             thankfully we don't need it. -->
         <exclusion>
-          <groupId>com.sun.mail</groupId>
-          <artifactId>javax.mail</artifactId>
-        </exclusion>
-        <!-- GreenMail changed its activation dependency from:
-               com.sun.activation:jakarta.activation
-             to:
-               jakarta.activation:jakarta.activation-api
-             but the latter is not ready for use.  The implementation for that
-             API is:
-               org.eclipse.angus:angus-activation
-             which does not have a stable release.  Therefore, we retain the old
-             activation dependency for now and exclude this one.
-        -->
-        <exclusion>
-          <groupId>jakarta.activation</groupId>
-          <artifactId>jakarta.activation-api</artifactId>
+          <groupId>org.eclipse.angus</groupId>
+          <artifactId>jakarta.mail</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -506,13 +477,17 @@
                      modules. -->
                 <exclude>com.google.code.findbugs:jsr305</exclude>
 
-                <!-- We use jakarta.mail, which is the replacement for the
-                     now-obsolete javax.mail. -->
+                <!-- These are obsolete versions of other packages. -->
                 <exclude>com.sun.mail:javax.mail</exclude>
+                <exclude>com.sun.mail:javax.mail-api</exclude>
+                <exclude>com.sun.mail:jakarta.mail</exclude>
+                <exclude>com.sun.activation:javax.activation</exclude>
+                <exclude>com.sun.activation:javax.activation-api</exclude>
+                <exclude>com.sun.activation:jakarta.activation</exclude>
 
-                <!-- jakarta.activation-api is not ready for use because there's
-                     no stable release of the implementation for that API. -->
-                <exclude>jakarta.activation:jakarta.activation-api</exclude>
+                <!-- This duplicates classes within its own dependencies, so
+                     it's broken.  Use its dependencies directly. -->
+                <exclude>org.eclipse.angus:jakarta.mail</exclude>
               </excludes>
             </bannedDependencies>
           </rules>
