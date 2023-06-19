@@ -1,21 +1,4 @@
-FROM debian:bullseye-slim AS base_build_image
-RUN apt-get update && \
-    apt-get install -y curl && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN curl -o /tmp/jdk.tgz https://download.java.net/java/GA/jdk20/bdc68b4b9cbc4ebcb30745c85038d91d/36/GPL/openjdk-20_linux-x64_bin.tar.gz
-RUN echo -n 'bb863b2d542976d1ae4b7b81af3e78b1e4247a64644350b552d298d8dc5980dc /tmp/jdk.tgz' | sha256sum -c
-RUN tar -xvf /tmp/jdk.tgz -C /opt
-RUN rm /tmp/jdk.tgz
-ENV JAVA_HOME /opt/jdk-20
-ENV PATH "${JAVA_HOME}/bin:${PATH}"
-
-RUN curl -o /tmp/maven.tgz https://archive.apache.org/dist/maven/maven-3/3.9.1/binaries/apache-maven-3.9.1-bin.tar.gz
-RUN echo -n 'd3be5956712d1c2cf7a6e4c3a2db1841aa971c6097c7a67f59493a5873ccf8c8b889cf988e4e9801390a2b1ae5a0669de07673acb090a083232dbd3faf82f3e3 /tmp/maven.tgz' | sha512sum -c
-RUN tar -xvf /tmp/maven.tgz -C /opt
-RUN rm /tmp/maven.tgz
-ENV MAVEN_HOME /opt/apache-maven-3.9.1
-ENV PATH "${MAVEN_HOME}/bin:${PATH}"
+FROM maven:3.9.2-eclipse-temurin-20 AS base_build_image
 
 # Produce a small Java runtime that contains only what we need.
 # ------------------------------------------------------------------------------
@@ -50,7 +33,7 @@ RUN --mount=type=cache,target=/root/.m2/repository \
 # To debug surefire VM crashes, append this to the previous line:
 # || (cat target/surefire-reports/* && exit 1)
 
-FROM debian:bullseye-slim AS run_app
+FROM debian:bookworm-slim AS run_app
 WORKDIR /tfbstatus
 COPY --from=build_jre /opt/jre /opt/jre
 ENV JAVA_HOME "/opt/jre"
