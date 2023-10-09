@@ -430,6 +430,15 @@ public final class HomeResultsReader implements PreDestroy {
     failures.sort(comparing(failure -> failure.framework(),
                             String.CASE_INSENSITIVE_ORDER));
 
+    String lastCompletedFramework =
+        results.frameworks()
+               .asList()
+               .reverse()
+               .stream()
+               .filter(framework -> results.completed().containsKey(framework))
+               .findFirst()
+               .orElse(null);
+
     return new FileSummary(
         /* fileName= */ fileName,
         /* uuid= */ uuid,
@@ -448,7 +457,8 @@ public final class HomeResultsReader implements PreDestroy {
         /* successfulTests= */ successfulTests,
         /* failedTests= */ failedTests,
         /* hasTestMetadata= */ hasTestMetadata,
-        /* failures= */ ImmutableList.copyOf(failures));
+        /* failures= */ ImmutableList.copyOf(failures),
+        /* lastCompletedFramework= */ lastCompletedFramework);
   }
 
   private ResultsView newResultsView(Iterable<FileSummary> summaries) {
@@ -608,6 +618,8 @@ public final class HomeResultsReader implements PreDestroy {
     else
       visualizeResultsUrl = null;
 
+    String lastCompletedFramework = summary.lastCompletedFramework();
+
     return new ResultsView(
         /* uuid= */ uuid,
         /* name= */ name,
@@ -632,7 +644,8 @@ public final class HomeResultsReader implements PreDestroy {
         /* failures= */ failures,
         /* jsonFileName= */ jsonFileName,
         /* zipFileName= */ zipFileName,
-        /* visualizeResultsUrl= */ visualizeResultsUrl);
+        /* visualizeResultsUrl= */ visualizeResultsUrl,
+        /* lastCompletedFramework= */ lastCompletedFramework);
   }
 
   /**
@@ -745,7 +758,8 @@ public final class HomeResultsReader implements PreDestroy {
                      boolean hasTestMetadata,
                      // TODO: Avoid sharing the Failure data type with
                      //       HomePageView?
-                     ImmutableList<Failure> failures) {
+                     ImmutableList<Failure> failures,
+                     @Nullable String lastCompletedFramework) {
 
     FileSummary {
       Objects.requireNonNull(fileName);

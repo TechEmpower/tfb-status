@@ -126,6 +126,8 @@ public final class HomeResultsReaderTest {
         results.failures().stream()
                           .filter(failure -> !failure.failedTestTypes().isEmpty())
                           .count());
+
+    assertEquals("zysocket-v", results.lastCompletedFramework());
   }
 
   /**

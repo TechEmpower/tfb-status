@@ -19,7 +19,11 @@
     {{/visualizeResultsUrl}}
   {{/uuid}}
 <td>
-  {{completedFrameworks}}/{{totalFrameworks}} frameworks tested<br>
+  {{completedFrameworks}}/{{totalFrameworks}} frameworks tested
+  {{#lastCompletedFramework}}
+    (last was {{lastCompletedFramework}})
+  {{/lastCompletedFramework}}
+  <br>
   {{frameworksWithCleanSetup}} frameworks started and stopped cleanly<br>
   {{frameworksWithSetupProblems}} frameworks had problems starting or stopping<br>
   {{successfulTests}} tests passed<br>

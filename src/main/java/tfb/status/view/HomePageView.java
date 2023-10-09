@@ -105,6 +105,9 @@ public record HomePageView(ImmutableList<ResultsView> results,
    * @param visualizeResultsUrl The TFB website URL for visualizing the results
    *        of this run, or {@code null} if this application does not currently
    *        have sufficient test metadata for this run to be visualized.
+   * @param lastCompletedFramework The name of the framework that most recently
+   *        completed testing, or {@code null} if no framework has completed
+   *        testing.
    */
   @Immutable
   public record ResultsView(
@@ -179,7 +182,10 @@ public record HomePageView(ImmutableList<ResultsView> results,
       @Nullable String zipFileName,
 
       @JsonProperty(value = "visualizeResultsUrl", required = true)
-      @Nullable String visualizeResultsUrl) {
+      @Nullable String visualizeResultsUrl,
+
+      @JsonProperty(value = "lastCompletedFramework", required = true)
+      @Nullable String lastCompletedFramework) {
 
     @JsonCreator
     public ResultsView {

@@ -47,8 +47,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  *        prior to that date.
  * @param duration The duration in seconds of each test.
  * @param frameworks The names of the frameworks in the run.
- * @param completed The mapping of framework names to the times their tests
- *        completed.
+ * @param completed The mapping of framework names to either (a) the epoch
+ *        millisecond timestamp when their tests completed, assuming their tests
+ *        started successfully, or (b) an error message describing why the tests
+ *        did not start.
  * @param succeeded Maps test types to the names of the frameworks that
  *        succeeded at that test type in this run.  This mapping does not take
  *        into account whether the framework achieved at least one request
