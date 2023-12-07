@@ -1,4 +1,4 @@
-FROM maven:3.9.2-eclipse-temurin-20 AS base_build_image
+FROM maven:3.9.5-eclipse-temurin-21 AS base_build_image
 
 # Produce a small Java runtime that contains only what we need.
 # ------------------------------------------------------------------------------
