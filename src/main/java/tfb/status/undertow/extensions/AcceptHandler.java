@@ -221,7 +221,7 @@ public final class AcceptHandler implements HttpHandler {
           switch (mediaType.parameters().get("q").size()) {
             case 0 -> 1.0;
             case 1 -> {
-              String q = mediaType.parameters().get("q").get(0);
+              String q = mediaType.parameters().get("q").getFirst();
               yield Double.parseDouble(q);
             }
             default ->

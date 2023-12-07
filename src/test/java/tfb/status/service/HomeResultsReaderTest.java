@@ -34,7 +34,7 @@ public final class HomeResultsReaderTest {
     // Do not verify the size of the results list because we might have uploaded
     // new results in another test.
     ImmutableList<ResultsView> resultsList = homeResultsReader.results();
-    ResultsView firstResult = resultsList.get(0);
+    ResultsView firstResult = resultsList.getFirst();
     assertEquals("598923fe-6491-41bd-a2b6-047f70860aed", firstResult.uuid());
   }
 

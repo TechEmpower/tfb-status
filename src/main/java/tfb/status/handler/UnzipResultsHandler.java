@@ -120,7 +120,7 @@ public final class UnzipResultsHandler implements HttpHandler {
               List<String> directoryPath = path.subList(0, i);
               breadcrumbs.add(
                   new FileView(
-                      /* fileName= */ directoryPath.get(directoryPath.size() - 1),
+                      /* fileName= */ directoryPath.getLast(),
                       /* fullPath= */ Joiner.on('/').join(directoryPath),
                       /* size= */ null,
                       /* isDirectory= */ true,

@@ -400,7 +400,7 @@ final class PathRouterInternals {
         builderNodeIndexes.put(builderNode, builderNodeIndexes.size());
       }
 
-      return constructedNodes.get(constructedNodes.size() - 1);
+      return constructedNodes.getLast();
     }
 
     @FunctionalInterface
