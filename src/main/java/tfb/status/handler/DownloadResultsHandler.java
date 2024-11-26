@@ -6,6 +6,9 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.server.handlers.encoding.ContentEncodingRepository;
+import io.undertow.server.handlers.encoding.EncodingHandler;
+import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import jakarta.inject.Singleton;
 import java.util.Objects;
 import org.glassfish.hk2.extras.provides.Provides;
@@ -35,6 +38,10 @@ public final class DownloadResultsHandler {
 
     // Trim the "/raw" prefix from the front of the request path, since that
     // prefix would confuse the ResourceHandler.
-    return new PathHandler().addPrefixPath("/raw", resourceHandler);
+    var pathHandler = new PathHandler().addPrefixPath("/raw", resourceHandler);
+
+    var encodingRepository = new ContentEncodingRepository().addEncodingHandler("gzip", new GzipEncodingProvider(), 50);
+
+    return new EncodingHandler(encodingRepository).setNext(pathHandler);
   }
 }
